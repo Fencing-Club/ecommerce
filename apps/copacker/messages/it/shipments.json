@@ -192,8 +192,14 @@
     "removeStop": "Rimuovi {name}",
     "addStop": "Aggiungi tappa",
     "chooseStop": "Scegli una tappa",
+    "newStop": "Nuova tappa",
     "endsRoute": "Il percorso termina a {name}. Rimuovilo per aggiungere una tappa prima.",
-    "needsDestination": "Aggiungi la destinazione finale per salvare il percorso.",
+    "issues": {
+      "noFinalDestination": "Aggiungi la destinazione finale per salvare il percorso.",
+      "stopAfterFinalDestination": "Nulla può seguire la destinazione finale. Rimuovi le tappe successive.",
+      "aglNotIntoAmazon": "AGL consegna solo in una rete Amazon. Scegli poi Amazon FBA US o AWD US.",
+      "legNotAllowed": "Solo il mittente può spedire in una rete Amazon."
+    },
     "ready": "Pronto il {date}",
     "legs": {
       "label": "Spedizione, da {from} a {to}",

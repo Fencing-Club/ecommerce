@@ -1,20 +1,29 @@
-import { receivers } from "@repo/copacker-packing-rules"
+import { type Route, receivers } from "@repo/copacker-packing-rules"
 import { useState } from "react"
 import { FormProvider, useForm } from "react-hook-form"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { pickupLocations } from "@/stories/fixtures/purchase-orders"
-import { direct, fbaStop, routeChoices, throughAgl, throughForwarder } from "@/stories/fixtures/routes"
+import {
+  baylineStop,
+  direct,
+  fbaStop,
+  harborStop,
+  northwindStop,
+  routeChoices,
+  throughAgl,
+  throughForwarder
+} from "@/stories/fixtures/routes"
 import { chooseOption, shownDialog, width } from "@/stories/play"
 import { ReadyDateAndPallets } from "./packing-form"
 import type { PartnerAddress } from "./partner-address"
 import { PartnerAddressDialog } from "./partner-address"
 import { PickupAddressSelect } from "./pickup-address-select"
-import { type Route, RouteEditor } from "./route-editor"
+import { RouteEditor, type RouteStop } from "./route-editor"
 
 // The editor keeps no route of its own: a story holds it, as the Route section does.
 function Editable(props: React.ComponentProps<typeof RouteEditor>) {
-  const [route, setRoute] = useState<Route>(props.route)
+  const [route, setRoute] = useState<Route<RouteStop>>(props.route)
   return (
     <RouteEditor
       {...props}
@@ -198,7 +207,7 @@ export const RemoveAndAddStop = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Remove Amazon AWD US" }))
     await expect(canvas.queryByText("Final destination")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Add stop" }))
-    await chooseOption(canvas.getByRole("combobox", { name: "Final destination" }), /^Amazon FBA US/)
+    await chooseOption(canvas.getByRole("combobox", { name: "New stop" }), /^Amazon FBA US/)
     await expect(args.onChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ stops: [throughForwarder.stops[0], throughForwarder.stops[1], fbaStop] })
     )
@@ -221,5 +230,79 @@ export const ShipFromWhilePacking = meta.story({
     await chooseOption(canvas.getByRole("combobox", { name: "Ship from" }), "Add new address")
     const dialog = await shownDialog("Add new address")
     await expect(dialog.getByRole("textbox", { name: "Street address" })).toBeVisible()
+  }
+})
+
+// The stops a stop's menu lists, by name, after opening it. Escape closes the menu again. Each option reads its name,
+// then its address, so the longest name an option starts with is its stop's.
+async function menuOptions(control: HTMLElement) {
+  const known = routeChoices.flatMap((group) => group.stops.map((stop) => stop.name))
+  known.sort((a, b) => b.length - a.length)
+  await userEvent.click(control)
+  const options = await screen.findAllByRole("option")
+  const names = options.map((option) => known.find((name) => option.textContent?.startsWith(name)))
+  await userEvent.keyboard("{Escape}")
+  await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
+  return names
+}
+
+// A stop on the way is a forwarder or AGL, and the final destination one of the places the goods can end up.
+export const StopMenus = meta.story({
+  args: { editing: true, choices: routeChoices },
+  render: (args) => <Editable {...args} />,
+  play: async ({ canvas }) => {
+    await expect(await menuOptions(canvas.getByRole("combobox", { name: "Ship to" }))).toEqual([
+      "Bayline Freight",
+      "Bayline Freight / Shenzhen",
+      "Amazon Global Logistics (AGL)"
+    ])
+    await expect(await menuOptions(canvas.getByRole("combobox", { name: "Final destination" }))).toEqual([
+      "Harbor Goods / Portland warehouse",
+      "Amazon FBA US",
+      "Amazon AWD US"
+    ])
+  }
+})
+
+// AGL delivers only into an Amazon network: it isn't offered on the way to the buyer's warehouse, and after it the
+// final destination is Amazon's.
+export const AglOnlyIntoAmazon = meta.story({
+  args: {
+    editing: true,
+    choices: routeChoices,
+    route: { stops: [northwindStop, baylineStop, harborStop], legs: ["senderArranges", "senderArranges"] }
+  },
+  render: (args) => <Editable {...args} />,
+  play: async ({ canvas }) => {
+    await expect(await menuOptions(canvas.getByRole("combobox", { name: "Ship to" }))).not.toContain(
+      "Amazon Global Logistics (AGL)"
+    )
+    await chooseOption(canvas.getByRole("combobox", { name: "Final destination" }), /^Amazon FBA US/)
+    await chooseOption(canvas.getByRole("combobox", { name: "Ship to" }), /^Amazon Global Logistics/)
+    await expect(await menuOptions(canvas.getByRole("combobox", { name: "Final destination" }))).toEqual([
+      "Amazon FBA US",
+      "Amazon AWD US"
+    ])
+  }
+})
+
+// Making the final destination an Amazon network hands its leg to the sender, since only the sender ships into one.
+export const LegMovesToSender = meta.story({
+  args: {
+    editing: true,
+    choices: routeChoices,
+    onChange: fn(),
+    route: { stops: [northwindStop, harborStop], legs: ["receiverMoves"] }
+  },
+  render: (args) => <Editable {...args} />,
+  play: async ({ args, canvas }) => {
+    await expect(
+      canvas.getByRole("combobox", { name: "Shipping, Northwind Textiles to Harbor Goods" })
+    ).toHaveTextContent("Harbor Goods picks up")
+    await chooseOption(canvas.getByRole("combobox", { name: "Final destination" }), /^Amazon FBA US/)
+    await expect(args.onChange).toHaveBeenLastCalledWith({ stops: [northwindStop, fbaStop], legs: ["senderArranges"] })
+    await expect(canvas.getByRole("combobox", { name: "Shipping, Northwind Textiles to Amazon" })).toHaveTextContent(
+      "Northwind Textiles arranges shipping"
+    )
   }
 })

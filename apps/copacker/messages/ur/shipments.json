@@ -192,8 +192,14 @@
     "removeStop": "{name} ہٹائیں",
     "addStop": "اسٹاپ شامل کریں",
     "chooseStop": "اسٹاپ منتخب کریں",
+    "newStop": "نیا اسٹاپ",
     "endsRoute": "روٹ {name} پر ختم ہوتا ہے۔ اس سے پہلے اسٹاپ شامل کرنے کے لیے اسے ہٹائیں۔",
-    "needsDestination": "روٹ محفوظ کرنے کے لیے آخری منزل شامل کریں۔",
+    "issues": {
+      "noFinalDestination": "روٹ محفوظ کرنے کے لیے آخری منزل شامل کریں۔",
+      "stopAfterFinalDestination": "آخری منزل کے بعد کچھ نہیں آ سکتا۔ اس کے بعد کے اسٹاپ ہٹائیں۔",
+      "aglNotIntoAmazon": "AGL صرف Amazon نیٹ ورک میں پہنچاتا ہے۔ اس کے بعد Amazon FBA US یا AWD US منتخب کریں۔",
+      "legNotAllowed": "صرف بھیجنے والا ہی Amazon نیٹ ورک میں بھیج سکتا ہے۔"
+    },
     "ready": "{date} کو تیار",
     "legs": {
       "label": "ترسیل، {from} سے {to}",

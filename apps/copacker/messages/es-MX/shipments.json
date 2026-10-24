@@ -192,8 +192,14 @@
     "removeStop": "Quitar {name}",
     "addStop": "Agregar parada",
     "chooseStop": "Elige una parada",
+    "newStop": "Nueva parada",
     "endsRoute": "La ruta termina en {name}. Quítalo para agregar una parada antes.",
-    "needsDestination": "Agrega el destino final para guardar la ruta.",
+    "issues": {
+      "noFinalDestination": "Agrega el destino final para guardar la ruta.",
+      "stopAfterFinalDestination": "Nada puede seguir al destino final. Quita las paradas posteriores.",
+      "aglNotIntoAmazon": "AGL solo entrega en una red de Amazon. Elige Amazon FBA US o AWD US después.",
+      "legNotAllowed": "Solo el remitente puede enviar a una red de Amazon."
+    },
     "ready": "Listo el {date}",
     "legs": {
       "label": "Envío, de {from} a {to}",

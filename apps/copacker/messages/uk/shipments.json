@@ -192,8 +192,14 @@
     "removeStop": "Прибрати {name}",
     "addStop": "Додати зупинку",
     "chooseStop": "Виберіть зупинку",
+    "newStop": "Нова зупинка",
     "endsRoute": "Маршрут закінчується в {name}. Приберіть його, щоб додати зупинку перед ним.",
-    "needsDestination": "Додайте кінцевий пункт, щоб зберегти маршрут.",
+    "issues": {
+      "noFinalDestination": "Додайте кінцевий пункт, щоб зберегти маршрут.",
+      "stopAfterFinalDestination": "Після кінцевого пункту нічого не може бути. Приберіть зупинки після нього.",
+      "aglNotIntoAmazon": "AGL доставляє лише в мережу Amazon. Виберіть після нього Amazon FBA US або AWD US.",
+      "legNotAllowed": "Лише відправник може відправляти в мережу Amazon."
+    },
     "ready": "Готово {date}",
     "legs": {
       "label": "Доставка, з {from} до {to}",
