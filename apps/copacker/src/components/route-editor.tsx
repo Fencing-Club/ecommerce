@@ -88,6 +88,10 @@ export function RouteEditor({
   const t = useTranslations("shipments.route")
   const format = useFormatter()
   const [adding, setAdding] = useState(false)
+  // A stop being added goes when editing ends, so it isn't back the next time.
+  if (!editing && adding) {
+    setAdding(false)
+  }
   const { stops, legs } = route
   const last = stops.at(-1)
   const change = (next: Route<RouteStop>) => onChange?.(next)
