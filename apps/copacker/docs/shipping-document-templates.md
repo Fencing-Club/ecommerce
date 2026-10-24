@@ -88,8 +88,7 @@ It never books transport, calls a provider, uploads or sends anything.
 The JSON holds the accepted PO with each line's packing requirements, the packing, transport, destination, the company
 and supplier names, revision, shipment name and language/paper settings. Its optional fields:
 
-- `amazonPending`: an Amazon shipment before Amazon has it. The packet has no carton labels, and the destination shows
-  that Amazon assigns the warehouse and labels after the supplier sends the packing list.
+- `amazonPending`: an Amazon shipment before Amazon has it, so the packet has no carton labels or warehouse address.
 - `onward`: for a PO through a forwarder, where the forwarder takes the cartons next. The destination is the
   forwarder's address, and the documents are the forwarder leg's.
 - `originalLabels`: an AWD shipment's original Amazon carton labels PDF, relative to the JSON file. The exporter matches
