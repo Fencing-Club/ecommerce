@@ -45,7 +45,7 @@ const amazonPallet = [
     gmaGrade: "B",
     description:
       "Use 48 × 40in wooden pallets with four-way entry, GMA grade B or better. Nothing may hang over the edges.",
-    summary: "121.9 × 101.6 cm (48 × 40 in) wooden pallets with four-way entry",
+    summary: "121.9 × 101.6 cm (48 × 40 in) wooden pallets, GMA grade B or better, with four-way entry",
     source
   },
   {
