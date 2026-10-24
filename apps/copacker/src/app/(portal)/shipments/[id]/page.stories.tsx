@@ -914,8 +914,10 @@ export const WarehouseRouteToChoose = meta.story({
   args: { route: null },
   play: async ({ canvas }) => {
     const route = canvas.getByRole("region", { name: "Route" })
-    await expect(within(route).queryByText("Ship from")).toBeNull()
-    await userEvent.click(within(route).getByRole("button", { name: "Route" }))
+    const toggle = within(route).getByRole("button", { name: "Route" })
+    await expect(toggle).toHaveAttribute("aria-expanded", "false")
+    await userEvent.click(toggle)
+    await expect(toggle).toHaveAttribute("aria-expanded", "true")
     await expect(await within(route).findByRole("button", { name: "Edit route" })).toBeVisible()
   }
 })
