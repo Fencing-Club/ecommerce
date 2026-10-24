@@ -21,12 +21,14 @@ export type LegArrangement = (typeof legArrangements)[number]
 // A route's stops in order and, between each two, who moves the goods: one leg fewer than stops.
 export type Route<Stop extends RouteStop = RouteStop> = { stops: Stop[]; legs: LegArrangement[] }
 
-// What breaks a route: it doesn't end at a receiver yet, a stop follows a receiver, AGL takes the goods somewhere
-// other than an Amazon network, or a leg is moved by someone who can't move it.
+// What breaks a route: it doesn't start at the supplier or end at a receiver yet, a stop follows a receiver, AGL takes
+// the goods somewhere other than an Amazon network, or nobody has chosen who moves a leg, or someone who can't does.
 export type RouteIssue =
+  | { code: "supplierNotFirst" }
   | { code: "noFinalDestination" }
   | { code: "stopAfterFinalDestination"; index: number }
   | { code: "aglNotIntoAmazon"; index: number }
+  | { code: "legMissing"; index: number }
   | { code: "legNotAllowed"; index: number }
 
 // A receiver ends the route: nothing follows it.
@@ -118,7 +120,7 @@ export function setLeg<Stop extends RouteStop>(route: Route<Stop>, index: number
 
 // What's wrong with a route, in order along it. A route with no issues can be saved.
 export function routeIssues(route: Route<RouteStop>): RouteIssue[] {
-  const issues: RouteIssue[] = []
+  const issues: RouteIssue[] = route.stops[0]?.kind === "supplier" ? [] : [{ code: "supplierNotFirst" }]
   route.stops.forEach((stop, index) => {
     const next = route.stops[index + 1]
     if (next && endsRoute(stop)) {
@@ -127,8 +129,12 @@ export function routeIssues(route: Route<RouteStop>): RouteIssue[] {
     if (stop.kind === "agl" && (!next || !stopNetwork(next))) {
       issues.push({ code: "aglNotIntoAmazon", index })
     }
+    // Amazon moves the legs to and from AGL, so nobody chooses those.
+    const allowed = next ? legChoices(stop, next) : []
     const leg = route.legs[index]
-    if (next && leg && legChoices(stop, next).length > 0 && !legChoices(stop, next).includes(leg)) {
+    if (allowed.length > 0 && !leg) {
+      issues.push({ code: "legMissing", index })
+    } else if (leg && allowed.length > 0 && !allowed.includes(leg)) {
       issues.push({ code: "legNotAllowed", index })
     }
   })

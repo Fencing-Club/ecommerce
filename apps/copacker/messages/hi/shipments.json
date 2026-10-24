@@ -195,9 +195,11 @@
     "newStop": "नया स्टॉप",
     "endsRoute": "रूट {name} पर खत्म होता है। इससे पहले स्टॉप जोड़ने के लिए इसे हटाएँ।",
     "issues": {
+      "supplierNotFirst": "रूट सप्लायर से शुरू होना चाहिए।",
       "noFinalDestination": "रूट सेव करने के लिए अंतिम गंतव्य जोड़ें।",
       "stopAfterFinalDestination": "अंतिम गंतव्य के बाद कुछ नहीं आ सकता। उसके बाद के स्टॉप हटाएँ।",
       "aglNotIntoAmazon": "AGL केवल Amazon नेटवर्क में पहुँचाता है। इसके बाद Amazon FBA US या AWD US चुनें।",
+      "legMissing": "रूट सेव करने के लिए हर चरण के लिए चुनें कि कौन भेजता है।",
       "legNotAllowed": "केवल भेजने वाला ही Amazon नेटवर्क में भेज सकता है।"
     },
     "ready": "{date} को तैयार",

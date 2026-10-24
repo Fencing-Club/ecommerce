@@ -195,9 +195,11 @@
     "newStop": "新站点",
     "endsRoute": "路线在 {name} 结束。移除它才能在它之前添加站点。",
     "issues": {
+      "supplierNotFirst": "路线必须从供应商开始。",
       "noFinalDestination": "添加最终目的地后才能保存路线。",
       "stopAfterFinalDestination": "最终目的地之后不能再有站点。请移除其后的站点。",
       "aglNotIntoAmazon": "AGL 只送达 Amazon 网络。请在其后选择 Amazon FBA US 或 AWD US。",
+      "legMissing": "请为每一段选择由谁发运，才能保存路线。",
       "legNotAllowed": "只有发货方可以发往 Amazon 网络。"
     },
     "ready": "{date} 备好",

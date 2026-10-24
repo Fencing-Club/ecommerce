@@ -117,4 +117,17 @@ describe("routeIssues", () => {
       { code: "legNotAllowed", index: 0 }
     ])
   })
+
+  it("asks who moves each leg, except Amazon's to and from AGL", () => {
+    expect(routeIssues({ stops: [supplier, forwarder, warehouse], legs: ["senderArranges"] })).toEqual([
+      { code: "legMissing", index: 1 }
+    ])
+    expect(routeIssues({ stops: [supplier, agl, fba], legs: [] })).toEqual([])
+  })
+
+  it("starts at the supplier", () => {
+    expect(routeIssues({ stops: [forwarder, warehouse], legs: ["senderArranges"] })).toEqual([
+      { code: "supplierNotFirst" }
+    ])
+  })
 })

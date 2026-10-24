@@ -10,10 +10,10 @@ route agree. The route editor offers only what they allow, and the Route section
 
 | Rule | Where |
 | --- | --- |
-| The supplier is the first stop | `stopChoices` |
+| The supplier is the first stop | `stopChoices`, `routeIssues` (`supplierNotFirst`) |
 | A receiver ends the route: nothing follows it, and a route has to end at one to save | `endsRoute`, `routeIssues` (`noFinalDestination`, `stopAfterFinalDestination`) |
 | Stops on the way are forwarders or AGL, and a stop never follows the same place | `stopChoices` |
-| Only the sender ships into an Amazon network | `legChoices`, `routeIssues` (`legNotAllowed`) |
+| Someone moves each leg, and only the sender ships into an Amazon network | `legChoices`, `routeIssues` (`legMissing`, `legNotAllowed`) |
 | Amazon moves the goods to and from AGL, and AGL delivers only into an Amazon network | `legChoices`, `stopChoices`, `routeIssues` (`aglNotIntoAmazon`) |
 
 - `stopChoices(route, index, places)` filters the places that can stand at a position: the supplier first, a forwarder

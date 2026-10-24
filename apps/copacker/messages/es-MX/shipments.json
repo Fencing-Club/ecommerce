@@ -195,9 +195,11 @@
     "newStop": "Nueva parada",
     "endsRoute": "La ruta termina en {name}. Quítalo para agregar una parada antes.",
     "issues": {
+      "supplierNotFirst": "La ruta debe empezar en el proveedor.",
       "noFinalDestination": "Agrega el destino final para guardar la ruta.",
       "stopAfterFinalDestination": "Nada puede seguir al destino final. Quita las paradas posteriores.",
       "aglNotIntoAmazon": "AGL solo entrega en una red de Amazon. Elige Amazon FBA US o AWD US después.",
+      "legMissing": "Elige quién envía cada tramo para guardar la ruta.",
       "legNotAllowed": "Solo el remitente puede enviar a una red de Amazon."
     },
     "ready": "Listo el {date}",
