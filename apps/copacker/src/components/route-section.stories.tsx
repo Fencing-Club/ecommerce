@@ -13,15 +13,20 @@ const meta = preview.meta({
   argTypes: { route: { control: false }, choices: { control: false } }
 })
 
-// Closed, as the shipment page starts it: the route's stops on one line. Opening it shows the timeline instead.
+// Closed, as the shipment page starts it: the route's stops on one line beside the title. Opening it shows the timeline
+// instead.
 export const Collapsed = meta.story({
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     const preview = canvas.getByRole("list", { name: "Route" })
     await expect([...preview.querySelectorAll("li")].map((stop) => stop.textContent)).toEqual([
       "Northwind Textiles / Main factory",
       "Bayline Freight",
       "Amazon AWD US"
     ])
+    // The arrows between the stops show only while they share a line, rather than going one per line.
+    for (const arrow of canvasElement.querySelectorAll("svg.lucide-arrow-right")) {
+      await expect(arrow).toBeVisible()
+    }
     await expect(canvas.queryByText("Ship from")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Route" }))
     await waitFor(() => expect(canvas.getByText("Ship from")).toBeVisible())
