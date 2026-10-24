@@ -180,6 +180,53 @@
     "save": "परिवहन सहेजें",
     "unconfirmed": "परिवहन की पुष्टि नहीं हुई"
   },
+  "route": {
+    "title": "रूट",
+    "editRoute": "रूट बदलें",
+    "cancel": "रद्द करें",
+    "save": "रूट सेव करें",
+    "shipFrom": "यहाँ से भेजें",
+    "shipTo": "यहाँ भेजें",
+    "finalDestination": "अंतिम गंतव्य",
+    "remove": "हटाएँ",
+    "removeStop": "{name} हटाएँ",
+    "addStop": "स्टॉप जोड़ें",
+    "chooseStop": "स्टॉप चुनें",
+    "endsRoute": "रूट {name} पर खत्म होता है। इससे पहले स्टॉप जोड़ने के लिए इसे हटाएँ।",
+    "needsDestination": "रूट सेव करने के लिए अंतिम गंतव्य जोड़ें।",
+    "ready": "{date} को तैयार",
+    "legs": {
+      "label": "शिपिंग, {from} से {to}",
+      "senderArranges": "{company} शिपिंग की व्यवस्था करता है",
+      "receiverArranges": "{company} शिपिंग की व्यवस्था करता है",
+      "senderMoves": "{company} पहुँचाता है",
+      "receiverMoves": "{company} उठाता है",
+      "booksCarrier": "कैरियर बुक करता है",
+      "ownVehicle": "अपने वाहन से",
+      "arrangesNote": "{company} कैरियर बुक करता है और ट्रैकिंग कोड और लागत जोड़ता है।",
+      "movesNote": "अपने वाहन से।",
+      "amazon": "Amazon शिपिंग की व्यवस्था करता है",
+      "aglCollects": "AGL {company} से कार्टन उठाता है। {buyer} इसे Seller Central में बुक करता है और शिपमेंट को लिंक करता है।",
+      "aglShips": "AGL कार्टन आगे {name} को भेजता है।"
+    },
+    "networks": {
+      "fba": {
+        "name": "Amazon FBA US",
+        "about": "Amazon आपका स्टॉक रखता है, फिर हर ऑर्डर को चुनता, पैक करता और भेजता है, और रिटर्न संभालता है। Prime शिपिंग देने के लिए इसका उपयोग करें।"
+      },
+      "awd_us": {
+        "name": "Amazon AWD US",
+        "about": "Amazon का बल्क स्टोरेज, जो स्टॉक बिकने पर FBA को अपने आप भरता है। FBA के पीक सीज़न की तुलना में स्टोरेज शुल्क पर 80% तक बचाने के लिए इसका उपयोग करें।"
+      }
+    },
+    "about": "{name} के बारे में",
+    "requirements": "{name} की ज़रूरतें",
+    "cartons": "कार्टन",
+    "pallets": "पैलेट",
+    "documentation": "दस्तावेज़",
+    "website": "वेबसाइट",
+    "opensInNewTab": "नए टैब में खुलता है"
+  },
   "documentPreview": {
     "settings": "डाउनलोड सेटिंग",
     "language": "भाषा",

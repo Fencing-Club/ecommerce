@@ -398,14 +398,8 @@ export function PackingDetailsFields({
   transport?: React.ReactNode
 }) {
   const t = useTranslations("orders.packing")
-  const palletText = useTranslations("orders.pallets")
   const form = useFormContext<PackingValues>()
-  // The date picker offers nothing before today where the supplier is, the same day finishing packing checks against.
-  // The clock ticks each minute, so a page left open past midnight moves on to the next day here too.
-  const today = zonedDay(useNow({ updateInterval: 60000 }), useTimeZone() ?? "UTC")
   const origin = useWatch({ control: form.control, name: "origin" }) ?? emptyAddress
-  const palletized = useWatch({ control: form.control, name: "palletized" }) ?? false
-  const palletizedId = useId()
   const [adding, setAdding] = useState(false)
   const [editingOrigin, setEditingOrigin] = useState(false)
   const { errors } = useFormState({ control: form.control })
@@ -475,41 +469,55 @@ export function PackingDetailsFields({
           />
         </>
       }
-      packing={
-        <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
-          <div className="w-full max-w-72">
-            <FormInput name="readyDate" required label={t("readyDate")} type="date" min={today} />
-          </div>
-          <div className="flex min-h-9 items-center gap-2.5">
-            <Checkbox
-              id={palletizedId}
-              checked={palletized}
-              onCheckedChange={(checked) =>
-                form.setValue("palletized", checked, { shouldDirty: true, shouldValidate: true })
-              }
-            />
-            <Label htmlFor={palletizedId} className="font-normal">
-              {palletText("packedOnPallets")}
-            </Label>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    className="text-muted-foreground"
-                    aria-label={palletText("packedOnPalletsHelp")}
-                  />
-                }
-              >
-                <Info />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-64">{palletText("packedOnPalletsHint")}</TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-      }
+      packing={<ReadyDateAndPallets />}
     />
+  )
+}
+
+// The packing's ready date, then whether the cartons ship on pallets, which adds the Pallets section. They go under
+// Ship from.
+export function ReadyDateAndPallets() {
+  const t = useTranslations("orders.packing")
+  const palletText = useTranslations("orders.pallets")
+  const form = useFormContext<PackingValues>()
+  // The date picker offers nothing before today where the supplier is, the same day finishing packing checks against.
+  // The clock ticks each minute, so a page left open past midnight moves on to the next day here too.
+  const today = zonedDay(useNow({ updateInterval: 60000 }), useTimeZone() ?? "UTC")
+  const palletized = useWatch({ control: form.control, name: "palletized" }) ?? false
+  const palletizedId = useId()
+  return (
+    <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+      <div className="w-full max-w-72">
+        <FormInput name="readyDate" required label={t("readyDate")} type="date" min={today} />
+      </div>
+      <div className="flex min-h-9 items-center gap-2.5">
+        <Checkbox
+          id={palletizedId}
+          checked={palletized}
+          onCheckedChange={(checked) =>
+            form.setValue("palletized", checked, { shouldDirty: true, shouldValidate: true })
+          }
+        />
+        <Label htmlFor={palletizedId} className="font-normal">
+          {palletText("packedOnPallets")}
+        </Label>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="text-muted-foreground"
+                aria-label={palletText("packedOnPalletsHelp")}
+              />
+            }
+          >
+            <Info />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-64">{palletText("packedOnPalletsHint")}</TooltipContent>
+        </Tooltip>
+      </div>
+    </div>
   )
 }

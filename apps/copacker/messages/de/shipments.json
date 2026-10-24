@@ -180,6 +180,53 @@
     "save": "Transport speichern",
     "unconfirmed": "Transport nicht bestätigt"
   },
+  "route": {
+    "title": "Route",
+    "editRoute": "Route bearbeiten",
+    "cancel": "Abbrechen",
+    "save": "Route speichern",
+    "shipFrom": "Versand ab",
+    "shipTo": "Versand an",
+    "finalDestination": "Endziel",
+    "remove": "Entfernen",
+    "removeStop": "{name} entfernen",
+    "addStop": "Stopp hinzufügen",
+    "chooseStop": "Stopp auswählen",
+    "endsRoute": "Die Route endet bei {name}. Entferne es, um davor einen Stopp hinzuzufügen.",
+    "needsDestination": "Füge das Endziel hinzu, um die Route zu speichern.",
+    "ready": "Bereit am {date}",
+    "legs": {
+      "label": "Versand, {from} nach {to}",
+      "senderArranges": "{company} organisiert den Versand",
+      "receiverArranges": "{company} organisiert den Versand",
+      "senderMoves": "{company} liefert",
+      "receiverMoves": "{company} holt ab",
+      "booksCarrier": "Bucht den Spediteur",
+      "ownVehicle": "Mit eigenem Fahrzeug",
+      "arrangesNote": "{company} bucht den Spediteur und trägt Sendungsnummer und Kosten ein.",
+      "movesNote": "Mit eigenem Fahrzeug.",
+      "amazon": "Amazon organisiert den Versand",
+      "aglCollects": "AGL holt die Kartons bei {company} ab. {buyer} bucht ihn in Seller Central und verknüpft die Sendung.",
+      "aglShips": "AGL versendet die Kartons weiter an {name}."
+    },
+    "networks": {
+      "fba": {
+        "name": "Amazon FBA US",
+        "about": "Amazon lagert deinen Bestand, kommissioniert, verpackt und versendet jede Bestellung und bearbeitet Rücksendungen. Damit kannst du Prime-Versand anbieten."
+      },
+      "awd_us": {
+        "name": "Amazon AWD US",
+        "about": "Amazons Großlager, das FBA automatisch auffüllt, wenn Bestand verkauft wird. Damit sparst du bis zu 80 % der Lagergebühren gegenüber der FBA-Hochsaison."
+      }
+    },
+    "about": "Über {name}",
+    "requirements": "Anforderungen von {name}",
+    "cartons": "Kartons",
+    "pallets": "Paletten",
+    "documentation": "Dokumentation",
+    "website": "Website",
+    "opensInNewTab": "öffnet in einem neuen Tab"
+  },
   "documentPreview": {
     "settings": "Downloadeinstellungen",
     "language": "Sprache",

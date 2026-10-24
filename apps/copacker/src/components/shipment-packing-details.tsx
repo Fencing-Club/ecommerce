@@ -1,13 +1,14 @@
 import { FieldTitle } from "@buildkitgg/shadcn-baseui-kit"
 import type { Address } from "@repo/copacker-orders"
 import { addressLine } from "@repo/copacker-orders"
-import { ArrowRight, Building2, CornerDownRight, MapPin, Truck, Warehouse } from "lucide-react"
-import { Fragment, type ReactNode } from "react"
+import { MapPin, Truck } from "lucide-react"
+import type { ReactNode } from "react"
 import { objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"
 import { emptyAddress } from "./address-fields"
 import { PhoneLink } from "./common"
 import type { PartnerAddress } from "./partner-address"
+import { RoutePreview } from "./route-preview"
 
 /** The same card surrounds editable packing fields and the submitted shipment details. */
 export function ShipmentPackingDetails({
@@ -25,39 +26,7 @@ export function ShipmentPackingDetails({
 }) {
   return (
     <section className="@container/packing-details overflow-hidden rounded-lg border bg-card text-sm">
-      {/* A narrow card lists the stops one per line, each after the first led in by a corner arrow from the one above. */}
-      {route && (
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 border-b bg-muted/40 px-4 py-3 text-meta leading-[17px] font-medium @max-md/packing-details:flex-col @max-md/packing-details:items-start @max-md/packing-details:gap-2.5">
-          {route.map((stop, index) => {
-            let Icon = Warehouse
-            if (index === 0) {
-              Icon = Building2
-            } else if (index === route.length - 1) {
-              Icon = MapPin
-            }
-            return (
-              <Fragment key={`${index}-${stop}`}>
-                {index > 0 && (
-                  <ArrowRight
-                    aria-hidden
-                    className="size-3.5 shrink-0 text-muted-foreground rtl:rotate-180 @max-md/packing-details:hidden"
-                  />
-                )}
-                <span className="inline-flex items-center gap-1.5">
-                  {index > 0 && (
-                    <CornerDownRight
-                      aria-hidden
-                      className="hidden size-3.5 shrink-0 text-muted-foreground rtl:-scale-x-100 @max-md/packing-details:block"
-                    />
-                  )}
-                  <Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-                  {stop}
-                </span>
-              </Fragment>
-            )
-          })}
-        </div>
-      )}
+      {route && <RoutePreview stops={route} className="border-b bg-muted/40 px-4 py-3" />}
       <div className="space-y-4 p-4">
         <div className={shipTo ? "grid items-start gap-6 @lg/packing-details:grid-cols-2" : "min-w-0"}>
           <div className="min-w-0 space-y-3">{shipFrom}</div>

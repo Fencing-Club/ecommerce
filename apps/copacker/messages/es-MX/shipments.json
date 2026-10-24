@@ -180,6 +180,53 @@
     "save": "Guardar transporte",
     "unconfirmed": "Transporte sin confirmar"
   },
+  "route": {
+    "title": "Ruta",
+    "editRoute": "Editar ruta",
+    "cancel": "Cancelar",
+    "save": "Guardar ruta",
+    "shipFrom": "Enviar desde",
+    "shipTo": "Enviar a",
+    "finalDestination": "Destino final",
+    "remove": "Quitar",
+    "removeStop": "Quitar {name}",
+    "addStop": "Agregar parada",
+    "chooseStop": "Elige una parada",
+    "endsRoute": "La ruta termina en {name}. Quítalo para agregar una parada antes.",
+    "needsDestination": "Agrega el destino final para guardar la ruta.",
+    "ready": "Listo el {date}",
+    "legs": {
+      "label": "Envío, de {from} a {to}",
+      "senderArranges": "{company} organiza el envío",
+      "receiverArranges": "{company} organiza el envío",
+      "senderMoves": "{company} entrega",
+      "receiverMoves": "{company} recoge",
+      "booksCarrier": "Contrata al transportista",
+      "ownVehicle": "En su propio vehículo",
+      "arrangesNote": "{company} contrata al transportista y agrega el número de rastreo y el costo.",
+      "movesNote": "En su propio vehículo.",
+      "amazon": "Amazon organiza el envío",
+      "aglCollects": "AGL recoge las cajas de {company}. {buyer} lo reserva en Seller Central y vincula el envío.",
+      "aglShips": "AGL envía las cajas a {name}."
+    },
+    "networks": {
+      "fba": {
+        "name": "Amazon FBA US",
+        "about": "Amazon almacena tu inventario, luego prepara, empaca y envía cada pedido y gestiona las devoluciones. Úsalo para ofrecer envíos Prime."
+      },
+      "awd_us": {
+        "name": "Amazon AWD US",
+        "about": "El almacenamiento a granel de Amazon, que reabastece FBA automáticamente a medida que se vende el inventario. Úsalo para ahorrar hasta un 80 % en tarifas de almacenamiento frente a la temporada alta de FBA."
+      }
+    },
+    "about": "Acerca de {name}",
+    "requirements": "Requisitos de {name}",
+    "cartons": "Cajas",
+    "pallets": "Tarimas",
+    "documentation": "Documentación",
+    "website": "Sitio web",
+    "opensInNewTab": "se abre en una pestaña nueva"
+  },
   "documentPreview": {
     "settings": "Configuración de descarga",
     "language": "Idioma",

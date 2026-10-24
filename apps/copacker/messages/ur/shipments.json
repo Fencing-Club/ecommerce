@@ -180,6 +180,53 @@
     "save": "نقل و حمل محفوظ کریں",
     "unconfirmed": "نقل و حمل کی تصدیق نہیں ہوئی"
   },
+  "route": {
+    "title": "روٹ",
+    "editRoute": "روٹ میں ترمیم کریں",
+    "cancel": "منسوخ کریں",
+    "save": "روٹ محفوظ کریں",
+    "shipFrom": "یہاں سے بھیجیں",
+    "shipTo": "یہاں بھیجیں",
+    "finalDestination": "آخری منزل",
+    "remove": "ہٹائیں",
+    "removeStop": "{name} ہٹائیں",
+    "addStop": "اسٹاپ شامل کریں",
+    "chooseStop": "اسٹاپ منتخب کریں",
+    "endsRoute": "روٹ {name} پر ختم ہوتا ہے۔ اس سے پہلے اسٹاپ شامل کرنے کے لیے اسے ہٹائیں۔",
+    "needsDestination": "روٹ محفوظ کرنے کے لیے آخری منزل شامل کریں۔",
+    "ready": "{date} کو تیار",
+    "legs": {
+      "label": "ترسیل، {from} سے {to}",
+      "senderArranges": "{company} ترسیل کا انتظام کرتا ہے",
+      "receiverArranges": "{company} ترسیل کا انتظام کرتا ہے",
+      "senderMoves": "{company} پہنچاتا ہے",
+      "receiverMoves": "{company} اٹھاتا ہے",
+      "booksCarrier": "کیریئر بک کرتا ہے",
+      "ownVehicle": "اپنی گاڑی میں",
+      "arrangesNote": "{company} کیریئر بک کرتا ہے اور ٹریکنگ کوڈ اور لاگت شامل کرتا ہے۔",
+      "movesNote": "اپنی گاڑی میں۔",
+      "amazon": "Amazon ترسیل کا انتظام کرتا ہے",
+      "aglCollects": "AGL کارٹن {company} سے اٹھاتا ہے۔ {buyer} اسے Seller Central میں بک کرتا ہے اور شپمنٹ کو لنک کرتا ہے۔",
+      "aglShips": "AGL کارٹن آگے {name} کو بھیجتا ہے۔"
+    },
+    "networks": {
+      "fba": {
+        "name": "Amazon FBA US",
+        "about": "Amazon آپ کا اسٹاک رکھتا ہے، پھر ہر آرڈر چنتا، پیک کرتا اور بھیجتا ہے، اور واپسیاں سنبھالتا ہے۔ Prime ترسیل پیش کرنے کے لیے اسے استعمال کریں۔"
+      },
+      "awd_us": {
+        "name": "Amazon AWD US",
+        "about": "Amazon کا بلک اسٹوریج، جو اسٹاک بکنے پر FBA کو خود بخود بھرتا ہے۔ FBA کے مصروف سیزن کے مقابلے میں اسٹوریج فیس پر 80% تک بچت کے لیے اسے استعمال کریں۔"
+      }
+    },
+    "about": "{name} کے بارے میں",
+    "requirements": "{name} کی شرائط",
+    "cartons": "کارٹن",
+    "pallets": "پیلیٹ",
+    "documentation": "دستاویزات",
+    "website": "ویب سائٹ",
+    "opensInNewTab": "نئے ٹیب میں کھلتا ہے"
+  },
   "documentPreview": {
     "settings": "ڈاؤن لوڈ کی ترتیبات",
     "language": "زبان",
