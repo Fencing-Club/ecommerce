@@ -24,9 +24,10 @@ const object = z.object({
 })
 const cli = fileURLToPath(new URL("./bin/cf", import.meta.resolve("cf/package.json")))
 
+// Each string value, raw and as it appears in the JSON body cf sent.
 function strings(value: unknown): string[] {
   if (typeof value === "string") {
-    return [value]
+    return [value, JSON.stringify(value).slice(1, -1)]
   }
   return value && typeof value === "object" ? Object.values(value).flatMap(strings) : []
 }

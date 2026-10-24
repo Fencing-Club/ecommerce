@@ -147,7 +147,8 @@ describe("Cloudflare preview teardown", () => {
 
   it.each([
     "postgresql://neondb_owner:s3cret-pass@ep-preview.aws.neon.tech/neondb?sslmode=verify-full",
-    "postgresql://neondb_owner@ep-preview.aws.neon.tech/neondb?sslmode=verify-full"
+    "postgresql://neondb_owner@ep-preview.aws.neon.tech/neondb?sslmode=verify-full",
+    "postgresql://neondb_owner:s3cret-pass%22%5C@ep-preview.aws.neon.tech/neondb?sslmode=verify-full"
   ])("reports Cloudflare's error code without any value it was sent, such as the password in %s", (url) => {
     fail = "hyperdrive create"
     hyperdrives = []
