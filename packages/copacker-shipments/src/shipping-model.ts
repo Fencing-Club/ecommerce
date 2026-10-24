@@ -145,7 +145,7 @@ export function documentIssues(data: ShippingDocumentData, kind: DocumentKind = 
   }
   for (const party of [
     data.origin,
-    ...(data.amazonPending ? [] : [data.destination]),
+    ...(data.amazonPending && (data.network === "fba" || data.network === "awd") ? [] : [data.destination]),
     ...(data.stops ?? []),
     ...(data.transport.dropoffAddress ? [data.transport.dropoffAddress] : [])
   ]) {
