@@ -85,8 +85,9 @@ It never books transport, calls a provider, uploads or sends anything.
 - `export:shipment-packet --shipment <id> <output-directory>` reads a packed shipment from the database in `.env`.
 - `export:shipment-packet --shipment <id> --json` prints that shipment's JSON instead, to edit and render.
 
-The JSON holds the accepted PO with each line's packing requirements, the packing, transport, destination, the company
-and supplier names, revision, shipment name and language/paper settings. Its optional fields:
+The JSON holds the accepted PO with each line's packing requirements, the packing, transport (from the database, worked
+out from the shipment's route), destination, the company and supplier names, revision, shipment name and
+language/paper settings. Its optional fields:
 
 - `amazonPending`: an Amazon shipment before Amazon has it, so the packet has no carton labels or warehouse address.
 - `onward`: for a PO through a forwarder, where the forwarder takes the cartons next. The destination is the

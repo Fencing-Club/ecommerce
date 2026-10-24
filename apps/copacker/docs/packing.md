@@ -42,7 +42,8 @@ The page builds the route section from the saved route and the places its stops 
 and once after release while nobody has chosen who moves the last leg (`canEditRoute`). The editor's menus offer the
 purchase order's forwarder, AGL on the way into Amazon, and the final destination; a leg nobody has chosen asks who
 ships it. Save route sends `shipment.route` with the route it started from, and keeps the menus open with the server's
-reason when it fails. The section opens by itself while the buyer still has a leg to choose.
+reason when it fails. The section opens by itself while a shipment to Amazon waits for the buyer to choose who moves a
+leg.
 
 The carton rules live in `lib/carton-groups.ts`: `maxCartons` (1,000, the most a packing holds), `checkCartons` (the
 packing rules the complete cartons break, which the form and the carton import share) and `cartonMeasures` (the

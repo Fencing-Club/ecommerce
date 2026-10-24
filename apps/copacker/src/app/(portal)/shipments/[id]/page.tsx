@@ -111,7 +111,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
       ]
     })
   }
-  const carrierLabels = shipmentLabelRequirements(orderDestination(snapshot), shipment.transport).carrierLabels
+  const { carrierLabels, needsTransport } = shipmentLabelRequirements(orderDestination(snapshot), shipment.transport)
   // What still holds the labels back from the supplier, besides what the page asks for elsewhere.
   const heldBack = step.issues.filter(
     (issue) => !["missing_shipping_label", "missing_tracking_number"].includes(issue.code)
@@ -411,8 +411,8 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           route={route}
           buyer={buyer}
           readyDate={packing?.readyDate}
-          // Open while the buyer still has to choose who moves a leg.
-          defaultOpen={editsRoute && !shipment.transport}
+          // Open while the labels wait for the buyer to choose who moves a leg.
+          defaultOpen={editsRoute && needsTransport}
           {...routeEditing}
         />
       }

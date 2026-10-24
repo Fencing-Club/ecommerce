@@ -907,6 +907,19 @@ export const RouteToChoose = meta.story({
   }
 })
 
+// A shipment to the buyer's own warehouse doesn't wait on who moves its last leg, so its route starts closed even before
+// the buyer chooses, and opens to Edit route.
+export const WarehouseRouteToChoose = meta.story({
+  ...buyer,
+  args: { route: null },
+  play: async ({ canvas }) => {
+    const route = canvas.getByRole("region", { name: "Route" })
+    await expect(within(route).queryByText("Ship from")).toBeNull()
+    await userEvent.click(within(route).getByRole("button", { name: "Route" }))
+    await expect(await within(route).findByRole("button", { name: "Edit route" })).toBeVisible()
+  }
+})
+
 // 09.05: an FBA parcel shipment booked with the buyer's own carrier. Upload labels is the page's one action, and the
 // dialog opens with the labels saved so far; the page shows no other label status.
 export const WaitingForCarrierLabels = meta.story({
