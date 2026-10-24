@@ -235,7 +235,7 @@ describe("accepted shipment document snapshot", () => {
       forwarderId: "00000000-0000-4000-8000-000000000004",
       addressId: "00000000-0000-4000-8000-000000000005"
     }
-    expect(() => shippingDocumentSnapshot({ ...input, order: { ...order, via } })).toThrow(/forwarder legs separately/)
+    expect(() => shippingDocumentSnapshot({ ...input, order: { ...order, via } })).toThrow(/onward destination/)
     const second = { ...product, id: "00000000-0000-4000-8000-000000000006", receiver: "fba" as const }
     const mixed = {
       ...input,
@@ -249,6 +249,72 @@ describe("accepted shipment document snapshot", () => {
       }
     }
     expect(() => shippingDocumentSnapshot(mixed)).toThrow(/one Amazon network at a time/)
+  })
+})
+
+describe("supplier packet before it can be released", () => {
+  const via = {
+    forwarderId: "00000000-0000-4000-8000-000000000004",
+    addressId: "00000000-0000-4000-8000-000000000005"
+  }
+  const forwarder = { name: "Example forwarder", address: ["1 Port Road", "Yiwu, Zhejiang 322000", "CN"] }
+  const warehouse = { name: "Example warehouse", address: ["17 Example Way", "Seattle, WA 98101", "US"] }
+
+  it("exports an Amazon shipment before Amazon has it, without its labels or warehouse address", () => {
+    const data = shippingDocumentSnapshot({
+      ...input,
+      labels: [],
+      destination: { name: "Amazon AWD US", address: [] },
+      amazonPending: true
+    })
+    expect(data).toMatchObject({ network: "awd", amazonPending: true, destination: { address: [] } })
+    expect(data.cartons.map((carton) => carton.amazonLabel)).toEqual([undefined, undefined])
+    // The checklist still asks for the labels, which follow.
+    expect(shipmentDocumentChecks(data).cartons.map((check) => check.title)).toContain("amazonLabel")
+    expect(() => shippingDocumentSnapshot({ ...input, labels: [] })).toThrow(/every carton exactly once/)
+  })
+
+  it("only waits on Amazon for an Amazon shipment that has no labels yet", () => {
+    expect(() => shippingDocumentSnapshot({ ...input, amazonPending: true })).toThrow(/without its labels/)
+    const own = { ...order, deliveryId: "00000000-0000-4000-8000-000000000003" }
+    expect(() =>
+      shippingDocumentSnapshot({
+        ...input,
+        order: { ...own, items: [{ ...product, receiver: "warehouse" }] },
+        labels: [],
+        amazonPending: true
+      })
+    ).toThrow(/without its labels/)
+  })
+
+  it("exports the supplier's leg of a PO through a forwarder, to the forwarder and then onward", () => {
+    const data = shippingDocumentSnapshot({
+      ...input,
+      order: {
+        ...order,
+        via,
+        deliveryId: "00000000-0000-4000-8000-000000000003",
+        items: [{ ...product, receiver: "warehouse" }]
+      },
+      labels: [],
+      transport: { ...input.transport, service: "freight" },
+      destination: forwarder,
+      onward: { destination: warehouse, service: "forwarder" }
+    })
+    expect(data).toMatchObject({
+      network: "forwarder",
+      destination: forwarder,
+      onward: { destination: warehouse, service: "forwarder" }
+    })
+    const checks = shipmentDocumentChecks(data)
+    expect(checks.cartons.map((check) => check.title)).toEqual(["record", "cartonSealing", "identify"])
+    expect(checks.handoff.map((check) => check.title)).toContain("handoff")
+  })
+
+  it("takes an onward leg only for a PO through a forwarder", () => {
+    expect(() =>
+      shippingDocumentSnapshot({ ...input, onward: { destination: warehouse, service: "forwarder" } })
+    ).toThrow(/Only a PO through a forwarder/)
   })
 })
 

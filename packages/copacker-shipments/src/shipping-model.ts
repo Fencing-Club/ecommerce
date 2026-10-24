@@ -50,6 +50,9 @@ export type ShippingDocumentData = {
   stops?: DocumentParty[]
   onward?: { destination: DocumentParty; service: ShippingDocumentData["transport"]["service"] }
   network: "fba" | "awd" | "warehouse" | "forwarder"
+  // A packet sent before Amazon has the shipment, so the supplier can pack and return the cartons' real dimensions and
+  // weights: Amazon's carton labels and its warehouse's address follow.
+  amazonPending?: boolean
   transport: {
     service: "parcel" | "agl" | "freight" | "supplier" | "forwarder"
     collection: "pickup" | "dropoff" | "delivery"
@@ -142,7 +145,7 @@ export function documentIssues(data: ShippingDocumentData, kind: DocumentKind = 
   }
   for (const party of [
     data.origin,
-    data.destination,
+    ...(data.amazonPending && (data.network === "fba" || data.network === "awd") ? [] : [data.destination]),
     ...(data.stops ?? []),
     ...(data.transport.dropoffAddress ? [data.transport.dropoffAddress] : [])
   ]) {
@@ -198,7 +201,7 @@ export function documentIssues(data: ShippingDocumentData, kind: DocumentKind = 
     if (carton.carrierLabel) {
       carrier.add(carton.carrierLabel)
     }
-    if ((data.network === "fba" || data.network === "awd") && !carton.amazonLabel?.trim()) {
+    if ((data.network === "fba" || data.network === "awd") && !data.amazonPending && !carton.amazonLabel?.trim()) {
       issues.push({ code: "missingAmazon", carton: carton.id })
     }
     if (data.transport.carrierLabels && !carton.carrierLabel?.trim()) {

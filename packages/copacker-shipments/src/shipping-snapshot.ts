@@ -18,6 +18,9 @@ type Item = OrderInput["items"][number]
 
 // An adapter from an accepted PO and its physical cartons. Addresses and label assignments must be supplied
 // by their owning integrations; templates never infer them from a company name or carton sequence.
+// A PO through a forwarder exports the supplier's leg: the destination is the forwarder's address, and `onward` is where
+// the forwarder takes the cartons next. `amazonPending` exports an Amazon shipment before Amazon has it, without its
+// labels or warehouse address, so the supplier can pack first.
 export function shippingDocumentSnapshot(input: {
   order: OrderInput
   packing: Packing
@@ -30,14 +33,20 @@ export function shippingDocumentSnapshot(input: {
   revision: number
   shipmentId: string
   generatedDate: string
+  onward?: ShippingDocumentData["onward"]
+  amazonPending?: boolean
 }): ShippingDocumentData {
-  const { order, packing, transport, labels } = input
+  const { order, packing, transport, labels, onward, amazonPending = false } = input
   const validation = validatePacking(order, packing)
   if (!validation.valid) {
     throw new Error(`Invalid packing: ${validation.issues.map((issue) => issue.code).join(", ")}`)
   }
-  if (order.via) {
-    throw new Error("Prepare the supplier and forwarder legs separately before exporting")
+  if (Boolean(order.via) !== Boolean(onward)) {
+    throw new Error(
+      order.via
+        ? "Export the supplier's leg to the forwarder with its onward destination"
+        : "Only a PO through a forwarder has an onward leg"
+    )
   }
   // The supplier hands its cartons to the carrier itself, by parcel, AGL or freight. A forwarder's handoff is the
   // forwarder's own leg, with its own packet.
@@ -49,9 +58,15 @@ export function shippingDocumentSnapshot(input: {
   if (orderDestination(order) === "amazon" && networks.size !== 1) {
     throw new Error("Export one Amazon network at a time")
   }
+  const network = onward ? "forwarder" : packedNetwork(order, items)
+  const amazon = network === "fba" || network === "awd"
+  if (amazonPending && (!amazon || labels.length)) {
+    throw new Error("Only an Amazon shipment without its labels can wait on Amazon")
+  }
   const requirements = shipmentLabelRequirements(orderDestination(order), transport)
   for (const [name, assignments, required] of [
-    ["Amazon", labels, requirements.amazonCartonLabels],
+    // The forwarder's own leg labels the cartons for Amazon.
+    ["Amazon", labels, amazon && !amazonPending && requirements.amazonCartonLabels],
     ["Carrier", input.carrierLabels ?? [], requirements.carrierLabels]
   ] as const) {
     if (
@@ -63,7 +78,6 @@ export function shippingDocumentSnapshot(input: {
       throw new Error(`${name} labels must match every carton exactly once`)
     }
   }
-  const network = packedNetwork(order, items)
   // Amazon's API issues pallet labels for FBA only. AWD's come from Seller Central, for the buyer to upload once
   // copacker takes them; until then the checklist asks for them and the packet has none.
   const placed = network === "fba" ? palletLabels(packing.pallets ?? [], labels) : []
@@ -76,7 +90,9 @@ export function shippingDocumentSnapshot(input: {
     recipient: { name: input.supplier, address: [] },
     origin: originParty(input.supplier, packing.origin),
     destination: input.destination,
+    ...(onward && { onward }),
     network,
+    ...(amazonPending && { amazonPending }),
     transport: {
       service: transport.service,
       collection: transport.collection,
