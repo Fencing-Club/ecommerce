@@ -1,7 +1,12 @@
 import type { execFileSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { hostedPreviewNumbers, previewInventory, removeHostedPreview } from "../scripts/preview-cloudflare"
+import {
+  hostedPreviewNumbers,
+  previewInventory,
+  provisionHostedPreview,
+  removeHostedPreview
+} from "../scripts/preview-cloudflare"
 
 const child = vi.hoisted(() => ({ execFileSync: vi.fn<typeof execFileSync>() }))
 vi.mock("node:child_process", async (original) => ({
@@ -46,7 +51,10 @@ beforeEach(() => {
     const flag = (name: string) => args[args.indexOf(name) + 1]!
     const operation = args.slice(0, args[0] === "r2" ? 3 : 2).join(" ")
     if (operation === fail) {
-      throw new Error("private provider details")
+      const body = args.includes("--body") ? readFileSync(flag("--body").slice(1), "utf8") : ""
+      throw Object.assign(new Error("private provider details"), {
+        stderr: `┌ APIError\n│ [2013] Invalid database credentials ${body}\n│ 400 Bad Request\n└`
+      })
     }
     switch (operation) {
       case "workers list":
@@ -135,6 +143,23 @@ describe("Cloudflare preview teardown", () => {
     fail = undefined
     removeHostedPreview(config, "42")
     expect(hyperdrives).toEqual([{ id: "production", name: "copacker" }])
+  })
+
+  it("reports Cloudflare's error code without any value it was sent, such as the database password", () => {
+    fail = "hyperdrive create"
+    hyperdrives = []
+    const database = new URL(
+      "postgresql://neondb_owner:s3cret-pass@ep-preview.aws.neon.tech/neondb?sslmode=verify-full"
+    )
+    const failure = (() => {
+      try {
+        provisionHostedPreview(config, "42", database)
+      } catch (error) {
+        return String(error)
+      }
+    })()
+    expect(failure).toContain("Cloudflare hyperdrive create failed ([2013] Invalid database credentials")
+    expect(failure).not.toMatch(/s3cret-pass|neondb_owner|ep-preview|400 Bad Request/)
   })
 
   it.each(["0", "../", "42/", "production"])(

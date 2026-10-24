@@ -24,6 +24,23 @@ const object = z.object({
 })
 const cli = fileURLToPath(new URL("./bin/cf", import.meta.resolve("cf/package.json")))
 
+function strings(value: unknown): string[] {
+  if (typeof value === "string") {
+    return [value]
+  }
+  return value && typeof value === "object" ? Object.values(value).flatMap(strings) : []
+}
+
+// cf prints API errors as "[code] message" lines. Report only those, with every request value redacted.
+function apiErrors(error: unknown, body: unknown) {
+  const stderr = error && typeof error === "object" && "stderr" in error ? String(error.stderr) : ""
+  const values = strings(body).sort((a, b) => b.length - a.length)
+  const lines = [...new Set(stderr.match(/\[\d+\][^\r\n]*/g))].map((line) =>
+    values.reduce((text, value) => text.replaceAll(value, "[redacted]"), line.trim()).slice(0, 300)
+  )
+  return lines.length ? ` (${lines.join("; ")})` : ""
+}
+
 // Keep cf's output private: Hyperdrive responses and CLI errors can contain database credentials.
 export function cloudflare(
   config: Pick<HostingSettings, "accountId">,
@@ -46,8 +63,10 @@ export function cloudflare(
       maxBuffer: 64 * 1024 * 1024,
       ...(options.binary ? {} : { encoding: "utf8" })
     })
-  } catch {
-    throw new Error(`Cloudflare ${args.slice(0, 2).join(" ")} failed; retry the preview workflow`)
+  } catch (error) {
+    throw new Error(
+      `Cloudflare ${args.slice(0, 2).join(" ")} failed${apiErrors(error, options.body)}; retry the preview workflow`
+    )
   } finally {
     if (directory) {
       rmSync(path.join(directory, "body.json"), { force: true })
