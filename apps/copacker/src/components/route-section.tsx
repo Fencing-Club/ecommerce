@@ -1,4 +1,5 @@
 import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, FieldError } from "@buildkitgg/shadcn-baseui-kit"
+import { useUncontrolled } from "@mantine/hooks"
 import { type Route, routeIssues } from "@repo/copacker-packing-rules"
 import { ChevronRight, Pencil } from "lucide-react"
 import { type ReactNode, useState } from "react"
@@ -7,10 +8,11 @@ import { type RouteChoices, RouteEditor, type RouteStop } from "./route-editor"
 import { RoutePreview } from "./route-preview"
 
 // The shipment's route, as a section like Products and Cartons. It starts closed, since the route was set up on the
-// purchase order, with the stops on one line as its summary. Open, the route is a timeline. Whoever may change it
-// (`onSave`) gets Edit route, which turns the stops and legs into menus until Cancel or Save route. A route the route
-// rules find an issue with doesn't save, and its first issue shows. The packing's own Ship from field, ready date and
-// pallets (`shipFrom`, `packing`) show while packing, whether or not the route is being edited.
+// purchase order, with the stops on one line as its summary. Open, the route is a timeline, with any `notes` under it.
+// Whoever may change it (`onSave`) gets Edit route, which turns the stops and legs into menus until Cancel or Save
+// route. A route the route rules find an issue with doesn't save, and its first issue shows. The packing's own Ship
+// from field, ready date and pallets (`shipFrom`, `packing`) show while packing, whether or not the route is being
+// edited; the packing form keeps the section open (`open`) while they need fixing.
 export function RouteSection({
   route,
   buyer,
@@ -19,7 +21,10 @@ export function RouteSection({
   shipFrom,
   packing,
   readyDate,
-  defaultOpen = false
+  notes,
+  defaultOpen = false,
+  open: openProp,
+  onOpenChange
 }: {
   route: Route<RouteStop>
   buyer: string
@@ -28,10 +33,18 @@ export function RouteSection({
   shipFrom?: ReactNode
   packing?: ReactNode
   readyDate?: string
+  notes?: ReactNode
   defaultOpen?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
   const t = useTranslations("shipments.route")
-  const [open, setOpen] = useState(defaultOpen)
+  const [open, setOpen] = useUncontrolled({
+    value: openProp,
+    defaultValue: defaultOpen,
+    finalValue: false,
+    onChange: onOpenChange
+  })
   const [draft, setDraft] = useState<Route<RouteStop> | null>(null)
   const [tried, setTried] = useState(false)
   const shown = draft ?? route
@@ -48,7 +61,7 @@ export function RouteSection({
       className="flex flex-col gap-4 max-sm:gap-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 max-sm:flex-col max-sm:items-start">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
           <h2 className="text-sm font-semibold max-sm:text-base">
             <CollapsibleTrigger className="focus-ring flex items-center gap-3 rounded-sm text-start max-sm:gap-2">
               <ChevronRight
@@ -58,7 +71,9 @@ export function RouteSection({
               {t("title")}
             </CollapsibleTrigger>
           </h2>
-          {!open && <RoutePreview stops={route.stops.map((stop) => stop.name)} className="max-sm:ps-6" />}
+          {!open && (
+            <RoutePreview stops={route.stops.map((stop) => stop.name)} className="max-sm:basis-full max-sm:ps-6" />
+          )}
         </div>
         {open && onSave && !draft && (
           <Button type="button" variant="outline" size="sm" onClick={() => setDraft(route)}>
@@ -78,6 +93,7 @@ export function RouteSection({
           packing={packing}
           readyDate={readyDate}
         />
+        {notes}
         {draft && (
           <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
             {tried && issue && <FieldError className="me-auto">{t(`issues.${issue.code}`)}</FieldError>}

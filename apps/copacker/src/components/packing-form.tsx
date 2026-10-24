@@ -48,9 +48,10 @@ import { PalletImportDialog } from "./pallet-import-dialog"
 import { PalletList } from "./pallet-list"
 import { type PartnerAddress, PartnerAddressDialog } from "./partner-address"
 import { PickupAddressSelect } from "./pickup-address-select"
+import { RouteSection } from "./route-section"
 import { LinkExistingShipment } from "./shipment-actions"
 import { ShipmentLayout } from "./shipment-layout"
-import { savedAddress, ShipmentPackingDetails, startingAddress } from "./shipment-packing-details"
+import { savedAddress, startingAddress } from "./shipment-packing-details"
 
 type EditorSchema = ReturnType<typeof packingEditorSchema>
 // An empty number field, which is null once someone empties it. It renders blank, fails validation with "Enter a
@@ -70,7 +71,7 @@ export function PackingForm({
   addresses,
   addAddressTo,
   linkedAmazonShipmentId,
-  shippingDetails,
+  route,
   shipmentName,
   renderHeader,
   renderSidebar,
@@ -93,7 +94,8 @@ export function PackingForm({
   addAddressTo?: { id: string; name: string }
   // Present only for a buyer's AWD draft. Null means it has no existing Amazon shipment yet.
   linkedAmazonShipmentId?: string | null
-  shippingDetails?: { route: string[]; shipTo: React.ReactNode; transport?: React.ReactNode }
+  // The shipment's route, which heads the form: the pickup address, ready date and pallets go on its first stop.
+  route: PackingRoute
   shipmentName?: string
   // The page's own header, given the form's actions to show beside the title.
   renderHeader?: (actions: React.ReactNode) => React.ReactNode
@@ -227,9 +229,7 @@ export function PackingForm({
             addAddressTo={addAddressTo}
             pickup={pickup}
             onPickupChange={setPickup}
-            route={shippingDetails?.route}
-            shipTo={shippingDetails?.shipTo}
-            transport={shippingDetails?.transport}
+            route={route}
           />
         }
         products={
@@ -378,30 +378,31 @@ export function PackingForm({
   )
 }
 
-// Where the cartons leave from, chosen from the supplier's saved addresses or added, and the packing's own fields: the
-// ready date and whether the cartons ship on pallets. They sit in the card with the shipment's route and destination.
+// The route the packing form heads with, and what its Route section shows under it.
+export type PackingRoute = Pick<React.ComponentProps<typeof RouteSection>, "route" | "buyer" | "notes">
+
+// The shipment's route, open while packing, with the packing's own fields on its first stop: where the cartons leave
+// from, chosen from the supplier's saved addresses or added, the ready date and whether the cartons ship on pallets.
+// Closing it hides those fields, so it stays open while one of them needs fixing.
 export function PackingDetailsFields({
   addresses,
   addAddressTo,
   pickup,
   onPickupChange,
-  route,
-  shipTo,
-  transport
+  route
 }: {
   addresses: PartnerAddress[]
   addAddressTo?: { id: string; name: string }
   pickup: string
   onPickupChange: (id: string) => void
-  route?: string[]
-  shipTo?: React.ReactNode
-  transport?: React.ReactNode
+  route: PackingRoute
 }) {
   const t = useTranslations("orders.packing")
   const form = useFormContext<PackingValues>()
   const origin = useWatch({ control: form.control, name: "origin" }) ?? emptyAddress
   const [adding, setAdding] = useState(false)
   const [editingOrigin, setEditingOrigin] = useState(false)
+  const [open, setOpen] = useState(true)
   const { errors } = useFormState({ control: form.control })
   const addressText = useTranslations("partners.address")
   // Addresses added here, until the refreshed page lists them.
@@ -418,10 +419,10 @@ export function PackingDetailsFields({
     onPickupChange(next.id)
   }
   return (
-    <ShipmentPackingDetails
-      route={route}
-      shipTo={shipTo}
-      transport={transport}
+    <RouteSection
+      {...route}
+      open={open || !!errors.origin || !!errors.readyDate}
+      onOpenChange={setOpen}
       shipFrom={
         <>
           <PickupAddressSelect

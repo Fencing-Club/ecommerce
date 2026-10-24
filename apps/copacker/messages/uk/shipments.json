@@ -188,6 +188,14 @@
     "shipFrom": "Відправити з",
     "shipTo": "Відправити до",
     "finalDestination": "Кінцевий пункт",
+    "stops": {
+      "agl": {
+        "name": "Amazon Global Logistics (AGL)",
+        "detail": "Заброньовано в Seller Central"
+      },
+      "fba": "Amazon вибирає центри виконання, коли створюється відправлення",
+      "awd_us": "Amazon вибирає склад, коли вхідне замовлення підтверджено"
+    },
     "remove": "Прибрати",
     "removeStop": "Прибрати {name}",
     "addStop": "Додати зупинку",

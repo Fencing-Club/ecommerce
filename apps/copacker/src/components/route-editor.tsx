@@ -51,17 +51,22 @@ import {
 import { Fragment, type ReactNode, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
+import { PhoneLink } from "./common"
 
 // A stop as the route rules read it (`@repo/copacker-packing-rules/routes`), with what its line shows: its name, such as
-// "Northwind Textiles / Main factory", and its address or what happens there.
-export type RouteStop = RuleStop & { name: string; detail?: string }
+// "Northwind Textiles / Main factory", its address or what happens there, and who to call there.
+export type RouteStop = RuleStop & {
+  name: string
+  detail?: string
+  contact?: { name?: string; phone?: string; countryCode?: string }
+}
 
 // The places a stop can be chosen from, in its menu's groups, such as Forwarders and Amazon. The route rules pick which
 // fit each position.
 export type RouteChoices = { label: string; stops: RouteStop[] }[]
 
 // The route as a timeline: each stop with its node on a rail, and between two stops, who moves the goods there. Read
-// only, it lists them. While editing (`editing`), each stop after the first is chosen from the `choices` the route rules
+// only, it lists them, and a leg nobody has chosen yet is just the rail, apart from Amazon's to and from AGL. While editing (`editing`), each stop after the first is chosen from the `choices` the route rules
 // allow there, the last can be removed and a stop added after it, and each leg is chosen from who can move it; changes
 // go to `onChange`. Ship from is the packing's own field: `shipFrom` replaces its line while packing, with the packing's
 // ready date and pallets (`packing`) under it. Read only, `readyDate` says when the cartons are ready.
@@ -111,18 +116,25 @@ export function RouteEditor({
       {stops.map((stop, index) => {
         const isLast = index === stops.length - 1
         const network = stopNetwork(stop)
+        const from = stops[index - 1]
+        const leg = legs[index - 1]
         return (
           <Fragment key={`${index}-${stop.id}`}>
-            {index > 0 && (
-              <Leg
-                from={stops[index - 1]!}
-                to={stop}
-                leg={legs[index - 1]!}
-                buyer={buyer}
-                editing={editing}
-                onChange={(leg) => change(setLeg(route, index - 1, leg))}
-              />
-            )}
+            {from &&
+              (leg || legChoices(from, stop).length === 0 ? (
+                <Leg
+                  from={from}
+                  to={stop}
+                  leg={leg}
+                  buyer={buyer}
+                  editing={editing}
+                  onChange={(next) => change(setLeg(route, index - 1, next))}
+                />
+              ) : (
+                <li aria-hidden className="flex h-4 gap-3">
+                  <Rail line />
+                </li>
+              ))}
             <li className="flex gap-3">
               <Rail line={!isLast || editing}>
                 <StopIcon index={index} stop={stop} />
@@ -243,12 +255,22 @@ function StopIcon({ index, stop }: { index: number; stop: RouteStop }) {
 }
 
 function StopLines({ stop }: { stop: RouteStop }) {
+  const { name, phone, countryCode } = stop.contact ?? {}
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <span className="text-sm">{stop.name}</span>
       {stop.detail && (
         <span className="text-xs text-muted-foreground">
           <bdi>{stop.detail}</bdi>
+        </span>
+      )}
+      {(name || phone) && (
+        <span className="text-xs text-muted-foreground">
+          <bdi>
+            {name}
+            {name && phone && ", "}
+            {phone && <PhoneLink number={phone} countryCode={countryCode} />}
+          </bdi>
         </span>
       )}
     </div>
@@ -323,7 +345,7 @@ function StopSelect({
 }
 
 // How the goods get from one stop to the next: who moves them, and what that means. While editing it's a menu of who
-// can, unless Amazon moves them.
+// can, unless Amazon moves them, which needs no choice (`leg`).
 function Leg({
   from,
   to,
@@ -334,7 +356,7 @@ function Leg({
 }: {
   from: RouteStop
   to: RouteStop
-  leg: LegArrangement
+  leg?: LegArrangement
   buyer: string
   editing: boolean
   onChange: (leg: LegArrangement) => void
@@ -344,8 +366,8 @@ function Leg({
   const company = (arrangement: LegArrangement) => (arrangement.startsWith("sender") ? from.company : to.company)
   const title = (arrangement: LegArrangement) => t(arrangement, { company: company(arrangement) })
   const arranges = (arrangement: LegArrangement) => arrangement.endsWith("Arranges")
-  let heading = title(leg)
-  let note = arranges(leg) ? t("arrangesNote", { company: company(leg) }) : t("movesNote")
+  let heading = leg && title(leg)
+  let note = leg && (arranges(leg) ? t("arrangesNote", { company: company(leg) }) : t("movesNote"))
   if (to.kind === "agl") {
     heading = t("amazon")
     note = t("aglCollects", { company: from.company, buyer })
@@ -359,7 +381,7 @@ function Leg({
       <div className="flex min-w-0 flex-1 gap-2 py-3">
         <Truck aria-hidden className="mt-1.5 size-4 shrink-0 text-muted-foreground" />
         <div className="flex min-w-0 flex-col items-start gap-1">
-          {editing && allowed.length > 0 ? (
+          {editing && leg && allowed.length > 0 ? (
             <Select
               value={leg}
               items={allowed.map((value) => ({ value, label: title(value) }))}

@@ -188,6 +188,14 @@
     "shipFrom": "यहाँ से भेजें",
     "shipTo": "यहाँ भेजें",
     "finalDestination": "अंतिम गंतव्य",
+    "stops": {
+      "agl": {
+        "name": "Amazon Global Logistics (AGL)",
+        "detail": "Seller Central में बुक किया गया"
+      },
+      "fba": "शिपमेंट बनने पर Amazon फ़ुलफ़िलमेंट सेंटर चुनता है",
+      "awd_us": "इनबाउंड ऑर्डर की पुष्टि होने पर Amazon वेयरहाउस चुनता है"
+    },
     "remove": "हटाएँ",
     "removeStop": "{name} हटाएँ",
     "addStop": "स्टॉप जोड़ें",

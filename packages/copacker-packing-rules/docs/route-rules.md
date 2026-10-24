@@ -26,4 +26,4 @@ route agree. The route editor offers only what they allow, and the Route section
 
 A stop is read by the few fields the rules need (`RouteStop`: its id, company, kind and receiver). The app adds what it
 shows, such as the stop's name and address. Copacker's Storybook checks each rule through the editor's interactions,
-under Unused / Shipments / Route editor.
+under Components / Shipments / Route editor.

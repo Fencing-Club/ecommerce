@@ -88,7 +88,9 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     }
     await expect(page.getByRole("region", { name: "Carton A1", exact: true })).toContainText("GRIP-L")
     await expect(page.getByRole("region", { name: "Carton B1", exact: true })).toContainText("GRIP-R")
-    await expect(page.getByText("200 Factory Road")).toBeVisible()
+    // The route, opened, shows where the cartons leave from.
+    await page.getByRole("button", { name: "Route", exact: true }).click()
+    await expect(page.getByRole("list", { name: "Route" })).toContainText("200 Factory Road")
     // The supplier packet is among the shipment's documents.
     await expect(page.getByRole("link", { name: "Download shipment packet" })).toHaveAttribute(
       "href",

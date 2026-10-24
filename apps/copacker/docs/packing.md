@@ -7,11 +7,11 @@ for pallets and 06.10 B1 for choosing a pallet's cartons.
 ## The page's parts
 
 A shipment has one layout, packing or packed (`ShipmentLayout`): the header, then a column of the notices, the route
-and addresses, the products (`PackedProductsTable`), the cartons (`CartonList`) and the pallets (`PalletList`), beside
+(`RouteSection`), the products (`PackedProductsTable`), the cartons (`CartonList`) and the pallets (`PalletList`), beside
 the documents and Shipment details. While the shipment is being packed, `PackingForm` fills the layout with the form: the
-pickup address and ready date (`PackingDetailsFields`), the tables to edit and the actions (`PackingActionBar`), and
-`usePackingDraft` saves, finishes and links the packing. A packed shipment builds no form: the shipment page fills the
-layout with the same parts, read-only, and the pickup address as `ShipmentOrigin`.
+route with the pickup address, ready date and pallets on its first stop (`PackingDetailsFields`), the tables to edit and
+the actions (`PackingActionBar`), and `usePackingDraft` saves, finishes and links the packing. A packed shipment builds
+no form: the shipment page fills the layout with the same parts, read-only.
 
 Products, Cartons and Pallets share `PackingSection` (`components/packing-section.tsx`), so they stay alike: a chevron
 before the title that closes and opens the list (Products starts closed), a summary beside the title that turns green
@@ -19,15 +19,16 @@ once everything is in place, and the list's actions at the end of the line. A li
 which holds Add and Import while packing; once the list has a row they move up to the section's line with Export
 (`PackingActions`). The designs are the empty states in 06 / Carton editor / Shared Storybook components.
 
-The route heads the card today as one line of stops (`RoutePreview`). Its redesign is copacker.pen's section 11,
-"11 / Shipment route editor": a Route section like Products and Cartons, closed by default since the route was set up
-on the purchase order, with the stops as its summary (`RouteSection`). Open, it's a timeline of stops and, between
-them, who moves the goods (`RouteEditor`). Ship from carries the packing's own fields while packing (the pickup address
-with Add new address, then the ready date and Packed on pallets, `ReadyDateAndPallets`), and an Amazon network's About
-link shows the rules' `summary` lines and the receiver's pages. Whoever may change the route gets Edit route, which
-turns the stops and legs into menus: Amazon moves the goods to and from AGL, only the sender ships into an Amazon
-network, and a route has to end at a final destination to save. Neither is on the page yet: saving a route and who
-moves each leg need the shipment's data first. Their components are in Storybook under Unused / Shipments.
+The route is copacker.pen's section 11, "11 / Shipment route editor": a Route section like Products and Cartons
+(`RouteSection`), with the stops on one line as its summary when closed (`RoutePreview`). Open, it's a timeline of
+stops and, between them, who moves the goods (`RouteEditor`). Ship from carries the packing's own fields while packing
+(the pickup address with Add new address, then the ready date and Packed on pallets, `ReadyDateAndPallets`), so the
+section starts open then and stays open while one of them needs fixing; a packed shipment's starts closed. An Amazon
+network's About link shows the rules' `summary` lines and the receiver's pages. The page builds the route from where
+the shipment stops (`shipmentPlaces` in `app/(portal)/shipments/destination.ts`, `useShipmentRoute`): the supplier's
+pickup address, the purchase order's forwarder, AGL when the transport books it, and the final destination. Shipments
+don't keep who moves each leg yet, so the timeline has no legs and the transport's own lines show under it. Edit route
+(`onSave`), which turns the stops and legs into menus checked by the route rules, waits for a saved route.
 
 The carton rules live in `lib/carton-groups.ts`: `maxCartons` (1,000, the most a packing holds), `checkCartons` (the
 packing rules the complete cartons break, which the form and the carton import share) and `cartonMeasures` (the

@@ -82,20 +82,17 @@ import { PoTimeline, type TimelineEntry } from "@/components/po-timeline"
 import { ProductDownloadsMenu } from "@/components/product-downloads-menu"
 import { ProductIdentity } from "@/components/product-identity"
 import { QuantityDisplay } from "@/components/quantity-display"
+import { RouteSection } from "@/components/route-section"
 import { ShipmentDetails } from "@/components/shipment-details"
 import { ShipmentDocuments } from "@/components/shipment-documents"
 import { ShipmentLayout } from "@/components/shipment-layout"
-import {
-  ShipmentAddress,
-  ShipmentOrigin,
-  ShipmentPackingDetails,
-  ShipmentTransportLegs
-} from "@/components/shipment-packing-details"
+import { ShipmentTransportLegs } from "@/components/shipment-packing-details"
 import { useMoney } from "@/hooks/use-money"
 import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups"
 import { packingLabelOptions, preparationOptions, type PackingRequirements } from "@/lib/packing-requirements"
 import { cn } from "@/lib/utils"
 import { northwindFactory } from "@/stories/fixtures/parties"
+import { awdStop, fbaStop, northwindStop } from "@/stories/fixtures/routes"
 import { daysAgo, orderItem } from "./fixtures/orders"
 import { order, orderId, pickupLocations } from "./fixtures/purchase-orders"
 const pageLayout = "@container/po flex min-w-0 flex-col gap-6 text-sm"
@@ -1070,19 +1067,16 @@ export function PurchaseOrderFlow({
       readyDate,
       cartons: packingCartons()
     }
-    const route = ["Northwind Textiles", ...(packing.stop ? [receivingStop(packing).name] : []), packing.destination]
-    const shipTo = (
-      <ShipmentAddress
-        readOnly={packingFinished}
-        label="Ship to"
-        name={packing.stop ? receivingStop(packing).name : packing.destination}
-        address={
-          packing.stop
-            ? receivingStop(packing).address
-            : "Amazon assigns the receiving warehouse when the shipment is confirmed."
-        }
-      />
-    )
+    // The shipment's route: the factory, the receiving stop when there is one, and Amazon, with how the cartons travel
+    // under it.
+    const stop = packing.stop ? receivingStop(packing) : undefined
+    const stops = [
+      northwindStop,
+      ...(stop
+        ? [{ id: "stop", company: stop.name, kind: "forwarder" as const, name: stop.name, detail: stop.address }]
+        : []),
+      packing.destination === "Amazon AWD US" ? awdStop : fbaStop
+    ]
     const transport = (
       <ShipmentTransportLegs
         legs={[
@@ -1169,11 +1163,11 @@ export function PurchaseOrderFlow({
           <ShipmentLayout
             header={<div className="flex flex-wrap items-center justify-between gap-3">{heading}</div>}
             details={
-              <ShipmentPackingDetails
-                route={route}
-                shipFrom={<ShipmentOrigin origin={draft.origin} addresses={pickupLocations} />}
-                shipTo={shipTo}
-                transport={transport}
+              <RouteSection
+                route={{ stops, legs: [] }}
+                buyer="Harbor Goods"
+                readyDate={draft.readyDate}
+                notes={transport}
               />
             }
             products={
@@ -1214,7 +1208,7 @@ export function PurchaseOrderFlow({
             reserved={{}}
             initial={draft}
             addresses={pickupLocations}
-            shippingDetails={{ route, shipTo, transport }}
+            route={{ route: { stops, legs: [] }, buyer: "Harbor Goods", notes: transport }}
           />
         )}
       </div>

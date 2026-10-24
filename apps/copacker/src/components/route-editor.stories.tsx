@@ -5,6 +5,7 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { pickupLocations } from "@/stories/fixtures/purchase-orders"
 import {
+  aglStop,
   baylineStop,
   direct,
   fbaStop,
@@ -71,7 +72,7 @@ function Packing(props: React.ComponentProps<typeof RouteEditor>) {
 }
 
 const meta = preview.meta({
-  title: "Unused/Shipments/Route editor",
+  title: "Components/Shipments/Route editor",
   component: RouteEditor,
   decorators: [width("max-w-3xl")],
   args: { route: throughForwarder, buyer: "Harbor Goods", readyDate: "2026-10-27" },
@@ -125,6 +126,19 @@ export const ThroughAgl = meta.story({
     ).toBeVisible()
     await expect(canvas.getByText("AGL ships the cartons on to Amazon FBA US.")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "About Amazon FBA US" })).toBeVisible()
+  }
+})
+
+// A route that doesn't keep its legs, as shipments are today, still shows Amazon's to and from AGL, since nobody
+// chooses those. Any other leg is just the rail.
+export const WithoutLegs = meta.story({
+  args: {
+    route: { stops: [northwindStop, baylineStop, aglStop, fbaStop], legs: [] }
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByText("Amazon arranges shipping")).toHaveLength(2)
+    await expect(canvas.queryByText(/Bayline Freight (arranges shipping|picks up)/)).toBeNull()
+    await expect(canvas.queryByText(/Northwind Textiles (arranges shipping|delivers)/)).toBeNull()
   }
 })
 

@@ -188,6 +188,14 @@
     "shipFrom": "Expédier depuis",
     "shipTo": "Expédier à",
     "finalDestination": "Destination finale",
+    "stops": {
+      "agl": {
+        "name": "Amazon Global Logistics (AGL)",
+        "detail": "Réservé dans Seller Central"
+      },
+      "fba": "Amazon choisit les centres de distribution à la création de l’expédition",
+      "awd_us": "Amazon choisit l’entrepôt à la confirmation de la commande entrante"
+    },
     "remove": "Retirer",
     "removeStop": "Retirer {name}",
     "addStop": "Ajouter une étape",

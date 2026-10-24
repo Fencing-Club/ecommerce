@@ -188,6 +188,14 @@
     "shipFrom": "Ship from",
     "shipTo": "Ship to",
     "finalDestination": "Final destination",
+    "stops": {
+      "agl": {
+        "name": "Amazon Global Logistics (AGL)",
+        "detail": "Booked in Seller Central"
+      },
+      "fba": "Amazon picks the fulfillment centers when the shipment is created",
+      "awd_us": "Amazon picks the warehouse when the inbound order is confirmed"
+    },
     "remove": "Remove",
     "removeStop": "Remove {name}",
     "addStop": "Add stop",

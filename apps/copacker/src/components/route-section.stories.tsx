@@ -3,9 +3,10 @@ import preview from "#.storybook/preview"
 import { routeChoices, throughForwarder } from "@/stories/fixtures/routes"
 import { chooseOption, width } from "@/stories/play"
 import { RouteSection } from "./route-section"
+import { ShipmentTransportLegs } from "./shipment-packing-details"
 
 const meta = preview.meta({
-  title: "Unused/Shipments/Route section",
+  title: "Components/Shipments/Route section",
   component: RouteSection,
   decorators: [width("max-w-3xl")],
   args: { route: throughForwarder, buyer: "Harbor Goods", readyDate: "2026-10-27", choices: routeChoices },
@@ -27,6 +28,23 @@ export const Collapsed = meta.story({
     await expect(canvas.getByText("Ready Oct 27")).toBeVisible()
     await expect(canvas.queryByText("Bayline Freight / Shenzhen")).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Edit route" })).toBeNull()
+  }
+})
+
+// A route whose legs nobody has chosen, as shipments have until they keep them: the stops on the rail, and the
+// transport's own lines under them.
+export const WithoutLegs = meta.story({
+  args: {
+    defaultOpen: true,
+    route: { stops: throughForwarder.stops, legs: [] },
+    notes: (
+      <ShipmentTransportLegs legs={["Supplier ships to Bayline Freight.", "Amazon pickup from Bayline Freight."]} />
+    )
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Bayline Freight")).toBeVisible()
+    await expect(canvas.queryByText(/arranges shipping/)).toBeNull()
+    await expect(canvas.getByText("Amazon pickup from Bayline Freight.")).toBeVisible()
   }
 })
 
