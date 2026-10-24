@@ -505,7 +505,6 @@
       "packingGroups": "Productos: {receiver} no acepta {product} y {other} en la misma caja. Amazon los maneja de forma distinta, por ejemplo por mercancías peligrosas, preparación o etiquetas, y puede enviarlos a almacenes distintos. Mueve uno de ellos a otra caja.",
       "samePacking": "{difference, select, units {Cantidad: las otras cajas de {sku} contienen {units, number} unidades cada una.} other {Dimensiones: las otras cajas de {sku} miden {length, number} × {width, number} × {height, number} cm y pesan {weight, number} kg.}} {receiver} exige que todas las cajas de un SKU coincidan en unidades, tamaño y peso. Iguálalas o envía esta caja en otro envío.",
       "incompletePacks": "Cantidad: {sku} se vende en paquetes de {pack, number}. Ingresa un múltiplo de {pack, number}.",
-      "missingAsin": "Productos: {sku} no tiene ASIN, que {receiver} necesita para recibirlo. El comprador lo agrega en la orden de compra.",
       "missingFnsku": "Productos: {sku} no tiene FNSKU, que {receiver} necesita para etiquetarlo. El comprador lo agrega en la orden de compra.",
       "duplicateCarton": "ID de caja: {carton} ya lo usa otra caja. Dale a cada caja su propio ID.",
       "repeatedProduct": "Productos: {sku} aparece más de una vez en esta caja. Inclúyelo una sola vez con todas sus unidades.",

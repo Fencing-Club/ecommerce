@@ -149,7 +149,9 @@ Required repository configuration:
 `CLOUDFLARE_PREVIEW_CONFIG` is a JSON object with `accountId`, `bucket` (`copacker-staging-private`),
 `subdomain` (the account's workers.dev subdomain), and `caCertificateId` (the uploaded Neon public root CA).
 CI reuses the existing staging bucket and never deletes it. The user API token scoped to this account
-needs Workers Scripts Write, Hyperdrive Write, Queues Write, and Workers R2 Storage Write. The secrets JSON contains
+needs Workers Scripts Write, Hyperdrive Write, Queues Write, Workers R2 Storage Write, and SSL and Certificates Read
+(Hyperdrive reads the CA certificate when it creates a config, and fails with `[2000] Forbidden` without it). The
+secrets JSON contains
 exactly `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_COOKIE_PASSWORD`, and `TOKEN_ENCRYPTION_KEY`.
 Register the test WorkOS callback/sign-out patterns listed in [domains](domains.md#pull-request-previews).
 

@@ -7,9 +7,11 @@ cartons the same way and every message, checklist and requirement states the sam
 ## How it works
 
 - **A rule** is one typed entry, such as `{ type: "maxSize", sides: [36, 25, 25], unit: "in", description, source }`.
-  Its `description` states the rule as the receiver does, so a policy reads as its own documentation, and `source` is
-  the page where the receiver states it: each issue carries it, and the editor's error links to it. A test fails when
-  a limit changes and its description doesn't say so. Limits are kept in
+  Its `description` states the rule as the receiver does, so a policy reads as its own documentation, `summary` says
+  it in a few words for compact lists such as a receiver's requirements, and `source` is the page where the receiver
+  states it: each issue carries it, and the editor's error links to it. A test fails when a limit changes and its
+  description or summary doesn't say so. A description writes out a single inch measurement ("25 inches") and writes
+  several without a space ("36in long, 25in wide"), so "in" never reads as the word. Limits are kept in
   the units the receiver states them in and converted where they're shown. A converted weight is rounded down to the
   hundredth, so the limit shown is one a carton can meet, and cartons are checked against it: 50 lb is 22.6796185 kg,
   shown and checked as 22.67 kg, because 22.68 kg is over 50 lb. Sizes convert exactly (36 in is 91.44 cm).
@@ -27,11 +29,13 @@ cartons the same way and every message, checklist and requirement states the sam
 | `maxUnits`    | Sellable units of one product in a carton                                      | `unitsPerCarton`   |
 | `oneSku`      | A carton holds one product                                                     | `oneSku`           |
 | `samePacking` | Every carton of a SKU has the same units, size and weight as its first carton  | `samePacking`      |
-| `asin`        | Every product has its ASIN                                                     | `missingAsin`      |
 | `fnsku`       | Every product has its FNSKU                                                    | `missingFnsku`     |
 | `packingGroups` | A carton's products are in one of the receiver's packing groups, once it has set them | `packingGroups` |
+| `liftLabels`  | Checklist only: “Team Lift” labels over one weight, “Mechanical Lift” over another |                    |
 
-`maxSize` and `maxWeight` take `exceptOneUnit`: a carton holding one sellable unit may be larger or heavier. Each issue
+`maxSize` and `maxWeight` take `exceptOneUnit`: a carton holding one sellable unit may be larger or heavier. A rule
+nothing measures, such as `liftLabels`, breaks nothing: the supplier's checklist states it, and only for a shipment with
+a carton it applies to. Each issue
 carries the values its message names (the receiver, the limit in both units, the SKU), and the app writes every message
 from them: the carton editor (`orders.cartonEditor.rules`), readiness checks (`server.readiness.packing`), PO
 requirements (`shipments.requirements`) and the supplier's checklist (`shippingCopy`).
@@ -59,21 +63,22 @@ so cartons may mix SKUs and hold any number of units.
 | ----------------------------------- | ---------------------------------------------------------------------- |
 | Size (`maxSize`, `exceptOneUnit`)   | 36 × 25 × 25 in (91.44 × 63.5 × 63.5 cm), unless one unit is larger    |
 | Weight (`maxWeight`, `exceptOneUnit`) | 50 lb (22.67 kg), unless one unit is heavier                         |
-| ASIN (`asin`)                       | Every product has its ASIN                                             |
 | FNSKU (`fnsku`)                     | Every product has its FNSKU                                            |
 | Packing groups (`packingGroups`)    | A carton holds products of one of Amazon's packing groups               |
+| Lift labels (`liftLabels`)          | “Team Lift” over 50 lb (22.67 kg), “Mechanical Lift” over 100 lb (45.35 kg) |
 
 - [Shipping and routing requirements](https://sellercentral.amazon.com/help/hub/reference/external/200141510?locale=en-US):
   a box may be up to 36 in long, 25 in wide and 25 in high, and weigh up to 50 lb. Only a box holding one oversize unit
-  may be larger, and only a single item over 50 lb may make it heavier. Copacker used to hold FBA cartons to 25 in on
-  every side, as older guides still do.
+  may be larger, and only a single item over 50 lb may make it heavier. Such a box has a “Team Lift” label on its top
+  and each side, and over 100 lb the labels say “Mechanical Lift”. The supplier's checklist asks for them only when a
+  carton is over 50 lb. Copacker used to hold FBA cartons to 25 in on every side, as older guides still do.
 - [Create an inbound shipment](https://developer-docs.amazon.com/sp-api/docs/create-an-inbound-shipment) (Fulfillment
   Inbound API): Amazon puts the SKUs that can share a box in a packing group, and keeps apart SKUs it receives
   separately, such as dangerous goods. The groups exist only once Amazon plans the shipment, so `validatePacking` checks
   them when the packing passes them in (`packingGroups`, by SKU) and skips the rule otherwise. The FBA booking job
   confirms the packing option that keeps each carton in one group, and keeps each SKU's group on the shipment for
   Copacker's packing checks ([Amazon inbound](../../../apps/copacker/docs/amazon-inbound.md)).
-- Not checked: boxes of jewelry or watches are limited to 40 lb, and a box over 50 lb needs Team Lift labels.
+- Not checked: boxes of jewelry or watches are limited to 40 lb.
 
 ### AWD US (`cartonPolicies.awd_us`)
 
@@ -86,7 +91,6 @@ AWD only takes case packs: it has no individual-units packing.
 | Same packing (`samePacking`) | One packing template per SKU in a shipment: same units, size and weight |
 | Size (`maxSize`)           | 25 in (63.5 cm) on every side, with no single-unit exception             |
 | Weight (`maxWeight`)       | 50 lb (22.67 kg), with no single-unit exception                          |
-| ASIN (`asin`)              | Every product has its ASIN                                               |
 | FNSKU (`fnsku`)            | Every product has its FNSKU                                              |
 
 - [AWD shipping requirements](https://sellercentral.amazon.com/help/hub/reference/GVEPW8A7PZ3YGPJE?locale=en-US):

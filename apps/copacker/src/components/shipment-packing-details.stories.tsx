@@ -1,71 +1,47 @@
+import { addressLine } from "@repo/copacker-orders"
 import { useState } from "react"
 import { FormProvider, useForm } from "react-hook-form"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { northwindFactory } from "@/stories/fixtures/parties"
+import { harborWarehouse, northwindFactory } from "@/stories/fixtures/parties"
 import { pickupLocations } from "@/stories/fixtures/purchase-orders"
+import { baylineStop, fbaStop, harborStop, northwindStop } from "@/stories/fixtures/routes"
 import { shownDialog, chooseOption } from "@/stories/play"
 import { PackingDetailsFields } from "./packing-form"
-import {
-  ShipmentAddress,
-  ShipmentOrigin,
-  ShipmentPackingDetails,
-  ShipmentTransportLegs
-} from "./shipment-packing-details"
+import { ShipmentTransportLegs } from "./shipment-packing-details"
 
+// The packing's own fields on the shipment's route: the pickup address, ready date and pallets on its first stop, and
+// how the cartons travel under it.
 function Example({
-  readOnly = false,
   forwarder = false,
   amazonPickup = false,
   buyerWarehouse = false
 }: {
-  readOnly?: boolean
   forwarder?: boolean
   amazonPickup?: boolean
   buyerWarehouse?: boolean
 }) {
   const form = useForm({ defaultValues: { origin: northwindFactory, readyDate: "2026-10-21" } })
-  const destination = buyerWarehouse ? "Harbor Goods / Portland warehouse" : "Amazon FBA US"
-  let destinationAddress = "Amazon assigns the receiving warehouse when the shipment is confirmed."
-  if (forwarder) {
-    destinationAddress = "18 Gangqiao Road, Beilun, Ningbo, Zhejiang 315800, China"
-  } else if (buyerWarehouse) {
-    destinationAddress = "42 Distribution Way, Portland, Oregon 97230, United States"
-  }
   const [pickup, setPickup] = useState("supplier-origin")
-  const details = {
-    route: ["Northwind Textiles", ...(forwarder ? ["Bayline Freight"] : []), destination],
-    shipTo: (
-      <ShipmentAddress
-        readOnly={readOnly}
-        label="Ship to"
-        name={forwarder ? "Bayline Freight" : destination}
-        address={destinationAddress}
-      />
-    ),
-    transport: (
-      <ShipmentTransportLegs
-        legs={
-          forwarder
-            ? ["Supplier ships to Bayline Freight.", "Amazon pickup from Bayline Freight."]
-            : [amazonPickup ? "Amazon pickup from Northwind Textiles." : `Supplier ships to ${destination}.`]
-        }
-      />
-    )
+  const destination = buyerWarehouse ? harborStop : fbaStop
+  let legs = [amazonPickup ? "Amazon pickup from Northwind Textiles." : `Supplier ships to ${destination.name}.`]
+  if (forwarder) {
+    legs = ["Supplier ships to Bayline Freight.", "Amazon pickup from Bayline Freight."]
   }
-  // Packed, the card shows where the cartons left from; while packing, the packing form's fields.
   return (
     <div className="max-w-4xl">
-      {readOnly ? (
-        <ShipmentPackingDetails
-          {...details}
-          shipFrom={<ShipmentOrigin origin={northwindFactory} addresses={pickupLocations} />}
+      <FormProvider {...form}>
+        <PackingDetailsFields
+          pickup={pickup}
+          onPickupChange={setPickup}
+          addresses={pickupLocations}
+          route={{
+            route: { stops: [northwindStop, ...(forwarder ? [baylineStop] : []), destination], legs: [] },
+            buyer: "Harbor Goods",
+            notes: <ShipmentTransportLegs legs={legs} />
+          }}
         />
-      ) : (
-        <FormProvider {...form}>
-          <PackingDetailsFields pickup={pickup} onPickupChange={setPickup} addresses={pickupLocations} {...details} />
-        </FormProvider>
-      )}
+      </FormProvider>
     </div>
   )
 }
@@ -77,27 +53,27 @@ export const Editing = meta.story({
     await expect(canvas.getByRole("combobox", { name: "Ship from" })).toHaveTextContent(northwindFactory.addressLine1)
     await expect(canvas.getByLabelText("Ready date", { exact: false })).toBeRequired()
     await expect(canvas.getByLabelText("Ready date", { exact: false })).toHaveValue("2026-10-21")
+    await expect(canvas.getByRole("checkbox", { name: "Packed on pallets" })).not.toBeChecked()
   }
 })
 export const ViaForwarder = meta.story({
   args: { forwarder: true },
   play: async ({ canvas }) => {
+    await expect(canvas.getByText("Bayline Freight")).toBeVisible()
     await expect(canvas.getByText("Supplier ships to Bayline Freight.")).toBeVisible()
     await expect(canvas.getByLabelText("Ready date", { exact: false })).toBeRequired()
   }
 })
-// A packed shipment's pickup address is the saved address it matches, by that address's name, with its contact.
-export const ReadOnly = meta.story({
-  args: { readOnly: true },
+
+// Closing the route hides the packing's fields with it.
+export const CloseRoute = meta.story({
   play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("combobox")).toBeNull()
-    await expect(canvas.queryByLabelText("Ready date", { exact: false })).toBeNull()
-    await expect(canvas.getByText("Ship from", { exact: true })).toBeVisible()
-    await expect(canvas.getByText("Northwind Textiles / Main factory")).toBeVisible()
-    await expect(canvas.getByText("Mei Chen")).toBeVisible()
-    await expect(canvas.getByRole("link", { name: "+86 574 5555 0100" })).toHaveAttribute("href", "tel:+8657455550100")
+    await userEvent.click(canvas.getByRole("button", { name: "Route" }))
+    await waitFor(() => expect(canvas.queryByLabelText("Ready date", { exact: false })).toBeNull())
+    await expect(canvas.getByText("Amazon FBA US")).toBeVisible()
   }
 })
+
 export const AddressMenu = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("combobox", { name: "Ship from" }))
@@ -146,7 +122,7 @@ export const SupplierShipsToBuyer = meta.story({
   args: { buyerWarehouse: true },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Supplier ships to Harbor Goods / Portland warehouse.")).toBeVisible()
-    await expect(canvas.getByText("42 Distribution Way, Portland, Oregon 97230, United States")).toBeVisible()
-    await expect(canvas.queryByText(/Amazon assigns/)).toBeNull()
+    await expect(canvas.getByText(addressLine(harborWarehouse))).toBeVisible()
+    await expect(canvas.queryByText(/Amazon picks/)).toBeNull()
   }
 })

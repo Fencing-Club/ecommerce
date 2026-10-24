@@ -7,17 +7,28 @@ for pallets and 06.10 B1 for choosing a pallet's cartons.
 ## The page's parts
 
 A shipment has one layout, packing or packed (`ShipmentLayout`): the header, then a column of the notices, the route
-and addresses, the products (`PackedProductsTable`), the cartons (`CartonList`) and the pallets (`PalletList`), beside
+(`RouteSection`), the products (`PackedProductsTable`), the cartons (`CartonList`) and the pallets (`PalletList`), beside
 the documents and Shipment details. While the shipment is being packed, `PackingForm` fills the layout with the form: the
-pickup address and ready date (`PackingDetailsFields`), the tables to edit and the actions (`PackingActionBar`), and
-`usePackingDraft` saves, finishes and links the packing. A packed shipment builds no form: the shipment page fills the
-layout with the same parts, read-only, and the pickup address as `ShipmentOrigin`.
+route with the pickup address, ready date and pallets on its first stop (`PackingDetailsFields`), the tables to edit and
+the actions (`PackingActionBar`), and `usePackingDraft` saves, finishes and links the packing. A packed shipment builds
+no form: the shipment page fills the layout with the same parts, read-only.
 
 Products, Cartons and Pallets share `PackingSection` (`components/packing-section.tsx`), so they stay alike: a chevron
 before the title that closes and opens the list (Products starts closed), a summary beside the title that turns green
 once everything is in place, and the list's actions at the end of the line. A list with no rows shows `PackingEmpty`,
 which holds Add and Import while packing; once the list has a row they move up to the section's line with Export
 (`PackingActions`). The designs are the empty states in 06 / Carton editor / Shared Storybook components.
+
+The route is copacker.pen's section 11, "11 / Shipment route editor": a Route section like Products and Cartons
+(`RouteSection`), with the stops on one line as its summary when closed (`RoutePreview`). Open, it's a timeline of
+stops and, between them, who moves the goods (`RouteEditor`). Ship from carries the packing's own fields while packing
+(the pickup address with Add new address, then the ready date and Packed on pallets, `ReadyDateAndPallets`), so the
+section starts open then and stays open while one of them needs fixing; a packed shipment's starts closed. An Amazon
+network's About link shows the rules' `summary` lines and the receiver's pages. The page builds the route from where
+the shipment stops (`shipmentPlaces` in `app/(portal)/shipments/destination.ts`, `useShipmentRoute`): the supplier's
+pickup address, the purchase order's forwarder, AGL when the transport books it, and the final destination. Shipments
+don't keep who moves each leg yet, so the timeline has no legs and the transport's own lines show under it. Edit route
+(`onSave`), which turns the stops and legs into menus checked by the route rules, waits for a saved route.
 
 The carton rules live in `lib/carton-groups.ts`: `maxCartons` (1,000, the most a packing holds), `checkCartons` (the
 packing rules the complete cartons break, which the form and the carton import share) and `cartonMeasures` (the
@@ -175,8 +186,9 @@ stop an import; the Pallets section lists them as usual.
   cartons travel on, identical pallets as one entry with their count, and `freightInformation`: the goods' value at the
   PO's prices, freight class `NONE`. A pallet whose cartons Amazon sends to two warehouses stops the booking with an
   error. With pallets, the buyer's own carrier is booked as less than a truckload when Amazon offers it.
-- **AWD**: Amazon's API doesn't take `PALLET` packages yet, so AWD orders send cartons only. Amazon issues no pallet
-  labels for them; with the seller's own carrier, AWD needs only the carton labels.
+- **AWD**: Amazon's API doesn't take `PALLET` packages yet, so AWD orders send cartons only, and it issues no pallet
+  labels. AWD still asks for four pallet labels on each pallet, which the buyer gets from Seller Central. Uploading
+  them to the shipment isn't built yet.
 
 ## Pallet labels
 
@@ -203,8 +215,9 @@ shipment's pallets stops the job.
   40 × 48 in wooden pallets with four-way entry, GMA grade B or better; cartons flush, labels out, nothing over the
   edge; at most 72 in tall including the pallet and 1,500 lb, and 50 in for a stackable pallet; clear stretch wrap
   marked “Do not break stretch wrap”; and the **Pallet labels** step, one of each pallet's four labels on each side,
-  at the top center, outside the stretch wrap, each carton keeping its own label. AWD and other shipments on pallets
-  get the same pallet rules, with no pallet label step. Each line comes from the pallet policy
+  at the top center, outside the stretch wrap, each carton keeping its own label. AWD pallets get the same rules and
+  the same **Pallet labels** step, though the packet doesn't carry AWD's labels yet. Pallets to the buyer's own
+  warehouse or a forwarder get general loading and securing steps. Each line comes from the pallet policy
   ([pallet rules](../../../packages/copacker-packing-rules/docs/pallet-rules.md)).
 - **Pallet table**: the pallet editor checks the footprint, height and weight as they're entered, against the policy
   of where the pallet's cartons go, under the field each names, with a link to the receiver's own rule.

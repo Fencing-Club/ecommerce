@@ -36,14 +36,15 @@ import { PackedProductsTable } from "@/components/packed-products-table"
 import { PackingForm } from "@/components/packing-form"
 import { PalletList } from "@/components/pallet-list"
 import { type ProductDownload, ProductDownloadsMenu } from "@/components/product-downloads-menu"
+import { RouteSection } from "@/components/route-section"
 import { ApproveInvoice, ReconcileShipment } from "@/components/shipment-actions"
-import { ShipmentDestination } from "@/components/shipment-destination"
 import { ShipmentDetails } from "@/components/shipment-details"
 import { ShipmentLayout } from "@/components/shipment-layout"
-import { ShipmentOrigin, ShipmentPackingDetails, ShipmentTransportLegs } from "@/components/shipment-packing-details"
+import { ShipmentTransportLegs } from "@/components/shipment-packing-details"
 import { ShipmentProgress } from "@/components/shipment-progress"
 import { ShipmentTransportSettings } from "@/components/shipment-transport"
 import { usePackingListDownload } from "@/hooks/use-packing-list-download"
+import { useShipmentRoute } from "@/hooks/use-shipment-route"
 import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups"
 import { printableLabelTypes } from "@/lib/printable-labels"
 import type { shipmentPage } from "@/server/shipment-page"
@@ -76,7 +77,8 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     title,
     amazonIds,
     nextStep,
-    delivery,
+    route: places,
+    buyer,
     destinationName,
     lineLabels
   } = page
@@ -109,7 +111,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
       ]
     })
   }
-  const forwarder = snapshot.via ? delivery.addresses[0]?.name : undefined
+  const forwarder = places.forwarder?.company
   // How the cartons travel: to the forwarder first, then from the handoff location by the booked transport.
   const handoff = shipment.transport?.handoff === "forwarder" && forwarder ? forwarder : supplier.name
   const legs = [
@@ -164,7 +166,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     )
   }
 
-  const route = [supplier.name, ...(forwarder ? [forwarder] : []), destinationName]
+  const route = useShipmentRoute(places)
   const productActions = (item: (typeof packingOrder.items)[number]) =>
     productDownloads(item.id).length > 0 && (
       <ProductDownloadsMenu
@@ -254,11 +256,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
               <ShipmentDetails {...totals} />
             </div>
           )}
-          shippingDetails={{
-            route,
-            shipTo: <ShipmentDestination {...delivery} compact />,
-            transport: legs.length > 0 && <ShipmentTransportLegs legs={legs} />
-          }}
+          route={{ route, buyer, notes: legs.length > 0 && <ShipmentTransportLegs legs={legs} /> }}
           shipmentId={id}
           linkedAmazonShipmentId={
             isBuyer && shipment.amazonNetwork === "awd_us" ? shipment.linkedAmazonShipmentId : undefined
@@ -430,11 +428,11 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
         </>
       }
       details={
-        <ShipmentPackingDetails
+        <RouteSection
           route={route}
-          shipFrom={<ShipmentOrigin origin={packing?.origin} addresses={addresses} />}
-          shipTo={<ShipmentDestination {...delivery} compact readOnly />}
-          transport={
+          buyer={buyer}
+          readyDate={packing?.readyDate}
+          notes={
             (legs.length > 0 || (shipment.transport && transportEditable)) && (
               <div className="flex flex-col gap-3">
                 {legs.length > 0 && <ShipmentTransportLegs legs={legs} />}

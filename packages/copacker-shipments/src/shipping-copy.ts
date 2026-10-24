@@ -127,6 +127,9 @@ const en = {
     "Maximum carton size: {lengthCm} × {widthCm} × {heightCm} cm ({lengthIn} × {widthIn} × {heightIn} in).",
   weightLimit: "Weight",
   weightLimitText: "Each packed carton must weigh no more than {kg} kg ({lb} lb).",
+  heavyCartons: "Heavy cartons",
+  heavyCartonsText:
+    "Put a “Team Lift” label on the top and each side of any carton over {kg} kg ({lb} lb). Over {heavyKg} kg ({heavyLb} lb), use “Mechanical Lift” labels instead.",
   amazonLabelText: "Apply the carton label assigned to each carton.",
   carrierLabelText: "Apply the carrier label assigned to each carton.",
   placement: "Label placement",
@@ -309,6 +312,9 @@ const de: ShippingCopy = {
     "Maximale Kartongröße: {lengthCm} × {widthCm} × {heightCm} cm ({lengthIn} × {widthIn} × {heightIn} Zoll).",
   weightLimit: "Gewicht",
   weightLimitText: "Jeder gepackte Karton darf höchstens {kg} kg ({lb} lb) wiegen.",
+  heavyCartons: "Schwere Kartons",
+  heavyCartonsText:
+    "Bringen Sie an jedem Karton über {kg} kg ({lb} lb) oben und an jeder Seite ein Etikett „Team Lift“ an. Über {heavyKg} kg ({heavyLb} lb) verwenden Sie stattdessen Etiketten „Mechanical Lift“.",
   amazonLabelText: "Bringen Sie an jedem Karton das zugeordnete Kartonetikett an.",
   carrierLabelText: "Bringen Sie an jedem Karton das zugeordnete Versandetikett an.",
   placement: "Etikettenplatzierung",
@@ -488,6 +494,9 @@ const zh: ShippingCopy = {
     "纸箱最大尺寸：{lengthCm} × {widthCm} × {heightCm} 厘米（{lengthIn} × {widthIn} × {heightIn} 英寸）。",
   weightLimit: "重量",
   weightLimitText: "每个装满的纸箱重量不得超过 {kg} 千克（{lb} 磅）。",
+  heavyCartons: "重型纸箱",
+  heavyCartonsText:
+    "超过 {kg} 千克（{lb} 磅）的纸箱，在顶部和每个侧面各贴一张“Team Lift”标签。超过 {heavyKg} 千克（{heavyLb} 磅）时，改贴“Mechanical Lift”标签。",
   amazonLabelText: "在每个纸箱上粘贴为其分配的箱标签。",
   carrierLabelText: "在每个纸箱上粘贴为其分配的承运商标签。",
   placement: "标签位置",
@@ -665,6 +674,9 @@ const ur: ShippingCopy = {
     "کارٹن کا زیادہ سے زیادہ سائز: {lengthCm} × {widthCm} × {heightCm} سینٹی میٹر ({lengthIn} × {widthIn} × {heightIn} انچ)۔",
   weightLimit: "وزن",
   weightLimitText: "ہر پیک شدہ کارٹن کا وزن {kg} کلوگرام ({lb} پاؤنڈ) سے زیادہ نہیں ہونا چاہیے۔",
+  heavyCartons: "بھاری کارٹن",
+  heavyCartonsText:
+    "{kg} کلوگرام ({lb} پاؤنڈ) سے زیادہ وزنی ہر کارٹن کے اوپر اور ہر طرف “Team Lift” لیبل لگائیں۔ {heavyKg} کلوگرام ({heavyLb} پاؤنڈ) سے زیادہ ہو تو اس کی جگہ “Mechanical Lift” لیبل لگائیں۔",
   amazonLabelText: "ہر کارٹن پر اس کے لیے مختص کارٹن لیبل لگائیں۔",
   carrierLabelText: "ہر کارٹن پر اس کے لیے مختص کیریئر لیبل لگائیں۔",
   placement: "لیبل کی جگہ",

@@ -23,7 +23,6 @@
       "unknownProduct": "Entfernen Sie Produkte, die nicht in dieser Bestellung stehen",
       "incompletePacks": "{sku}: Verwenden Sie ein Vielfaches von {pack} Einheiten",
       "unitsPerCarton": "{sku}: Packen Sie höchstens {max, number} verkaufsfähige Einheiten pro {receiver}-Karton",
-      "missingAsin": "{sku}: Fügen Sie die Amazon-ASIN hinzu",
       "missingFnsku": "{sku}: Fügen Sie die Amazon-FNSKU hinzu",
       "samePacking": "{sku}: Geben Sie allen Kartons denselben Inhalt, dieselben Maße und dasselbe Gewicht, oder teilen Sie sie auf getrennte Sendungen auf",
       "overQuantity": "{sku}: Die Kartons überschreiten die verbleibende Menge der Bestellung",

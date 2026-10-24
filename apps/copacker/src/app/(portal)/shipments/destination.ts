@@ -1,4 +1,4 @@
-import { type OrderInput } from "@repo/copacker-orders"
+import { type Address, type OrderInput } from "@repo/copacker-orders"
 import { type AmazonNetwork, isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { and, eq, inArray } from "drizzle-orm"
@@ -6,9 +6,17 @@ import { createTranslator } from "use-intl"
 import { formatDestination } from "@/components/common"
 import { db } from "@/db"
 import { type orders, type shipments, contacts } from "@/db/schema"
+import type { ShipmentPlaces } from "@/hooks/use-shipment-route"
 import { localization } from "@/server/localization"
 
 type Destination = Pick<OrderInput, "deliveryId" | "items">
+
+// The Amazon network a shipment goes to: its own once it's queued, until then its PO lines', when they all go to one.
+export function shipmentNetwork(order: Pick<OrderInput, "items">, network: AmazonNetwork | null) {
+  const lines = order.items.flatMap((item) => (isAmazonNetwork(item.receiver) ? [item.receiver] : []))
+  const [only, ...others] = network ? [network] : [...new Set(lines)]
+  return only && !others.length ? only : undefined
+}
 
 // Names where each PO's shipments end up, for the shipments list and a shipment's page: the Amazon network, such as
 // Amazon FBA, or the delivery address by name.
@@ -24,10 +32,8 @@ export async function shipmentDestinations(orders: Array<Pick<OrderInput, "deliv
   return (order: Destination, network: AmazonNetwork | null) => {
     const destination = orderDestination(order)
     if (destination === "amazon") {
-      // A shipment gets its network when it's queued; until then it's its PO lines', when they all go to one.
-      const lines = order.items.flatMap((item) => (isAmazonNetwork(item.receiver) ? [item.receiver] : []))
-      const [only, ...others] = network ? [network] : [...new Set(lines)]
-      return only && !others.length ? `Amazon ${amazonNetworkNames[only]}` : "Amazon"
+      const only = shipmentNetwork(order, network)
+      return only ? `Amazon ${amazonNetworkNames[only]}` : "Amazon"
     }
     return places.find((row) => row.id === order.deliveryId)?.name ?? formatDestination(destination, common)
   }
@@ -40,6 +46,15 @@ export async function shipmentDelivery(order: typeof orders.$inferSelect, shipme
     const stop = await forwarderAddress(order.buyerOrgId, data.via.forwarderId, data.via.addressId)
     return { addresses: stop ? [{ ...stop.address, name: stop.forwarderName }] : [], pending: false }
   }
+  return finalDestination(order, shipment)
+}
+
+// Where the shipment ends up: the buyer's warehouse, or Amazon's once Amazon has the shipment.
+async function finalDestination(
+  order: typeof orders.$inferSelect,
+  shipment: typeof shipments.$inferSelect
+): Promise<{ addresses: Address[]; pending: boolean }> {
+  const data = shipment.snapshot ?? order.data
   if (orderDestination(data) === "warehouse") {
     const places = data.deliveryId
       ? await db()
@@ -63,5 +78,32 @@ export async function shipmentDelivery(order: typeof orders.$inferSelect, shipme
   } catch {
     // A provider outage must not prevent packing or invent an address.
     return { addresses: [], pending: false }
+  }
+}
+
+// Where the shipment's goods stop on their way, for its Route section: the supplier's pickup address, the PO's forwarder,
+// AGL when it carries the goods into Amazon, and where they end up, which is the buyer's own warehouse or Amazon's.
+export async function shipmentPlaces(
+  order: typeof orders.$inferSelect,
+  shipment: typeof shipments.$inferSelect,
+  { supplier, buyer, pickup }: { supplier: string; buyer: string; pickup?: ShipmentPlaces["pickup"] }
+): Promise<ShipmentPlaces> {
+  const data = shipment.snapshot ?? order.data
+  const { forwarderAddress } = await import("@/server/forwarders")
+  const [stop, final] = await Promise.all([
+    data.via ? forwarderAddress(order.buyerOrgId, data.via.forwarderId, data.via.addressId) : undefined,
+    finalDestination(order, shipment)
+  ])
+  const warehouse = orderDestination(data) === "warehouse"
+  return {
+    supplier,
+    pickup,
+    forwarder: stop && { company: stop.forwarderName, place: { name: stop.addressName, address: stop.address } },
+    agl: shipment.transport?.service === "agl",
+    destination: {
+      company: warehouse ? buyer : "Amazon",
+      receiver: warehouse ? "warehouse" : shipmentNetwork(data, shipment.amazonNetwork),
+      addresses: final.addresses
+    }
   }
 }

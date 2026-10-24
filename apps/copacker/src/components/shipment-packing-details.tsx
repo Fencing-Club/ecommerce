@@ -1,105 +1,8 @@
-import { FieldTitle } from "@buildkitgg/shadcn-baseui-kit"
 import type { Address } from "@repo/copacker-orders"
-import { addressLine } from "@repo/copacker-orders"
-import { ArrowRight, Building2, CornerDownRight, MapPin, Truck, Warehouse } from "lucide-react"
-import { Fragment, type ReactNode } from "react"
+import { Truck } from "lucide-react"
 import { objectKeys } from "ts-extras"
-import { useTranslations } from "use-intl"
 import { emptyAddress } from "./address-fields"
-import { PhoneLink } from "./common"
 import type { PartnerAddress } from "./partner-address"
-
-/** The same card surrounds editable packing fields and the submitted shipment details. */
-export function ShipmentPackingDetails({
-  route,
-  shipFrom,
-  shipTo,
-  transport,
-  packing
-}: {
-  route?: string[]
-  shipFrom: ReactNode
-  shipTo?: ReactNode
-  transport?: ReactNode
-  packing?: ReactNode
-}) {
-  return (
-    <section className="@container/packing-details overflow-hidden rounded-lg border bg-card text-sm">
-      {/* A narrow card lists the stops one per line, each after the first led in by a corner arrow from the one above. */}
-      {route && (
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 border-b bg-muted/40 px-4 py-3 text-meta leading-[17px] font-medium @max-md/packing-details:flex-col @max-md/packing-details:items-start @max-md/packing-details:gap-2.5">
-          {route.map((stop, index) => {
-            let Icon = Warehouse
-            if (index === 0) {
-              Icon = Building2
-            } else if (index === route.length - 1) {
-              Icon = MapPin
-            }
-            return (
-              <Fragment key={`${index}-${stop}`}>
-                {index > 0 && (
-                  <ArrowRight
-                    aria-hidden
-                    className="size-3.5 shrink-0 text-muted-foreground rtl:rotate-180 @max-md/packing-details:hidden"
-                  />
-                )}
-                <span className="inline-flex items-center gap-1.5">
-                  {index > 0 && (
-                    <CornerDownRight
-                      aria-hidden
-                      className="hidden size-3.5 shrink-0 text-muted-foreground rtl:-scale-x-100 @max-md/packing-details:block"
-                    />
-                  )}
-                  <Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-                  {stop}
-                </span>
-              </Fragment>
-            )
-          })}
-        </div>
-      )}
-      <div className="space-y-4 p-4">
-        <div className={shipTo ? "grid items-start gap-6 @lg/packing-details:grid-cols-2" : "min-w-0"}>
-          <div className="min-w-0 space-y-3">{shipFrom}</div>
-          {shipTo && <div className="min-w-0">{shipTo}</div>}
-        </div>
-        {transport}
-      </div>
-      {packing && <div className="space-y-4 border-t p-4">{packing}</div>}
-    </section>
-  )
-}
-
-/** Both shipment addresses share a display; editable cards align the destination with the selector. */
-export function ShipmentAddress({
-  label,
-  name,
-  address,
-  contact,
-  readOnly = false
-}: {
-  label: string
-  name: string
-  address: string
-  contact?: ReactNode
-  readOnly?: boolean
-}) {
-  return (
-    <div className="flex min-w-0 flex-col gap-2">
-      {readOnly ? <p className="text-xs text-muted-foreground">{label}</p> : <FieldTitle>{label}</FieldTitle>}
-      <div className={readOnly ? "flex min-w-0 items-start gap-3" : "flex min-w-0 py-3"}>
-        {readOnly && <MapPin aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground" />}
-        <div className="flex min-w-0 flex-col gap-1">
-          {name && <p className="font-medium">{name}</p>}
-          <p className={readOnly ? "text-sm text-muted-foreground" : "text-xs leading-relaxed text-muted-foreground"}>
-            <bdi>{address}</bdi>
-          </p>
-          {contact && <div className="text-xs text-muted-foreground">{contact}</div>}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // Which saved address a pickup address is, while it's unchanged.
 export const savedAddress = (addresses: PartnerAddress[], origin: Partial<Address>) =>
@@ -112,31 +15,7 @@ export function startingAddress(addresses: PartnerAddress[], origin: Partial<Add
   return !hasOrigin && addresses.length === 1 ? addresses[0] : savedAddress(addresses, origin)
 }
 
-// Where a packed shipment's cartons leave from: the supplier's saved address it is, or the address as entered, with its
-// contact.
-export function ShipmentOrigin({ origin, addresses }: { origin?: Partial<Address>; addresses: PartnerAddress[] }) {
-  const t = useTranslations("orders.packing")
-  const start = startingAddress(addresses, origin)
-  const shown = { ...emptyAddress, ...(start?.address ?? origin) }
-  return (
-    <ShipmentAddress
-      readOnly
-      label={t("shipFrom")}
-      name={start?.name ?? shown.name ?? ""}
-      address={addressLine(shown)}
-      contact={
-        (shown.name || shown.phoneNumber) && (
-          <bdi>
-            {shown.name && <span>{shown.name}</span>}
-            {shown.name && shown.phoneNumber && ", "}
-            {shown.phoneNumber && <PhoneLink number={shown.phoneNumber} countryCode={shown.countryCode} />}
-          </bdi>
-        )
-      }
-    />
-  )
-}
-
+// How the cartons travel as the shipment's transport says, one line per leg, under the shipment's route.
 export function ShipmentTransportLegs({ legs }: { legs: string[] }) {
   return (
     <div className="space-y-1.5 text-xs">

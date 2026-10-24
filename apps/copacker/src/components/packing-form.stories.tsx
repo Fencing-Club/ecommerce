@@ -12,6 +12,7 @@ import { type ActionRequest, recordActions } from "@/stories/actions"
 import { supplierId } from "@/stories/fixtures/orders"
 import { northwindFactory } from "@/stories/fixtures/parties"
 import { order, shipmentRecord } from "@/stories/fixtures/purchase-orders"
+import { throughForwarder } from "@/stories/fixtures/routes"
 import { chooseMenuItem, chooseOption, shownDialog } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { PackingForm } from "./packing-form"
@@ -144,7 +145,8 @@ const meta = preview.meta({
     reserved: {},
     order,
     initial: null,
-    addresses: []
+    addresses: [],
+    route: { route: throughForwarder, buyer: "Harbor Goods" }
   },
   beforeEach: ({ msw }) => {
     msw.use(packingActions({ canSubmit: true, requiresApproval: false, issues: [] }))

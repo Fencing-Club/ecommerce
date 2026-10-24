@@ -180,6 +180,69 @@
     "save": "Salva trasporto",
     "unconfirmed": "Trasporto non confermato"
   },
+  "route": {
+    "title": "Percorso",
+    "editRoute": "Modifica percorso",
+    "cancel": "Annulla",
+    "save": "Salva percorso",
+    "shipFrom": "Spedisci da",
+    "shipTo": "Spedisci a",
+    "finalDestination": "Destinazione finale",
+    "stops": {
+      "agl": {
+        "name": "Amazon Global Logistics (AGL)",
+        "detail": "Prenotato in Seller Central"
+      },
+      "fba": "Amazon sceglie i centri logistici quando viene creata la spedizione",
+      "awd_us": "Amazon sceglie il magazzino quando l’ordine in entrata viene confermato"
+    },
+    "remove": "Rimuovi",
+    "removeStop": "Rimuovi {name}",
+    "addStop": "Aggiungi tappa",
+    "chooseStop": "Scegli una tappa",
+    "newStop": "Nuova tappa",
+    "endsRoute": "Il percorso termina a {name}. Rimuovilo per aggiungere una tappa prima.",
+    "issues": {
+      "supplierNotFirst": "Il percorso deve iniziare dal fornitore.",
+      "noFinalDestination": "Aggiungi la destinazione finale per salvare il percorso.",
+      "stopAfterFinalDestination": "Nulla può seguire la destinazione finale. Rimuovi le tappe successive.",
+      "aglNotIntoAmazon": "AGL consegna solo in una rete Amazon. Scegli poi Amazon FBA US o AWD US.",
+      "legMissing": "Scegli chi spedisce ogni tratta per salvare il percorso.",
+      "legNotAllowed": "Solo il mittente può spedire in una rete Amazon."
+    },
+    "ready": "Pronto il {date}",
+    "legs": {
+      "label": "Spedizione, da {from} a {to}",
+      "senderArranges": "{company} organizza la spedizione",
+      "receiverArranges": "{company} organizza la spedizione",
+      "senderMoves": "{company} consegna",
+      "receiverMoves": "{company} ritira",
+      "booksCarrier": "Prenota il corriere",
+      "ownVehicle": "Con il proprio veicolo",
+      "arrangesNote": "{company} prenota il corriere e aggiunge il codice di tracciamento e il costo.",
+      "movesNote": "Con il proprio veicolo.",
+      "amazon": "Amazon organizza la spedizione",
+      "aglCollects": "AGL ritira i cartoni da {company}. {buyer} lo prenota in Seller Central e collega la spedizione.",
+      "aglShips": "AGL spedisce i cartoni fino a {name}."
+    },
+    "networks": {
+      "fba": {
+        "name": "Amazon FBA US",
+        "about": "Amazon conserva il tuo stock, poi prepara, imballa e spedisce ogni ordine e gestisce i resi. Usalo per offrire la spedizione Prime."
+      },
+      "awd_us": {
+        "name": "Amazon AWD US",
+        "about": "Il magazzino all’ingrosso di Amazon, che rifornisce FBA automaticamente man mano che lo stock si vende. Usalo per risparmiare fino all’80% sulle tariffe di stoccaggio rispetto all’alta stagione di FBA."
+      }
+    },
+    "about": "Informazioni su {name}",
+    "requirements": "Requisiti di {name}",
+    "cartons": "Cartoni",
+    "pallets": "Pallet",
+    "documentation": "Documentazione",
+    "website": "Sito web",
+    "opensInNewTab": "si apre in una nuova scheda"
+  },
   "documentPreview": {
     "settings": "Impostazioni di download",
     "language": "Lingua",

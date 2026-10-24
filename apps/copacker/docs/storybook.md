@@ -253,8 +253,8 @@ and routine background processing send no email. Physical pickup is distinct fro
 `src/stories/fixtures/shipment-action-feedback.ts`; these English review examples are not a production event publisher
 or a replacement for localized runtime copy.
 
-Shipment packing headers use `ShipmentPackingDetails` in both the app and the purchase-order prototype.
-`PackingDetailsFields` binds the same card to the packing form: saved supplier address, destination, transport legs,
-and required ready date; a packed shipment shows its pickup address with `ShipmentOrigin`, without a form. The
-standalone shipment-packing-details stories cover editing, read-only and forwarder layouts; the prototype
-sidebar reads the date from the live form.
+Shipments head with their route (`RouteSection`) in both the app and the purchase-order prototype.
+`PackingDetailsFields` binds it to the packing form: the saved supplier address, required ready date and pallets on its
+first stop, and the transport legs under it; a packed shipment shows the same section read-only, without a form. The
+shipment-packing-details stories cover the packing fields on the route; the prototype sidebar reads the date from the
+live form.

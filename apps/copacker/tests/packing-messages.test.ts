@@ -27,7 +27,7 @@ describe("naming a carton's products for the supplier", () => {
       )
     ).toEqual({ receiver: "FBA", product: "NT-CT-3100", other: "Cotton drawstring bag" })
     expect(
-      issueValues({ cartonId: "A1", code: "missingAsin", values: { receiver: "FBA", sku: "DB-2030" } }, products)
+      issueValues({ cartonId: "A1", code: "missingFnsku", values: { receiver: "FBA", sku: "DB-2030" } }, products)
     ).toEqual({ receiver: "FBA", sku: "DB-2030" })
     expect(issueValues({ code: "noPallets" }, products)).toBeUndefined()
   })

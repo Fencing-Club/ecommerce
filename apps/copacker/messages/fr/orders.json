@@ -505,7 +505,6 @@
       "packingGroups": "Produits : {receiver} n’accepte pas {product} et {other} dans le même carton. Amazon les traite différemment, par exemple pour les marchandises dangereuses, la préparation ou les étiquettes, et peut les envoyer dans des entrepôts différents. Déplacez l’un d’eux dans un autre carton.",
       "samePacking": "{difference, select, units {Quantité : les autres cartons de {sku} contiennent {units, number} unités chacun.} other {Dimensions : les autres cartons de {sku} mesurent {length, number} × {width, number} × {height, number} cm pour {weight, number} kg.}} {receiver} exige que tous les cartons d’un SKU aient les mêmes unités, dimensions et poids. Alignez-les, ou envoyez ce carton dans un autre envoi.",
       "incompletePacks": "Quantité : {sku} est vendu par lots de {pack, number}. Saisissez un multiple de {pack, number}.",
-      "missingAsin": "Produits : {sku} n’a pas d’ASIN, dont {receiver} a besoin pour le réceptionner. L’acheteur l’ajoute sur le bon de commande.",
       "missingFnsku": "Produits : {sku} n’a pas de FNSKU, dont {receiver} a besoin pour l’étiqueter. L’acheteur l’ajoute sur le bon de commande.",
       "duplicateCarton": "Identifiant de carton : {carton} est déjà utilisé par un autre carton. Donnez à chaque carton son propre identifiant.",
       "repeatedProduct": "Produits : {sku} figure plusieurs fois dans ce carton. Indiquez-le une seule fois avec toutes ses unités.",

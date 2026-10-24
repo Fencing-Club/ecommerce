@@ -23,7 +23,6 @@
       "unknownProduct": "जो प्रोडक्ट इस खरीद ऑर्डर में नहीं हैं, उन्हें हटाएं",
       "incompletePacks": "{sku}: {pack} यूनिट के गुणज का इस्तेमाल करें",
       "unitsPerCarton": "{sku}: हर {receiver} कार्टन में ज़्यादा से ज़्यादा {max, number} बिकने योग्य यूनिट पैक करें",
-      "missingAsin": "{sku}: Amazon ASIN जोड़ें",
       "missingFnsku": "{sku}: Amazon FNSKU जोड़ें",
       "samePacking": "{sku}: हर कार्टन का सामान, माप और वज़न एक जैसा रखें, या उन्हें अलग-अलग शिपमेंट में बांटें",
       "overQuantity": "{sku}: कार्टन खरीद ऑर्डर की बची हुई मात्रा से ज़्यादा हैं",

@@ -64,7 +64,8 @@ export function shippingDocumentSnapshot(input: {
     }
   }
   const network = packedNetwork(order, items)
-  // Amazon labels pallets for FBA only; AWD takes its cartons as cases.
+  // Amazon's API issues pallet labels for FBA only. AWD's come from Seller Central, for the buyer to upload once
+  // copacker takes them; until then the checklist asks for them and the packet has none.
   const placed = network === "fba" ? palletLabels(packing.pallets ?? [], labels) : []
   const data: ShippingDocumentData = {
     company: input.company,

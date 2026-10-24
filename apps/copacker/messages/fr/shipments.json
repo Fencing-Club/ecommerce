@@ -180,6 +180,69 @@
     "save": "Enregistrer le transport",
     "unconfirmed": "Transport non confirmé"
   },
+  "route": {
+    "title": "Itinéraire",
+    "editRoute": "Modifier l’itinéraire",
+    "cancel": "Annuler",
+    "save": "Enregistrer l’itinéraire",
+    "shipFrom": "Expédier depuis",
+    "shipTo": "Expédier à",
+    "finalDestination": "Destination finale",
+    "stops": {
+      "agl": {
+        "name": "Amazon Global Logistics (AGL)",
+        "detail": "Réservé dans Seller Central"
+      },
+      "fba": "Amazon choisit les centres de distribution à la création de l’expédition",
+      "awd_us": "Amazon choisit l’entrepôt à la confirmation de la commande entrante"
+    },
+    "remove": "Retirer",
+    "removeStop": "Retirer {name}",
+    "addStop": "Ajouter une étape",
+    "chooseStop": "Choisir une étape",
+    "newStop": "Nouvelle étape",
+    "endsRoute": "L’itinéraire se termine à {name}. Retirez-le pour ajouter une étape avant.",
+    "issues": {
+      "supplierNotFirst": "L’itinéraire doit commencer chez le fournisseur.",
+      "noFinalDestination": "Ajoutez la destination finale pour enregistrer l’itinéraire.",
+      "stopAfterFinalDestination": "Rien ne peut suivre la destination finale. Retirez les étapes après elle.",
+      "aglNotIntoAmazon": "AGL livre uniquement dans un réseau Amazon. Choisissez ensuite Amazon FBA US ou AWD US.",
+      "legMissing": "Choisissez qui expédie chaque étape pour enregistrer l’itinéraire.",
+      "legNotAllowed": "Seul l’expéditeur peut expédier vers un réseau Amazon."
+    },
+    "ready": "Prêt le {date}",
+    "legs": {
+      "label": "Expédition, de {from} à {to}",
+      "senderArranges": "{company} organise l’expédition",
+      "receiverArranges": "{company} organise l’expédition",
+      "senderMoves": "{company} livre",
+      "receiverMoves": "{company} vient chercher",
+      "booksCarrier": "Réserve le transporteur",
+      "ownVehicle": "Avec son propre véhicule",
+      "arrangesNote": "{company} réserve le transporteur et ajoute le numéro de suivi et le coût.",
+      "movesNote": "Avec son propre véhicule.",
+      "amazon": "Amazon organise l’expédition",
+      "aglCollects": "AGL enlève les cartons chez {company}. {buyer} le réserve dans Seller Central et associe l’expédition.",
+      "aglShips": "AGL achemine les cartons jusqu’à {name}."
+    },
+    "networks": {
+      "fba": {
+        "name": "Amazon FBA US",
+        "about": "Amazon stocke votre inventaire, puis prépare, emballe et expédie chaque commande et gère les retours. Utilisez-le pour proposer la livraison Prime."
+      },
+      "awd_us": {
+        "name": "Amazon AWD US",
+        "about": "Le stockage en vrac d’Amazon, qui réapprovisionne FBA automatiquement au fil des ventes. Utilisez-le pour économiser jusqu’à 80 % sur les frais de stockage par rapport à la haute saison de FBA."
+      }
+    },
+    "about": "À propos de {name}",
+    "requirements": "Exigences de {name}",
+    "cartons": "Cartons",
+    "pallets": "Palettes",
+    "documentation": "Documentation",
+    "website": "Site web",
+    "opensInNewTab": "s’ouvre dans un nouvel onglet"
+  },
   "documentPreview": {
     "settings": "Paramètres de téléchargement",
     "language": "Langue",

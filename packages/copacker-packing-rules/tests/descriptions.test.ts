@@ -14,6 +14,8 @@ function limits(rule: CartonRule | PalletRule): number[] {
       return [rule.units]
     case "maxHeight":
       return [rule.height, ...(rule.stackable === undefined ? [] : [rule.stackable])]
+    case "liftLabels":
+      return [rule.teamLift, rule.mechanicalLift]
     default:
       return []
   }
@@ -29,12 +31,14 @@ const rules = [
 ]
 
 // Each rule describes itself, so the policies read as documentation; a changed limit fails here until its description
-// says so too.
+// and its summary say so too.
 describe("rule descriptions", () => {
   it.each(rules)("$receiver $rule.type states its limits", ({ rule }) => {
-    expect(rule.description.length).toBeGreaterThan(0)
-    for (const limit of limits(rule)) {
-      expect(rule.description).toContain(limit.toLocaleString("en-US"))
+    for (const text of [rule.description, rule.summary]) {
+      expect(text.length).toBeGreaterThan(0)
+      for (const limit of limits(rule)) {
+        expect(text).toContain(limit.toLocaleString("en-US"))
+      }
     }
   })
 })
