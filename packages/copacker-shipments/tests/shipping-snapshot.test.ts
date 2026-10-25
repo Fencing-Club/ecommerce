@@ -311,6 +311,25 @@ describe("supplier packet before it can be released", () => {
     expect(checks.handoff.map((check) => check.title)).toContain("handoff")
   })
 
+  it("exports a forwarder leg without transport as one the supplier delivers itself", () => {
+    const data = shippingDocumentSnapshot({
+      ...input,
+      order: {
+        ...order,
+        via,
+        deliveryId: "00000000-0000-4000-8000-000000000003",
+        items: [{ ...product, receiver: "warehouse" }]
+      },
+      labels: [],
+      transport: null,
+      destination: forwarder,
+      onward: { destination: warehouse, service: "forwarder" }
+    })
+    expect(data.transport).toMatchObject({ service: "supplier", collection: "delivery", carrierLabels: false })
+    expect(shipmentDocumentChecks(data).handoff.map((check) => check.title)).toContain("deliveryTask")
+    expect(() => shippingDocumentSnapshot({ ...input, transport: null })).toThrow(/Choose the shipment's transport/)
+  })
+
   it("takes an onward leg only for a PO through a forwarder", () => {
     expect(() =>
       shippingDocumentSnapshot({ ...input, onward: { destination: warehouse, service: "forwarder" } })

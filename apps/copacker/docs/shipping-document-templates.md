@@ -90,7 +90,9 @@ and supplier names, revision, shipment name and language/paper settings. Its opt
 
 - `amazonPending`: an Amazon shipment before Amazon has it, so the packet has no carton labels or warehouse address.
 - `onward`: for a PO through a forwarder, where the forwarder takes the cartons next. The destination is the
-  forwarder's address, and the documents are the forwarder leg's.
+  forwarder's address, and the documents are the forwarder leg's. With `transport` set to `null`, the supplier delivers
+  to the forwarder itself: the packing list shows the supplier as Ship from and the forwarder as Deliver to, and the
+  route continues to the onward stop.
 - `originalLabels`: an AWD shipment's original Amazon carton labels PDF, relative to the JSON file. The exporter matches
   its labels to cartons by SKU, FNSKU and quantity, keeps the PDF's bytes, and adds the carton reference and labels.
 - `evidence`: where the input came from, for the verification manifest.

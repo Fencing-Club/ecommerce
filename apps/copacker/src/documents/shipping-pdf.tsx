@@ -287,6 +287,21 @@ function PackingRoute() {
     data.network === "fba" || data.network === "awd" ? network(data) : data.destination.name,
     ...(data.onward ? [final.name] : [])
   ]
+  // The supplier delivers the cartons itself: from its address to the receiving one. Any onward leg is the receiver's.
+  if (data.transport.collection === "delivery") {
+    return (
+      <>
+        <RouteStops stops={route} />
+        <View style={[styles.addresses, row]}>
+          <Address label={t.deliverFrom} party={data.origin} />
+          {stops.map((stop) => (
+            <Address key={stop.name} label={t.nextStop} party={stop} />
+          ))}
+          <Address label={t.transferTo} party={receiving} />
+        </View>
+      </>
+    )
+  }
   return (
     <>
       <RouteStops stops={route} />
