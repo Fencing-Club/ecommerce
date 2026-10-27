@@ -110,42 +110,6 @@ export async function forwarderAddress(
   )
 }
 
-// The forwarder addresses a route stops at, by forwarder and address, whether or not the buyer still keeps them, as the
-// shipment page names them.
-export async function stopForwarders(
-  stops: readonly { forwarderId: string; addressId: string }[],
-  reader: Reader = db()
-): Promise<Pick<ForwarderAddress, "forwarderId" | "forwarderName" | "addressId" | "addressName" | "address">[]> {
-  if (!stops.length) {
-    return []
-  }
-  const rows = await reader
-    .select({
-      forwarderId: forwarders.id,
-      forwarderName: forwarders.name,
-      addressId: contacts.id,
-      addressName: contacts.name,
-      address: contacts.address
-    })
-    .from(contacts)
-    .innerJoin(
-      forwarders,
-      inArray(
-        forwarders.id,
-        stops.map((stop) => stop.forwarderId)
-      )
-    )
-    .where(
-      inArray(
-        contacts.id,
-        stops.map((stop) => stop.addressId)
-      )
-    )
-  return rows.filter((row) =>
-    stops.some((stop) => stop.forwarderId === row.forwarderId && stop.addressId === row.addressId)
-  )
-}
-
 // Invites a forwarder at this email with a new link, which replaces any earlier one, in the transaction that decided to.
 async function queueInvite(tx: Transaction, forwarderId: string, email: string, buyerName: string) {
   const { invitation, saved } = invitationFields()

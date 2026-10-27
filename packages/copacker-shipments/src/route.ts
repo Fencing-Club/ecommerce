@@ -15,7 +15,8 @@ import type { ShipmentTransport } from "./transport"
 // A shipment's route: its stops in order and who moves the goods between each two (`@repo/copacker-packing-rules/routes`).
 // A stop names its place by id, or by the shipment: the supplier's pickup address is the packing's, a forwarder's
 // warehouse is one of the buyer's forwarder addresses, and the receiver is where the shipment's goods end up
-// (shipmentReceiver). A leg nobody has to choose, to and from AGL, is null, and so is one nobody has chosen yet.
+// (shipmentReceiver). A route stops at one forwarder at most, whose leg follows the supplier's. A leg nobody has to
+// choose, to and from AGL, is null, and so is one nobody has chosen yet.
 export const stopKinds = ["supplier", "forwarder", "agl", "receiver"] as const
 export const savedStopSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("supplier") }),
@@ -30,7 +31,18 @@ export const shipmentRouteSchema = z
     legs: z.array(z.enum(legArrangements).nullable())
   })
   .refine((route) => route.legs.length === route.stops.length - 1, "A route has one leg fewer than it has stops")
+  .refine(
+    (route) => route.stops.filter((stop) => stop.kind === "forwarder").length <= 1,
+    "A route stops at one forwarder at most"
+  )
 export type ShipmentRoute = z.infer<typeof shipmentRouteSchema>
+
+// The forwarder the route stops at, by its forwarder and the address there, if it stops at one. Its leg comes after the
+// supplier's: the forwarder ships the goods on once they've arrived.
+export function routeForwarder(route: ShipmentRoute) {
+  const stop = route.stops.find((candidate) => candidate.kind === "forwarder")
+  return stop && { forwarderId: stop.forwarderId, addressId: stop.addressId }
+}
 
 // A saved stop's id, which tells two places apart: "supplier", "agl", "receiver" or "forwarder:<forwarder>:<address>".
 export function stopId(stop: SavedStop) {

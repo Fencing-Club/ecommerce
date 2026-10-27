@@ -3,6 +3,7 @@ import { shipmentPlaceRows } from "@/app/(portal)/shipments/destination"
 import { db } from "@/db"
 import { documents, organizations, shipments } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
+import { can } from "@/lib/access"
 import { accessibleOrder } from "@/server/access"
 import { requirePage, session } from "@/server/auth"
 import { proposalState } from "@/server/order-proposals"
@@ -39,7 +40,8 @@ export async function shipmentPage(input: { id: string }) {
     db().select({ name: organizations.name }).from(organizations).where(eq(organizations.id, order.buyerOrgId)),
     proposalState(order.id),
     lineLabels({ ...order, data: snapshot }),
-    shipmentPlaceRows(order, shipment, saved)
+    // Only the buyer, who edits the route, is offered its forwarder addresses.
+    shipmentPlaceRows(order, shipment, saved, s.org.kind === "buyer" && can(s, "shipments", "edit"))
   ])
   return shipmentPageData(
     {

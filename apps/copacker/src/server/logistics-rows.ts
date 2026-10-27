@@ -1,6 +1,7 @@
 import { type OrderInput } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
+import { routeForwarder } from "@repo/copacker-shipments/route"
 import { shippedStates, type ShipmentState } from "@repo/copacker-shipments/states"
 import { inArray } from "drizzle-orm"
 import { shipmentDestinations } from "@/app/(portal)/shipments/destination"
@@ -8,6 +9,7 @@ import { db } from "@/db"
 import { forwarders, orderProposals, type shipments } from "@/db/schema"
 import type { ListParty, ListStage, LogisticsRow } from "@/lib/logistics-list"
 import type { AmazonShipment } from "@/server/amazon-shipments"
+import { routedThrough, withRoutes } from "@/server/shipment-routes"
 
 type Shipment = Pick<
   typeof shipments.$inferSelect,
@@ -24,8 +26,8 @@ type Shipment = Pick<
   | "bookingReference"
   | "createdAt"
 >
-// Where a PO goes, read from its lines' receivers, and its stop on the way.
-type Route = Pick<OrderInput, "via"> & { items: ReadonlyArray<Pick<OrderInput["items"][number], "receiver">> }
+// Where a shipment goes, read from its lines' receivers, and whether its route stops at a forwarder on the way.
+type Route = { forwarder: boolean; items: ReadonlyArray<Pick<OrderInput["items"][number], "receiver">> }
 
 // Who a shipment waits on next: the supplier packs and ships, the buyer approves and buys labels, Amazon creates its
 // shipment and receives, a forwarder ships the goods on, and the carrier delivers to the buyer's own location.
@@ -44,7 +46,7 @@ export function shipmentParty(status: ShipmentState, route: Route): ListParty {
     case "creating":
       return "amazon"
     case "shipped":
-      if (route.via) {
+      if (route.forwarder) {
         return "forwarder"
       }
       return orderDestination(route) === "amazon" ? "amazon" : "carrier"
@@ -89,14 +91,16 @@ const urgency: ShipmentState[] = [
 ]
 
 // A purchase order's place in the lists. A pending proposal waits on the buyer before anything its shipments need.
+// Each shipment's `forwarder` says whether its route stops at one.
 export function orderProgress(
   order: {
     status: "draft" | "submitted" | "closed"
-    data: Omit<Route, "items"> & { items: ReadonlyArray<Route["items"][number] & { pieces: number }> }
+    data: { items: ReadonlyArray<Route["items"][number] & { pieces: number }> }
   },
   orderShipments: ReadonlyArray<{
     status: ShipmentState
-    snapshot: Route | null
+    snapshot: Pick<Route, "items"> | null
+    forwarder: boolean
     packing: { cartons: ReadonlyArray<{ items: ReadonlyArray<{ pieces: number }> }> } | null
   }>,
   proposalPending: boolean
@@ -125,7 +129,9 @@ export function orderProgress(
   // Pieces not shipped yet wait on the supplier, whoever the shipments on their way wait on. Once every piece is on its
   // way, the order waits on whoever delivers the last shipment, and on nobody once it's received.
   const remaining = shippedStates.includes(first.status) && counts.shipped < quantity
-  const waiting = remaining ? "supplier" : shipmentParty(first.status, first.snapshot ?? order.data)
+  const waiting = remaining
+    ? "supplier"
+    : shipmentParty(first.status, { items: (first.snapshot ?? order.data).items, forwarder: first.forwarder })
   return { status: first.status, stage: "active", waiting, ...counts }
 }
 
@@ -150,7 +156,8 @@ export async function pendingProposals(orderIds: string[]) {
   return new Set(rows.filter((row) => row.status === "pending").map((row) => row.orderId))
 }
 
-// A shipment's row. `number` counts its purchase order's shipments, oldest first.
+// A shipment's row. `number` counts its purchase order's shipments, oldest first; `forwarder` names the forwarder its
+// route stops at.
 export function shipmentRow(input: {
   shipment: Shipment
   order: { id: string; data: OrderInput }
@@ -160,7 +167,7 @@ export function shipmentRow(input: {
   destination: string
 }): LogisticsRow {
   const { shipment, order, number, partner, forwarder, destination } = input
-  const route = shipment.snapshot ?? order.data
+  const route = { items: (shipment.snapshot ?? order.data).items, forwarder: forwarder !== null }
   return {
     id: shipment.id,
     href: `/shipments/${shipment.id}`,
@@ -186,23 +193,35 @@ export function shipmentRow(input: {
 }
 
 // The shipment list's rows, newest first: every purchase order shipment, then the Amazon shipments that none of them
-// already shows. `list` is newest first; `customers` names each order's buyer for a supplier.
+// already shows. `list` is newest first; `customers` names each order's buyer for a supplier. A forwarder's orders
+// (`forwarder`) list only the shipments routed through it.
 export async function shipmentListRows(input: {
   isBuyer: boolean
-  rows: Array<{ order: { id: string; data: OrderInput; buyerOrgId: string }; supplier: { name: string } }>
+  rows: Array<{
+    order: { id: string; data: OrderInput; buyerOrgId: string }
+    supplier: { name: string }
+    forwarder?: { id: string }
+  }>
   list: Array<typeof shipments.$inferSelect>
   customers: Array<{ id: string; name: string }>
   amazon: AmazonShipment[]
 }): Promise<LogisticsRow[]> {
   const { isBuyer, rows, list, customers, amazon } = input
   const orderOf = (shipment: { orderId: string }) => rows.find((row) => row.order.id === shipment.orderId)
+  // Each shipment's route, by the purchase order it's on; a shipment of a PO the list doesn't show has no row.
+  const routed = await withRoutes(
+    db(),
+    list.filter((shipment) => orderOf(shipment)),
+    (shipment) => orderOf(shipment)!.order.data
+  )
   const [destination, forwarder] = await Promise.all([
     shipmentDestinations(rows.map((row) => row.order.data)),
-    forwarderNames(list.map((shipment) => (shipment.snapshot ?? orderOf(shipment)?.order.data)?.via?.forwarderId))
+    forwarderNames(routed.map((shipment) => routeForwarder(shipment.route)?.forwarderId))
   ])
-  const orderRows = list.flatMap((shipment) => {
+  const orderRows = routed.flatMap((shipment) => {
     const row = orderOf(shipment)
-    if (!row) {
+    // A forwarder sees only the shipments routed through it.
+    if (!row || (row.forwarder && !routedThrough(row.forwarder.id)(shipment))) {
       return []
     }
     return [
@@ -214,12 +233,12 @@ export async function shipmentListRows(input: {
           list
             .filter((other) => other.orderId === shipment.orderId)
             .toReversed()
-            .indexOf(shipment) + 1,
+            .findIndex((other) => other.id === shipment.id) + 1,
         // Who is on the other side: the supplier for a buyer, the customer for a supplier.
         partner: isBuyer
           ? row.supplier.name
           : (customers.find((customer) => customer.id === row.order.buyerOrgId)?.name ?? "—"),
-        forwarder: forwarder((shipment.snapshot ?? row.order.data).via?.forwarderId),
+        forwarder: forwarder(routeForwarder(shipment.route)?.forwarderId),
         destination: destination(row.order.data, shipment.amazonNetwork)
       })
     ]

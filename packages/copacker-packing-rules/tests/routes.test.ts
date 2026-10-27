@@ -61,8 +61,14 @@ describe("stopChoices", () => {
 
   it("offers anything that can follow the last stop when one is added, but nothing after a final destination", () => {
     const toForwarder: Route = { stops: [supplier, forwarder], legs: ["senderArranges"] }
-    expect(ids(stopChoices(toForwarder, 2, places))).toEqual(["bayline-shenzhen", "agl", "portland", "fba", "awd"])
+    expect(ids(stopChoices(toForwarder, 2, places))).toEqual(["agl", "portland", "fba", "awd"])
     expect(stopChoices(throughForwarder, 3, places)).toEqual([])
+  })
+
+  it("offers a forwarder only where no other stop is one", () => {
+    const throughAgl: Route = { stops: [supplier, forwarder, agl, fba], legs: ["senderArranges", undefined, undefined] }
+    expect(ids(stopChoices(throughAgl, 1, places))).toEqual(["bayline", "bayline-shenzhen"])
+    expect(ids(stopChoices(throughAgl, 2, places))).toEqual(["agl"])
   })
 
   it("keeps the supplier first", () => {
@@ -138,6 +144,14 @@ describe("routeIssues", () => {
       { code: "legMissing", index: 1 }
     ])
     expect(routeIssues({ stops: [supplier, agl, fba], legs: [] })).toEqual([])
+  })
+
+  it("allows one forwarder", () => {
+    const twice: Route = {
+      stops: [supplier, forwarder, otherForwarder, warehouse],
+      legs: ["senderArranges", "senderArranges", "senderArranges"]
+    }
+    expect(routeIssues(twice)).toEqual([{ code: "secondForwarder", index: 2 }])
   })
 
   it("starts at the supplier", () => {

@@ -60,7 +60,7 @@ AWD cartons keep one product. Each network's carton limits, with Amazon's source
 
 ## Origin
 
-Amazon collects from the supplier's pickup address, or, for a PO with a forwarder stop on the way (`via`), from that
+Amazon collects from the supplier's pickup address, or, for a shipment whose route stops at a forwarder, from that
 forwarder address, which then needs a phone number. The supplier's packing list and checklist keep its own pickup
 address.
 

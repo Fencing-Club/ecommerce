@@ -7,26 +7,25 @@ import type { RouteChoices, RoutePlace, RouteStop } from "@/components/route-edi
 // A place on the route: its name, such as "Main factory", and its address.
 type Place = Omit<RoutePlace, "contact">
 
-// A forwarder's address the route stops at, or can.
-export type ForwarderPlace = { forwarderId: string; addressId: string; company: string; place: Place }
+// A forwarder's address the route stops at, or can: one of the buyer's current forwarder addresses (`offered`).
+export type ForwarderPlace = { forwarderId: string; addressId: string; company: string; place: Place; offered: boolean }
 
 // Where a shipment's goods stop on their way, as the shipment page loads them: its route, and the places its stops are.
-// The supplier's pickup address, the forwarder addresses the route stops at or can (the purchase order's, `via`), and
-// where the goods end up, with the addresses known so far (the buyer's warehouse, or Amazon's once it names them).
-// `receiver` is where the route rules take the goods; `network` names the Amazon network once the shipment has one.
+// The supplier's pickup address, the forwarder addresses the route stops at or can, and where the goods end up, with the
+// addresses known so far (the buyer's warehouse, or Amazon's once it names them). `receiver` is where the route rules
+// take the goods; `network` names the Amazon network once the shipment has one.
 export type ShipmentPlaces = {
   route: ShipmentRoute
   supplier: string
   pickup?: Place
   forwarders: ForwarderPlace[]
-  via?: { forwarderId: string; addressId: string }
   destination: { company: string; receiver: ReceiverId; network?: AmazonNetwork; addresses: Address[] }
 }
 
 // The shipment's route as the Route section shows and edits it, each stop named by its company with its place under it;
-// the stops it can choose from: the purchase order's forwarder, AGL on the way into Amazon, and where the goods end up;
-// and `saved`, which turns an edited route back into the stops the shipment keeps.
-export function useShipmentRoute({ route, supplier, pickup, forwarders, via, destination }: ShipmentPlaces) {
+// the stops it can choose from: the buyer's forwarders, AGL on the way into Amazon, and where the goods end up; and
+// `saved`, which turns an edited route back into the stops the shipment keeps.
+export function useShipmentRoute({ route, supplier, pickup, forwarders, destination }: ShipmentPlaces) {
   const t = useTranslations("shipments.route")
   const amazon = destination.receiver !== "warehouse"
   const forwarderStop = (place: ForwarderPlace): RouteStop & { saved: SavedStop } => {
@@ -72,9 +71,9 @@ export function useShipmentRoute({ route, supplier, pickup, forwarders, via, des
     }
   ]
   const place = (stop: SavedStop) => places.find((candidate) => candidate.id === stopId(stop))!
-  const poForwarder = via && stopId({ kind: "forwarder", ...via })
+  const choosable = new Set(forwarders.filter((row) => row.offered).map((row) => forwarderStop(row).id))
   const offered = places.filter(
-    (candidate) => candidate.kind === "receiver" || (candidate.kind === "agl" && amazon) || candidate.id === poForwarder
+    (candidate) => candidate.kind === "receiver" || (candidate.kind === "agl" && amazon) || choosable.has(candidate.id)
   )
   const forwarderChoices = offered.filter((stop) => stop.kind === "forwarder")
   const choices: RouteChoices = [

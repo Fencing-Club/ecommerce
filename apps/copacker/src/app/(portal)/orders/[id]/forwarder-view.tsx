@@ -29,7 +29,7 @@ import type { forwarderPage } from "@/server/forwarder-page"
 // commercial invoice carries what customs needs. The cards are the buyer's purchase order page's, less its costs and
 // history.
 export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwarderPage>> }) {
-  const { editable, order, supplier, forwarder, places, onward, shipmentRows, documentGroups } = page
+  const { editable, order, supplier, forwarder, places, onward, stopAddressId, shipmentRows, documentGroups } = page
   const t = useTranslations("orders"),
     common = useTranslations("common")
   const place = (id: string | undefined) => places.find((row) => row.id === id)?.name
@@ -49,11 +49,9 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
             className="border-b"
             supplier={<RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>}
             stop={
-              order.data.via && (
-                <RoutePill icon={<Warehouse />}>
-                  {[forwarder.name, place(order.data.via.addressId)].filter(Boolean).join(", ")}
-                </RoutePill>
-              )
+              <RoutePill icon={<Warehouse />}>
+                {[forwarder.name, place(stopAddressId)].filter(Boolean).join(", ")}
+              </RoutePill>
             }
             destination={
               <RoutePill icon={<MapPin />}>
@@ -96,16 +94,16 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
           </CardHeader>
           {shipmentRows.length ? (
             <ul className="divide-y">
-              {shipmentRows.map((shipment, index) => (
+              {shipmentRows.map((shipment) => (
                 <li key={shipment.id} className="flex items-center gap-3 px-3 py-2.5">
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="font-medium">
                       {shipment.amazonNetwork
                         ? t("detail.shipmentToAmazon", {
-                            number: index + 1,
+                            number: shipment.number,
                             network: amazonNetworkNames[shipment.amazonNetwork]
                           })
-                        : t("detail.shipment", { number: index + 1 })}
+                        : t("detail.shipment", { number: shipment.number })}
                     </span>
                     <CartonsAndTracking
                       shipment={shipment}

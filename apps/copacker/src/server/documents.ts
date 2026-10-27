@@ -5,6 +5,7 @@ import { amazonNetworkNames, packedItemIds } from "@repo/copacker-shipments"
 import type { Packing } from "@repo/copacker-shipments"
 import { purchaseOrderPdf, commercialInvoicePdf } from "@repo/copacker-shipments/documents"
 import { destinationName } from "@repo/copacker-shipments/requirements"
+import { routeForwarder } from "@repo/copacker-shipments/route"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import invariant from "tiny-invariant"
 import { db } from "@/db"
@@ -21,6 +22,7 @@ import {
 } from "@/db/schema"
 import { amazonDestinationAddresses } from "./amazon-shipments"
 import { amazonFor } from "./connections"
+import { withRoute } from "./shipment-routes"
 import { getFile, putFile } from "./storage"
 
 type DocumentInput = Omit<typeof documents.$inferInsert, "id" | "objectKey" | "bytes">
@@ -82,7 +84,12 @@ function contactLine(...parts: Array<string | null | undefined>) {
 
 // Who a PO or shipment document is from and to: the buyer with its business details, the supplier with its contact
 // details, and the delivery or forwarder address it ships to.
-async function documentParties(order: { buyerOrgId: string; supplierId: string }, data: OrderInput) {
+// `via` is the forwarder the goods stop at on the way: the PO's, or for a shipment's documents, its route's.
+async function documentParties(
+  order: { buyerOrgId: string; supplierId: string },
+  data: OrderInput,
+  via: OrderInput["via"] = data.via
+) {
   const [row] = await db()
     .select({ buyer: organizations, supplier: suppliers })
     .from(organizations)
@@ -91,7 +98,6 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
   if (!row) {
     throw new Error("Purchase order is unavailable")
   }
-  const { via } = data
   const destination = orderDestination(data)
   // With a stop on the way, the supplier ships to the forwarder's address there, and the forwarder sends the goods on
   // to Amazon or the buyer's location. A forwarder's address is the buyer's until the forwarder joins, then its own.
@@ -224,22 +230,31 @@ type PackedShipment = typeof shipments.$inferSelect & { packing: Packing; snapsh
 const packed = (shipment: typeof shipments.$inferSelect | undefined): shipment is PackedShipment =>
   Boolean(shipment?.packing && shipment.snapshot)
 
-// Who a shipment's documents are from, and where its cartons go: to the warehouses Amazon chose, named by their codes
-// such as HGR6, or to the purchase order's ship-to address.
-async function shipmentParties(shipment: PackedShipment) {
+// The forwarder a packed shipment's route stops at, if any.
+async function shipmentVia(shipment: PackedShipment) {
   const [order] = await db().select().from(orders).where(eq(orders.id, shipment.orderId))
+  if (!order) {
+    throw new Error("Purchase order is unavailable")
+  }
+  return { order, via: routeForwarder((await withRoute(db(), shipment, order.data)).route) }
+}
+
+// Who a shipment's documents are from, and where its cartons go: to the forwarder its route stops at, the warehouses
+// Amazon chose, named by their codes such as HGR6, or the purchase order's ship-to address.
+async function shipmentParties(shipment: PackedShipment) {
+  const { order, via } = await shipmentVia(shipment)
   // Only the shipment's own lines, so a forwarder stop names the Amazon network its cartons go on to.
   const included = packedItemIds(shipment.packing)
   const items = shipment.snapshot.items.filter((item) => included.has(item.id))
-  const parties = await documentParties(order!, { ...shipment.snapshot, items })
+  const parties = await documentParties(order, { ...shipment.snapshot, items }, via)
   const warehouses = [...new Set(shipment.labels.map((label) => label.destinationCode).filter(Boolean))]
   const network = `Amazon ${amazonNetworkNames[shipment.amazonNetwork ?? "awd_us"]}`
   const shipTo =
-    warehouses.length && !shipment.snapshot.via
+    warehouses.length && !via
       ? { name: network, lines: [`${warehouses.length > 1 ? "Warehouses" : "Warehouse"} ${warehouses.join(", ")}`] }
       : parties.shipTo
-  if (orderDestination(shipment.snapshot) === "amazon" && !shipment.snapshot.via && shipment.amazonShipmentId) {
-    const addresses = await amazonFor(order!.buyerOrgId, order!.amazonSellerId)
+  if (orderDestination(shipment.snapshot) === "amazon" && !via && shipment.amazonShipmentId) {
+    const addresses = await amazonFor(order.buyerOrgId, order.amazonSellerId)
       .then((api) => amazonDestinationAddresses(api, shipment))
       .catch(() => [])
     if (addresses.length) {
@@ -262,7 +277,7 @@ export async function shipmentDestination(shipment: typeof shipments.$inferSelec
   }
   if (
     orderDestination(shipment.snapshot) === "amazon" &&
-    !shipment.snapshot.via &&
+    !(await shipmentVia(shipment)).via &&
     shipment.amazonShipmentId &&
     shipment.labels.some((label) => label.destinationCode)
   ) {

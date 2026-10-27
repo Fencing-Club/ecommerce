@@ -9,7 +9,8 @@ its own `SupplierOrderIndex`.
 The server sends every row the workspace can see, and the list sorts them into views and filters them in the browser.
 `src/server/logistics-rows.ts` works out each row:
 
-- **Route**: the forwarder the goods pass through, if any, then the destination.
+- **Route**: the forwarder the goods pass through, if any, then the destination: for a shipment, its route's forwarder;
+  for a purchase order, its own. A forwarder's list shows only the shipments routed through it.
 - **Shipped** (purchase orders): the pieces in shipments that have shipped, been shipped on or been received, out of
   the order's pieces.
 - **Status**: a purchase order shows Changes proposed while its supplier waits on a decision, otherwise the status of

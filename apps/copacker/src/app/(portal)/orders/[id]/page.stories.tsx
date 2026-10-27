@@ -14,7 +14,6 @@ import type { proposalChanges } from "@/server/order-proposals"
 import { unpricedChanges, unpricedOrder } from "@/server/prices"
 import type { LineLabel } from "@/server/product-barcodes"
 import { requirementTranslator } from "@/server/requirements"
-import { forwarderLeg } from "@/server/shipment-legs"
 import type { orderWorkflow } from "@/server/workflow"
 import { type ActionRequest, recordActions } from "@/stories/actions"
 import { deliveryId } from "@/stories/fixtures/orders"
@@ -63,7 +62,7 @@ type Args = {
   landed: Awaited<ReturnType<typeof orderLandedCosts>>
   freight: Array<{ reference: string; freightMinor: number }>
   labels: LineLabel[]
-  // The forwarder on the way, and the route's addresses.
+  // The forwarder on the way, which the PO's shipments follow it by, and the route's addresses.
   leg?: { name: string; forwarderOrgId: string | null }
   places: Array<{ id: string; name: string }>
 }
@@ -156,7 +155,7 @@ async function OrderPage(args: Args) {
     return documents.length ? [{ ...group, documents }] : []
   })
   const prep = sharedPrep(order.data)
-  const leg = forwarderLeg(order.data) ? args.leg : undefined
+  const leg = order.data.via ? args.leg : undefined
   const text = await requirementTranslator()
   const instructions = [...(prep ? [{ code: "prep" as const, prep }] : []), ...destinationRequirements(order.data)].map(
     text.requirement
@@ -222,7 +221,6 @@ async function OrderPage(args: Args) {
               cartonId: doc.cartonId
             }))
           })),
-          leg,
           instructions,
           units: orderUnits(order.data.items),
           subtotal: prices ? orderSubtotal(order.data.items) : 0,
@@ -243,7 +241,8 @@ async function OrderPage(args: Args) {
             status: row.status,
             amazonNetwork: row.amazonNetwork,
             amazonShipmentId: row.amazonShipmentId,
-            cartonCount: row.packingDraft?.cartons?.length ?? row.packing?.cartons.length ?? 0
+            cartonCount: row.packingDraft?.cartons?.length ?? row.packing?.cartons.length ?? 0,
+            buyerForwards: !!leg && !leg.forwarderOrgId
           })),
           freight: prices ? freight.map((row) => ({ reference: row.reference, amount: row.freightMinor })) : [],
           landed: prices
@@ -687,7 +686,33 @@ export const Forwarder = meta.story({
     order: orderRecord({ data: { ...orderData, via: { forwarderId, addressId: stopId } } }),
     leg: { name: "Bayline Freight", forwarderOrgId: workspaces.forwarder.id }
   },
-  parameters: { db: { contacts: [warehouse, forwarderWarehouse], shipments: [shipped], documents: [] } },
+  parameters: {
+    db: {
+      contacts: [warehouse, forwarderWarehouse],
+      shipments: [shipped],
+      // The shipment's route stops at the forwarder's Ningbo warehouse.
+      shipment_stops: [
+        {
+          shipmentId: shipped.id,
+          position: 0,
+          kind: "supplier",
+          forwarderId: null,
+          addressId: null,
+          leg: "senderArranges"
+        },
+        {
+          shipmentId: shipped.id,
+          position: 1,
+          kind: "forwarder",
+          forwarderId,
+          addressId: stopId,
+          leg: "senderArranges"
+        },
+        { shipmentId: shipped.id, position: 2, kind: "receiver", forwarderId: null, addressId: null, leg: null }
+      ],
+      documents: []
+    }
+  },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "PO-1042" })).toBeVisible()
     await expect(canvas.getByText("Bayline Freight, Ningbo warehouse")).toBeVisible()

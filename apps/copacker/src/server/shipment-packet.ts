@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto"
 import { addressLines } from "@repo/copacker-orders"
 import { packedItemIds } from "@repo/copacker-shipments"
+import { routeForwarder } from "@repo/copacker-shipments/route"
 import { shippingDocumentSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
 import { releasedStates } from "@repo/copacker-shipments/states"
 import { and, eq } from "drizzle-orm"
@@ -96,6 +97,7 @@ export async function shipmentPacketPage(s: Session, id: string) {
           : []
       ),
       transport: shipment.transport,
+      forwarder: routeForwarder(shipment.route) !== undefined,
       company: buyer.name,
       supplier: supplier.name,
       revision: shipment.revision,

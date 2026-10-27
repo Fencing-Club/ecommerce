@@ -1,4 +1,5 @@
 import { orderDestination } from "@repo/copacker-packing-rules"
+import { routeForwarder } from "@repo/copacker-shipments/route"
 import { canEditPacking, releasedStates, type ShipmentState } from "@repo/copacker-shipments/states"
 import { eq } from "drizzle-orm"
 import { match, P } from "ts-pattern"
@@ -9,7 +10,6 @@ import { type AccessibleOrder, accessibleOrder } from "./access"
 import { linesMissingLabels } from "./product-barcodes"
 import type { ReadinessIssue } from "./readiness"
 import { orderCoverage, packingReadiness, releaseIssues } from "./readiness"
-import { forwarderLeg } from "./shipment-legs"
 import { withRoutes } from "./shipment-routes"
 import { serverText } from "./text"
 import type { Session } from "./workspace-session"
@@ -30,8 +30,6 @@ export async function orderWorkflow(s: Session, po: string | AccessibleOrder) {
   const missingLabels = await linesMissingLabels(order)
   const t = await serverText()
   return db().transaction(async (tx) => {
-    // Whether the goods pass through a forwarder, whose leg comes after the supplier's.
-    const leg = forwarderLeg(order.data) !== null
     const rows = await withRoutes(
       tx,
       await tx.select().from(shipments).where(eq(shipments.orderId, order.id)).orderBy(shipments.createdAt),
@@ -59,10 +57,11 @@ export async function orderWorkflow(s: Session, po: string | AccessibleOrder) {
           t
         )
         const release = releaseIssues(shipment, docs, missingLabels, t)
+        // Whether the shipment's route passes through a forwarder, whose leg comes after the supplier's.
         const next = match<{ status: ShipmentState; editable: boolean; leg: boolean }, NextStep>({
           status: shipment.status,
           editable,
-          leg
+          leg: routeForwarder(shipment.route) !== undefined
         })
           .with({ editable: true }, () => ({
             owner: "supplier",

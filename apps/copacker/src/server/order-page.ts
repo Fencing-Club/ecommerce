@@ -1,5 +1,6 @@
 import { orderSubtotal, orderUnits } from "@repo/copacker-orders"
 import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/copacker-shipments/requirements"
+import { routeForwarder } from "@repo/copacker-shipments/route"
 import { desc, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
 import { contacts, forwarders, orderRevisions, organizations, shipments } from "@/db/schema"
@@ -12,7 +13,7 @@ import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed
 import { proposalChanges, proposalState } from "@/server/order-proposals"
 import { lineLabels } from "@/server/product-barcodes"
 import { requirementTranslator } from "@/server/requirements"
-import { forwarderLeg } from "@/server/shipment-legs"
+import { withRoutes } from "@/server/shipment-routes"
 import { storeTimeZone } from "@/server/store-time-zone"
 import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
@@ -152,15 +153,23 @@ export async function orderPage(input: { id: string }) {
     return documents.length ? [{ ...group, documents }] : []
   })
   const prep = sharedPrep(order.data)
-  // The forwarder the goods pass through, if any. The buyer ships its leg on for one that isn't on Copacker.
-  const legId = forwarderLeg(order.data)
-  const leg = legId
+  // The forwarder each shipment's route passes through, if any, and the PO's own. The buyer ships a shipment's leg on for
+  // a forwarder that isn't on Copacker.
+  const routed = await withRoutes(db(), shipmentRows, order.data)
+  const forwarderIds = [
+    ...new Set([
+      ...routed.flatMap((row) => routeForwarder(row.route)?.forwarderId ?? []),
+      ...(order.data.via ? [order.data.via.forwarderId] : [])
+    ])
+  ]
+  const legs = forwarderIds.length
     ? await db()
-        .select({ name: forwarders.name, forwarderOrgId: forwarders.forwarderOrgId })
+        .select({ id: forwarders.id, name: forwarders.name, forwarderOrgId: forwarders.forwarderOrgId })
         .from(forwarders)
-        .where(eq(forwarders.id, legId))
-        .then((rows) => rows[0])
-    : undefined
+        .where(inArray(forwarders.id, forwarderIds))
+    : []
+  const legOf = (forwarderId: string | undefined) => legs.find((row) => row.id === forwarderId)
+  const poForwarder = legOf(order.data.via?.forwarderId)
   const text = await requirementTranslator()
   const instructions = [...(prep ? [{ code: "prep" as const, prep }] : []), ...destinationRequirements(order.data)].map(
     text.requirement
@@ -174,7 +183,7 @@ export async function orderPage(input: { id: string }) {
   const place = (addressId: string | undefined) => places.find((candidate) => candidate.id === addressId)?.name
   // The stop goes by the PO's forwarder and its address there, such as "Yiwu Logistics, Yiwu warehouse": an address the
   // buyer saved for the forwarder, or the forwarder's own once it has joined.
-  const stop = order.data.via && [leg?.name, place(order.data.via.addressId)].filter(Boolean).join(", ")
+  const stop = order.data.via && [poForwarder?.name, place(order.data.via.addressId)].filter(Boolean).join(", ")
   // A calendar day, such as the date the PO is required by, the same wherever it's read.
 
   // The buyer's note, labeled from the viewer's side: to the supplier for the buyer, from the buyer for the supplier.
@@ -235,7 +244,6 @@ export async function orderPage(input: { id: string }) {
           cartonId: doc.cartonId
         }))
       })),
-      leg,
       instructions,
       units: orderUnits(order.data.items),
       subtotal: prices ? orderSubtotal(order.data.items) : 0,
@@ -251,13 +259,18 @@ export async function orderPage(input: { id: string }) {
             .map(text.requirement)
         ])
       ),
-      shipmentRows: shipmentRows.map((row) => ({
-        id: row.id,
-        status: row.status,
-        amazonNetwork: row.amazonNetwork,
-        amazonShipmentId: row.amazonShipmentId,
-        cartonCount: row.packingDraft?.cartons?.length ?? row.packing?.cartons.length ?? 0
-      })),
+      shipmentRows: routed.map((row) => {
+        const forwarder = legOf(routeForwarder(row.route)?.forwarderId)
+        return {
+          id: row.id,
+          status: row.status,
+          amazonNetwork: row.amazonNetwork,
+          amazonShipmentId: row.amazonShipmentId,
+          cartonCount: row.packingDraft?.cartons?.length ?? row.packing?.cartons.length ?? 0,
+          // Whether the buyer ships the goods on, for a forwarder on the route that isn't on Copacker.
+          buyerForwards: !!forwarder && !forwarder.forwarderOrgId
+        }
+      }),
       freight: prices ? freight.map((row) => ({ reference: row.reference, amount: row.freightMinor })) : [],
       landed: prices
         ? landed.map((cost) => ({

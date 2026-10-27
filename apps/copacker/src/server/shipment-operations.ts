@@ -6,7 +6,13 @@ import {
   fbaInboundPlanIdPattern,
   fbaPlanName
 } from "@repo/copacker-shipments/amazon-inbound"
-import { canEditRoute, ruleRoute, type ShipmentRoute, shipmentRouteSchema } from "@repo/copacker-shipments/route"
+import {
+  canEditRoute,
+  routeForwarder,
+  ruleRoute,
+  type ShipmentRoute,
+  shipmentRouteSchema
+} from "@repo/copacker-shipments/route"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
@@ -138,8 +144,8 @@ export const routeInputSchema = z.object({
 const sameRoute = (a: ShipmentRoute, b: ShipmentRoute) =>
   JSON.stringify(shipmentRouteSchema.parse(a)) === JSON.stringify(shipmentRouteSchema.parse(b))
 
-// Saves a shipment's route. It stops at the purchase order's forwarder, if any, and breaks none of the route rules. A
-// shipment that waited only on who moves its last leg goes to its supplier.
+// Saves a shipment's route. It stops at one of the buyer's current forwarder addresses, if at any, and breaks none of
+// the route rules. A shipment that waited only on who moves its last leg goes to its supplier.
 export async function saveRoute(s: Session, { id, revision, route, expected }: z.output<typeof routeInputSchema>) {
   const queued = await db().transaction(async (tx) => {
     const { order, shipment } = await accessibleShipment(s, id, { executor: tx, lock: true })
@@ -151,13 +157,8 @@ export async function saveRoute(s: Session, { id, revision, route, expected }: z
     ) {
       throw new LocalizedError("routeChanged")
     }
-    const via = (shipment.snapshot ?? order.data).via
-    const forwarders = route.stops.flatMap((stop) => (stop.kind === "forwarder" ? [stop] : []))
-    const known =
-      !forwarders.length ||
-      (via &&
-        forwarders.every((stop) => stop.forwarderId === via.forwarderId && stop.addressId === via.addressId) &&
-        (await forwarderAddress(order.buyerOrgId, via.forwarderId, via.addressId, tx)))
+    const stop = routeForwarder(route)
+    const known = !stop || (await forwarderAddress(order.buyerOrgId, stop.forwarderId, stop.addressId, tx))
     if (!known || routeIssues(ruleRoute(route, current.receiver)).length) {
       throw new LocalizedError("routeNotAllowed")
     }

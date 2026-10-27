@@ -17,7 +17,8 @@ and result schemas. Unsupported filters fail validation rather than being ignore
 Connections already have list/show/settings reads. All handlers use the bearer principal's explicit workspace,
 never the browser workspace cookie. Page permissions remain authoritative: customer orders require Sales; buyer
 products and inventory require Products; supplier stock requires Inventory; supplier customers require Customers;
-catalogs additionally require Prices. Forwarders see only purchasing records routed through their active relationship.
+catalogs additionally require Prices. Forwarders see only purchasing records routed through their active relationship,
+and only the shipments whose route stops at them. A shipment's `route.forwarderId` is its route's forwarder.
 Supplier drafts and removed relationships remain hidden. Invitation hashes, provider credentials and storage keys
 are never public fields. Price redaction occurs before output validation and pagination.
 

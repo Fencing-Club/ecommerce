@@ -181,9 +181,9 @@ Pack charges use the Shopify bundle's `piecesPerSet`. They remain separate from 
 | shipment.linkExisting | id, revision, amazonShipmentId (STAR ID or null) | Buyer, Shipments: Edit. Verifies and links an existing AWD shipment to an editable AWD draft, or removes the link; returns the next revision |
 | shipment.reconcile | id, amazonOrderId | Buyer, Shipments: Edit. Reads the AWD order or FBA inbound plan and checks it names this shipment before the worker resumes |
 | shipment.cancelAmazon | id | Buyer, Shipments: Edit. Cancels the AWD order or FBA inbound plan and verifies it before releasing quantities. The shipment cancels, and its timeline says so, only if it hasn't changed meanwhile |
-| shipment.route | id, revision, route `{stops, legs}`, expected | Buyer, Shipments: Edit. Saves the shipment's route. `expected` is the route the page showed, which must still be the shipment's. It keeps to the route rules and stops only at the purchase order's forwarder. A shipment that was waiting only on who moves its last leg goes to its supplier |
+| shipment.route | id, revision, route `{stops, legs}`, expected | Buyer, Shipments: Edit. Saves the shipment's route. `expected` is the route the page showed, which must still be the shipment's. It keeps to the route rules and stops at one of the buyer's current forwarder addresses at most. A shipment that was waiting only on who moves its last leg goes to its supplier |
 | shipment.ship | id | Shipments: Edit. The supplier, or the buyer for a supplier not on Copacker, marks released goods shipped; the invoice must be current |
-| shipment.forward | id, freight `{amountMinor, currency}`, carrier, reference | The forwarder (Orders: Edit), or the buyer for a forwarder not on Copacker (Shipments: Edit, prices). Freight is recorded as a landed cost |
+| shipment.forward | id, freight `{amountMinor, currency}`, carrier, reference | The forwarder the shipment's route stops at (Orders: Edit), or the buyer for a forwarder not on Copacker (Shipments: Edit, prices). Freight is recorded as a landed cost |
 | shipment.received | id | Buyer, Shipments: Edit. Goods arrived where the PO sent them |
 
 ## Schemas and units
@@ -197,8 +197,11 @@ An order has one supplier, and each line names its `receiver`: `fba` or `awd_us`
 buyer's own location. A PO's lines share one group of receivers, Amazon or the buyer's location, which is the PO's
 destination (`orderDestination`); a PO to the buyer's location needs its `deliveryId`. A freight forwarder is never a destination,
 only a stop on the way: `via` is `{forwarderId, addressId}`, one of the addresses the buyer saved for the forwarder or,
-once it has joined, one of its own. Joining copies the saved addresses POs stop at into the forwarder's workspace and
-moves those POs, their revisions and their shipments to the copies. A new line on a PO to Amazon starts at the
+once it has joined, one of its own. It's the route the PO's shipments follow until they save their own, which can stop
+at any one of the buyer's forwarder addresses instead. A forwarder's workspace sees a PO while one of its shipments'
+routes stops at it, or before any shipment, the PO's own does, and sees only those shipments. Joining copies the saved
+addresses POs and routes stop at into the forwarder's workspace and moves those POs, their revisions, their shipments
+and the routes' stops to the copies. A new line on a PO to Amazon starts at the
 product's `amazonNetwork` setting, `fba` by default. A submission splits into one shipment per Amazon network; see
 [Amazon inbound shipments](amazon-inbound.md). Receivers and their packing rules are in
 [`@repo/copacker-packing-rules`](../../../packages/copacker-packing-rules/docs/README.md#receivers).

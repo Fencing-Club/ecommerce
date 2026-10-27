@@ -310,10 +310,15 @@ describe("supplier packet before it can be released", () => {
     expect(checks.handoff.map((check) => check.title)).toContain("handoff")
   })
 
-  it("takes an onward leg only for a PO through a forwarder", () => {
+  it("takes an onward leg only for a shipment through a forwarder", () => {
     expect(() =>
       shippingDocumentSnapshot({ ...input, onward: { destination: warehouse, service: "forwarder" } })
-    ).toThrow(/Only a PO through a forwarder/)
+    ).toThrow(/Only a shipment through a forwarder/)
+    // A shipment whose route leaves out the PO's forwarder goes without an onward leg.
+    expect(() =>
+      shippingDocumentSnapshot({ ...input, order: { ...order, via }, forwarder: true, onward: undefined })
+    ).toThrow(/onward destination/)
+    expect(shippingDocumentSnapshot({ ...input, order: { ...order, via }, forwarder: false }).network).toBe("awd")
   })
 })
 

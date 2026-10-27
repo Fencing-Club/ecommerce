@@ -4,18 +4,16 @@ import { amazonParty, orderProgress, shipmentParty, shipmentStage } from "@/serv
 
 const toAmazon = [{ receiver: "fba" as const }]
 const toWarehouse = [{ receiver: "warehouse" as const }]
-const via = { forwarderId: "00000000-0000-4000-8000-000000000001", addressId: "00000000-0000-4000-8000-000000000002" }
 
-// A shipment of `pieces` in one carton.
+// A shipment of `pieces` in one carton, whose route stops at a forwarder.
 function shipment(status: ShipmentState, pieces = 0) {
-  return { status, snapshot: null, packing: pieces ? { cartons: [{ items: [{ pieces }] }] } : null }
+  return { status, snapshot: null, forwarder: true, packing: pieces ? { cartons: [{ items: [{ pieces }] }] } : null }
 }
 
 function order(status: "draft" | "submitted" | "closed") {
   return {
     status,
     data: {
-      via,
       items: [
         { pieces: 300, receiver: "fba" as const },
         { pieces: 120, receiver: "fba" as const }
@@ -31,14 +29,14 @@ describe("who a shipment waits on", () => {
     ["approval", {}, "buyer"],
     ["waiting_labels", {}, "buyer"],
     ["creating", {}, "amazon"],
-    ["shipped", { via }, "forwarder"],
+    ["shipped", { forwarder: true }, "forwarder"],
     ["shipped", { items: toAmazon }, "amazon"],
     ["shipped", { items: toWarehouse }, "carrier"],
-    ["forwarded", { via, items: toAmazon }, "amazon"],
+    ["forwarded", { forwarder: true, items: toAmazon }, "amazon"],
     ["received", {}, "done"],
     ["cancelled", {}, "done"]
   ] as const)("%s %o waits on %s", (status, route, party) => {
-    expect(shipmentParty(status, { items: toWarehouse, ...route })).toBe(party)
+    expect(shipmentParty(status, { items: toWarehouse, forwarder: false, ...route })).toBe(party)
   })
 
   it("files received and cancelled shipments, in the app's words and Amazon's", () => {
