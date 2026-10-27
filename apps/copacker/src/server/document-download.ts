@@ -12,6 +12,7 @@ import { requireAccess } from "./authorization"
 import { shipmentDocumentFilename } from "./document-filenames"
 import { errorTextResponse, requestInput } from "./errors"
 import { fileResponse } from "./http-response"
+import { routedThrough, withRoute } from "./shipment-routes"
 import { readFile } from "./storage"
 import type { Session } from "./workspace-session"
 import { requireMembership } from "./workspace-session"
@@ -40,9 +41,16 @@ async function canRead(s: Session, doc: typeof documents.$inferSelect, executor:
     return
   }
   requireAccess(s, "orders")
-  await forwarderOrder(s, doc.orderId, executor)
+  const { order, forwarder } = await forwarderOrder(s, doc.orderId, executor)
   if (!forwarderKinds.includes(doc.kind)) {
     throw new NotFoundError()
+  }
+  // A shipment's documents are only for the forwarder its route stops at.
+  if (doc.shipmentId) {
+    const [shipment] = await executor.select().from(shipments).where(eq(shipments.id, doc.shipmentId))
+    if (!shipment || !routedThrough(forwarder.id)(await withRoute(executor, shipment, order.data))) {
+      throw new NotFoundError()
+    }
   }
 }
 

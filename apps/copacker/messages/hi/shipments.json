@@ -183,6 +183,7 @@
       "noFinalDestination": "रूट सेव करने के लिए अंतिम गंतव्य जोड़ें।",
       "stopAfterFinalDestination": "अंतिम गंतव्य के बाद कुछ नहीं आ सकता। उसके बाद के स्टॉप हटाएँ।",
       "aglNotIntoAmazon": "AGL केवल Amazon नेटवर्क में पहुँचाता है। इसके बाद Amazon FBA US या AWD US चुनें।",
+      "secondForwarder": "रूट केवल एक फ़ॉरवर्डर पर रुक सकता है। दूसरा हटाएँ।",
       "legMissing": "रूट सेव करने के लिए हर चरण के लिए चुनें कि कौन भेजता है।",
       "legNotAllowed": "केवल भेजने वाला ही Amazon नेटवर्क में भेज सकता है।"
     },

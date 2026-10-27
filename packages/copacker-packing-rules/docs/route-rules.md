@@ -1,7 +1,8 @@
 # Route rules
 
 A shipment's route is a chain of stops (`routes`): the supplier's address the goods leave from, any stops on the way, and
-a receiver where they end up. A stop on the way is a freight forwarder's warehouse or Amazon Global Logistics (AGL).
+a receiver where they end up. A stop on the way is a freight forwarder's warehouse or Amazon Global Logistics (AGL), and
+a route stops at one forwarder at most.
 Between each two stops a leg says who moves the goods: the sender or the receiver, either booking a carrier
 (`senderArranges`, `receiverArranges`) or in their own vehicle (`senderMoves`, `receiverMoves`).
 
@@ -13,11 +14,12 @@ route agree. The route editor offers only what they allow, and the Route section
 | The supplier is the first stop | `stopChoices`, `routeIssues` (`supplierNotFirst`) |
 | A receiver ends the route: nothing follows it, and a route has to end at one to save | `endsRoute`, `routeIssues` (`noFinalDestination`, `stopAfterFinalDestination`) |
 | Stops on the way are forwarders or AGL, and a stop never follows the same place | `stopChoices` |
+| A route stops at one forwarder at most | `stopChoices`, `routeIssues` (`secondForwarder`) |
 | Someone moves each leg, and only the sender ships into an Amazon network | `legChoices`, `routeIssues` (`legMissing`, `legNotAllowed`) |
 | Amazon moves the goods to and from AGL, and AGL delivers only into an Amazon network | `legChoices`, `stopChoices`, `routeIssues` (`aglNotIntoAmazon`) |
 
 - `stopChoices(route, index, places)` filters the places that can stand at a position: the supplier first, a forwarder
-  or AGL between two stops, the same kind of stop as now for the last one (a receiver, or a stop on the way), and
+  (when no other stop is one) or AGL between two stops, the same kind of stop as now for the last one (a receiver, or a stop on the way), and
   anything that can follow the last stop when one is added after it.
 - `legChoices(from, to)` lists who can move a leg. It's empty for a leg to or from AGL, which Amazon moves.
 - `replaceStop`, `appendStop`, `removeLastStop` and `setLeg` change a route. Each leg keeps who moves it while its

@@ -10,7 +10,7 @@ import invariant from "tiny-invariant"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import type { PartnerAddress } from "@/components/partner-address"
-import type { Permissions } from "@/lib/access"
+import { can, type Permissions } from "@/lib/access"
 import { shipmentPageData } from "@/server/shipment-page-data"
 import { type ActionRequest, recordActions } from "@/stories/actions"
 import {
@@ -27,7 +27,7 @@ import {
 } from "@/stories/fixtures/logistics"
 import { daysAgo } from "@/stories/fixtures/orders"
 import { bagOrder, bagPacking, towelOrder, towelPacking, towelPackingDraft } from "@/stories/fixtures/packing"
-import { northwindFactory, baylineWarehouse } from "@/stories/fixtures/parties"
+import { northwindFactory, baylineShenzhen, baylineWarehouse } from "@/stories/fixtures/parties"
 import { chooseOption, closeMenu, shownDialog } from "@/stories/play"
 import { portalPage, serverStory } from "@/stories/server"
 import { member, owner } from "@/stories/workspace"
@@ -112,6 +112,30 @@ function finalAddresses(data: OrderInput, shipment: ShipmentRow): Address[] {
     : []
 }
 
+// The buyer's Bayline Freight warehouses: Ningbo, which a PO by way of a forwarder goes by, and Shenzhen.
+const ningbo = {
+  ...towelOrder.via!,
+  forwarderName: "Bayline Freight",
+  addressName: "Ningbo warehouse",
+  address: baylineWarehouse
+}
+const shenzhen = {
+  forwarderId: towelOrder.via!.forwarderId,
+  addressId: "5d2e9f4a-1c3b-4d6e-8f7a-9b0c1d2e3f04",
+  forwarderName: "Bayline Freight",
+  addressName: "Shenzhen warehouse",
+  address: baylineShenzhen
+}
+
+// The forwarder addresses as shipmentPlaceRows reads them: the buyer, who edits the route, is offered its own; anyone
+// else sees Bayline Freight's Ningbo warehouse when the PO goes by way of it.
+function forwarderRows(data: OrderInput, editsRoute: boolean) {
+  if (editsRoute) {
+    return [ningbo, shenzhen].map((row) => ({ ...row, offered: true }))
+  }
+  return data.via ? [{ ...ningbo, ...data.via, offered: false }] : []
+}
+
 // Routes a shipment saved: the PO's, with the buyer booking a carrier for each leg, or with AGL collecting the cartons
 // from the stop before Amazon.
 function bookedRoute(data: OrderInput): ShipmentRoute {
@@ -172,18 +196,7 @@ async function ShipmentPage({
               )
             ),
           savedRoute: route === undefined ? bookedRoute(data) : (route ?? undefined),
-          // Bayline Freight's Ningbo warehouse when the PO goes by way of it.
-          forwarders: data.via
-            ? [
-                {
-                  ...data.via,
-                  forwarderName: "Bayline Freight",
-                  addressName: "Ningbo warehouse",
-                  address: baylineWarehouse
-                }
-              ]
-            : [],
-          via: data.via,
+          forwarders: forwarderRows(data, kind === "buyer" && can(permissions, "shipments", "edit")),
           finalAddresses: finalAddresses(data, shipment)
         },
         (shipmentNumber) => t("title", { number: shipmentNumber })
@@ -870,6 +883,30 @@ export const EditRoute = meta.story({
             expected: { stops, legs: ["senderArranges"] }
           }
         }
+      ])
+    )
+  }
+})
+
+// The buyer sends a shipment by way of another of its forwarder addresses than the PO's: Bayline Freight's Shenzhen
+// warehouse in place of Ningbo.
+export const RouteByAnotherForwarderAddress = meta.story({
+  ...buyer,
+  args: {
+    order: { ...warehouse, data: { ...warehouse.data, via: towelOrder.via } },
+    shipment: shipmentRow({ status: "packed", packing: packingFor(warehouse.data) }),
+    step: step("release", "Release the shipment to its supplier")
+  },
+  play: async ({ canvas }) => {
+    const route = canvas.getByRole("region", { name: "Route" })
+    await userEvent.click(within(route).getByRole("button", { name: "Route" }))
+    await userEvent.click(await within(route).findByRole("button", { name: "Edit route" }))
+    await chooseOption(within(route).getByRole("combobox", { name: "Ship to" }), /Shenzhen warehouse/)
+    await userEvent.click(within(route).getByRole("button", { name: "Save route" }))
+    const stop = { kind: "forwarder", forwarderId: shenzhen.forwarderId, addressId: shenzhen.addressId }
+    await waitFor(() =>
+      expect(sent).toMatchObject([
+        { action: "shipment.route", data: { route: { stops: [{ kind: "supplier" }, stop, { kind: "receiver" }] } } }
       ])
     )
   }

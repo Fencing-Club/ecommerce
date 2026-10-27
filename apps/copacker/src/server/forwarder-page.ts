@@ -1,4 +1,5 @@
 import { orderDestination } from "@repo/copacker-packing-rules"
+import { routeForwarder } from "@repo/copacker-shipments/route"
 import { releasedStates } from "@repo/copacker-shipments/states"
 import { and, asc, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
@@ -7,6 +8,7 @@ import { releasedLabelKinds } from "@/lib/shipment-states"
 import type { forwarderOrders } from "@/server/access"
 import { serverTranslator } from "@/server/translation"
 import { unpricedOrder } from "./prices"
+import { routedThrough, withRoutes } from "./shipment-routes"
 // The products table runs edge to edge in its card, its first and last columns in line with the route above it and
 // with the other cards' content.
 
@@ -19,14 +21,14 @@ const documentOrder: Array<(typeof documents.$inferSelect)["kind"]> = [
   "shipping_label"
 ]
 
-// What a freight forwarder sees of a PO whose goods pass through it: the route, with the address to ship on to when
-// that's the buyer's own location, what's coming and in how many cartons, and the shipping documents. No prices; the
-// commercial invoice carries what customs needs. The cards are the buyer's purchase order page's, less its costs and
-// history.
+// What a freight forwarder sees of a PO whose goods pass through it: the route, with its own address there and the
+// address to ship on to when that's the buyer's own location, the shipments routed through it and how many cartons
+// each, and their shipping documents. No prices; the commercial invoice carries what customs needs. The cards are the
+// buyer's purchase order page's, less its costs and history.
 
 export async function forwarderPage(row: Awaited<ReturnType<typeof forwarderOrders>>[number], editable: boolean) {
   const { order, supplier, forwarder } = row
-  const [shipmentRows, docs, t] = await Promise.all([
+  const [all, docs, t] = await Promise.all([
     db().select().from(shipments).where(eq(shipments.orderId, order.id)).orderBy(asc(shipments.createdAt)),
     db()
       .select()
@@ -36,7 +38,21 @@ export async function forwarderPage(row: Awaited<ReturnType<typeof forwarderOrde
       ),
     serverTranslator("orders")
   ])
-  const addressIds = [order.data.deliveryId, order.data.via?.addressId].filter((value) => value !== undefined)
+  // Each of the PO's shipments keeps its number, as the buyer's page numbers them, though the forwarder sees only its
+  // own.
+  const routed = await withRoutes(db(), all, order.data)
+  const shipmentRows = routed.filter(routedThrough(forwarder.id))
+  const number = (shipment: { id: string }) => all.findIndex((row) => row.id === shipment.id) + 1
+  // The forwarder's addresses the goods arrive at: each shipment's stop on its route, or before any shipment, the PO's.
+  // When the shipments all stop at one, the route names it; otherwise each shipment names its own.
+  const poStop = order.data.via?.forwarderId === forwarder.id ? [order.data.via.addressId] : []
+  const stops = [
+    ...new Set(
+      shipmentRows.length ? shipmentRows.flatMap((shipment) => routeForwarder(shipment.route)?.addressId ?? []) : poStop
+    )
+  ]
+  const stopAddressId = stops.length === 1 ? stops[0] : undefined
+  const addressIds = [order.data.deliveryId, ...stops].filter((value) => value !== undefined)
   const places = addressIds.length
     ? await db()
         .select({ id: contacts.id, name: contacts.name, address: contacts.address })
@@ -60,9 +76,9 @@ export async function forwarderPage(row: Awaited<ReturnType<typeof forwarderOrde
   // The purchase order's own documents, then each shipment's under its name, as the purchase order page groups them.
   const documentGroups = [
     { key: "order", title: null, shipmentId: null },
-    ...shipmentRows.map((shipment, index) => ({
+    ...shipmentRows.map((shipment) => ({
       key: shipment.id,
-      title: t("detail.shipment", { number: index + 1 }),
+      title: t("detail.shipment", { number: number(shipment) }),
       shipmentId: shipment.id
     }))
   ].flatMap((group) => {
@@ -83,8 +99,11 @@ export async function forwarderPage(row: Awaited<ReturnType<typeof forwarderOrde
     forwarder: { name: forwarder.name },
     places,
     onward,
+    stopAddressId,
     shipmentRows: shipmentRows.map((shipment) => ({
       id: shipment.id,
+      number: number(shipment),
+      stopAddressId: stopAddressId ? undefined : routeForwarder(shipment.route)?.addressId,
       status: shipment.status,
       amazonNetwork: shipment.amazonNetwork,
       cartonCount: shipment.packing?.cartons.length ?? 0,

@@ -55,10 +55,13 @@ export type ShipmentPageRows = {
   labels: Array<{ itemId: string; state: LineLabel["state"]; type?: "sku" | "fnsku"; problem?: string }>
   // The route the shipment saved, if it has; until then it follows its purchase order's.
   savedRoute?: ShipmentRoute
-  // The forwarder addresses its route stops at, the PO's forwarder the route can stop at, and where the goods end up, as
+  // The forwarder addresses its route stops at, and those it can stop at (`offered`), and where the goods end up, as
   // shipmentPlaceRows reads them.
-  forwarders: Pick<ForwarderAddress, "forwarderId" | "forwarderName" | "addressId" | "addressName" | "address">[]
-  via?: { forwarderId: string; addressId: string }
+  forwarders: Array<
+    Pick<ForwarderAddress, "forwarderId" | "forwarderName" | "addressId" | "addressName" | "address"> & {
+      offered: boolean
+    }
+  >
   finalAddresses: Address[]
 }
 
@@ -116,7 +119,6 @@ export function shipmentPageData(rows: ShipmentPageRows, title: (number: number)
     buyer: rows.buyer,
     pickup: start ? { name: start.name, address: start.address } : origin && { address: origin },
     forwarders: rows.forwarders,
-    via: rows.via,
     finalAddresses: rows.finalAddresses
   })
   // How the goods travel on the last leg, from the route.

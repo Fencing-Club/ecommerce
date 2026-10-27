@@ -169,6 +169,16 @@ describe("accepted shipment document snapshot", () => {
     expect(data.cartons.map((carton) => carton.carrierLabel)).toEqual(["TRACK-1", "TRACK-2"])
   })
 
+  it("leaves out carrier labels the leg doesn't take, such as the onward leg's after a forwarder", () => {
+    const carrierLabels = [
+      { cartonId: "A1", labelNumber: "TRACK-1" },
+      { cartonId: "A2", labelNumber: "TRACK-2" }
+    ]
+    const data = shippingDocumentSnapshot({ ...input, carrierLabels })
+    expect(data.transport.carrierLabels).toBe(false)
+    expect(data.cartons.map((carton) => carton.carrierLabel)).toEqual([undefined, undefined])
+  })
+
   it("collects the PO's notes and each product's own instructions", () => {
     const data = shippingDocumentSnapshot({
       ...input,
@@ -310,10 +320,15 @@ describe("supplier packet before it can be released", () => {
     expect(checks.handoff.map((check) => check.title)).toContain("handoff")
   })
 
-  it("takes an onward leg only for a PO through a forwarder", () => {
+  it("takes an onward leg only for a shipment through a forwarder", () => {
     expect(() =>
       shippingDocumentSnapshot({ ...input, onward: { destination: warehouse, service: "forwarder" } })
-    ).toThrow(/Only a PO through a forwarder/)
+    ).toThrow(/Only a shipment through a forwarder/)
+    // A shipment whose route leaves out the PO's forwarder goes without an onward leg.
+    expect(() =>
+      shippingDocumentSnapshot({ ...input, order: { ...order, via }, forwarder: true, onward: undefined })
+    ).toThrow(/onward destination/)
+    expect(shippingDocumentSnapshot({ ...input, order: { ...order, via }, forwarder: false }).network).toBe("awd")
   })
 })
 

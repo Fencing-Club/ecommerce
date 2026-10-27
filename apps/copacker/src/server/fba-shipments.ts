@@ -29,13 +29,17 @@ import { queueLabels, sendQueuedLabels } from "./label-release"
 
 type Shipment = typeof shipments.$inferSelect & { packing: Packing; snapshot: OrderInput }
 
-// The cartons as Amazon collects them. A PO with a forwarder stop on the way ships to Amazon from the forwarder's
+// The cartons as Amazon collects them. A route that stops at a forwarder (`via`) ships to Amazon from the forwarder's
 // address, so the shipment's origin is that address rather than the supplier's pickup.
-export async function amazonPacking(buyerOrgId: string, order: OrderInput, packing: Packing): Promise<Packing> {
-  if (!order.via) {
+export async function amazonPacking(
+  buyerOrgId: string,
+  via: { forwarderId: string; addressId: string } | undefined,
+  packing: Packing
+): Promise<Packing> {
+  if (!via) {
     return packing
   }
-  const stop = await forwarderAddress(buyerOrgId, order.via.forwarderId, order.via.addressId)
+  const stop = await forwarderAddress(buyerOrgId, via.forwarderId, via.addressId)
   if (!stop) {
     throw new LocalizedError("forwarderAddressRemoved")
   }

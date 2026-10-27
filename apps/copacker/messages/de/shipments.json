@@ -183,6 +183,7 @@
       "noFinalDestination": "Füge das Endziel hinzu, um die Route zu speichern.",
       "stopAfterFinalDestination": "Nach dem Endziel kann nichts mehr folgen. Entferne die Stopps danach.",
       "aglNotIntoAmazon": "AGL liefert nur in ein Amazon-Netzwerk. Wähle danach Amazon FBA US oder AWD US.",
+      "secondForwarder": "Eine Route kann bei einem Spediteur halten. Entferne den anderen.",
       "legMissing": "Wähle für jede Etappe, wer versendet, um die Route zu speichern.",
       "legNotAllowed": "Nur der Absender kann in ein Amazon-Netzwerk versenden."
     },

@@ -1,17 +1,12 @@
-import type { OrderInput } from "@repo/copacker-orders"
+import { routeForwarder } from "@repo/copacker-shipments/route"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { forwarders, landedCosts, orders, shipments, suppliers } from "@/db/schema"
 import { LocalizedError, NotFoundError } from "@/i18n/errors"
 import { recordEvent } from "./order-history"
+import { withRoute } from "./shipment-routes"
 import type { Session } from "./workspace-session"
-
-// The forwarder a PO's goods pass through, if any: its stop on the way to Amazon or the buyer's location. Its leg comes
-// after the supplier's: the forwarder ships the goods on once they've arrived.
-export function forwarderLeg(order: Pick<OrderInput, "via">) {
-  return order.via?.forwarderId ?? null
-}
 
 // A shipment and its PO, locked, for a leg holder to move on. Each leg checks who holds it, which accessibleShipment
 // can't: a forwarder never opens the PO itself.
@@ -71,7 +66,8 @@ export const forwardInputSchema = z.strictObject({
 export async function forwardShipment(s: Session, input: z.output<typeof forwardInputSchema>) {
   await db().transaction(async (tx) => {
     const { order, shipment } = await lockedShipment(tx, input.id)
-    const forwarderId = forwarderLeg(order.data)
+    // The forwarder the shipment's route stops at, whose leg follows the supplier's.
+    const forwarderId = routeForwarder((await withRoute(tx, shipment, order.data)).route)?.forwarderId
     const [forwarder] = forwarderId
       ? await tx
           .select()

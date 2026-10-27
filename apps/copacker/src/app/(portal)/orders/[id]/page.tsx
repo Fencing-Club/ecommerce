@@ -72,7 +72,6 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
     labels,
     timeline,
     documentGroups,
-    leg,
     instructions,
     units,
     subtotal,
@@ -318,12 +317,9 @@ export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof or
                         <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5">{summary}</div>
                       )}
                       {/* Shipping it on records the forwarder's freight cost, so it needs prices too. */}
-                      {buyer &&
-                        editsShipments &&
-                        prices &&
-                        shipment.status === "shipped" &&
-                        leg &&
-                        !leg.forwarderOrgId && <ForwardShipment shipmentId={shipment.id} currency={currency} />}
+                      {buyer && editsShipments && prices && shipment.status === "shipped" && shipment.buyerForwards && (
+                        <ForwardShipment shipmentId={shipment.id} currency={currency} />
+                      )}
                     </li>
                   )
                 })}

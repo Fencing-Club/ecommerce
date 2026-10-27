@@ -1,6 +1,7 @@
 import type { OrderInput } from "@repo/copacker-orders"
 import {
   followedRoute,
+  routeForwarder,
   routeTransport,
   type SavedStop,
   type ShipmentRoute,
@@ -8,9 +9,9 @@ import {
 } from "@repo/copacker-shipments/route"
 import { asc, eq, inArray } from "drizzle-orm"
 import invariant from "tiny-invariant"
-import type { Executor, Transaction } from "@/db"
-import { shipmentStops, type shipments } from "@/db/schema"
-import { stopForwarders } from "./forwarders"
+import { db, type Executor, type Transaction } from "@/db"
+import { contacts, forwarders, shipmentStops, type shipments } from "@/db/schema"
+import type { ForwarderAddress } from "./forwarders"
 
 type Shipment = typeof shipments.$inferSelect
 type StopRow = typeof shipmentStops.$inferSelect
@@ -45,6 +46,42 @@ export async function savedRoutes(executor: Executor, ids: readonly string[]) {
   )
 }
 
+// The forwarder addresses a route stops at, by forwarder and address, whether or not the buyer still keeps them, as the
+// shipment page names them.
+export async function stopForwarders(
+  stops: readonly { forwarderId: string; addressId: string }[],
+  reader: Pick<Executor, "select"> = db()
+): Promise<Pick<ForwarderAddress, "forwarderId" | "forwarderName" | "addressId" | "addressName" | "address">[]> {
+  if (!stops.length) {
+    return []
+  }
+  const rows = await reader
+    .select({
+      forwarderId: forwarders.id,
+      forwarderName: forwarders.name,
+      addressId: contacts.id,
+      addressName: contacts.name,
+      address: contacts.address
+    })
+    .from(contacts)
+    .innerJoin(
+      forwarders,
+      inArray(
+        forwarders.id,
+        stops.map((stop) => stop.forwarderId)
+      )
+    )
+    .where(
+      inArray(
+        contacts.id,
+        stops.map((stop) => stop.addressId)
+      )
+    )
+  return rows.filter((row) =>
+    stops.some((stop) => stop.forwarderId === row.forwarderId && stop.addressId === row.addressId)
+  )
+}
+
 // A shipment's route: the one it saved, or until it saves one, its purchase order's, by way of the PO's forwarder while
 // its address is kept (`kept`). With where its goods end up, and how they travel on the last leg, which documents,
 // readiness and carrier labels read.
@@ -60,8 +97,13 @@ function shipmentRoute(
   return { route, saved: saved !== undefined, receiver, transport: routeTransport(route, receiver) }
 }
 
-// The shipments of one purchase order with their routes, read together.
-export async function withRoutes<T extends Shipment>(executor: Executor, rows: readonly T[], order: OrderInput) {
+// Shipments with their routes, read together: one purchase order's (`order`), or several, each with its own.
+export async function withRoutes<T extends Shipment>(
+  executor: Executor,
+  rows: readonly T[],
+  order: OrderInput | ((row: T) => OrderInput)
+) {
+  const orderOf = typeof order === "function" ? order : () => order
   const saved = await savedRoutes(
     executor,
     rows.map((row) => row.id)
@@ -69,13 +111,17 @@ export async function withRoutes<T extends Shipment>(executor: Executor, rows: r
   // The PO forwarder addresses still kept, which the routes not yet saved go by.
   const kept = await stopForwarders(
     rows.flatMap((row) => {
-      const { via } = row.snapshot ?? order
+      const { via } = row.snapshot ?? orderOf(row)
       return via && !saved.has(row.id) ? [via] : []
     }),
     executor
   )
-  return rows.map((row) => ({ ...row, ...shipmentRoute(row, order, saved.get(row.id), kept) }))
+  return rows.map((row) => ({ ...row, ...shipmentRoute(row, orderOf(row), saved.get(row.id), kept) }))
 }
+
+// Whether a shipment's route stops at this forwarder, whose workspace then handles the shipment.
+export const routedThrough = (forwarderId: string) => (row: { route: ShipmentRoute }) =>
+  routeForwarder(row.route)?.forwarderId === forwarderId
 
 // One shipment with its route.
 export async function withRoute<T extends Shipment>(executor: Executor, row: T, order: OrderInput) {

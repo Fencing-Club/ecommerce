@@ -38,11 +38,17 @@ it out from the route. AGL collects the cartons from the stop before it; otherwi
 hands them over, collected unless it delivers them; the buyer adds a carrier label to each carton when it books the
 carrier into Amazon, or arranges the shipping to its own warehouse.
 
+The forwarder a shipment's route stops at (`routeForwarder`) holds the shipment's next leg: it sees the purchase order
+and only the shipments routed through it, ships them on (`shipment.forward`), and the buyer receives them once it has.
+A shipment without a forwarder on its route arrives from the supplier. Its documents, Amazon's ship-from address and
+the supplier packet's next stop are that forwarder's address. The purchase order's own forwarder (`via`) is the route
+its shipments follow until they save one, and still heads the PO's PDF and its list row.
+
 The page builds the route section from the saved route and the places its stops are (`shipmentPlaces` in
 `app/(portal)/shipments/destination.ts`, `useShipmentRoute`). The buyer gets Edit route until Amazon has the shipment,
-and once after release while nobody has chosen who moves the last leg (`canEditRoute`). The editor's menus offer the
-purchase order's forwarder, AGL on the way into Amazon, and the final destination; a leg nobody has chosen asks who
-ships it. Save route sends `shipment.route` with the route it started from, and keeps the menus open with the server's
+and once after release while nobody has chosen who moves the last leg (`canEditRoute`). The editor's menus offer each
+of the buyer's current forwarder addresses, one forwarder per route, AGL on the way into Amazon, and the final
+destination; a leg nobody has chosen asks who ships it. Only the buyer's page loads its forwarder addresses. Save route sends `shipment.route` with the route it started from, and keeps the menus open with the server's
 reason when it fails. The section opens by itself while a shipment to Amazon waits for the buyer to choose who moves a
 leg.
 

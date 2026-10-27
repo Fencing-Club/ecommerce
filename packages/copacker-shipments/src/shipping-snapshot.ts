@@ -18,9 +18,10 @@ type Item = OrderInput["items"][number]
 
 // An adapter from an accepted PO and its physical cartons. Addresses and label assignments must be supplied
 // by their owning integrations; templates never infer them from a company name or carton sequence.
-// A PO through a forwarder exports the supplier's leg: the destination is the forwarder's address, and `onward` is where
-// the forwarder takes the cartons next. `amazonPending` exports an Amazon shipment before Amazon has it, without its
-// labels or warehouse address, so the supplier can pack first.
+// A shipment through a forwarder exports the supplier's leg: the destination is the forwarder's address, and `onward` is
+// where the forwarder takes the cartons next. `forwarder` says whether the shipment's route stops at one; without it,
+// the PO's own route says. `amazonPending` exports an Amazon shipment before Amazon has it, without its labels or
+// warehouse address, so the supplier can pack first.
 export function shippingDocumentSnapshot(input: {
   order: OrderInput
   packing: Packing
@@ -34,18 +35,20 @@ export function shippingDocumentSnapshot(input: {
   shipmentId: string
   generatedDate: string
   onward?: ShippingDocumentData["onward"]
+  forwarder?: boolean
   amazonPending?: boolean
 }): ShippingDocumentData {
   const { order, packing, transport, labels, onward, amazonPending = false } = input
+  const forwarder = input.forwarder ?? Boolean(order.via)
   const validation = validatePacking(order, packing)
   if (!validation.valid) {
     throw new Error(`Invalid packing: ${validation.issues.map((issue) => issue.code).join(", ")}`)
   }
-  if (Boolean(order.via) !== Boolean(onward)) {
+  if (forwarder !== Boolean(onward)) {
     throw new Error(
-      order.via
+      forwarder
         ? "Export the supplier's leg to the forwarder with its onward destination"
-        : "Only a PO through a forwarder has an onward leg"
+        : "Only a shipment through a forwarder has an onward leg"
     )
   }
   // The supplier hands its cartons to the carrier itself, by parcel, AGL or freight. A forwarder's handoff is the
@@ -119,7 +122,10 @@ export function shippingDocumentSnapshot(input: {
     cartons: documentCartons(packing, items).map((carton) => ({
       ...carton,
       amazonLabel: labels.find((label) => label.cartonId === carton.id)?.labelNumber,
-      carrierLabel: input.carrierLabels?.find((label) => label.cartonId === carton.id)?.labelNumber
+      // Only this leg's carrier labels: through a forwarder, the buyer's labels are for the forwarder's onward leg.
+      carrierLabel: requirements.carrierLabels
+        ? input.carrierLabels?.find((label) => label.cartonId === carton.id)?.labelNumber
+        : undefined
     })),
     instructions: [
       order.notes,

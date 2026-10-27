@@ -1,7 +1,7 @@
-import { type Address, type OrderInput } from "@repo/copacker-orders"
+import { type Address, addressLines, type OrderInput } from "@repo/copacker-orders"
 import { type AmazonNetwork, isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
-import { followedRoute, type ShipmentRoute, shipmentReceiver } from "@repo/copacker-shipments/route"
+import { followedRoute, routeForwarder, type ShipmentRoute, shipmentReceiver } from "@repo/copacker-shipments/route"
 import { and, eq, inArray } from "drizzle-orm"
 import { createTranslator } from "use-intl"
 import { formatDestination } from "@/components/common"
@@ -10,6 +10,7 @@ import { type orders, type shipments, contacts } from "@/db/schema"
 import type { ShipmentPlaces } from "@/hooks/use-shipment-route"
 import type { ForwarderAddress } from "@/server/forwarders"
 import { localization } from "@/server/localization"
+import { stopForwarders } from "@/server/shipment-routes"
 
 type Destination = Pick<OrderInput, "deliveryId" | "items">
 
@@ -40,15 +41,33 @@ export async function shipmentDestinations(orders: Array<Pick<OrderInput, "deliv
     return places.find((row) => row.id === order.deliveryId)?.name ?? formatDestination(destination, common)
   }
 }
-// The next delivery stop, resolved within the buyer's workspace after the page's access check.
-export async function shipmentDelivery(order: typeof orders.$inferSelect, shipment: typeof shipments.$inferSelect) {
-  const data = shipment.snapshot ?? order.data
-  if (data.via && !["forwarded", "received"].includes(shipment.status)) {
-    const { forwarderAddress } = await import("@/server/forwarders")
-    const stop = await forwarderAddress(order.buyerOrgId, data.via.forwarderId, data.via.addressId)
-    return { addresses: stop ? [{ ...stop.address, name: stop.forwarderName }] : [], pending: false }
+// Where the supplier's leg delivers, resolved within the buyer's workspace after the page's access check: the forwarder
+// the shipment's route stops at, or where the goods end up. With a forwarder, `onward` is where it takes them next: the
+// buyer's location, or Amazon's network, named by its warehouse once Amazon gives exactly one, and null when the buyer's
+// location has no address.
+export async function shipmentDelivery(
+  order: typeof orders.$inferSelect,
+  shipment: typeof shipments.$inferSelect & { route: ShipmentRoute }
+) {
+  const via = routeForwarder(shipment.route)
+  if (!via) {
+    return { ...(await finalDestination(order, shipment)), onward: undefined }
   }
-  return finalDestination(order, shipment)
+  const { forwarderAddress } = await import("@/server/forwarders")
+  const [stop, final] = await Promise.all([
+    forwarderAddress(order.buyerOrgId, via.forwarderId, via.addressId),
+    finalDestination(order, shipment)
+  ])
+  const data = shipment.snapshot ?? order.data
+  const [place] = final.addresses
+  const network = shipmentNetwork(data, shipment.amazonNetwork)
+  let onward: { name: string; address: string[] } | null = null
+  if (place && final.addresses.length === 1) {
+    onward = { name: place.name, address: addressLines(place) }
+  } else if (orderDestination(data) === "amazon") {
+    onward = { name: network ? `Amazon ${amazonNetworkNames[network]}` : "Amazon", address: [] }
+  }
+  return { addresses: stop ? [{ ...stop.address, name: stop.forwarderName }] : [], pending: false, onward }
 }
 
 // Where the shipment ends up: the buyer's warehouse, or Amazon's once Amazon has the shipment.
@@ -84,29 +103,38 @@ async function finalDestination(
 }
 
 // What a shipment's Route section is made from, as the database and Amazon give it: the forwarder addresses its route
-// stops at, or can (the PO's, while the buyer keeps it), and where the goods end up.
+// stops at, and with `offer`, for whoever edits the route, each of the buyer's current forwarder addresses it can stop
+// at instead; and where the goods end up.
 export async function shipmentPlaceRows(
   order: typeof orders.$inferSelect,
   shipment: typeof shipments.$inferSelect,
-  saved: ShipmentRoute | undefined
+  saved: ShipmentRoute | undefined,
+  offer: boolean
 ) {
   const data = shipment.snapshot ?? order.data
-  const { forwarderAddress, stopForwarders } = await import("@/server/forwarders")
+  const { forwarderAddresses } = await import("@/server/forwarders")
   const stops = [
     ...(data.via ? [data.via] : []),
     ...(saved?.stops ?? []).flatMap((stop) => (stop.kind === "forwarder" ? [stop] : []))
   ]
-  const [forwarders, offered, final] = await Promise.all([
+  const [named, current, final] = await Promise.all([
     stopForwarders(stops),
-    data.via ? forwarderAddress(order.buyerOrgId, data.via.forwarderId, data.via.addressId) : undefined,
+    offer ? forwarderAddresses(order.buyerOrgId) : [],
     finalDestination(order, shipment)
   ])
-  return { forwarders, via: offered && data.via, finalAddresses: final.addresses }
+  const same = (a: { forwarderId: string; addressId: string }) => (b: typeof a) =>
+    a.forwarderId === b.forwarderId && a.addressId === b.addressId
+  // The route's own stops are named whether or not the buyer still keeps them; only a current address is offered.
+  const forwarders = [
+    ...named.map((row) => ({ ...row, offered: current.some(same(row)) })),
+    ...current.filter((row) => !named.some(same(row))).map((row) => ({ ...row, offered: true }))
+  ]
+  return { forwarders, finalAddresses: final.addresses }
 }
 
 // Where the shipment's goods stop on their way, for its Route section: its saved route, or until it saves one, its PO's;
-// the supplier's pickup address; the forwarder addresses the route stops at or can; and where the goods end up, which is
-// the buyer's own warehouse or Amazon's.
+// the supplier's pickup address; the forwarder addresses the route stops at or can (`offered`); and where the goods end
+// up, which is the buyer's own warehouse or Amazon's.
 export function shipmentPlaces(
   data: OrderInput,
   shipment: Pick<typeof shipments.$inferSelect, "amazonNetwork">,
@@ -116,15 +144,17 @@ export function shipmentPlaces(
     buyer,
     pickup,
     forwarders,
-    via,
     finalAddresses
   }: {
     saved?: ShipmentRoute
     supplier: string
     buyer: string
     pickup?: ShipmentPlaces["pickup"]
-    forwarders: Pick<ForwarderAddress, "forwarderId" | "forwarderName" | "addressId" | "addressName" | "address">[]
-    via?: { forwarderId: string; addressId: string }
+    forwarders: Array<
+      Pick<ForwarderAddress, "forwarderId" | "forwarderName" | "addressId" | "addressName" | "address"> & {
+        offered: boolean
+      }
+    >
     finalAddresses: Address[]
   }
 ): ShipmentPlaces {
@@ -137,9 +167,9 @@ export function shipmentPlaces(
       forwarderId: row.forwarderId,
       addressId: row.addressId,
       company: row.forwarderName,
-      place: { name: row.addressName, address: row.address }
+      place: { name: row.addressName, address: row.address },
+      offered: row.offered
     })),
-    via,
     destination: {
       company: warehouse ? buyer : "Amazon",
       receiver: shipmentReceiver(data, shipment.amazonNetwork),

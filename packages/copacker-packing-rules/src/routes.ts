@@ -2,7 +2,7 @@ import { isAmazonNetwork, type ReceiverId } from "./receivers"
 
 // A place a shipment stops at on its way: the supplier's address the goods leave from, a freight forwarder's warehouse
 // or Amazon Global Logistics on the way, and the receiver where they end up. A route is a chain of them: the supplier
-// first, any stops on the way, and a receiver last. The rules here decide what can follow what and who moves the goods
+// first, any stops on the way, at most one of them a forwarder, and a receiver last. The rules here decide what can follow what and who moves the goods
 // between two stops, so the route editor, the purchase order and anything that checks a route agree.
 export type RouteStop = {
   id: string
@@ -23,12 +23,14 @@ export type LegArrangement = (typeof legArrangements)[number]
 export type Route<Stop extends RouteStop = RouteStop> = { stops: Stop[]; legs: Array<LegArrangement | undefined> }
 
 // What breaks a route: it doesn't start at the supplier or end at a receiver yet, a stop follows a receiver, AGL takes
-// the goods somewhere other than an Amazon network, or nobody has chosen who moves a leg, or someone who can't does.
+// the goods somewhere other than an Amazon network, a second forwarder stops it, or nobody has chosen who moves a leg,
+// or someone who can't does.
 export type RouteIssue =
   | { code: "supplierNotFirst" }
   | { code: "noFinalDestination" }
   | { code: "stopAfterFinalDestination"; index: number }
   | { code: "aglNotIntoAmazon"; index: number }
+  | { code: "secondForwarder"; index: number }
   | { code: "legMissing"; index: number }
   | { code: "legNotAllowed"; index: number }
 
@@ -57,17 +59,19 @@ function canFollow(previous: RouteStop, stop: RouteStop) {
 }
 
 // The places that can stand at a position in the route: the supplier first; on the way, a forwarder or AGL that fits
-// between its neighbors (AGL only before an Amazon network); last, what the last stop is now, a receiver or a stop on
-// the way; and after the last (adding a stop), anything that can follow it.
+// between its neighbors (AGL only before an Amazon network, and a forwarder only when no other stop is one); last, what
+// the last stop is now, a receiver or a stop on the way; and after the last (adding a stop), anything that can follow
+// it.
 export function stopChoices<Stop extends RouteStop>(route: Route<RouteStop>, index: number, places: readonly Stop[]) {
   const previous = route.stops[index - 1]
   const next = route.stops[index + 1]
   const current = route.stops[index]
+  const forwarderElsewhere = route.stops.some((stop, at) => at !== index && stop.kind === "forwarder")
   return places.filter((place) => {
     if (index === 0) {
       return place.kind === "supplier"
     }
-    if (!previous || !canFollow(previous, place)) {
+    if (!previous || !canFollow(previous, place) || (place.kind === "forwarder" && forwarderElsewhere)) {
       return false
     }
     if (next) {
@@ -133,6 +137,9 @@ export function routeIssues(route: Route<RouteStop>): RouteIssue[] {
     }
     if (stop.kind === "agl" && (!next || !stopNetwork(next))) {
       issues.push({ code: "aglNotIntoAmazon", index })
+    }
+    if (stop.kind === "forwarder" && route.stops.slice(0, index).some((before) => before.kind === "forwarder")) {
+      issues.push({ code: "secondForwarder", index })
     }
     // Amazon moves the legs to and from AGL, so nobody chooses those.
     const allowed = next ? legChoices(stop, next) : []
