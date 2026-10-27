@@ -122,7 +122,10 @@ export function shippingDocumentSnapshot(input: {
     cartons: documentCartons(packing, items).map((carton) => ({
       ...carton,
       amazonLabel: labels.find((label) => label.cartonId === carton.id)?.labelNumber,
-      carrierLabel: input.carrierLabels?.find((label) => label.cartonId === carton.id)?.labelNumber
+      // Only this leg's carrier labels: through a forwarder, the buyer's labels are for the forwarder's onward leg.
+      carrierLabel: requirements.carrierLabels
+        ? input.carrierLabels?.find((label) => label.cartonId === carton.id)?.labelNumber
+        : undefined
     })),
     instructions: [
       order.notes,

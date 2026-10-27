@@ -169,6 +169,16 @@ describe("accepted shipment document snapshot", () => {
     expect(data.cartons.map((carton) => carton.carrierLabel)).toEqual(["TRACK-1", "TRACK-2"])
   })
 
+  it("leaves out carrier labels the leg doesn't take, such as the onward leg's after a forwarder", () => {
+    const carrierLabels = [
+      { cartonId: "A1", labelNumber: "TRACK-1" },
+      { cartonId: "A2", labelNumber: "TRACK-2" }
+    ]
+    const data = shippingDocumentSnapshot({ ...input, carrierLabels })
+    expect(data.transport.carrierLabels).toBe(false)
+    expect(data.cartons.map((carton) => carton.carrierLabel)).toEqual([undefined, undefined])
+  })
+
   it("collects the PO's notes and each product's own instructions", () => {
     const data = shippingDocumentSnapshot({
       ...input,
