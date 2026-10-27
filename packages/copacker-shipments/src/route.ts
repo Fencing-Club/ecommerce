@@ -123,6 +123,22 @@ export function routeTransport(route: ShipmentRoute, receiver: ReceiverId): Ship
   }
 }
 
+// How the goods travel on the supplier's leg to the forwarder its route stops at, for the supplier's packet: the supplier
+// hands them over, collected unless it delivers them, with no carrier labels, which only the buyer's carrier needs.
+// Null without a forwarder, or until someone is chosen for that leg.
+export function supplierLegTransport(route: ShipmentRoute): ShipmentTransport | null {
+  const leg = route.legs[0]
+  if (route.stops[1]?.kind !== "forwarder" || !leg) {
+    return null
+  }
+  return {
+    service: "freight",
+    handoff: "supplier",
+    collection: leg === "senderMoves" ? "dropoff" : "pickup",
+    carrierLabels: "none"
+  }
+}
+
 const routeStates: readonly ShipmentState[] = ["packing", "packed", "correction", "waiting_labels"]
 
 // Whether the buyer can change a shipment's route: until Amazon has it, and while it waits for its labels. A shipment

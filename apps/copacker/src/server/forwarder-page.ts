@@ -43,11 +43,16 @@ export async function forwarderPage(row: Awaited<ReturnType<typeof forwarderOrde
   const routed = await withRoutes(db(), all, order.data)
   const shipmentRows = routed.filter(routedThrough(forwarder.id))
   const number = (shipment: { id: string }) => all.findIndex((row) => row.id === shipment.id) + 1
-  // The forwarder's address the goods arrive at: its stop on a shipment's route, or before any, the PO's.
-  const stopAddressId =
-    shipmentRows.map((shipment) => routeForwarder(shipment.route)?.addressId).find(Boolean) ??
-    (order.data.via?.forwarderId === forwarder.id ? order.data.via.addressId : undefined)
-  const addressIds = [order.data.deliveryId, stopAddressId].filter((value) => value !== undefined)
+  // The forwarder's addresses the goods arrive at: each shipment's stop on its route, or before any shipment, the PO's.
+  // When the shipments all stop at one, the route names it; otherwise each shipment names its own.
+  const poStop = order.data.via?.forwarderId === forwarder.id ? [order.data.via.addressId] : []
+  const stops = [
+    ...new Set(
+      shipmentRows.length ? shipmentRows.flatMap((shipment) => routeForwarder(shipment.route)?.addressId ?? []) : poStop
+    )
+  ]
+  const stopAddressId = stops.length === 1 ? stops[0] : undefined
+  const addressIds = [order.data.deliveryId, ...stops].filter((value) => value !== undefined)
   const places = addressIds.length
     ? await db()
         .select({ id: contacts.id, name: contacts.name, address: contacts.address })
@@ -98,6 +103,7 @@ export async function forwarderPage(row: Awaited<ReturnType<typeof forwarderOrde
     shipmentRows: shipmentRows.map((shipment) => ({
       id: shipment.id,
       number: number(shipment),
+      stopAddressId: stopAddressId ? undefined : routeForwarder(shipment.route)?.addressId,
       status: shipment.status,
       amazonNetwork: shipment.amazonNetwork,
       cartonCount: shipment.packing?.cartons.length ?? 0,

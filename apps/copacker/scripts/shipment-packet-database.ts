@@ -1,7 +1,7 @@
 import { addressLines } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
-import { routeForwarder } from "@repo/copacker-shipments/route"
+import { routeForwarder, supplierLegTransport } from "@repo/copacker-shipments/route"
 import { packedStates } from "@repo/copacker-shipments/states"
 import { and, eq, or } from "drizzle-orm"
 import { db } from "../src/db/index"
@@ -26,9 +26,11 @@ export async function packetFromDatabase(id: string) {
   if (!order) {
     throw new Error(`No purchase order for shipment ${id}`)
   }
-  // How the cartons travel, and the forwarder they stop at on the way, from the shipment's route.
-  const { route, transport } = await withRoute(db(), shipment, order.data)
-  const via = routeForwarder(route)
+  // How the cartons travel, and the forwarder they stop at on the way, from the shipment's route. Through a forwarder,
+  // the packet is the supplier's leg to it.
+  const routed = await withRoute(db(), shipment, order.data)
+  const via = routeForwarder(routed.route)
+  const transport = via ? supplierLegTransport(routed.route) : routed.transport
   if (!transport) {
     throw new Error("Choose who moves each leg of the shipment's route first")
   }

@@ -36,11 +36,12 @@ const forwarded = shipmentRecord({
   forwarderReference: "MAEU 204113"
 })
 
-// Each shipment's route, which stops at the forwarder's Ningbo warehouse, as shipment_stops keeps it.
-function routedHere(...rows: Array<{ id: string }>) {
-  return rows.flatMap(({ id }) => [
+// Each shipment's route, which stops at the forwarder's Ningbo warehouse unless it says another address, as
+// shipment_stops keeps it.
+function routedHere(...rows: Array<{ id: string; addressId?: string }>) {
+  return rows.flatMap(({ id, addressId = stopId }) => [
     { shipmentId: id, position: 0, kind: "supplier", forwarderId: null, addressId: null, leg: "senderArranges" },
-    { shipmentId: id, position: 1, kind: "forwarder", ...via, leg: "senderArranges" },
+    { shipmentId: id, position: 1, kind: "forwarder", forwarderId, addressId, leg: "senderArranges" },
     { shipmentId: id, position: 2, kind: "receiver", forwarderId: null, addressId: null, leg: null }
   ])
 }
@@ -155,6 +156,27 @@ export const ToAmazon = meta.story({
     await expect(canvas.getByText("Shipped onward")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark shipped" })).toBeNull()
     await expect(canvas.queryByText("Documents")).toBeNull()
+  }
+})
+
+// Shipments stopping at two of the forwarder's warehouses: the route names the forwarder, and each shipment its
+// warehouse.
+const shenzhen = { ...forwarderWarehouse, id: "7b3c5d9e-2f1a-4c8b-9d6e-0a1b2c3d4e05", name: "Shenzhen warehouse" }
+export const TwoWarehouses = meta.story({
+  parameters: {
+    db: {
+      contacts: [warehouse, forwarderWarehouse, shenzhen],
+      shipments: [shipped, packing],
+      shipment_stops: routedHere(shipped, { id: packing.id, addressId: shenzhen.id }),
+      documents: []
+    }
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Bayline Freight")).toBeVisible()
+    await expect(canvas.queryByText("Bayline Freight, Ningbo warehouse")).toBeNull()
+    await expect(canvas.getByText("Ningbo warehouse, 2 cartons")).toBeVisible()
+    // The shipment still being packed has no cartons yet.
+    await expect(canvas.getByText("Shenzhen warehouse")).toBeVisible()
   }
 })
 

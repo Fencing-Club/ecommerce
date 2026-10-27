@@ -107,6 +107,7 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
                     </span>
                     <CartonsAndTracking
                       shipment={shipment}
+                      stop={place(shipment.stopAddressId)}
                       cartons={shipment.cartonCount ? t("detail.cartons", { count: shipment.cartonCount }) : undefined}
                     />
                   </span>
@@ -142,15 +143,19 @@ export function ForwarderView({ page }: { page: Awaited<ReturnType<typeof forwar
   )
 }
 
-// Under a shipment's name: its cartons once they're packed, and the carrier and tracking number once it's shipped on.
+// Under a shipment's name: the forwarder's address it stops at, when the shipments stop at more than one, its cartons
+// once they're packed, and the carrier and tracking number once it's shipped on.
 function CartonsAndTracking({
   shipment,
+  stop,
   cartons
 }: {
   shipment: Awaited<ReturnType<typeof forwarderPage>>["shipmentRows"][number]
+  stop?: string
   cartons?: string
 }) {
   const details = [
+    stop,
     cartons,
     shipment.forwarderCarrier && [shipment.forwarderCarrier, shipment.forwarderReference].filter(Boolean).join(" ")
   ].filter(Boolean)

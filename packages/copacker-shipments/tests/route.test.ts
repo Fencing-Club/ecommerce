@@ -4,6 +4,7 @@ import {
   defaultShipmentRoute,
   followedRoute,
   routeForwarder,
+  supplierLegTransport,
   routeTransport,
   ruleRoute,
   type ShipmentRoute,
@@ -98,6 +99,18 @@ describe("transport from the route", () => {
 
   it("keeps the legs in step with the stops", () => {
     expect(shipmentRouteSchema.safeParse({ stops: [supplier, receiver], legs: [] }).success).toBe(false)
+  })
+
+  it("has the supplier hand the cartons to the forwarder on its own leg, for its packet", () => {
+    const through = route([supplier, forwarder, receiver], ["senderMoves", "senderArranges"])
+    expect(supplierLegTransport(through)).toEqual({
+      service: "freight",
+      handoff: "supplier",
+      collection: "dropoff",
+      carrierLabels: "none"
+    })
+    expect(supplierLegTransport(route([supplier, forwarder, receiver], [null, "senderArranges"]))).toBeNull()
+    expect(supplierLegTransport(route([supplier, receiver], ["senderArranges"]))).toBeNull()
   })
 
   it("stops at one forwarder at most, which routeForwarder names", () => {

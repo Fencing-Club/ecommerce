@@ -7,6 +7,7 @@ import { PDFDocument } from "pdf-lib"
 import { describe, expect, it, vi } from "vitest"
 import * as tables from "../../src/db/schema"
 import { generatePo, storeDocument } from "../../src/server/documents"
+import { createForwarder, forwarderAddresses, saveForwarderAddress } from "../../src/server/forwarders"
 import { GET as downloadDocument } from "../../src/server/http/api/documents/$id"
 import { GET as downloadImportSource } from "../../src/server/http/api/imports/$id/source"
 import { GET as downloadPo } from "../../src/server/http/api/orders/$id/po"
@@ -590,6 +591,81 @@ describe("document upload and packet release", () => {
     expect(storage.putFile).not.toHaveBeenCalled()
     expect(await carrierLabels()).toEqual([])
   })
+  it("builds the supplier's packet for its leg to the forwarder, and where the forwarder takes the cartons next", async () => {
+    const prepared = await preparation()
+    const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
+    await saveForwarderAddress(buyerId, {
+      forwarderId: forwarder.id,
+      name: "Yiwu warehouse",
+      address: { ...prepared.packing.origin, name: "Lisa Yao", phoneNumber: "+86 579 8555 1234" }
+    })
+    const [stop] = await forwarderAddresses(buyerId)
+    // The forwarder delivers the cartons into AWD, under the labels Amazon issued.
+    await database
+      .update(tables.shipments)
+      .set({
+        packing: prepared.packing,
+        snapshot: {
+          ...orderData,
+          items: orderData.items.map((item) => ({
+            ...item,
+            supplierSku: "SUP-2",
+            packingRequirements: { preparation: "none" as const, labels: [], countryCode: "", instructions: "" }
+          }))
+        },
+        status: "ready",
+        amazonNetwork: "awd_us",
+        amazonShipmentId: "STAR-EXAMPLE",
+        labels: [
+          {
+            cartonId: "A6",
+            labelNumber: "201952611540373988",
+            destinationCode: "IUSP",
+            amazonShipmentId: "STAR-EXAMPLE"
+          }
+        ]
+      })
+      .where(eq(tables.shipments.id, prepared.id))
+    await saveStops(prepared.id, {
+      stops: [
+        { kind: "supplier" },
+        { kind: "forwarder", forwarderId: forwarder.id, addressId: stop!.addressId },
+        { kind: "receiver" }
+      ],
+      legs: ["senderMoves", "senderMoves"]
+    })
+    await database.insert(tables.documents).values({
+      orderId,
+      shipmentId: prepared.id,
+      kind: "carton_label",
+      cartonId: "A6",
+      objectKey: "test/forwarder-label",
+      name: "Label.pdf",
+      bytes: 10,
+      orderRevision: 1,
+      shipmentRevision: 1,
+      uploadedBy: "amazon"
+    })
+    provider.api.awdInboundShipment.mockResolvedValue({
+      shipmentId: "STAR-EXAMPLE",
+      destinationAddress: { ...prepared.packing.origin, name: "Amazon IUSP", countryCode: "US" }
+    })
+    await database.insert(tables.memberships).values({
+      orgId: supplierId,
+      userId: supplier.user.id,
+      email: supplier.user.email,
+      role: "member",
+      access: { shipments: "view" }
+    })
+    const page = await shipmentPacketPage(supplier, prepared.id)
+    expect(page.data).toMatchObject({
+      network: "forwarder",
+      destination: { name: "Yiwu Logistics" },
+      onward: { destination: { name: "Amazon IUSP" }, service: "forwarder" },
+      transport: { service: "freight", collection: "dropoff", carrierLabels: false }
+    })
+  })
+
   it("builds the supplier's AGL packet from the released snapshot and verified destination", async () => {
     const prepared = await preparation()
     const snapshot = {

@@ -1,4 +1,4 @@
-import { type Address, type OrderInput } from "@repo/copacker-orders"
+import { type Address, addressLines, type OrderInput } from "@repo/copacker-orders"
 import { type AmazonNetwork, isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { followedRoute, routeForwarder, type ShipmentRoute, shipmentReceiver } from "@repo/copacker-shipments/route"
@@ -41,19 +41,33 @@ export async function shipmentDestinations(orders: Array<Pick<OrderInput, "deliv
     return places.find((row) => row.id === order.deliveryId)?.name ?? formatDestination(destination, common)
   }
 }
-// The next delivery stop, resolved within the buyer's workspace after the page's access check: the forwarder the
-// shipment's route stops at until it ships the goods on, then where they end up.
+// Where the supplier's leg delivers, resolved within the buyer's workspace after the page's access check: the forwarder
+// the shipment's route stops at, or where the goods end up. With a forwarder, `onward` is where it takes them next: the
+// buyer's location, or Amazon's network, named by its warehouse once Amazon gives exactly one, and null when the buyer's
+// location has no address.
 export async function shipmentDelivery(
   order: typeof orders.$inferSelect,
   shipment: typeof shipments.$inferSelect & { route: ShipmentRoute }
 ) {
   const via = routeForwarder(shipment.route)
-  if (via && !["forwarded", "received"].includes(shipment.status)) {
-    const { forwarderAddress } = await import("@/server/forwarders")
-    const stop = await forwarderAddress(order.buyerOrgId, via.forwarderId, via.addressId)
-    return { addresses: stop ? [{ ...stop.address, name: stop.forwarderName }] : [], pending: false }
+  if (!via) {
+    return { ...(await finalDestination(order, shipment)), onward: undefined }
   }
-  return finalDestination(order, shipment)
+  const { forwarderAddress } = await import("@/server/forwarders")
+  const [stop, final] = await Promise.all([
+    forwarderAddress(order.buyerOrgId, via.forwarderId, via.addressId),
+    finalDestination(order, shipment)
+  ])
+  const data = shipment.snapshot ?? order.data
+  const [place] = final.addresses
+  const network = shipmentNetwork(data, shipment.amazonNetwork)
+  let onward: { name: string; address: string[] } | null = null
+  if (place && final.addresses.length === 1) {
+    onward = { name: place.name, address: addressLines(place) }
+  } else if (orderDestination(data) === "amazon") {
+    onward = { name: network ? `Amazon ${amazonNetworkNames[network]}` : "Amazon", address: [] }
+  }
+  return { addresses: stop ? [{ ...stop.address, name: stop.forwarderName }] : [], pending: false, onward }
 }
 
 // Where the shipment ends up: the buyer's warehouse, or Amazon's once Amazon has the shipment.
