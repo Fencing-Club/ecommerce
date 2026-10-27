@@ -1,4 +1,4 @@
-import { useRouter, useRouterState } from "@tanstack/react-router"
+import { deepEqual, useRouter, useRouterState } from "@tanstack/react-router"
 import { OverviewPageView } from "@/components/overview-page"
 import { periodSearch } from "@/lib/date-range"
 import { overviewSearch, type OverviewSearch } from "@/lib/page-search"
@@ -13,10 +13,12 @@ export function OverviewContent({ page, search }: { page: OverviewPageData; sear
   })
   // The requested URL changes before the loader commits. Compose rapid changes from it, not the old page.
   const selection = pending ? overviewSearch.parse(pending) : search
+  // Hydration and refreshes load the URL already shown, which keeps its figures rather than showing an update.
+  const updating = pending && !deepEqual(selection, search)
   return (
     <OverviewPageView
       page={page}
-      pendingSearch={pending ? selection : undefined}
+      pendingSearch={updating ? selection : undefined}
       refresh={router.invalidate}
       onPeriodChange={(period) =>
         router.navigate({ to: "/overview", search: { channel: selection.channel, ...periodSearch(period) } })

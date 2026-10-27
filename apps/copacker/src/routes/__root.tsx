@@ -74,7 +74,7 @@ function Document({ children }: { children: React.ReactNode }) {
         <a href="#main-content" className={skipLink}>
           {config.messages.common.skipToContent}
         </a>
-        <IntlProvider {...config}>
+        <IntlProvider key={result?.key} locale={config.locale} messages={config.messages} timeZone={config.timeZone}>
           <KitProvider>
             <NuqsAdapter>{children}</NuqsAdapter>
           </KitProvider>
