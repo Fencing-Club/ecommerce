@@ -81,8 +81,10 @@ export function AppSidebar({ pathname, kind, active, name, workspaces, userName,
           }
           return (
             <SidebarGroup key={group.key} className={group.key === "workspace" ? "mt-auto p-0" : "p-0"}>
+              {/* The heading is taller than shadcn's, so once collapsed its hidden box slides over the page above it;
+                  clicks pass through to that page. */}
               {group.labelKey && (
-                <SidebarGroupLabel className="h-auto px-2.5 pt-4 pb-1.5 text-xs font-medium text-muted-foreground">
+                <SidebarGroupLabel className="h-auto px-2.5 pt-4 pb-1.5 text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:pointer-events-none">
                   {t(`groups.${group.labelKey}`)}
                 </SidebarGroupLabel>
               )}

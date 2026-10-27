@@ -147,6 +147,11 @@ export const Collapsed = meta.story({
   play: async ({ canvas }) => {
     const sidebar = () => document.querySelector("[data-slot=sidebar][data-state]")
     await expect(sidebar()).toHaveAttribute("data-state", "collapsed")
+    // The hidden group headings don't cover the page above them.
+    for (const link of canvas.getAllByRole("link")) {
+      const box = link.getBoundingClientRect()
+      await expect(link.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2))).toBe(true)
+    }
     await userEvent.hover(canvas.getByRole("link", { name: "Shipments" }))
     await waitFor(() => expect(document.querySelector("[data-slot=tooltip-content]")).toHaveTextContent("Shipments"))
     // The rail along its edge expands it, as the page's toggle does.
