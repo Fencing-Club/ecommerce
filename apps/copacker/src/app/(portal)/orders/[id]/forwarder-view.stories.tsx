@@ -36,6 +36,15 @@ const forwarded = shipmentRecord({
   forwarderReference: "MAEU 204113"
 })
 
+// Each shipment's route, which stops at the forwarder's Ningbo warehouse, as shipment_stops keeps it.
+function routedHere(...rows: Array<{ id: string }>) {
+  return rows.flatMap(({ id }) => [
+    { shipmentId: id, position: 0, kind: "supplier", forwarderId: null, addressId: null, leg: "senderArranges" },
+    { shipmentId: id, position: 1, kind: "forwarder", ...via, leg: "senderArranges" },
+    { shipmentId: id, position: 2, kind: "receiver", forwarderId: null, addressId: null, leg: null }
+  ])
+}
+
 const meta = preview.meta({
   title: "Pages/Purchase orders/Forwarder view",
   ...serverStory(async (props: Props) => <ForwarderView page={await forwarderPage(props.row, props.editable)} />),
@@ -47,6 +56,7 @@ const meta = preview.meta({
     db: {
       contacts: [warehouse, forwarderWarehouse],
       shipments: [shipped, packing],
+      shipment_stops: routedHere(shipped, packing),
       documents: [
         documentRecord({ kind: "invoice", name: "Commercial invoice PO-1042.pdf", shipmentId: shipped.id }),
         documentRecord({ kind: "packing_list", name: "Packing list.pdf", shipmentId: shipped.id }),
@@ -133,6 +143,7 @@ export const ToAmazon = meta.story({
     db: {
       contacts: [forwarderWarehouse],
       shipments: [{ ...forwarded, amazonNetwork: "fba" }],
+      shipment_stops: routedHere(forwarded),
       documents: []
     }
   },
