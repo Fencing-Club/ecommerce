@@ -2,6 +2,7 @@ import type { OrderInput } from "@repo/copacker-orders"
 import { money, orderTotal } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-packing-rules"
 import { orderNetworks } from "@repo/copacker-shipments/requirements"
+import { routeForwarder } from "@repo/copacker-shipments/route"
 import { inArray } from "drizzle-orm"
 import { db } from "@/db"
 import { contacts, shipments } from "@/db/schema"
@@ -9,6 +10,7 @@ import type { LogisticsRow } from "@/lib/logistics-list"
 import type { visibleOrders } from "@/server/access"
 import { localization } from "@/server/localization"
 import { requirementTranslator } from "@/server/requirements"
+import { withRoutes } from "@/server/shipment-routes"
 import { forwarderNames, orderProgress, pendingProposals } from "./logistics-rows"
 
 async function destinations(list: OrderInput[]) {
@@ -44,6 +46,12 @@ export async function orderListRows(
     forwarderNames(rows.map((row) => row.order.data.via?.forwarderId)),
     ids.length ? db().select().from(shipments).where(inArray(shipments.orderId, ids)) : []
   ])
+  // Whether each shipment's route stops at a forwarder, which ships the goods on after the supplier.
+  const routed = await withRoutes(
+    db(),
+    listed,
+    (shipment) => rows.find((row) => row.order.id === shipment.orderId)!.order.data
+  )
   return rows.map(({ order, supplier }) => ({
     id: order.id,
     href: `/orders/${order.id}`,
@@ -56,7 +64,9 @@ export async function orderListRows(
     total: prices ? money(orderTotal(order.data), order.data.currency, locale) : null,
     ...orderProgress(
       order,
-      listed.filter((shipment) => shipment.orderId === order.id),
+      routed
+        .filter((shipment) => shipment.orderId === order.id)
+        .map((shipment) => ({ ...shipment, forwarder: routeForwarder(shipment.route) !== undefined })),
       proposals.has(order.id)
     )
   }))

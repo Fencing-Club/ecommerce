@@ -2,7 +2,7 @@ import { and, eq, isNull, ne, type SQL, sql } from "drizzle-orm"
 import { z } from "zod"
 import type { Executor, Transaction } from "@/db"
 import { db } from "@/db"
-import { forwarders, orders, shipments, suppliers } from "@/db/schema"
+import { forwarders, orders, shipmentStops, shipments, suppliers } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
 import type { Session } from "./workspace-session"
 
@@ -69,9 +69,32 @@ export async function visibleOrders(s: Session) {
     .orderBy(orders.createdAt)
 }
 
-// The POs a forwarder's workspace handles, with the forwarder each passes through: sent ones whose route stops at a
-// forwarder the workspace joined as (the PO's forwarderLeg, one of its buyer's forwarders). `only` narrows them further.
-// Forwarders only read these and move shipments on; they never reach accessibleOrder, whose actions assume a supplier.
+// Whether a PO's goods pass through this forwarder: a shipment's saved route stops at it, or a shipment that hasn't
+// saved one follows its purchase order's, by way of the forwarder; before any shipment, the PO's own route does.
+const routedThroughForwarder = sql`(
+  exists (
+    select 1 from ${shipments}
+    where ${shipments.orderId} = ${orders.id} and (
+      exists (
+        select 1 from ${shipmentStops}
+        where ${shipmentStops.shipmentId} = ${shipments.id} and ${shipmentStops.forwarderId} = ${forwarders.id}
+      )
+      or (
+        not exists (select 1 from ${shipmentStops} where ${shipmentStops.shipmentId} = ${shipments.id})
+        and coalesce(${shipments.snapshot}, ${orders.data})->'via'->>'forwarderId' = ${forwarders.id}::text
+      )
+    )
+  )
+  or (
+    not exists (select 1 from ${shipments} where ${shipments.orderId} = ${orders.id})
+    and ${orders.data}->'via'->>'forwarderId' = ${forwarders.id}::text
+  )
+)`
+
+// The POs a forwarder's workspace handles, with the forwarder each passes through: sent ones whose goods pass through a
+// forwarder the workspace joined as (one of its buyer's forwarders), by a shipment's route. `only` narrows them
+// further. Forwarders only read these and move shipments on; they never reach accessibleOrder, whose actions assume a
+// supplier, and each sees only the shipments routed through it (routedThrough).
 function forwarderRows(s: Session, executor: Transaction | ReturnType<typeof db>, only?: SQL) {
   return executor
     .select({
@@ -81,13 +104,7 @@ function forwarderRows(s: Session, executor: Transaction | ReturnType<typeof db>
     })
     .from(orders)
     .innerJoin(suppliers, eq(suppliers.id, orders.supplierId))
-    .innerJoin(
-      forwarders,
-      and(
-        eq(forwarders.buyerOrgId, orders.buyerOrgId),
-        sql`${forwarders.id}::text = ${orders.data}->'via'->>'forwarderId'`
-      )
-    )
+    .innerJoin(forwarders, and(eq(forwarders.buyerOrgId, orders.buyerOrgId), routedThroughForwarder))
     .where(and(eq(forwarders.forwarderOrgId, s.org.id), isNull(forwarders.removedAt), ne(orders.status, "draft"), only))
     .orderBy(orders.createdAt)
 }

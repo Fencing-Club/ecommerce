@@ -1,6 +1,7 @@
 import { addressLines } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
+import { routeForwarder, supplierLegTransport } from "@repo/copacker-shipments/route"
 import { packedStates } from "@repo/copacker-shipments/states"
 import { and, eq, or } from "drizzle-orm"
 import { db } from "../src/db/index"
@@ -25,8 +26,11 @@ export async function packetFromDatabase(id: string) {
   if (!order) {
     throw new Error(`No purchase order for shipment ${id}`)
   }
-  // How the cartons travel, from the shipment's route.
-  const { transport } = await withRoute(db(), shipment, order.data)
+  // How the cartons travel, and the forwarder they stop at on the way, from the shipment's route. Through a forwarder,
+  // the packet is the supplier's leg to it.
+  const routed = await withRoute(db(), shipment, order.data)
+  const via = routeForwarder(routed.route)
+  const transport = via ? supplierLegTransport(routed.route) : routed.transport
   if (!transport) {
     throw new Error("Choose who moves each leg of the shipment's route first")
   }
@@ -64,21 +68,21 @@ export async function packetFromDatabase(id: string) {
   }
   let destination
   let onward
-  if (data.via) {
+  if (via) {
     // The supplier's leg ends at the forwarder's address: one the buyer saved for it, or the forwarder's own.
     const [stop] = await db()
       .select({ name: forwarders.name, address: contacts.address })
       .from(contacts)
-      .innerJoin(forwarders, eq(forwarders.id, data.via.forwarderId))
+      .innerJoin(forwarders, eq(forwarders.id, via.forwarderId))
       .where(
         and(
-          eq(contacts.id, data.via.addressId),
+          eq(contacts.id, via.addressId),
           eq(forwarders.buyerOrgId, order.buyerOrgId),
           or(eq(contacts.forwarderId, forwarders.id), eq(contacts.orgId, forwarders.forwarderOrgId))
         )
       )
     if (!stop) {
-      throw new Error("The PO's forwarder address is gone")
+      throw new Error("The route's forwarder address is gone")
     }
     destination = { name: stop.name, address: addressLines(stop.address) }
     onward = {
@@ -99,7 +103,7 @@ export async function packetFromDatabase(id: string) {
     transport,
     destination,
     ...(onward && { onward }),
-    amazonPending: !data.via && orderDestination(data) === "amazon",
+    amazonPending: !via && orderDestination(data) === "amazon",
     evidence: { verifiedAt: new Date().toISOString(), source: `Copacker shipment ${id}` }
   }
 }

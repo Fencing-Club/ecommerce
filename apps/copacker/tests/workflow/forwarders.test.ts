@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { purchaseOrderPdf } from "@repo/copacker-shipments/documents"
+import type { ShipmentRoute } from "@repo/copacker-shipments/route"
 import { and, eq } from "drizzle-orm"
 import { describe, expect, it, vi } from "vitest"
 import * as tables from "../../src/db/schema"
@@ -13,10 +14,13 @@ import {
   inviteForwarder,
   saveForwarderAddress
 } from "../../src/server/forwarders"
+import { GET as downloadDocument } from "../../src/server/http/api/documents/$id"
 import { orderLandedCosts } from "../../src/server/landed-costs"
+import { readShipments } from "../../src/server/operation-shipment-reads"
 import { receiveShipment } from "../../src/server/orders"
 import { hash } from "../../src/server/security"
 import { orderWorkflow } from "../../src/server/workflow"
+import { storage } from "../mocks/providers"
 import { database } from "../test-db"
 import { signedIn } from "../test-session"
 import {
@@ -30,6 +34,8 @@ import {
   otherId,
   post,
   preparation,
+  routes,
+  savedStops,
   saveStops,
   setUpWorkflowTests,
   supplier,
@@ -58,19 +64,20 @@ vi.mock("../../src/server/readiness", async (original) =>
 
 setUpWorkflowTests()
 
-describe("freight forwarders", () => {
-  const address = {
-    name: "Lisa Yao",
-    addressLine1: "1000 Siji Road",
-    addressLine2: "",
-    city: "Yiwu",
-    stateOrRegion: "Zhejiang",
-    postalCode: "322000",
-    countryCode: "CN",
-    phoneNumber: "",
-    email: ""
-  }
+// The forwarder's Yiwu warehouse.
+const address = {
+  name: "Lisa Yao",
+  addressLine1: "1000 Siji Road",
+  addressLine2: "",
+  city: "Yiwu",
+  stateOrRegion: "Zhejiang",
+  postalCode: "322000",
+  countryCode: "CN",
+  phoneNumber: "",
+  email: ""
+}
 
+describe("freight forwarders", () => {
   it("adds a forwarder with saved addresses, invites it, and hands the addresses over when it joins", async () => {
     const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
     expect(await database.select().from(tables.jobs)).toHaveLength(0)
@@ -185,6 +192,46 @@ describe("freight forwarders", () => {
   })
 })
 
+describe("shipment routes by way of a forwarder", () => {
+  it("stop at one of the buyer's current forwarder addresses, any of them", async () => {
+    const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
+    await saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Yiwu warehouse", address })
+    await saveForwarderAddress(buyerId, {
+      forwarderId: forwarder.id,
+      name: "Ningbo port",
+      address: { ...address, city: "Ningbo", postalCode: "315000" }
+    })
+    const addresses = await forwarderAddresses(buyerId)
+    const stop = (name: string) => {
+      const row = addresses.find((candidate) => candidate.addressName === name)!
+      return { kind: "forwarder" as const, forwarderId: row.forwarderId, addressId: row.addressId }
+    }
+    const through = (...stops: Array<ReturnType<typeof stop>>): ShipmentRoute => ({
+      stops: [{ kind: "supplier" }, ...stops, { kind: "receiver" }],
+      legs: [...stops, null].map(() => "senderArranges" as const)
+    })
+    const draft = await preparation()
+    signedIn.actor = buyer
+    const input = { id: draft.id, revision: 1, expected: routes.parcel }
+    expect(
+      (await post("shipment.route", { ...input, route: through(stop("Yiwu warehouse"), stop("Ningbo port")) })).status
+    ).toBe(400)
+    // Only while the buyer keeps the forwarder.
+    await database
+      .update(tables.forwarders)
+      .set({ removedAt: new Date() })
+      .where(eq(tables.forwarders.id, forwarder.id))
+    expect((await post("shipment.route", { ...input, route: through(stop("Ningbo port")) })).status).toBe(400)
+    await database.update(tables.forwarders).set({ removedAt: null }).where(eq(tables.forwarders.id, forwarder.id))
+    expect((await post("shipment.route", { ...input, route: through(stop("Ningbo port")) })).status).toBe(200)
+    expect(await savedStops(draft.id)).toEqual([
+      { kind: "supplier", leg: "senderArranges" },
+      { kind: "forwarder", leg: "senderArranges" },
+      { kind: "receiver", leg: null }
+    ])
+  })
+})
+
 describe("leg holders shipping the goods on", () => {
   // A released shipment with its current invoice, as the supplier prints it.
   async function released(data = orderData) {
@@ -225,12 +272,26 @@ describe("leg holders shipping the goods on", () => {
     expect(await (await post("shipment.ship", { id })).json()).toEqual({ ok: true })
   })
 
+  // A route by way of the forwarder's Yiwu warehouse, which the buyer saved for it.
+  async function throughForwarder() {
+    const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
+    await saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Yiwu warehouse", address })
+    const [stop] = await forwarderAddresses(buyerId)
+    const via = { forwarderId: forwarder.id, addressId: stop!.addressId }
+    const route = {
+      stops: [{ kind: "supplier" }, { kind: "forwarder", ...via }, { kind: "receiver" }],
+      legs: ["senderArranges", "senderArranges"]
+    } satisfies ShipmentRoute
+    return { forwarder, via, route }
+  }
+
   it("has the forwarder on the way ship the goods on with its freight, carrier and tracking", async () => {
     await database.insert(tables.organizations).values({ id: forwarderOrg, name: "Yiwu Logistics", kind: "forwarder" })
-    const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
-    const data = { ...orderData, via: { forwarderId: forwarder.id, addressId: randomUUID() } }
+    const { forwarder, via, route } = await throughForwarder()
+    const data = { ...orderData, via }
     await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
     const id = await released(data)
+    await saveStops(id, route)
     signedIn.actor = supplier
     expect((await post("shipment.ship", { id })).status).toBe(200)
     expect((await orderWorkflow(buyer, orderId)).shipments[0]?.next).toMatchObject({
@@ -269,6 +330,63 @@ describe("leg holders shipping the goods on", () => {
     ])
     signedIn.actor = buyer
     await receiveShipment(buyer, id)
+  })
+
+  it("follows each shipment's route to its forwarder, whatever the PO's route", async () => {
+    await database.insert(tables.organizations).values({ id: forwarderOrg, name: "Yiwu Logistics", kind: "forwarder" })
+    const { forwarder, via, route } = await throughForwarder()
+    await database
+      .update(tables.forwarders)
+      .set({ forwarderOrgId: forwarderOrg })
+      .where(eq(tables.forwarders.id, forwarder.id))
+    // The PO goes by no forwarder, but its first shipment's route stops at this one; its second goes straight on.
+    const routed = await released()
+    await saveStops(routed, route)
+    const direct = await released()
+    expect((await forwarderOrders(forwarderActor)).map((row) => row.order.id)).toEqual([orderId])
+    expect((await readShipments(forwarderActor, false)).items).toEqual([
+      expect.objectContaining({ id: routed, route: expect.objectContaining({ forwarderId: forwarder.id }) })
+    ])
+    // Nor can it download the other shipment's documents.
+    storage.getFile.mockResolvedValue(new Uint8Array([1, 2, 3]))
+    await database
+      .insert(tables.memberships)
+      .values({ orgId: forwarderOrg, userId: forwarderActor.user.id, email: forwarderActor.user.email, role: "owner" })
+    const invoice = async (shipmentId: string) => {
+      const [doc] = await database.select().from(tables.documents).where(eq(tables.documents.shipmentId, shipmentId))
+      return downloadDocument(new Request("http://localhost"), { params: { id: doc!.id } })
+    }
+    signedIn.actor = forwarderActor
+    await expect(invoice(direct)).rejects.toThrow("not found")
+    expect((await invoice(routed)).status).toBe(200)
+    signedIn.actor = supplier
+    for (const id of [routed, direct]) {
+      expect((await post("shipment.ship", { id })).status).toBe(200)
+    }
+    const steps = (await orderWorkflow(buyer, orderId)).shipments.map((row) => [row.id, row.next.owner])
+    expect(steps).toEqual(
+      expect.arrayContaining([
+        [routed, "forwarder"],
+        [direct, "buyer"]
+      ])
+    )
+    // The direct one arrives from the supplier, and the forwarder can't ship it on.
+    signedIn.actor = forwarderActor
+    const forward = { freight: { amountMinor: 0, currency: "USD" }, carrier: "DHL", reference: "1234567890" }
+    expect(await (await post("shipment.forward", { id: direct, ...forward })).json()).toEqual({
+      error: "This shipment doesn’t pass through a forwarder"
+    })
+    expect((await post("shipment.forward", { id: routed, ...forward })).status).toBe(200)
+    signedIn.actor = buyer
+    await receiveShipment(buyer, direct)
+    await receiveShipment(buyer, routed)
+    // A PO whose shipments all leave its forwarder out isn't the forwarder's.
+    await database
+      .update(tables.orders)
+      .set({ data: { ...orderData, via } })
+      .where(eq(tables.orders.id, orderId))
+    await saveStops(routed, routes.parcel)
+    expect(await forwarderOrders(forwarderActor)).toEqual([])
   })
 
   it("shows a joined forwarder the POs passing through it, read-only, and nothing else", async () => {

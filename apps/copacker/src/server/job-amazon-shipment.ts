@@ -2,6 +2,7 @@ import { downloadAmazonLabels } from "@repo/copacker-marketplaces/amazon"
 import { buildAwdRequest } from "@repo/copacker-shipments"
 import { amazonReference } from "@repo/copacker-shipments/amazon-inbound"
 import { matchLabels, splitPdfPages, unpackLabels } from "@repo/copacker-shipments/labels"
+import { routeForwarder } from "@repo/copacker-shipments/route"
 import { amazonRequestStates } from "@repo/copacker-shipments/states"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import { db, type Transaction } from "@/db"
@@ -14,6 +15,7 @@ import type { JobInput } from "./job-payloads"
 import type { JobContext } from "./job-runtime"
 import { PollAgain } from "./job-runtime"
 import { queueLabels, sendQueuedLabels } from "./label-release"
+import { withRoute } from "./shipment-routes"
 
 // Worker job: creates a queued shipment's AWD order (or hands an FBA shipment to its inbound plan), waits for Amazon to
 // confirm it, then files each carton's label and releases the labels.
@@ -46,7 +48,8 @@ export async function amazonShipmentJob(input: JobInput<"amazon">, { assertOwned
     throw new Error("Purchase order is missing")
   }
   const api = await amazonFor(order.buyerOrgId, order.amazonSellerId)
-  const packing = await amazonPacking(order.buyerOrgId, shipment.snapshot, shipment.packing)
+  const { route } = await withRoute(db(), shipment, order.data)
+  const packing = await amazonPacking(order.buyerOrgId, routeForwarder(route), shipment.packing)
   if (shipment.amazonNetwork === "fba") {
     await fbaShipmentJob(api, { ...shipment, packing, snapshot: shipment.snapshot }, input, assertOwned)
     return

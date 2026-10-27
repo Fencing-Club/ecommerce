@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto"
 import { addressLines } from "@repo/copacker-orders"
 import { packedItemIds } from "@repo/copacker-shipments"
+import { routeForwarder, supplierLegTransport } from "@repo/copacker-shipments/route"
 import { shippingDocumentSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
 import { releasedStates } from "@repo/copacker-shipments/states"
 import { and, eq } from "drizzle-orm"
@@ -67,7 +68,10 @@ export async function releasedPacket(s: Session, rawId: string, expected?: strin
 
 export async function shipmentPacketPage(s: Session, id: string) {
   const { shipment, order, supplier, version, labels, docs } = await releasedPacket(s, id)
-  if (!shipment.packing || !shipment.snapshot || !shipment.transport) {
+  // Through a forwarder, the packet is the supplier's leg to it, and the forwarder takes the cartons on.
+  const via = routeForwarder(shipment.route)
+  const transport = via ? supplierLegTransport(shipment.route) : shipment.transport
+  if (!shipment.packing || !shipment.snapshot || !transport) {
     throw new StatusError("packetIncomplete", 409)
   }
   const [buyer] = await db()
@@ -80,7 +84,7 @@ export async function shipmentPacketPage(s: Session, id: string) {
   const delivery = await shipmentDelivery(order, shipment)
   const destination = delivery.addresses[0]
   // One document names one physical destination. Never invent a warehouse address or silently select one of several.
-  if (!destination || delivery.addresses.length !== 1) {
+  if (!destination || delivery.addresses.length !== 1 || delivery.onward === null) {
     throw new StatusError("packetDestinationUnavailable", 409)
   }
   let data: ReturnType<typeof shippingDocumentSnapshot>
@@ -95,7 +99,9 @@ export async function shipmentPacketPage(s: Session, id: string) {
           ? [{ cartonId: doc.cartonId, labelNumber: doc.trackingNumber }]
           : []
       ),
-      transport: shipment.transport,
+      transport,
+      forwarder: via !== undefined,
+      ...(delivery.onward && { onward: { destination: delivery.onward, service: "forwarder" as const } }),
       company: buyer.name,
       supplier: supplier.name,
       revision: shipment.revision,

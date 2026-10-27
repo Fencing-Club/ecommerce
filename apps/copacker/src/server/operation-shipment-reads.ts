@@ -1,24 +1,37 @@
 import { shipmentReadOperations, type metaSchema } from "@repo/copacker-contract"
 import { orderDestination } from "@repo/copacker-packing-rules"
+import { routeForwarder } from "@repo/copacker-shipments/route"
 import { and, eq, inArray } from "drizzle-orm"
 import type { z } from "zod"
 import { db } from "@/db"
 import { connections, shipments } from "@/db/schema"
 import { forwarderOrders, visibleOrders } from "./access"
 import { amazonShipmentLinks } from "./amazon-shipments"
+import { routedThrough, withRoutes } from "./shipment-routes"
 import { amazonShipments } from "./shipments-page"
 import type { Session } from "./workspace-session"
 
 export async function readShipments(s: Session, includeExternal: boolean) {
   type Row = z.infer<(typeof shipmentReadOperations)["shipment.show"]["output"]>
-  const orders = s.org.kind === "forwarder" ? await forwarderOrders(s) : await visibleOrders(s)
+  const forwarded = s.org.kind === "forwarder" ? await forwarderOrders(s) : []
+  const orders = s.org.kind === "forwarder" ? forwarded : await visibleOrders(s)
   const byId = new Map(orders.map(({ order }) => [order.id, order]))
-  const stored = byId.size
-    ? await db()
-        .select()
-        .from(shipments)
-        .where(inArray(shipments.orderId, [...byId.keys()]))
-    : []
+  // The forwarder each order was found by, whose workspace sees only the shipments routed through it.
+  const forwarderOf = new Map(forwarded.map((row) => [row.order.id, row.forwarder.id]))
+  const routed = await withRoutes(
+    db(),
+    byId.size
+      ? await db()
+          .select()
+          .from(shipments)
+          .where(inArray(shipments.orderId, [...byId.keys()]))
+      : [],
+    (row) => byId.get(row.orderId)!.data
+  )
+  const stored = routed.filter((row) => {
+    const forwarderId = forwarderOf.get(row.orderId)
+    return !forwarderId || routedThrough(forwarderId)(row)
+  })
   const items: Row[] = stored.map((row) => {
     const po = byId.get(row.orderId)!
     const ids = new Set(amazonShipmentLinks(row).map((link) => link.id))
@@ -44,7 +57,7 @@ export async function readShipments(s: Session, includeExternal: boolean) {
           : [],
       route: {
         supplierId: po.supplierId,
-        forwarderId: po.data.via?.forwarderId ?? null,
+        forwarderId: routeForwarder(row.route)?.forwarderId ?? null,
         deliveryId: po.data.deliveryId ?? null,
         destination: orderDestination(po.data)
       },

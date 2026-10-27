@@ -87,7 +87,7 @@ if (input.originalLabels) {
   if (
     !input.transport ||
     input.transport.carrierLabels !== "none" ||
-    input.order.via ||
+    input.onward ||
     input.transport.handoff !== "supplier" ||
     !/^STAR-[A-Z0-9]+$/.test(input.shipmentId)
   ) {
@@ -100,6 +100,8 @@ if (input.originalLabels) {
 }
 const data = shippingDocumentSnapshot({
   ...input,
+  // The packet's onward leg is what says the shipment's route stops at a forwarder.
+  forwarder: Boolean(input.onward),
   labels: assignments.map((label) => ({ ...label, amazonShipmentId: input.shipmentId }))
 })
 if (original && data.network !== "awd") {

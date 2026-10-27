@@ -4,6 +4,7 @@ import { approveChanges, commercialChanges, orderInputSchema } from "@repo/copac
 import { isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import type { Packing } from "@repo/copacker-shipments"
 import { amazonNetworkNames, packingDraftSchema, splitByNetwork } from "@repo/copacker-shipments"
+import { routeForwarder } from "@repo/copacker-shipments/route"
 import {
   canEditPacking,
   canReopenPacking,
@@ -48,8 +49,7 @@ import { queuePoEmail, recordEvent, reviseOrder } from "./order-history"
 import { discardFile } from "./product-barcodes"
 import { withVariantFields } from "./product-fields"
 import { reservedPieces, packingReadiness } from "./readiness"
-import { forwarderLeg } from "./shipment-legs"
-import { savedRoutes, writeStops } from "./shipment-routes"
+import { savedRoutes, withRoute, writeStops } from "./shipment-routes"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 import { checkSupplierStock, returnSupplierStock, takeSupplierStock } from "./supplier-stock"
 import { pricingText, serverText } from "./text"
@@ -849,9 +849,10 @@ export async function receiveShipment(s: Session, shipmentId: string) {
   requireBuyer(s)
   await db().transaction(async (tx) => {
     const { order, shipment } = await accessibleShipment(s, shipmentId, { executor: tx, lock: true })
-    // Goods arrive once the last leg holder has shipped them: the forwarder when they pass through one, or else the
-    // supplier.
-    const arriving = forwarderLeg(order.data) ? "forwarded" : "shipped"
+    // Goods arrive once the last leg holder has shipped them: the forwarder when the route passes through one, or else
+    // the supplier.
+    const { route } = await withRoute(tx, shipment, order.data)
+    const arriving = routeForwarder(route) ? "forwarded" : "shipped"
     if (shipment.status !== arriving) {
       throw new LocalizedError(arriving === "forwarded" ? "forwarderNotShipped" : "supplierNotShipped")
     }

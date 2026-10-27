@@ -183,6 +183,7 @@
       "noFinalDestination": "Aggiungi la destinazione finale per salvare il percorso.",
       "stopAfterFinalDestination": "Nulla può seguire la destinazione finale. Rimuovi le tappe successive.",
       "aglNotIntoAmazon": "AGL consegna solo in una rete Amazon. Scegli poi Amazon FBA US o AWD US.",
+      "secondForwarder": "Un percorso può passare da un solo spedizioniere. Rimuovi l’altro.",
       "legMissing": "Scegli chi spedisce ogni tratta per salvare il percorso.",
       "legNotAllowed": "Solo il mittente può spedire in una rete Amazon."
     },
