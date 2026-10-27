@@ -335,7 +335,9 @@ jobs:
             apps/copacker/.cloudflare/storybook-artifact.json
           include-hidden-files: true
           if-no-files-found: error
-          retention-days: 7
+          # Only this run's preview deploys it, and each run's build is large enough to fill the artifact quota within
+          # days. A preview rerun after a day reruns this build too.
+          retention-days: 1
 
   preview:
     needs: [changes, storybook-build]
