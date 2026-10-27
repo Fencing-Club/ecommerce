@@ -20,9 +20,13 @@ describe("releasing a shipment packed on pallets", () => {
   }))
   const cartonLabels = ["C1", "C2"].map((cartonId) => documentRow("carton_label", `${cartonId}.pdf`, { cartonId }))
   const codes = (amazonNetwork: "fba" | "awd_us", docs: ReturnType<typeof documentRow>[]) =>
-    releaseIssues(shipmentRow({ status: "waiting_labels", packing, snapshot: order, amazonNetwork, labels }), docs).map(
-      (issue) => issue.code
-    )
+    releaseIssues(
+      {
+        ...shipmentRow({ status: "waiting_labels", packing, snapshot: order, amazonNetwork, labels }),
+        transport: null
+      },
+      docs
+    ).map((issue) => issue.code)
 
   it("waits for Amazon's pallet labels on FBA only", () => {
     expect(codes("fba", cartonLabels)).toContain("missing_pallet_label")

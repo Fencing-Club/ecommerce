@@ -87,12 +87,6 @@
       "units": "Unità",
       "grossWeight": "Peso lordo",
       "volume": "Volume"
-    },
-    "legs": {
-      "shipsTo": "Il fornitore spedisce a {place}.",
-      "amazonPickup": "Ritiro Amazon presso {place}.",
-      "carrierPickup": "Ritiro del corriere presso {place}.",
-      "dropoff": "{place} consegna i cartoni al corriere."
     }
   },
   "actions": {
@@ -161,25 +155,6 @@
     "suffocationLabel": "Applica un’etichetta di avviso di soffocamento su ogni busta di plastica.",
     "amazonDestination": "Amazon {networks}"
   },
-  "transport": {
-    "title": "Trasporto",
-    "service": "Servizio",
-    "parcel": "Corriere pacchi",
-    "agl": "Amazon Global Logistics (AGL)",
-    "freight": "Trasportatore merci",
-    "handoff": "Luogo di consegna",
-    "supplier": "Fornitore",
-    "forwarder": "Spedizioniere",
-    "collection": "Metodo di consegna",
-    "pickup": "Ritiro del corriere",
-    "dropoff": "Consegnare al corriere",
-    "carrierLabels": "Etichette del corriere",
-    "perCarton": "Una per cartone",
-    "none": "Non richieste",
-    "instructions": "Istruzioni di consegna",
-    "save": "Salva trasporto",
-    "unconfirmed": "Trasporto non confermato"
-  },
   "route": {
     "title": "Percorso",
     "editRoute": "Modifica percorso",
@@ -200,6 +175,7 @@
     "removeStop": "Rimuovi {name}",
     "addStop": "Aggiungi tappa",
     "chooseStop": "Scegli una tappa",
+    "forwarders": "Spedizionieri",
     "newStop": "Nuova tappa",
     "endsRoute": "Il percorso termina a {name}. Rimuovilo per aggiungere una tappa prima.",
     "issues": {
@@ -213,6 +189,7 @@
     "ready": "Pronto il {date}",
     "legs": {
       "label": "Spedizione, da {from} a {to}",
+      "choose": "Scegli chi spedisce",
       "senderArranges": "{company} organizza la spedizione",
       "receiverArranges": "{company} organizza la spedizione",
       "senderMoves": "{company} consegna",

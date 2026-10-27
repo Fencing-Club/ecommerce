@@ -87,12 +87,6 @@
       "units": "यूनिट",
       "grossWeight": "कुल वज़न",
       "volume": "आयतन"
-    },
-    "legs": {
-      "shipsTo": "आपूर्तिकर्ता {place} को भेजता है।",
-      "amazonPickup": "Amazon {place} से पिकअप करता है।",
-      "carrierPickup": "कैरियर {place} से पिकअप करता है।",
-      "dropoff": "{place} कार्टन कैरियर को सौंपता है।"
     }
   },
   "actions": {
@@ -161,25 +155,6 @@
     "suffocationLabel": "हर पॉलीबैग पर दम घुटने की चेतावनी का लेबल लगाएं।",
     "amazonDestination": "Amazon {networks}"
   },
-  "transport": {
-    "title": "परिवहन",
-    "service": "सेवा",
-    "parcel": "पार्सल वाहक",
-    "agl": "Amazon Global Logistics (AGL)",
-    "freight": "माल वाहक",
-    "handoff": "हस्तांतरण स्थान",
-    "supplier": "आपूर्तिकर्ता",
-    "forwarder": "फ्रेट फ़ॉरवर्डर",
-    "collection": "हस्तांतरण का तरीका",
-    "pickup": "वाहक द्वारा पिकअप",
-    "dropoff": "वाहक को पहुँचाएँ",
-    "carrierLabels": "वाहक लेबल",
-    "perCarton": "प्रति कार्टन एक",
-    "none": "आवश्यक नहीं",
-    "instructions": "हस्तांतरण निर्देश",
-    "save": "परिवहन सहेजें",
-    "unconfirmed": "परिवहन की पुष्टि नहीं हुई"
-  },
   "route": {
     "title": "रूट",
     "editRoute": "रूट बदलें",
@@ -200,6 +175,7 @@
     "removeStop": "{name} हटाएँ",
     "addStop": "स्टॉप जोड़ें",
     "chooseStop": "स्टॉप चुनें",
+    "forwarders": "फ़ॉरवर्डर",
     "newStop": "नया स्टॉप",
     "endsRoute": "रूट {name} पर खत्म होता है। इससे पहले स्टॉप जोड़ने के लिए इसे हटाएँ।",
     "issues": {
@@ -213,6 +189,7 @@
     "ready": "{date} को तैयार",
     "legs": {
       "label": "शिपिंग, {from} से {to}",
+      "choose": "चुनें कि कौन भेजता है",
       "senderArranges": "{company} शिपिंग की व्यवस्था करता है",
       "receiverArranges": "{company} शिपिंग की व्यवस्था करता है",
       "senderMoves": "{company} पहुँचाता है",

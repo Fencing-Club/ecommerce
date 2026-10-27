@@ -25,6 +25,7 @@ import { database } from "../test-db"
 import { signedIn } from "../test-session"
 import {
   actor,
+  bookedRoute,
   buyer,
   buyerId,
   fbaOrder,
@@ -36,6 +37,9 @@ import {
   printed,
   readyDate,
   retryDue,
+  routes,
+  savedStops,
+  saveStops,
   setUpWorkflowTests,
   shipmentState,
   supplier,
@@ -349,22 +353,9 @@ describe("PO to a released FBA shipment", () => {
     expect(provider.api.fbaBoxLabel).toHaveBeenCalledWith("FBA15SH2", "FBA15SH2U000004")
 
     expect(
-      (
-        await post("shipment.transport", {
-          id: shipmentId,
-          revision: 1,
-          expected: null,
-          transport: {
-            service: "parcel",
-            handoff: "supplier",
-            collection: "pickup",
-            carrierLabels: "per_carton",
-            instructions: ""
-          }
-        })
-      ).status
+      (await post("shipment.route", { id: shipmentId, revision: 1, ...(await bookedRoute(shipmentId)) })).status
     ).toBe(200)
-    // Parcel transport needs a carrier label on each carton, and the four complete the packet.
+    // A carrier the buyer books needs a label on each carton, and the four complete the packet.
     expect(await shipmentState(shipmentId)).toEqual({
       status: "waiting_labels",
       issues: Array(4).fill("missing_shipping_label")
@@ -504,7 +495,7 @@ describe("PO to a released FBA shipment", () => {
     })
   })
 
-  it("splits one PO's cartons into a shipment per Amazon network, each with its own Amazon job", async () => {
+  it("splits one PO's cartons into a shipment per Amazon network, each with its own Amazon job and the route", async () => {
     fakeFba()
     // Cords go to AWD US in bulk; gloves go to FBA.
     const data = {
@@ -520,6 +511,8 @@ describe("PO to a released FBA shipment", () => {
       .values({ orderId, orderRevision: 1, snapshot: data })
       .returning()
     const shipmentId = draft!.id
+    // The buyer chose its carrier before the packing split.
+    await saveStops(shipmentId, routes.parcel)
     await uploadPdf("invoice")
     const packing = packingSchema.parse({
       readyDate,
@@ -566,6 +559,12 @@ describe("PO to a released FBA shipment", () => {
       ["fba", "queued", ["G1"]]
     ])
     expect(rows.find((row) => row.id === shipmentId)?.amazonNetwork).toBe("fba")
+    for (const row of rows) {
+      expect(await savedStops(row.id)).toEqual([
+        { kind: "supplier", leg: "senderArranges" },
+        { kind: "receiver", leg: null }
+      ])
+    }
     const queued = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "amazon"))
     expect(queued.map((job) => job.payload.shipmentId).toSorted()).toEqual(rows.map((row) => row.id).toSorted())
     const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))

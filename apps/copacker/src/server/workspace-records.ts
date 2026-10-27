@@ -41,6 +41,7 @@ import {
   variantFields,
   variantStockTargetSets
 } from "@/db/schema"
+import { handBackStops } from "./forwarders"
 
 // A workspace's records, which deleting the workspace removes. Kept apart from deletion.ts, which also signs people
 // out and talks to WorkOS and the stores, so the end-to-end seed (scripts/seed-e2e.ts) can start its workspaces over.
@@ -92,6 +93,7 @@ export async function deleteWorkspaceRecords(tx: Transaction, orgId: string) {
 
 // The buyers and forwarders that linked this workspace as their supplier or forwarder manage it themselves again.
 export async function unlinkPartners(tx: Transaction, orgId: string) {
+  await handBackStops(tx, orgId)
   await tx.update(suppliers).set({ supplierOrgId: null }).where(eq(suppliers.supplierOrgId, orgId))
   await tx.update(forwarders).set({ forwarderOrgId: null }).where(eq(forwarders.forwarderOrgId, orgId))
 }

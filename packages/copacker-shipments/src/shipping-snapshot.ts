@@ -123,7 +123,6 @@ export function shippingDocumentSnapshot(input: {
     })),
     instructions: [
       order.notes,
-      transport.instructions,
       ...items.flatMap((item) =>
         item.packingRequirements?.instructions ? [`${item.supplierSku}:\n${item.packingRequirements.instructions}`] : []
       )

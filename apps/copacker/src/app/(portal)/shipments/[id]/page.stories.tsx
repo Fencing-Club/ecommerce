@@ -1,5 +1,6 @@
 import { type Address, type OrderInput, type OrderItem } from "@repo/copacker-orders"
 import { type AmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
+import { defaultShipmentRoute, type ShipmentRoute } from "@repo/copacker-shipments/route"
 import { shippingSettingsKey } from "@repo/copacker-shipments/shipping-model"
 import { packingListSnapshot } from "@repo/copacker-shipments/shipping-snapshot"
 import { http, HttpResponse } from "msw/http"
@@ -27,10 +28,9 @@ import {
 import { daysAgo } from "@/stories/fixtures/orders"
 import { bagOrder, bagPacking, towelOrder, towelPacking, towelPackingDraft } from "@/stories/fixtures/packing"
 import { northwindFactory, baylineWarehouse } from "@/stories/fixtures/parties"
-import { closeMenu, shownDialog } from "@/stories/play"
+import { chooseOption, closeMenu, shownDialog } from "@/stories/play"
 import { portalPage, serverStory } from "@/stories/server"
 import { member, owner } from "@/stories/workspace"
-import { shipmentDestinations } from "../destination"
 import ShipmentPageView from "./page"
 
 // The shipment's step as orderWorkflow reports it: what happens next, what its packet lacks, and its packet once the
@@ -58,6 +58,9 @@ type Args = {
   addresses: PartnerAddress[]
   // Whether the supplier's changes to the purchase order are waiting on the buyer.
   awaitingChanges: boolean
+  // The route the buyer saved, null until it saves one. By default the buyer books a carrier for each leg of the PO's
+  // route (bookedRoute).
+  route?: ShipmentRoute | null
   // Each packed line's SKU and FNSKU labels, as lineLabels reads them; by default every barcode label its packing
   // details ask for is made from the standard template.
   lineLabels?: Array<{
@@ -109,6 +112,20 @@ function finalAddresses(data: OrderInput, shipment: ShipmentRow): Address[] {
     : []
 }
 
+// Routes a shipment saved: the PO's, with the buyer booking a carrier for each leg, or with AGL collecting the cartons
+// from the stop before Amazon.
+function bookedRoute(data: OrderInput): ShipmentRoute {
+  const route = defaultShipmentRoute(data)
+  return { ...route, legs: route.legs.map(() => "senderArranges" as const) }
+}
+function aglRoute(data: OrderInput): ShipmentRoute {
+  const { stops, legs } = bookedRoute(data)
+  return {
+    stops: [...stops.slice(0, -1), { kind: "agl" }, { kind: "receiver" }],
+    legs: [...legs.slice(0, -1), null, null]
+  }
+}
+
 // A shipment's page (page.tsx) made from what the database, the workflow and Amazon would return, by the same
 // shipmentPageData the page's loader uses.
 async function ShipmentPage({
@@ -123,6 +140,7 @@ async function ShipmentPage({
   docs,
   addresses,
   awaitingChanges,
+  route,
   lineLabels
 }: Args) {
   const t = await translateStory("shipments.detail")
@@ -130,7 +148,6 @@ async function ShipmentPage({
   const packingOrder = shipment.amazonNetwork
     ? data.items.filter((item) => item.receiver === shipment.amazonNetwork)
     : data.items
-  const destination = await shipmentDestinations([order.data])
   return (
     <ShipmentPageView
       page={shipmentPageData(
@@ -154,12 +171,20 @@ async function ShipmentPage({
                 type === "sku" || type === "fnsku" ? [{ itemId: item.id, type, state: "standard" as const }] : []
               )
             ),
+          savedRoute: route === undefined ? bookedRoute(data) : (route ?? undefined),
           // Bayline Freight's Ningbo warehouse when the PO goes by way of it.
-          forwarder: data.via
-            ? { forwarderName: "Bayline Freight", addressName: "Ningbo warehouse", address: baylineWarehouse }
-            : undefined,
-          finalAddresses: finalAddresses(data, shipment),
-          destinationName: destination(order.data, shipment.amazonNetwork)
+          forwarders: data.via
+            ? [
+                {
+                  ...data.via,
+                  forwarderName: "Bayline Freight",
+                  addressName: "Ningbo warehouse",
+                  address: baylineWarehouse
+                }
+              ]
+            : [],
+          via: data.via,
+          finalAddresses: finalAddresses(data, shipment)
         },
         (shipmentNumber) => t("title", { number: shipmentNumber })
       )}
@@ -264,9 +289,9 @@ export const DraftPacking = meta.story({
     shipment: shipmentRow({
       status: "packing",
       amazonNetwork: "awd_us",
-      packingDraft: towelPackingDraft(),
-      transport: { service: "agl", handoff: "forwarder", collection: "pickup", carrierLabels: "none", instructions: "" }
+      packingDraft: towelPackingDraft()
     }),
+    route: aglRoute(towelOrder),
     step: step("packing", "Complete the packing list"),
     number: 1,
     docs: [],
@@ -282,11 +307,12 @@ export const DraftPacking = meta.story({
     await expect(canvas.getByRole("button", { name: "Save draft" })).toBeVisible()
     await expect(canvas.queryByRole("button", { name: /View order/ })).toBeNull()
     await expect(canvas.queryByText("18 cartons, 504 units")).toBeNull()
-    // The route, then how the cartons travel, inside the shipment card.
+    // The route, with who moves the cartons on each leg: the supplier to the forwarder, and AGL from there.
     await expect(canvas.getAllByText("Bayline Freight").length).toBeGreaterThan(0)
     await expect(canvas.getByText("Amazon AWD US")).toBeVisible()
-    await expect(canvas.getByText("Supplier ships to Bayline Freight.")).toBeVisible()
-    await expect(canvas.getByText("Amazon pickup from Bayline Freight.")).toBeVisible()
+    await expect(canvas.getByText("Northwind Textiles arranges shipping")).toBeVisible()
+    await expect(canvas.getAllByText("Amazon arranges shipping")).toHaveLength(2)
+    await expect(canvas.queryByText(/Supplier ships to/)).toBeNull()
     await expect(canvas.queryByRole("heading", { name: "Transport" })).toBeNull()
     // The sidebar sums up the cartons.
     const summary = canvas.getByRole("region", { name: "Shipment details" })
@@ -385,8 +411,7 @@ export const ReadyToFinishPacking = meta.story({
     shipment: shipmentRow({
       status: "packing",
       amazonNetwork: "awd_us",
-      packingDraft: towelPacking(),
-      transport: { service: "agl", handoff: "forwarder", collection: "pickup", carrierLabels: "none", instructions: "" }
+      packingDraft: towelPacking()
     })
   },
   play: async ({ canvas }) => {
@@ -407,8 +432,7 @@ export const Packed = meta.story({
     shipment: shipmentRow({
       status: "packed",
       amazonNetwork: "awd_us",
-      packing: towelPacking(),
-      transport: { service: "agl", handoff: "forwarder", collection: "pickup", carrierLabels: "none", instructions: "" }
+      packing: towelPacking()
     }),
     step: step(
       "prepareAmazon",
@@ -423,13 +447,7 @@ export const Packed = meta.story({
           data: packingListSnapshot({
             order: towelOrder,
             packing: towelPacking(),
-            transport: {
-              service: "agl",
-              handoff: "forwarder",
-              collection: "pickup",
-              carrierLabels: "none",
-              instructions: ""
-            },
+            transport: { service: "agl", handoff: "forwarder", collection: "pickup", carrierLabels: "none" },
             company: "Harbor Goods",
             supplier: "Northwind Textiles",
             destination: "Amazon AWD US",
@@ -458,7 +476,7 @@ export const Packed = meta.story({
       "Amazon AWD US"
     ])
     await userEvent.click(canvas.getByRole("button", { name: "Route" }))
-    await expect(await canvas.findByText("Supplier ships to Bayline Freight.")).toBeVisible()
+    await expect(await canvas.findByText("Northwind Textiles arranges shipping")).toBeVisible()
     await expect(canvas.getByText("Northwind Textiles / Main factory")).toBeVisible()
     await expect(canvas.getByText("88 Harbour Road")).toBeVisible()
     await expect(canvas.getByRole("link", { name: "+86 574 5555 0100" })).toHaveAttribute("href", "tel:+8657455550100")
@@ -496,9 +514,9 @@ export const FbaMixedCartons = meta.story({
     shipment: shipmentRow({
       status: "packing",
       amazonNetwork: "fba",
-      packingDraft: bagPacking(),
-      transport: { service: "agl", handoff: "forwarder", collection: "pickup", carrierLabels: "none", instructions: "" }
-    })
+      packingDraft: bagPacking()
+    }),
+    route: aglRoute(bagOrder)
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Amazon FBA US")).toBeVisible()
@@ -646,12 +664,10 @@ export const PackingForSupplier = meta.story({
     )
     await expect(canvas.getByRole("button", { name: "Add carton" })).toBeVisible()
     await expect(canvas.queryByRole("textbox", { name: /Supplier SKU/ })).toBeNull()
-    // The buyer's Transport card follows the page header, outside the packing form, so saving the packing leaves it
-    // usable.
-    const heading = canvas.getByRole("heading", { level: 1 })
-    const transport = canvas.getByText("Transport", { selector: "[data-slot=card-title]" })
-    await expect(transport.getBoundingClientRect().top).toBeGreaterThan(heading.getBoundingClientRect().bottom)
-    await expect(transport.closest("fieldset")).toBeNull()
+    // The buyer changes the route in its own section, with no transport card.
+    const route = canvas.getByRole("region", { name: "Route" })
+    await expect(within(route).getByRole("button", { name: "Edit route" })).toBeVisible()
+    await expect(canvas.queryByText("Transport", { selector: "[data-slot=card-title]" })).toBeNull()
   }
 })
 
@@ -783,15 +799,14 @@ export const Creating = meta.story({
   }
 })
 
-// Amazon has made the AWD order's carton labels. AGL books the transport, so no carrier labels are needed.
+// Amazon has made the AWD order's carton labels. AGL collects the cartons, so no carrier labels are needed.
 const waitingLabels = shipmentRow({
   status: "waiting_labels",
   packing: packingFor(awdOrder.data),
   amazonNetwork: "awd_us",
   amazonOrderId: "STAR-8KQ2M7",
   amazonShipmentId: "STAR-8KQ2M7-1",
-  labels: awdLabels,
-  transport: { service: "agl", handoff: "supplier", collection: "pickup", carrierLabels: "none", instructions: "" }
+  labels: awdLabels
 })
 
 // The labels go to the supplier by themselves, so the page only lists what still holds them back.
@@ -800,6 +815,7 @@ export const WaitingForLabels = meta.story({
   args: {
     order: awdOrder,
     shipment: waitingLabels,
+    route: aglRoute(awdOrder.data),
     step: step("labels", "Book shipping and add the missing documents below", {
       issues: [{ code: "missing_product_label", message: "Add a product label for Linen apron / Charcoal" }]
     })
@@ -821,6 +837,88 @@ export const WaitingForLabels = meta.story({
     await expect(canvas.getByText("200 Distribution Road")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Products" })).toBeVisible()
     await expect(canvas.queryByText(/201952611540373988/)).toBeNull()
+  }
+})
+
+// The buyer changes who moves the cartons until Amazon has the shipment: Edit route turns the stops and legs into menus,
+// and Save route sends the route with the one the page showed.
+export const EditRoute = meta.story({
+  ...buyer,
+  args: {
+    order: amazonOrder,
+    shipment: shipmentRow({ status: "packed", packing: packingFor(amazonOrder.data), amazonNetwork: "fba" }),
+    step: step("prepareAmazon", "Packing is complete. Create the Amazon shipment to get its labels.")
+  },
+  play: async ({ canvas }) => {
+    const route = canvas.getByRole("region", { name: "Route" })
+    await userEvent.click(within(route).getByRole("button", { name: "Route" }))
+    await userEvent.click(await within(route).findByRole("button", { name: "Edit route" }))
+    await chooseOption(
+      within(route).getByRole("combobox", { name: "Shipping, Lotus Manufacturing to Amazon" }),
+      /^Lotus Manufacturing delivers/
+    )
+    await userEvent.click(within(route).getByRole("button", { name: "Save route" }))
+    const stops = [{ kind: "supplier" }, { kind: "receiver" }]
+    await waitFor(() =>
+      expect(sent).toEqual([
+        {
+          action: "shipment.route",
+          data: {
+            id: shipmentId,
+            revision: 3,
+            route: { stops, legs: ["senderMoves"] },
+            expected: { stops, legs: ["senderArranges"] }
+          }
+        }
+      ])
+    )
+  }
+})
+
+// A shipment whose buyer hasn't chosen who moves its last leg: the route opens with it, and the labels wait for it.
+export const RouteToChoose = meta.story({
+  ...buyer,
+  args: {
+    order: amazonOrder,
+    shipment: shipmentRow({
+      status: "waiting_labels",
+      packing: packingFor(amazonOrder.data),
+      amazonNetwork: "fba",
+      amazonOrderId: fbaPlanId,
+      amazonShipmentId: "FBA18ABCD123",
+      labels
+    }),
+    route: null,
+    step: step("labels", "Book shipping and add the missing documents below", {
+      issues: [{ code: "route_incomplete", message: "Choose who ships each leg of the route" }]
+    }),
+    docs: [invoice, cartonLabel]
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Choose who ships each leg of the route")).toBeVisible()
+    const route = canvas.getByRole("region", { name: "Route" })
+    await expect(within(route).getByText("Ship from")).toBeVisible()
+    await userEvent.click(within(route).getByRole("button", { name: "Edit route" }))
+    await expect(
+      within(route).getByRole("combobox", { name: "Shipping, Lotus Manufacturing to Amazon" })
+    ).toHaveTextContent("Choose who ships")
+    // Nobody has booked a carrier, so there are no carrier labels to add.
+    await expect(canvas.queryByRole("button", { name: "Upload labels" })).toBeNull()
+  }
+})
+
+// A shipment to the buyer's own warehouse doesn't wait on who moves its last leg, so its route starts closed even before
+// the buyer chooses, and opens to Edit route.
+export const WarehouseRouteToChoose = meta.story({
+  ...buyer,
+  args: { route: null },
+  play: async ({ canvas }) => {
+    const route = canvas.getByRole("region", { name: "Route" })
+    const toggle = within(route).getByRole("button", { name: "Route" })
+    await expect(toggle).toHaveAttribute("aria-expanded", "false")
+    await userEvent.click(toggle)
+    await expect(toggle).toHaveAttribute("aria-expanded", "true")
+    await expect(await within(route).findByRole("button", { name: "Edit route" })).toBeVisible()
   }
 })
 
@@ -866,6 +964,7 @@ export const WaitingForLabelsSupplier = meta.story({
     kind: "supplier",
     order: awdOrder,
     shipment: waitingLabels,
+    route: aglRoute(awdOrder.data),
     step: step("labels", "Book shipping and add the missing documents below"),
     docs: [invoice, cartonLabel, shippingLabel]
   },
@@ -969,17 +1068,7 @@ export const ShippedToForwarder = meta.story({
   ...buyer,
   args: {
     order: { ...warehouse, data: { ...warehouse.data, via: towelOrder.via } },
-    shipment: shipmentRow({
-      status: "shipped",
-      packing: packingFor(warehouse.data),
-      transport: {
-        service: "parcel",
-        handoff: "forwarder",
-        collection: "pickup",
-        carrierLabels: "per_carton",
-        instructions: ""
-      }
-    }),
+    shipment: shipmentRow({ status: "shipped", packing: packingFor(warehouse.data) }),
     step: step("forward", "The forwarder ships the goods on and adds the freight cost, carrier, and tracking", {
       packetUrl: packet
     })
@@ -987,7 +1076,7 @@ export const ShippedToForwarder = meta.story({
   play: async ({ canvas }) => {
     // The forwarder's warehouse is a stop on the route, with no line about the forwarder's step.
     await userEvent.click(canvas.getByRole("button", { name: "Route" }))
-    await expect(await canvas.findByText("Supplier ships to Bayline Freight.")).toBeVisible()
+    await expect(await canvas.findByText("Lotus Manufacturing arranges shipping")).toBeVisible()
     await expect(canvas.queryByText(/The forwarder ships the goods on/)).toBeNull()
     await expect(canvas.getByText("Ningbo warehouse")).toBeVisible()
     await expect(canvas.getByText("18 Gangqiao Road")).toBeVisible()

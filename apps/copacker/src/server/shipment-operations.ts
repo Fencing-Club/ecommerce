@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto"
+import { routeIssues } from "@repo/copacker-packing-rules"
 import {
   amazonReference,
   awdShipmentIdPattern,
   fbaInboundPlanIdPattern,
   fbaPlanName
 } from "@repo/copacker-shipments/amazon-inbound"
-import { canConfigureTransport, transportSchema } from "@repo/copacker-shipments/transport"
+import { canEditRoute, ruleRoute, type ShipmentRoute, shipmentRouteSchema } from "@repo/copacker-shipments/route"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
@@ -15,14 +16,16 @@ import { accessibleShipment } from "./access"
 import { amazonFor } from "./connections"
 import { requestInput } from "./errors"
 import { cancelAmazonShipment } from "./fba-shipments"
+import { forwarderAddress } from "./forwarders"
 import { withJobWake } from "./job-delivery"
 import { jobRow } from "./job-payloads"
 import { queueLabels, sendQueuedLabels } from "./label-release"
 import { recordEvent } from "./order-history"
+import { withRoute, writeStops } from "./shipment-routes"
 import type { Session } from "./workspace-session"
 
 // What a buyer does to a shipment Amazon is creating, once it needs a hand: try again, match it to the Amazon order it
-// already made, cancel that order, and say how the cartons travel.
+// already made, cancel that order, and choose the shipment's route.
 
 // Queues the shipment's Amazon job for its revision again, as a fresh attempt that an expired worker can't take back.
 async function requeueAmazon(tx: Transaction, shipment: { id: string; revision: number }) {
@@ -123,33 +126,43 @@ export async function cancelAtAmazon(s: Session, id: string) {
   })
 }
 
-export const transportInputSchema = z.object({
+export const routeInputSchema = z.object({
   id: z.uuid(),
   revision: z.number().int().positive(),
-  transport: transportSchema,
-  // The transport the page showed, which must still be the saved one.
-  expected: transportSchema.nullable()
+  route: shipmentRouteSchema,
+  // The route the page showed, which must still be the shipment's.
+  expected: shipmentRouteSchema
 })
 
-// Saves how a shipment's cartons travel. A shipment that waited only on it goes to its supplier.
-export async function saveTransport(
-  s: Session,
-  { id, revision, transport, expected }: z.output<typeof transportInputSchema>
-) {
+// The same route, whichever order its fields came in.
+const sameRoute = (a: ShipmentRoute, b: ShipmentRoute) =>
+  JSON.stringify(shipmentRouteSchema.parse(a)) === JSON.stringify(shipmentRouteSchema.parse(b))
+
+// Saves a shipment's route. It stops at the purchase order's forwarder, if any, and breaks none of the route rules. A
+// shipment that waited only on who moves its last leg goes to its supplier.
+export async function saveRoute(s: Session, { id, revision, route, expected }: z.output<typeof routeInputSchema>) {
   const queued = await db().transaction(async (tx) => {
     const { order, shipment } = await accessibleShipment(s, id, { executor: tx, lock: true })
+    const current = await withRoute(tx, shipment, order.data)
     if (
-      !canConfigureTransport(shipment.status, shipment.operation, shipment.transport) ||
+      !canEditRoute(shipment.status, shipment.operation, current.transport) ||
       shipment.revision !== revision ||
-      JSON.stringify(shipment.transport && transportSchema.parse(shipment.transport)) !== JSON.stringify(expected)
+      !sameRoute(current.route, expected)
     ) {
-      throw new LocalizedError("transportChanged")
+      throw new LocalizedError("routeChanged")
     }
-    if (transport.handoff === "forwarder" && !(shipment.snapshot ?? order.data).via) {
-      throw new LocalizedError("transportForwarderMissing")
+    const via = (shipment.snapshot ?? order.data).via
+    const forwarders = route.stops.flatMap((stop) => (stop.kind === "forwarder" ? [stop] : []))
+    const known =
+      !forwarders.length ||
+      (via &&
+        forwarders.every((stop) => stop.forwarderId === via.forwarderId && stop.addressId === via.addressId) &&
+        (await forwarderAddress(order.buyerOrgId, via.forwarderId, via.addressId, tx)))
+    if (!known || routeIssues(ruleRoute(route, current.receiver)).length) {
+      throw new LocalizedError("routeNotAllowed")
     }
-    await tx.update(shipments).set({ transport }).where(eq(shipments.id, id))
-    // Transport that needs no carrier labels can complete a shipment that waited on it.
+    await writeStops(tx, id, route)
+    // A route that needs no carrier labels can complete a shipment that waited on it.
     return shipment.status === "waiting_labels" ? queueLabels(tx, { shipmentId: id, actor: s.user.id }) : null
   })
   if (queued) {

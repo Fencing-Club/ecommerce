@@ -40,7 +40,7 @@
       "palletWeight": "Tarima {pallet}: las tarimas de {receiver} deben pesar como máximo {maxLb, number} lb ({maxKg, number} kg), incluida la tarima"
     },
     "networkMismatch": "Empaca solo productos asignados a la red de Amazon de este envío.",
-    "missingTransport": "Transporte sin confirmar",
+    "routeIncomplete": "Elige quién envía cada tramo de la ruta",
     "missingTrackingNumber": "Agrega el número de rastreo de la etiqueta del transportista de la caja {carton}"
   },
   "workflow": {

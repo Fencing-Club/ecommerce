@@ -8,13 +8,15 @@ import {
   openPackingStates,
   type ShipmentState
 } from "@repo/copacker-shipments/states"
-import { shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
+import { shipmentLabelRequirements, type ShipmentTransport } from "@repo/copacker-shipments/transport"
 import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
 import { issueValues } from "@/lib/packing-messages"
 import type { documents, shipments } from "../db/schema"
 
 type Shipment = typeof shipments.$inferSelect
+// A shipment with how its goods travel on the last leg, from its route (shipmentRoute).
+type RoutedShipment = Shipment & { transport: ShipmentTransport | null }
 type Document = typeof documents.$inferSelect
 
 // Pieces per PO item in shipments that arrived.
@@ -159,7 +161,7 @@ export function packingReadiness(
 // from its packing when the packet is downloaded. Product labels are made from each product when needed, so a line
 // lacks one only when its product can't make one yet, as given in missingLabels (see lineLabels).
 export function releaseIssues(
-  shipment: Shipment,
+  shipment: RoutedShipment,
   docs: Document[],
   missingLabels: ReadonlySet<string> = new Set(),
   t: ServerText = serverTextInEnglish
@@ -170,7 +172,7 @@ export function releaseIssues(
   const issues =
     orderDestination(shipment.snapshot) === "amazon" ? amazonIssues(shipment, shipment.packing, docs, t) : []
   if (shipmentLabelRequirements(orderDestination(shipment.snapshot), shipment.transport).needsTransport) {
-    issues.push({ code: "missing_transport", message: t("readiness.missingTransport") })
+    issues.push({ code: "route_incomplete", message: t("readiness.routeIncomplete") })
   }
   const shipped = packedItemIds(shipment.packing)
   for (const item of shipment.snapshot.items) {
@@ -185,9 +187,9 @@ export function releaseIssues(
   return issues
 }
 
-// Amazon carton labels and packing documents must match the current revision. The configured transport decides
-// whether each carton also needs a carrier label.
-function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[], t: ServerText) {
+// Amazon carton labels and packing documents must match the current revision. The route decides whether each carton
+// also needs a carrier label.
+function amazonIssues(shipment: RoutedShipment, packing: Packing, docs: Document[], t: ServerText) {
   const issues: ReadinessIssue[] = []
   const current = docs.filter(
     (doc) =>

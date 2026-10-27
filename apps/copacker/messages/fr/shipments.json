@@ -87,12 +87,6 @@
       "units": "Unités",
       "grossWeight": "Poids brut",
       "volume": "Volume"
-    },
-    "legs": {
-      "shipsTo": "Le fournisseur expédie à {place}.",
-      "amazonPickup": "Enlèvement Amazon chez {place}.",
-      "carrierPickup": "Enlèvement par le transporteur chez {place}.",
-      "dropoff": "{place} remet les cartons au transporteur."
     }
   },
   "actions": {
@@ -161,25 +155,6 @@
     "suffocationLabel": "Apposez une étiquette d’avertissement de risque d’étouffement sur chaque sachet plastique.",
     "amazonDestination": "Amazon {networks}"
   },
-  "transport": {
-    "title": "Transport",
-    "service": "Service",
-    "parcel": "Transporteur de colis",
-    "agl": "Amazon Global Logistics (AGL)",
-    "freight": "Transporteur de fret",
-    "handoff": "Lieu de remise",
-    "supplier": "Fournisseur",
-    "forwarder": "Transitaire",
-    "collection": "Mode de remise",
-    "pickup": "Enlèvement par le transporteur",
-    "dropoff": "Livrer au transporteur",
-    "carrierLabels": "Étiquettes de transport",
-    "perCarton": "Une par carton",
-    "none": "Non requises",
-    "instructions": "Instructions de remise",
-    "save": "Enregistrer le transport",
-    "unconfirmed": "Transport non confirmé"
-  },
   "route": {
     "title": "Itinéraire",
     "editRoute": "Modifier l’itinéraire",
@@ -200,6 +175,7 @@
     "removeStop": "Retirer {name}",
     "addStop": "Ajouter une étape",
     "chooseStop": "Choisir une étape",
+    "forwarders": "Transitaires",
     "newStop": "Nouvelle étape",
     "endsRoute": "L’itinéraire se termine à {name}. Retirez-le pour ajouter une étape avant.",
     "issues": {
@@ -213,6 +189,7 @@
     "ready": "Prêt le {date}",
     "legs": {
       "label": "Expédition, de {from} à {to}",
+      "choose": "Choisissez qui expédie",
       "senderArranges": "{company} organise l’expédition",
       "receiverArranges": "{company} organise l’expédition",
       "senderMoves": "{company} livre",

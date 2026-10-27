@@ -40,7 +40,7 @@
       "palletWeight": "पैलेट {pallet}: {receiver} पैलेट का वज़न पैलेट सहित अधिकतम {maxLb, number} lb ({maxKg, number} किग्रा) रखें"
     },
     "networkMismatch": "केवल इस शिपमेंट के Amazon नेटवर्क को आवंटित उत्पाद पैक करें।",
-    "missingTransport": "परिवहन की पुष्टि नहीं हुई",
+    "routeIncomplete": "रूट के हर चरण के लिए चुनें कि कौन भेजता है",
     "missingTrackingNumber": "कार्टन {carton} के वाहक लेबल का ट्रैकिंग नंबर जोड़ें"
   },
   "workflow": {

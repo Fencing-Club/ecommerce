@@ -49,6 +49,7 @@ import { discardFile } from "./product-barcodes"
 import { withVariantFields } from "./product-fields"
 import { reservedPieces, packingReadiness } from "./readiness"
 import { forwarderLeg } from "./shipment-legs"
+import { savedRoutes, writeStops } from "./shipment-routes"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 import { checkSupplierStock, returnSupplierStock, takeSupplierStock } from "./supplier-stock"
 import { pricingText, serverText } from "./text"
@@ -552,8 +553,9 @@ export async function prepareAmazonShipment(s: Session, shipmentId: string, expe
 }
 
 // Queues a shipment's cartons for Amazon, one shipment per Amazon network they go to: the shipment keeps the first
-// network's cartons, and each other network's become a new shipment with its own copy of the commercial invoice. Each
-// gets its own Amazon job and takes its own pieces from the supplier's stock. Returns the timeline event.
+// network's cartons, and each other network's become a new shipment with its own copy of the commercial invoice and
+// the route the buyer saved. Each gets its own Amazon job and takes its own pieces from the supplier's stock. Returns the
+// timeline event.
 async function queueAmazon(
   tx: Transaction,
   shipment: { id: string; orderId: string; revision: number },
@@ -575,6 +577,7 @@ async function queueAmazon(
     .where(eq(shipments.id, shipment.id))
   await takeSupplierStock(tx, shipment.id, supplierOrgId, data, first!.packing)
   const queued = [{ shipmentId: shipment.id, revision: shipment.revision }]
+  const route = rest.length ? (await savedRoutes(tx, [shipment.id])).get(shipment.id) : undefined
   for (const part of rest) {
     const [added] = await tx
       .insert(shipments)
@@ -587,6 +590,9 @@ async function queueAmazon(
         status: "queued"
       })
       .returning({ id: shipments.id, revision: shipments.revision })
+    if (route) {
+      await writeStops(tx, added!.id, route)
+    }
     await takeSupplierStock(tx, added!.id, supplierOrgId, data, part.packing)
     queued.push({ shipmentId: added!.id, revision: added!.revision })
   }

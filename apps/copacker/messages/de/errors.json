@@ -5,6 +5,7 @@
   "addTitle": "Fügen Sie einen Titel hinzu",
   "addVariant": "Fügen Sie eine Variante hinzu",
   "addressAlreadyRemoved": "Diese Adresse wurde bereits entfernt",
+  "addressOnRoute": "Diese Adresse kann nicht entfernt werden, solange die Route einer Sendung dort hält.",
   "addressRemoved": "Diese Adresse wurde entfernt",
   "addressRemovedRefresh": "Diese Adresse wurde entfernt. Aktualisieren Sie die Seite und versuchen Sie es erneut.",
   "adminsOnly": "Nur Admins können das tun",
@@ -351,8 +352,8 @@
   "linkAwdOnly": "Nur ein AWD-Packentwurf kann eine vorhandene AWD-Sendung verknüpfen.",
   "awdProductsDiffer": "Die Amazon-Sendung enthält andere Produkte oder größere Mengen als dieser AWD-Auftrag.",
   "awdAlreadyLinked": "Diese Amazon-Sendung ist bereits mit einer Bestellung verknüpft.",
-  "transportChanged": "Transport geändert oder bereits freigegeben. Sendung neu laden.",
-  "transportForwarderMissing": "Fügen Sie zuerst einen Speditionsstopp hinzu.",
+  "routeChanged": "Route geändert oder Sendung bereits freigegeben. Sendung neu laden.",
+  "routeNotAllowed": "Diese Route kann nicht gespeichert werden. Laden Sie die Sendung neu und versuchen Sie es erneut.",
   "packetDestinationUnavailable": "Bestätigen Sie vor dem Herunterladen die Lieferadresse der Sendung.",
   "packetNoLabelsRequired": "Für diese Sendung sind keine Etiketten dieses Typs erforderlich.",
   "shipmentHasNoLabels": "Diese Sendung hat keine Produktetiketten"

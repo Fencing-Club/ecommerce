@@ -1,9 +1,9 @@
 import { locationIdSchema } from "@repo/copacker-marketplaces/shopify"
 import { addressSchema } from "@repo/copacker-orders"
-import { and, eq, isNull } from "drizzle-orm"
+import { and, eq, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { contacts } from "@/db/schema"
+import { contacts, orders, shipmentStops } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { contactKinds, contactKindsFor } from "@/lib/contacts"
 import { StatusError } from "./errors"
@@ -51,7 +51,22 @@ export async function updateContact(org: Workspace, id: string, contact: z.outpu
   }
 }
 
+// A forwarder's address that a purchase order or a shipment's route stops at stays until the route changes.
 export async function deleteContact(orgId: string, id: string) {
+  const [stop] = await db()
+    .select({ id: shipmentStops.shipmentId })
+    .from(shipmentStops)
+    .where(eq(shipmentStops.addressId, id))
+    .union(
+      db()
+        .select({ id: orders.id })
+        .from(orders)
+        .where(sql`${orders.data}->'via'->>'addressId' = ${id}`)
+    )
+    .limit(1)
+  if (stop) {
+    throw new StatusError("addressOnRoute", 409)
+  }
   const deleted = await db().delete(contacts).where(ownContact(orgId, id)).returning({ id: contacts.id })
   if (!deleted.length) {
     throw new StatusError("addressAlreadyRemoved", 404)

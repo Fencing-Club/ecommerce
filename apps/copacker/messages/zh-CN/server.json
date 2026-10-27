@@ -40,7 +40,7 @@
       "palletWeight": "托盘 {pallet}：{receiver} 托盘含托盘在内重量不得超过 {maxLb, number} 磅（{maxKg, number} 千克）"
     },
     "networkMismatch": "请仅装入分配给此货件 Amazon 网络的产品。",
-    "missingTransport": "运输尚未确认",
+    "routeIncomplete": "请为路线的每一段选择由谁发运",
     "missingTrackingNumber": "请添加箱 {carton} 承运商标签的运单号"
   },
   "workflow": {

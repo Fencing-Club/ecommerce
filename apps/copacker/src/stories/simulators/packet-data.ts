@@ -199,7 +199,7 @@ export function simulatePacket(set: PacketDataSet, arrangement: Arrangement): Si
     order,
     packing,
     labels,
-    transport: { ...arrangement, instructions: "" },
+    transport: arrangement,
     company: "Harbor Goods",
     supplier: "Northwind Textiles",
     destination: destinations[set.receiver],

@@ -18,8 +18,9 @@ export type RouteStop = {
 export const legArrangements = ["senderArranges", "senderMoves", "receiverArranges", "receiverMoves"] as const
 export type LegArrangement = (typeof legArrangements)[number]
 
-// A route's stops in order and, between each two, who moves the goods: one leg fewer than stops.
-export type Route<Stop extends RouteStop = RouteStop> = { stops: Stop[]; legs: LegArrangement[] }
+// A route's stops in order and, between each two, who moves the goods: one leg fewer than stops. A leg nobody has
+// chosen yet is undefined.
+export type Route<Stop extends RouteStop = RouteStop> = { stops: Stop[]; legs: Array<LegArrangement | undefined> }
 
 // What breaks a route: it doesn't start at the supplier or end at a receiver yet, a stop follows a receiver, AGL takes
 // the goods somewhere other than an Amazon network, or nobody has chosen who moves a leg, or someone who can't does.
@@ -79,11 +80,15 @@ export function stopChoices<Stop extends RouteStop>(route: Route<RouteStop>, ind
   })
 }
 
-// Each leg kept when its two stops still allow it, otherwise the first arrangement they do.
-function fitLegs(stops: readonly RouteStop[], legs: readonly LegArrangement[]): LegArrangement[] {
+// Each leg kept when its two stops still allow it, otherwise the first arrangement they do. A leg nobody has chosen stays
+// unchosen; a new one, into a stop just added, takes the first arrangement.
+function fitLegs(stops: readonly RouteStop[], legs: Route["legs"]): Route["legs"] {
   return stops.slice(1).map((stop, index) => {
     const allowed = legChoices(stops[index]!, stop)
     const leg = legs[index]
+    if (!leg && index < legs.length) {
+      return undefined
+    }
     return leg && (allowed.length === 0 || allowed.includes(leg)) ? leg : (allowed[0] ?? "senderArranges")
   })
 }
@@ -115,7 +120,7 @@ export function setLeg<Stop extends RouteStop>(route: Route<Stop>, index: number
   if (!from || !to || !legChoices(from, to).includes(leg)) {
     return route
   }
-  return { stops: route.stops, legs: route.legs.map((current, at) => (at === index ? leg : current)) }
+  return { stops: route.stops, legs: route.stops.slice(1).map((_, at) => (at === index ? leg : route.legs[at])) }
 }
 
 // What's wrong with a route, in order along it. A route with no issues can be saved.

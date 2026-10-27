@@ -181,7 +181,7 @@ Pack charges use the Shopify bundle's `piecesPerSet`. They remain separate from 
 | shipment.linkExisting | id, revision, amazonShipmentId (STAR ID or null) | Buyer, Shipments: Edit. Verifies and links an existing AWD shipment to an editable AWD draft, or removes the link; returns the next revision |
 | shipment.reconcile | id, amazonOrderId | Buyer, Shipments: Edit. Reads the AWD order or FBA inbound plan and checks it names this shipment before the worker resumes |
 | shipment.cancelAmazon | id | Buyer, Shipments: Edit. Cancels the AWD order or FBA inbound plan and verifies it before releasing quantities. The shipment cancels, and its timeline says so, only if it hasn't changed meanwhile |
-| shipment.transport | id, revision, transport, expected | Buyer, Shipments: Edit. Saves how the cartons travel; a shipment that was waiting only on it goes to its supplier |
+| shipment.route | id, revision, route `{stops, legs}`, expected | Buyer, Shipments: Edit. Saves the shipment's route. `expected` is the route the page showed, which must still be the shipment's. It keeps to the route rules and stops only at the purchase order's forwarder. A shipment that was waiting only on who moves its last leg goes to its supplier |
 | shipment.ship | id | Shipments: Edit. The supplier, or the buyer for a supplier not on Copacker, marks released goods shipped; the invoice must be current |
 | shipment.forward | id, freight `{amountMinor, currency}`, carrier, reference | The forwarder (Orders: Edit), or the buyer for a forwarder not on Copacker (Shipments: Edit, prices). Freight is recorded as a landed cost |
 | shipment.received | id | Buyer, Shipments: Edit. Goods arrived where the PO sent them |
@@ -343,7 +343,7 @@ show one download per label type and shipment. Individual source files remain st
 
 ### Carrier labels
 
-A shipment whose transport puts a carrier label on each carton (the buyer's own parcel carrier) takes them from the
+A shipment whose route puts a carrier label on each carton (a carrier the buyer books) takes them from the
 shipment page's Upload labels dialog. `POST /api/shipments/:id/carrier-labels` is multipart: `revision`, one or more
 `file` PDFs, and `labels`, a JSON array with each labelled carton once:
 
@@ -359,7 +359,7 @@ that revision. Saving some cartons is allowed. The response is `{ sent }`: wheth
 
 Labels go to the supplier with no step of the buyer's: the shipment becomes ready, the `ready` email is queued for a
 supplier that has joined, and the PO's timeline records it. That happens once nothing is missing, after Amazon's labels
-arrive, carrier labels are saved, transport is saved or a product barcode is uploaded (`sendLabelsWhenComplete`).
+arrive, carrier labels are saved, the route is saved or a product barcode is uploaded (`sendLabelsWhenComplete`).
 Each of those changes queues a `labels` job in its own transaction, then sends straight away and removes the job. When
 sending fails, the change still succeeds, `labels_send_failed` is logged, and the job tries again every five minutes.
 
@@ -381,8 +381,8 @@ the route returns 409, the workflow gives no `packetUrl`, and the shipment's `is
 that names no shipment, malformed or unknown, returns 404.
 
 A shipment's labels go to its supplier (`sendLabelsWhenComplete`), with no step of the buyer's, once it has its
-transport, a unique Amazon label and current carton PDF for every carton, a current carrier label with its tracking
-number on every carton when its transport needs them, Amazon's current pallet-label file for an FBA shipment on
+route with someone chosen for every leg, a unique Amazon label and current carton PDF for every carton, a current
+carrier label with its tracking number on every carton when its route needs them, Amazon's current pallet-label file for an FBA shipment on
 pallets, and a product label for every shipped line. They go once: a shipment no longer waiting for labels is left as
 it is.
 

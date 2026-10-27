@@ -87,12 +87,6 @@
       "units": "Units",
       "grossWeight": "Gross weight",
       "volume": "Volume"
-    },
-    "legs": {
-      "shipsTo": "Supplier ships to {place}.",
-      "amazonPickup": "Amazon pickup from {place}.",
-      "carrierPickup": "Carrier pickup from {place}.",
-      "dropoff": "{place} hands the cartons to the carrier."
     }
   },
   "actions": {
@@ -161,25 +155,6 @@
     "suffocationLabel": "Put a suffocation warning label on each polybag.",
     "amazonDestination": "Amazon {networks}"
   },
-  "transport": {
-    "title": "Transport",
-    "service": "Service",
-    "parcel": "Parcel carrier",
-    "agl": "Amazon Global Logistics (AGL)",
-    "freight": "Freight carrier",
-    "handoff": "Handoff location",
-    "supplier": "Supplier",
-    "forwarder": "Freight forwarder",
-    "collection": "Handoff method",
-    "pickup": "Carrier pickup",
-    "dropoff": "Deliver to carrier",
-    "carrierLabels": "Carrier labels",
-    "perCarton": "One per carton",
-    "none": "Not required",
-    "instructions": "Handoff instructions",
-    "save": "Save transport",
-    "unconfirmed": "Transport not confirmed"
-  },
   "route": {
     "title": "Route",
     "editRoute": "Edit route",
@@ -200,6 +175,7 @@
     "removeStop": "Remove {name}",
     "addStop": "Add stop",
     "chooseStop": "Choose a stop",
+    "forwarders": "Forwarders",
     "newStop": "New stop",
     "endsRoute": "{name} ends the route. Remove it to add a stop before it.",
     "issues": {
@@ -213,6 +189,7 @@
     "ready": "Ready {date}",
     "legs": {
       "label": "Shipping, {from} to {to}",
+      "choose": "Choose who ships",
       "senderArranges": "{company} arranges shipping",
       "receiverArranges": "{company} arranges shipping",
       "senderMoves": "{company} delivers",

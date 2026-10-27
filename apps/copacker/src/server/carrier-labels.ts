@@ -12,6 +12,7 @@ import { accessibleShipment } from "./access"
 import { requireAccess, requireBuyer } from "./authorization"
 import { InvalidRequestError, requestInput } from "./errors"
 import { queueLabels, sendQueuedLabels, type QueuedLabels } from "./label-release"
+import { withRoute } from "./shipment-routes"
 import { deleteFile, putFile, validatePdf } from "./storage"
 import type { Session } from "./workspace-session"
 
@@ -57,9 +58,10 @@ export async function saveCarrierLabels(s: Session, shipmentId: string, form: Fo
   if (shipment.status !== "waiting_labels" || shipment.revision !== revision) {
     throw new LocalizedError("shipmentNotWaitingForLabels")
   }
+  const { transport } = await withRoute(db(), shipment, order.data)
   if (
     !shipment.packing ||
-    !shipmentLabelRequirements(orderDestination(shipment.snapshot ?? order.data), shipment.transport).carrierLabels
+    !shipmentLabelRequirements(orderDestination(shipment.snapshot ?? order.data), transport).carrierLabels
   ) {
     throw new LocalizedError("shipmentNotWaitingForLabels")
   }

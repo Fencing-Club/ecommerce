@@ -20,9 +20,9 @@ import {
 } from "@buildkitgg/shadcn-baseui-kit"
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { money } from "@repo/copacker-orders"
-import { orderDestination } from "@repo/copacker-packing-rules"
+import { orderDestination, type Route } from "@repo/copacker-packing-rules"
 import { amazonRequestStates, packedStates } from "@repo/copacker-shipments/states"
-import { canConfigureTransport, shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
+import { shipmentLabelRequirements } from "@repo/copacker-shipments/transport"
 import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Ellipsis, ExternalLink } from "lucide-react"
 import { Fragment } from "react"
@@ -36,13 +36,13 @@ import { PackedProductsTable } from "@/components/packed-products-table"
 import { PackingForm } from "@/components/packing-form"
 import { PalletList } from "@/components/pallet-list"
 import { type ProductDownload, ProductDownloadsMenu } from "@/components/product-downloads-menu"
+import type { RouteStop } from "@/components/route-editor"
 import { RouteSection } from "@/components/route-section"
 import { ApproveInvoice, ReconcileShipment } from "@/components/shipment-actions"
 import { ShipmentDetails } from "@/components/shipment-details"
 import { ShipmentLayout } from "@/components/shipment-layout"
-import { ShipmentTransportLegs } from "@/components/shipment-packing-details"
 import { ShipmentProgress } from "@/components/shipment-progress"
-import { ShipmentTransportSettings } from "@/components/shipment-transport"
+import { useAction } from "@/hooks/use-action"
 import { usePackingListDownload } from "@/hooks/use-packing-list-download"
 import { useShipmentRoute } from "@/hooks/use-shipment-route"
 import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups"
@@ -78,8 +78,8 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     amazonIds,
     nextStep,
     route: places,
+    editsRoute,
     buyer,
-    destinationName,
     lineLabels
   } = page
   const t = useTranslations("shipments.detail"),
@@ -111,20 +111,10 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
       ]
     })
   }
-  const forwarder = places.forwarder?.company
-  // How the cartons travel: to the forwarder first, then from the handoff location by the booked transport.
-  const handoff = shipment.transport?.handoff === "forwarder" && forwarder ? forwarder : supplier.name
-  const legs = [
-    forwarder && t("legs.shipsTo", { place: forwarder }),
-    !forwarder && !shipment.transport && t("legs.shipsTo", { place: destinationName }),
-    shipment.transport?.collection === "dropoff" && t("legs.dropoff", { place: handoff }),
-    shipment.transport?.collection === "pickup" &&
-      t(shipment.transport.service === "agl" ? "legs.amazonPickup" : "legs.carrierPickup", { place: handoff })
-  ].filter((leg) => typeof leg === "string")
-  const carrierLabels = shipmentLabelRequirements(orderDestination(snapshot), shipment.transport).carrierLabels
+  const { carrierLabels, needsTransport } = shipmentLabelRequirements(orderDestination(snapshot), shipment.transport)
   // What still holds the labels back from the supplier, besides what the page asks for elsewhere.
   const heldBack = step.issues.filter(
-    (issue) => !["missing_shipping_label", "missing_tracking_number", "missing_transport"].includes(issue.code)
+    (issue) => !["missing_shipping_label", "missing_tracking_number"].includes(issue.code)
   )
   const reconciling = isBuyer && editsShipments && step.next.step === "reconcile"
   const nextAction: Record<string, React.ReactNode> = {
@@ -166,7 +156,21 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     )
   }
 
-  const route = useShipmentRoute(places)
+  const { route, choices, saved } = useShipmentRoute(places)
+  // The buyer changes the route in its own section, which sends the route it started from.
+  const saveRoute = useAction("shipment.route")
+  const routeEditing = editsRoute
+    ? {
+        choices,
+        saving: saveRoute.pending,
+        error: saveRoute.error,
+        onCancel: saveRoute.reset,
+        onSave: async (edited: Route<RouteStop>) =>
+          Boolean(
+            await saveRoute.run({ id, revision: shipment.revision, route: saved(edited), expected: places.route })
+          )
+      }
+    : {}
   const productActions = (item: (typeof packingOrder.items)[number]) =>
     productDownloads(item.id).length > 0 && (
       <ProductDownloadsMenu
@@ -210,9 +214,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
   )
 
   if (editable) {
-    // Packing: the route and its legs head the form, and the documents and running totals sit beside the cartons.
-    // The buyer's transport settings follow the header, outside the packing form's fieldset, so saving the packing
-    // doesn't disable them.
+    // Packing: the route heads the form, and the documents and running totals sit beside the cartons.
     return (
       <>
         <PackingForm
@@ -227,17 +229,6 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
                 {actions}
               </PageHeader>
               {notices}
-              {isBuyer &&
-                editsShipments &&
-                canConfigureTransport(shipment.status, shipment.operation, shipment.transport) && (
-                  <ShipmentTransportSettings
-                    key={JSON.stringify(shipment.transport)}
-                    id={id}
-                    revision={shipment.revision}
-                    initial={shipment.transport}
-                    hasForwarder={!!snapshot.via}
-                  />
-                )}
             </>
           )}
           renderProductActions={productActions}
@@ -256,7 +247,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
               <ShipmentDetails {...totals} />
             </div>
           )}
-          route={{ route, buyer, notes: legs.length > 0 && <ShipmentTransportLegs legs={legs} /> }}
+          route={{ route, buyer, ...routeEditing }}
           shipmentId={id}
           linkedAmazonShipmentId={
             isBuyer && shipment.amazonNetwork === "awd_us" ? shipment.linkedAmazonShipmentId : undefined
@@ -275,8 +266,6 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     )
   }
 
-  const transportEditable =
-    isBuyer && editsShipments && canConfigureTransport(shipment.status, shipment.operation, shipment.transport)
   // Amazon's shipment IDs follow the title, each a Seller Central link where the viewer can open it.
   const amazonReferences = [
     ...amazonIds.map((amazonId) => <span key={amazonId}>{amazonId}</span>),
@@ -356,16 +345,6 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
       notices={
         <>
           {notices}
-          {!shipment.transport && (
-            <ShipmentTransportSettings
-              key={JSON.stringify(shipment.transport)}
-              id={id}
-              revision={shipment.revision}
-              initial={shipment.transport}
-              hasForwarder={!!snapshot.via}
-              editable={transportEditable}
-            />
-          )}
           {shipment.status === "approval" && (
             <Card>
               <CardHeader>
@@ -403,7 +382,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           )}
 
           {/* The labels go to the supplier by themselves once nothing holds them back. Carrier labels come from the header's
-              Upload labels and transport from its own card, so this lists anything else, such as a product's label. */}
+              Upload labels, so this lists anything else, such as who moves a leg of the route or a product's label. */}
           {shipment.status === "waiting_labels" && isBuyer && heldBack.length > 0 && (
             <Alert role="note">
               <Clock />
@@ -432,24 +411,9 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
           route={route}
           buyer={buyer}
           readyDate={packing?.readyDate}
-          notes={
-            (legs.length > 0 || (shipment.transport && transportEditable)) && (
-              <div className="flex flex-col gap-3">
-                {legs.length > 0 && <ShipmentTransportLegs legs={legs} />}
-                {shipment.transport && transportEditable && (
-                  <ShipmentTransportSettings
-                    compact
-                    key={JSON.stringify(shipment.transport)}
-                    id={id}
-                    revision={shipment.revision}
-                    initial={shipment.transport}
-                    hasForwarder={!!snapshot.via}
-                    editable
-                  />
-                )}
-              </div>
-            )
-          }
+          // Open while the labels wait for the buyer to choose who moves a leg.
+          defaultOpen={editsRoute && needsTransport}
+          {...routeEditing}
         />
       }
       products={

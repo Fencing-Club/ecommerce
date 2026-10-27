@@ -378,8 +378,12 @@ export function PackingForm({
   )
 }
 
-// The route the packing form heads with, and what its Route section shows under it.
-export type PackingRoute = Pick<React.ComponentProps<typeof RouteSection>, "route" | "buyer" | "notes">
+// The route the packing form heads with, what its Route section shows under it, and, for whoever may change it, its
+// choices and saving.
+export type PackingRoute = Pick<
+  React.ComponentProps<typeof RouteSection>,
+  "route" | "buyer" | "notes" | "choices" | "onSave" | "onCancel" | "saving" | "error"
+>
 
 // The shipment's route, open while packing, with the packing's own fields on its first stop: where the cartons leave
 // from, chosen from the supplier's saved addresses or added, the ready date and whether the cartons ship on pallets.

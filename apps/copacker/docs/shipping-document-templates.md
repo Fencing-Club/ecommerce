@@ -85,8 +85,9 @@ It never books transport, calls a provider, uploads or sends anything.
 - `export:shipment-packet --shipment <id> <output-directory>` reads a packed shipment from the database in `.env`.
 - `export:shipment-packet --shipment <id> --json` prints that shipment's JSON instead, to edit and render.
 
-The JSON holds the accepted PO with each line's packing requirements, the packing, transport, destination, the company
-and supplier names, revision, shipment name and language/paper settings. Its optional fields:
+The JSON holds the accepted PO with each line's packing requirements, the packing, transport (from the database, worked
+out from the shipment's route), destination, the company and supplier names, revision, shipment name and
+language/paper settings. Its optional fields:
 
 - `amazonPending`: an Amazon shipment before Amazon has it, so the packet has no carton labels or warehouse address.
 - `onward`: for a PO through a forwarder, where the forwarder takes the cartons next. The destination is the
@@ -136,9 +137,9 @@ persisted carrier label numbers for each carton before a shipment with carrier l
 handoff is prepared as its own leg. It rejects missing information instead of inferring it from PDF order. Multiple
 Amazon destinations must be represented separately.
 
-Transport configuration records the service, pickup/drop-off, handoff party, carrier-label requirement and instructions.
-Selecting a service proposes defaults; it does not book transport. Confirming AGL pickup does not create a new Amazon
-shipment or notify the supplier. FBA booking is independent of document generation.
+The documents' service, pickup or drop-off, handoff party and carrier-label requirement come from the shipment's
+route (`routeTransport`, see [Packing](packing.md)). Saving a route books nothing. Choosing AGL does not create a new
+Amazon shipment or notify the supplier. FBA booking is independent of document generation.
 
 ## Acceptance
 

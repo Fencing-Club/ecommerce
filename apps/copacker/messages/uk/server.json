@@ -40,7 +40,7 @@
       "palletWeight": "Палета {pallet}: палети {receiver} мають важити не більше {maxLb, number} lb ({maxKg, number} кг) разом із палетою"
     },
     "networkMismatch": "Пакуйте лише товари, призначені для мережі Amazon цього відправлення.",
-    "missingTransport": "Транспорт не підтверджено",
+    "routeIncomplete": "Виберіть, хто відправляє кожен етап маршруту",
     "missingTrackingNumber": "Додайте номер відстеження етикетки перевізника коробки {carton}"
   },
   "workflow": {

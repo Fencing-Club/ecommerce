@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { standardProductLabels, suffocationWarningLabels } from "@repo/copacker-shipments/product-labels"
+import { defaultShipmentRoute, type ShipmentRoute } from "@repo/copacker-shipments/route"
+import type { ShipmentState } from "@repo/copacker-shipments/states"
 import { and, eq } from "drizzle-orm"
 import { PDFDocument } from "pdf-lib"
 import { describe, expect, it, vi } from "vitest"
@@ -32,6 +34,9 @@ import {
   printed,
   queuedShipment,
   reviewedImport,
+  routes,
+  savedStops,
+  saveStops,
   setUpWorkflowTests,
   shipmentState,
   supplier,
@@ -64,52 +69,66 @@ vi.mock("../../src/server/readiness", async (original) =>
 
 setUpWorkflowTests()
 
-describe("transport configuration", () => {
-  const agl = {
-    service: "agl",
-    handoff: "supplier",
-    collection: "pickup",
-    carrierLabels: "none",
-    instructions: ""
-  } as const
-  it("requires buyer access, rejects missing stops and stale settings, and locks released transport", async () => {
+describe("route", () => {
+  // Until the buyer saves a route, the shipment follows its PO's, with nobody chosen for its last leg.
+  const unsaved = defaultShipmentRoute(orderData)
+  // A route by way of a forwarder the PO doesn't stop at.
+  const elsewhere = {
+    stops: [
+      { kind: "supplier" },
+      { kind: "forwarder", forwarderId: randomUUID(), addressId: randomUUID() },
+      { kind: "receiver" }
+    ],
+    legs: ["senderArranges", "senderArranges"]
+  } satisfies ShipmentRoute
+  async function unsavedShipment(status?: ShipmentState) {
     const draft = await preparation()
-    await database.update(tables.shipments).set({ transport: null }).where(eq(tables.shipments.id, draft.id))
-    const input = { id: draft.id, revision: 1, expected: null, transport: agl }
+    await database.delete(tables.shipmentStops).where(eq(tables.shipmentStops.shipmentId, draft.id))
+    if (status) {
+      await database.update(tables.shipments).set({ status }).where(eq(tables.shipments.id, draft.id))
+    }
+    return draft
+  }
+  it("requires buyer access, keeps to the route rules and the PO's stops, refuses a stale route, and locks a released one", async () => {
+    const draft = await unsavedShipment()
+    const input = { id: draft.id, revision: 1, expected: unsaved, route: routes.agl }
     signedIn.actor = supplier
-    expect((await post("shipment.transport", input)).status).toBe(403)
+    expect((await post("shipment.route", input)).status).toBe(403)
     signedIn.actor = buyer
-    expect((await post("shipment.transport", { ...input, transport: { ...agl, handoff: "forwarder" } })).status).toBe(
-      400
-    )
-    expect((await post("shipment.transport", input)).status).toBe(200)
-    expect((await post("shipment.transport", input)).status).toBe(400)
+    expect((await post("shipment.route", { ...input, route: unsaved })).status).toBe(400)
+    expect((await post("shipment.route", { ...input, route: elsewhere })).status).toBe(400)
+    expect((await post("shipment.route", input)).status).toBe(200)
+    expect(await savedStops(draft.id)).toEqual([
+      { kind: "supplier", leg: null },
+      { kind: "agl", leg: null },
+      { kind: "receiver", leg: null }
+    ])
+    expect((await post("shipment.route", input)).status).toBe(400)
     await database.update(tables.shipments).set({ status: "ready" }).where(eq(tables.shipments.id, draft.id))
-    expect((await post("shipment.transport", { ...input, expected: agl })).status).toBe(400)
+    expect((await post("shipment.route", { ...input, expected: routes.agl })).status).toBe(400)
   })
   it.each(["ready", "shipped", "forwarded", "received"] as const)(
-    "confirms missing transport on a %s shipment once without reopening packing",
+    "chooses who moves the last leg of a %s shipment once without reopening packing",
     async (status) => {
-      const draft = await preparation()
-      await database.update(tables.shipments).set({ status, transport: null }).where(eq(tables.shipments.id, draft.id))
-      const input = { id: draft.id, revision: 1, expected: null, transport: agl }
+      const draft = await unsavedShipment(status)
+      const input = { id: draft.id, revision: 1, expected: unsaved, route: routes.agl }
       signedIn.actor = supplier
-      expect((await post("shipment.transport", input)).status).toBe(403)
+      expect((await post("shipment.route", input)).status).toBe(403)
       signedIn.actor = buyer
-      expect((await post("shipment.transport", input)).status).toBe(200)
-      expect((await post("shipment.transport", { ...input, expected: agl })).status).toBe(400)
+      expect((await post("shipment.route", input)).status).toBe(200)
+      expect((await post("shipment.route", { ...input, expected: routes.agl })).status).toBe(400)
       const [saved] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, draft.id))
-      expect(saved).toMatchObject({ status, transport: agl, revision: 1 })
+      expect(saved).toMatchObject({ status, revision: 1 })
+      expect(await savedStops(draft.id)).toHaveLength(3)
     }
   )
-  it("sends AGL labels to the supplier once transport is saved, but still waits for Amazon labels and parcel labels", async () => {
-    const prepared = await preparation()
+  it("sends AGL labels to the supplier once the route is saved, but still waits for Amazon labels and parcel labels", async () => {
+    const prepared = await unsavedShipment()
     await database
       .update(tables.shipments)
       .set({
         status: "waiting_labels",
         packing: prepared.packing,
-        transport: null,
         labels: [
           { cartonId: "A6", labelNumber: "201952611540373988", destinationCode: "IUSP", amazonShipmentId: "STAR-1" }
         ]
@@ -133,35 +152,23 @@ describe("transport configuration", () => {
     await database.update(tables.documents).set({ outdated: true }).where(eq(tables.documents.kind, "carton_label"))
     expect(await shipmentState(prepared.id)).toEqual({
       status: "waiting_labels",
-      issues: ["missing_carton_label", "missing_transport"]
+      issues: ["missing_carton_label", "route_incomplete"]
     })
     expect(
-      (await post("shipment.transport", { id: prepared.id, revision: 1, expected: null, transport: agl })).status
+      (await post("shipment.route", { id: prepared.id, revision: 1, expected: unsaved, route: routes.agl })).status
     ).toBe(200)
     expect(await shipmentState(prepared.id)).toEqual({ status: "waiting_labels", issues: ["missing_carton_label"] })
-    // With its carton label back, AGL that wants carrier labels still waits for them.
+    // With its carton label back, a carrier the buyer books still waits for its labels.
     expect(
-      (
-        await post("shipment.transport", {
-          id: prepared.id,
-          revision: 1,
-          expected: agl,
-          transport: { ...agl, carrierLabels: "per_carton" }
-        })
-      ).status
+      (await post("shipment.route", { id: prepared.id, revision: 1, expected: routes.agl, route: routes.parcel }))
+        .status
     ).toBe(200)
     await database.update(tables.documents).set({ outdated: false }).where(eq(tables.documents.kind, "carton_label"))
     expect(await shipmentState(prepared.id)).toEqual({ status: "waiting_labels", issues: ["missing_shipping_label"] })
-    // AGL without them completes the packet, and the labels go to the supplier.
+    // AGL, which needs none, completes the packet, and the labels go to the supplier.
     expect(
-      (
-        await post("shipment.transport", {
-          id: prepared.id,
-          revision: 1,
-          expected: { ...agl, carrierLabels: "per_carton" },
-          transport: agl
-        })
-      ).status
+      (await post("shipment.route", { id: prepared.id, revision: 1, expected: routes.parcel, route: routes.agl }))
+        .status
     ).toBe(200)
     expect(await shipmentState(prepared.id)).toEqual({ status: "ready", issues: [] })
     const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
@@ -170,9 +177,10 @@ describe("transport configuration", () => {
   // A shipment on AGL, which needs no carrier labels, whose Amazon labels are ready to download.
   async function labelsReady() {
     const shipment = await queuedShipment()
+    await saveStops(shipment.id, routes.agl)
     await database
       .update(tables.shipments)
-      .set({ transport: agl, amazonOrderId: shipment.remote.orderId, operation: "created" })
+      .set({ amazonOrderId: shipment.remote.orderId, operation: "created" })
       .where(eq(tables.shipments.id, shipment.id))
     provider.api.order.mockResolvedValue({
       ...shipment.remote,
@@ -600,13 +608,6 @@ describe("document upload and packet release", () => {
         status: "ready",
         amazonNetwork: "awd_us",
         amazonShipmentId: "STAR-EXAMPLE",
-        transport: {
-          service: "agl",
-          handoff: "supplier",
-          collection: "pickup",
-          carrierLabels: "none",
-          instructions: ""
-        },
         labels: [
           {
             cartonId: "A6",
@@ -617,6 +618,7 @@ describe("document upload and packet release", () => {
         ]
       })
       .where(eq(tables.shipments.id, prepared.id))
+    await saveStops(prepared.id, routes.agl)
     await database.insert(tables.documents).values({
       orderId,
       shipmentId: prepared.id,
@@ -664,19 +666,11 @@ describe("document upload and packet release", () => {
       unavailable: true,
       labelSections: ["carton_labels"]
     })
+    // A changed route changes the packet.
     await database
-      .update(tables.shipments)
-      .set({
-        transport: {
-          ...page.data.transport,
-          service: "agl",
-          handoff: "supplier",
-          collection: "pickup",
-          carrierLabels: "none",
-          instructions: "Updated handoff"
-        }
-      })
-      .where(eq(tables.shipments.id, prepared.id))
+      .update(tables.shipmentStops)
+      .set({ leg: "senderMoves" })
+      .where(and(eq(tables.shipmentStops.shipmentId, prepared.id), eq(tables.shipmentStops.position, 0)))
     await expect(releasedPacket(supplier, prepared.id, page.version)).rejects.toMatchObject({ key: "packetChanged" })
   })
   it("waits for complete current documents, assigns carrier pages and sends the labels exactly once", async () => {

@@ -1,6 +1,7 @@
 import { type Address, type OrderInput } from "@repo/copacker-orders"
 import { type AmazonNetwork, isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
+import { followedRoute, type ShipmentRoute, shipmentReceiver } from "@repo/copacker-shipments/route"
 import { and, eq, inArray } from "drizzle-orm"
 import { createTranslator } from "use-intl"
 import { formatDestination } from "@/components/common"
@@ -82,49 +83,67 @@ async function finalDestination(
   }
 }
 
-// What a shipment's Route section is made from, as the database and Amazon give it: the PO's forwarder stop, and where
-// the goods end up.
-export async function shipmentPlaceRows(order: typeof orders.$inferSelect, shipment: typeof shipments.$inferSelect) {
+// What a shipment's Route section is made from, as the database and Amazon give it: the forwarder addresses its route
+// stops at, or can (the PO's, while the buyer keeps it), and where the goods end up.
+export async function shipmentPlaceRows(
+  order: typeof orders.$inferSelect,
+  shipment: typeof shipments.$inferSelect,
+  saved: ShipmentRoute | undefined
+) {
   const data = shipment.snapshot ?? order.data
-  const { forwarderAddress } = await import("@/server/forwarders")
-  const [forwarder, final] = await Promise.all([
+  const { forwarderAddress, stopForwarders } = await import("@/server/forwarders")
+  const stops = [
+    ...(data.via ? [data.via] : []),
+    ...(saved?.stops ?? []).flatMap((stop) => (stop.kind === "forwarder" ? [stop] : []))
+  ]
+  const [forwarders, offered, final] = await Promise.all([
+    stopForwarders(stops),
     data.via ? forwarderAddress(order.buyerOrgId, data.via.forwarderId, data.via.addressId) : undefined,
     finalDestination(order, shipment)
   ])
-  return { forwarder, finalAddresses: final.addresses }
+  return { forwarders, via: offered && data.via, finalAddresses: final.addresses }
 }
 
-// Where the shipment's goods stop on their way, for its Route section: the supplier's pickup address, the PO's forwarder,
-// AGL when it carries the goods into Amazon, and where they end up, which is the buyer's own warehouse or Amazon's.
+// Where the shipment's goods stop on their way, for its Route section: its saved route, or until it saves one, its PO's;
+// the supplier's pickup address; the forwarder addresses the route stops at or can; and where the goods end up, which is
+// the buyer's own warehouse or Amazon's.
 export function shipmentPlaces(
   data: OrderInput,
-  shipment: Pick<typeof shipments.$inferSelect, "transport" | "amazonNetwork">,
+  shipment: Pick<typeof shipments.$inferSelect, "amazonNetwork">,
   {
+    saved,
     supplier,
     buyer,
     pickup,
-    forwarder,
+    forwarders,
+    via,
     finalAddresses
   }: {
+    saved?: ShipmentRoute
     supplier: string
     buyer: string
     pickup?: ShipmentPlaces["pickup"]
-    forwarder?: Pick<ForwarderAddress, "forwarderName" | "addressName" | "address">
+    forwarders: Pick<ForwarderAddress, "forwarderId" | "forwarderName" | "addressId" | "addressName" | "address">[]
+    via?: { forwarderId: string; addressId: string }
     finalAddresses: Address[]
   }
 ): ShipmentPlaces {
   const warehouse = orderDestination(data) === "warehouse"
   return {
+    route: saved ?? followedRoute(data, forwarders),
     supplier,
     pickup,
-    forwarder: forwarder && {
-      company: forwarder.forwarderName,
-      place: { name: forwarder.addressName, address: forwarder.address }
-    },
-    agl: shipment.transport?.service === "agl",
+    forwarders: forwarders.map((row) => ({
+      forwarderId: row.forwarderId,
+      addressId: row.addressId,
+      company: row.forwarderName,
+      place: { name: row.addressName, address: row.address }
+    })),
+    via,
     destination: {
       company: warehouse ? buyer : "Amazon",
-      receiver: warehouse ? "warehouse" : shipmentNetwork(data, shipment.amazonNetwork),
+      receiver: shipmentReceiver(data, shipment.amazonNetwork),
+      network: warehouse ? undefined : shipmentNetwork(data, shipment.amazonNetwork),
       addresses: finalAddresses
     }
   }
