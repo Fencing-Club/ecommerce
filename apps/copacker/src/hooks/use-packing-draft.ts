@@ -19,8 +19,7 @@ const checkResult = z.object({
 
 // Saving a shipment's packing as a draft, finishing it, and linking an existing AWD shipment, with what's in progress
 // and the server's error. Each draft save moves the shipment to its next revision, and the page reads the shipment
-// again before the save is done, so the next save, a link and the buyer's transport settings beside the form all send
-// the new one.
+// again before the save is done, so the next save, a link and the buyer's route in the form all send the new one.
 export function usePackingDraft({
   shipmentId,
   revision,

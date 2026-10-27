@@ -5,6 +5,7 @@
   "addTitle": "Ajoutez un titre",
   "addVariant": "Ajoutez une variante",
   "addressAlreadyRemoved": "Cette adresse a déjà été retirée",
+  "addressOnRoute": "Impossible de retirer cette adresse tant que l’itinéraire d’une expédition s’y arrête.",
   "addressRemoved": "Cette adresse a été retirée",
   "addressRemovedRefresh": "Cette adresse a été retirée. Actualisez la page et réessayez.",
   "adminsOnly": "Seuls les administrateurs peuvent effectuer cette action",
@@ -351,8 +352,8 @@
   "linkAwdOnly": "Seul un brouillon de colisage AWD peut être lié à un envoi AWD existant.",
   "awdProductsDiffer": "L’envoi Amazon contient des produits ou des quantités hors de cette commande AWD.",
   "awdAlreadyLinked": "Cet envoi Amazon est déjà lié à un bon de commande.",
-  "transportChanged": "Transport modifié ou déjà validé. Rechargez l’expédition.",
-  "transportForwarderMissing": "Ajoutez d’abord une étape chez un transitaire.",
+  "routeChanged": "Itinéraire modifié ou expédition déjà validée. Rechargez l’expédition.",
+  "routeNotAllowed": "Impossible d’enregistrer cet itinéraire. Rechargez l’expédition et réessayez.",
   "packetDestinationUnavailable": "Confirmez l’adresse de livraison de l’expédition avant de télécharger le dossier.",
   "packetNoLabelsRequired": "Aucune étiquette de ce type n’est requise pour cette expédition.",
   "shipmentHasNoLabels": "Cette expédition n’a aucune étiquette produit"

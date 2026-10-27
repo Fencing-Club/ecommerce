@@ -1,5 +1,6 @@
 import type { Address } from "@repo/copacker-orders"
 import { orderDestination } from "@repo/copacker-packing-rules"
+import { canEditRoute, routeTransport, type ShipmentRoute } from "@repo/copacker-shipments/route"
 import { canEditPacking, canReopenPacking, releasedStates } from "@repo/copacker-shipments/states"
 import { shipmentPlaces } from "@/app/(portal)/shipments/destination"
 import type { PartnerAddress } from "@/components/partner-address"
@@ -52,11 +53,13 @@ export type ShipmentPageRows = {
   // Each line's SKU and FNSKU labels, as lineLabels reads them: uploaded, made from the standard template, or missing
   // and why.
   labels: Array<{ itemId: string; state: LineLabel["state"]; type?: "sku" | "fnsku"; problem?: string }>
-  // The PO's forwarder stop, and where the goods end up, as shipmentPlaceRows reads them.
-  forwarder?: Pick<ForwarderAddress, "forwarderName" | "addressName" | "address">
+  // The route the shipment saved, if it has; until then it follows its purchase order's.
+  savedRoute?: ShipmentRoute
+  // The forwarder addresses its route stops at, the PO's forwarder the route can stop at, and where the goods end up, as
+  // shipmentPlaceRows reads them.
+  forwarders: Pick<ForwarderAddress, "forwarderId" | "forwarderName" | "addressId" | "addressName" | "address">[]
+  via?: { forwarderId: string; addressId: string }
   finalAddresses: Address[]
-  // Where the shipment ends up, by name, as shipmentDestinations names it.
-  destinationName: string
 }
 
 // A shipment's page data from its rows: what the viewer may do, the packing to show or edit, the route, the documents and
@@ -107,6 +110,17 @@ export function shipmentPageData(rows: ShipmentPageRows, title: (number: number)
   const amazon = orderDestination(order.data) === "amazon"
   // What happens next, where nothing below shows it: cancelling in Amazon first.
   const nextStep = isBuyer && step.next.step === "cancellation" ? step.next.message : undefined
+  const places = shipmentPlaces(snapshot, shipment, {
+    saved: rows.savedRoute,
+    supplier: supplier.name,
+    buyer: rows.buyer,
+    pickup: start ? { name: start.name, address: start.address } : origin && { address: origin },
+    forwarders: rows.forwarders,
+    via: rows.via,
+    finalAddresses: rows.finalAddresses
+  })
+  // How the goods travel on the last leg, from the route.
+  const transport = routeTransport(places.route, places.destination.receiver)
   return {
     id,
     // The label types each line being packed prints, and why a barcode label can't be made yet.
@@ -119,16 +133,11 @@ export function shipmentPageData(rows: ShipmentPageRows, title: (number: number)
           .map((row) => ({ ...row, problem: row.state === "missing" ? row.problem : undefined }))
       )
     })),
-    route: shipmentPlaces(snapshot, shipment, {
-      supplier: supplier.name,
-      buyer: rows.buyer,
-      pickup: start ? { name: start.name, address: start.address } : origin && { address: origin },
-      forwarder: rows.forwarder,
-      finalAddresses: rows.finalAddresses
-    }),
+    route: places,
+    // The buyer can change the route until Amazon has the shipment, and choose who moves its last leg once after.
+    editsRoute: isBuyer && editsShipments && canEditRoute(shipment.status, shipment.operation, transport),
     // The buyer, who books AGL in Seller Central.
     buyer: rows.buyer,
-    destinationName: rows.destinationName,
     editsShipments,
     seesOrder,
     prices,
@@ -138,7 +147,7 @@ export function shipmentPageData(rows: ShipmentPageRows, title: (number: number)
     supplier: { id: supplier.id, name: supplier.name },
     shipment: {
       amazonNetwork: shipment.amazonNetwork,
-      transport: shipment.transport,
+      transport,
       operation: shipment.operation,
       linkedAmazonShipmentId: shipment.linkedAmazonShipmentId,
       status: shipment.status,

@@ -93,13 +93,6 @@ export function shipmentRow(overrides: Partial<ShipmentRow> = {}): ShipmentRow {
     labels: [],
     stockTaken: null,
     bookingReference: null,
-    transport: {
-      service: "parcel",
-      handoff: "supplier",
-      collection: "pickup",
-      carrierLabels: "per_carton",
-      instructions: ""
-    },
     forwarderCarrier: null,
     forwarderReference: null,
     issue: null,

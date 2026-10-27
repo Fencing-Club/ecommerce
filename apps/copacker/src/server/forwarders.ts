@@ -7,7 +7,17 @@ import invariant from "tiny-invariant"
 import { z } from "zod"
 import type { Transaction } from "@/db"
 import { db } from "@/db"
-import { contacts, forwarders, jobs, memberships, orderRevisions, orders, organizations, shipments } from "@/db/schema"
+import {
+  contacts,
+  forwarders,
+  jobs,
+  memberships,
+  orderRevisions,
+  orders,
+  organizations,
+  shipmentStops,
+  shipments
+} from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { isAdmin } from "@/lib/access"
 import { withJobWake } from "@/server/job-delivery"
@@ -97,6 +107,42 @@ export async function forwarderAddress(
 ) {
   return (await forwarderAddresses(buyerOrgId, reader)).find(
     (row) => row.forwarderId === forwarderId && row.addressId === addressId
+  )
+}
+
+// The forwarder addresses a route stops at, by forwarder and address, whether or not the buyer still keeps them, as the
+// shipment page names them.
+export async function stopForwarders(
+  stops: readonly { forwarderId: string; addressId: string }[],
+  reader: Reader = db()
+): Promise<Pick<ForwarderAddress, "forwarderId" | "forwarderName" | "addressId" | "addressName" | "address">[]> {
+  if (!stops.length) {
+    return []
+  }
+  const rows = await reader
+    .select({
+      forwarderId: forwarders.id,
+      forwarderName: forwarders.name,
+      addressId: contacts.id,
+      addressName: contacts.name,
+      address: contacts.address
+    })
+    .from(contacts)
+    .innerJoin(
+      forwarders,
+      inArray(
+        forwarders.id,
+        stops.map((stop) => stop.forwarderId)
+      )
+    )
+    .where(
+      inArray(
+        contacts.id,
+        stops.map((stop) => stop.addressId)
+      )
+    )
+  return rows.filter((row) =>
+    stops.some((stop) => stop.forwarderId === row.forwarderId && stop.addressId === row.addressId)
   )
 }
 
@@ -278,7 +324,8 @@ export async function acceptForwarderInvitation(
       .set({ forwarderOrgId: orgId, invitationHash: null, expiresAt: null })
       .where(eq(forwarders.id, row.id))
     // The addresses the buyer saved for it become the forwarder's own, unless it already keeps some; the ones the
-    // buyer's POs stop at always do. Those POs then stop at the forwarder's copy, which it keeps up to date from here.
+    // buyer's POs and shipment routes stop at always do. Those then stop at the forwarder's copy, which it keeps up to
+    // date from here.
     const [kept] = await tx
       .select({ id: contacts.id })
       .from(contacts)
@@ -287,11 +334,8 @@ export async function acceptForwarderInvitation(
       .select()
       .from(contacts)
       .where(and(eq(contacts.orgId, row.buyerOrgId), eq(contacts.forwarderId, row.id)))
-    const stops = await tx
-      .selectDistinct({ addressId: sql<string>`${orders.data}->'via'->>'addressId'` })
-      .from(orders)
-      .where(and(eq(orders.buyerOrgId, row.buyerOrgId), sql`${orders.data}->'via'->>'forwarderId' = ${row.id}`))
-    const handedOver = kept ? saved.filter((contact) => stops.some((stop) => stop.addressId === contact.id)) : saved
+    const stops = await stopAddresses(tx, row)
+    const handedOver = kept ? saved.filter((contact) => stops.includes(contact.id)) : saved
     for (const contact of handedOver) {
       const [copy] = await tx
         .insert(contacts)
@@ -303,9 +347,58 @@ export async function acceptForwarderInvitation(
   await (transaction ? accept(transaction) : db().transaction(accept))
 }
 
+// The forwarder's addresses its buyer's POs and shipment routes stop at.
+async function stopAddresses(tx: Transaction, forwarder: { id: string; buyerOrgId: string }) {
+  const rows = await tx
+    .selectDistinct({ addressId: sql<string>`${orders.data}->'via'->>'addressId'` })
+    .from(orders)
+    .where(
+      and(eq(orders.buyerOrgId, forwarder.buyerOrgId), sql`${orders.data}->'via'->>'forwarderId' = ${forwarder.id}`)
+    )
+    .union(
+      tx
+        .selectDistinct({ addressId: sql<string>`${shipmentStops.addressId}::text` })
+        .from(shipmentStops)
+        .where(eq(shipmentStops.forwarderId, forwarder.id))
+    )
+  return rows.map((row) => row.addressId)
+}
+
+// A forwarder workspace that leaves Copacker hands its addresses back: each buyer keeps a copy of the ones its POs and
+// shipment routes stop at, as it kept them before the forwarder joined, and those stop at the copy from here.
+export async function handBackStops(tx: Transaction, orgId: string) {
+  const joined = await tx.select().from(forwarders).where(eq(forwarders.forwarderOrgId, orgId))
+  for (const forwarder of joined) {
+    const stops = await stopAddresses(tx, forwarder)
+    const own = stops.length
+      ? await tx
+          .select()
+          .from(contacts)
+          .where(and(eq(contacts.orgId, orgId), inArray(contacts.id, stops)))
+      : []
+    for (const contact of own) {
+      const [copy] = await tx
+        .insert(contacts)
+        .values({
+          orgId: forwarder.buyerOrgId,
+          kind: "forwarder",
+          forwarderId: forwarder.id,
+          name: contact.name,
+          address: contact.address
+        })
+        .returning({ id: contacts.id })
+      await moveStops(tx, forwarder.id, contact.id, copy!.id)
+    }
+  }
+}
+
 // Moves the stops at one of a forwarder's addresses to another of its addresses, in its POs, their earlier revisions and
-// their shipments.
+// their shipments' routes.
 async function moveStops(tx: Transaction, forwarderId: string, from: string, to: string) {
+  await tx
+    .update(shipmentStops)
+    .set({ addressId: to })
+    .where(and(eq(shipmentStops.forwarderId, forwarderId), eq(shipmentStops.addressId, from)))
   const stopsAt = (route: AnyColumn) =>
     and(sql`${route}->'via'->>'forwarderId' = ${forwarderId}`, sql`${route}->'via'->>'addressId' = ${from}`)
   const moved = (route: AnyColumn) => sql`jsonb_set(${route}, '{via,addressId}', to_jsonb(${to}::text))`

@@ -23,13 +23,6 @@ const buyerId = randomUUID()
 const supplierOrgId = randomUUID()
 const strangerOrgId = randomUUID()
 const supplierId = randomUUID()
-const awd = {
-  service: "agl",
-  handoff: "forwarder",
-  collection: "pickup",
-  carrierLabels: "none",
-  instructions: ""
-} as const
 
 const actor = (id: string, kind: "buyer" | "supplier", access: Session["access"] = {}) =>
   testSession({ orgId: id, kind, role: Object.keys(access).length ? "member" : "owner", access })
@@ -57,11 +50,16 @@ async function shipment(values: Partial<typeof tables.shipments.$inferInsert> = 
       amazonNetwork: "awd_us",
       packing: towelPacking(),
       snapshot: data,
-      transport: awd,
       createdAt: new Date("2026-10-18T00:00:00Z"),
       ...values
     })
     .returning()
+  // AGL collects the cartons from the supplier.
+  await database
+    .insert(tables.shipmentStops)
+    .values(
+      (["supplier", "agl", "receiver"] as const).map((kind, position) => ({ shipmentId: first!.id, position, kind }))
+    )
   // A later shipment of the same PO, so the first stays Shipment 1.
   await database
     .insert(tables.shipments)

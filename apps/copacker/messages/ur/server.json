@@ -40,7 +40,7 @@
       "palletWeight": "پیلٹ {pallet}: {receiver} پیلٹ کا وزن پیلٹ سمیت زیادہ سے زیادہ {maxLb, number} lb ({maxKg, number} کلوگرام) رکھیں"
     },
     "networkMismatch": "صرف اس شپمنٹ کے Amazon نیٹ ورک کو تفویض کردہ مصنوعات پیک کریں۔",
-    "missingTransport": "نقل و حمل کی تصدیق نہیں ہوئی",
+    "routeIncomplete": "روٹ کے ہر مرحلے کے لیے چنیں کہ کون بھیجتا ہے",
     "missingTrackingNumber": "کارٹن {carton} کے کیریئر لیبل کا ٹریکنگ نمبر شامل کریں"
   },
   "workflow": {

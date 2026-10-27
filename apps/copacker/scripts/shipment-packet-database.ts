@@ -5,6 +5,7 @@ import { packedStates } from "@repo/copacker-shipments/states"
 import { and, eq, or } from "drizzle-orm"
 import { db } from "../src/db/index"
 import { contacts, forwarders, orders, organizations, shipments, suppliers } from "../src/db/schema"
+import { withRoute } from "../src/server/shipment-routes"
 
 // A packed shipment's supplier packet input, read from the database: the same JSON the exporter takes, to render or to
 // print and edit first. It holds the shipment's accepted PO and packing, prices included, though the packet prints none.
@@ -14,8 +15,8 @@ export async function packetFromDatabase(id: string) {
   if (!shipment) {
     throw new Error(`No shipment ${id}`)
   }
-  if (!shipment.packing || !shipment.transport || !packedStates.includes(shipment.status)) {
-    throw new Error("Finish the shipment's packing and transport first")
+  if (!shipment.packing || !packedStates.includes(shipment.status)) {
+    throw new Error("Finish the shipment's packing first")
   }
   if (shipment.labels.length) {
     throw new Error("This shipment has Amazon's labels. Download its supplier packet in Copacker")
@@ -23,6 +24,11 @@ export async function packetFromDatabase(id: string) {
   const [order] = await db().select().from(orders).where(eq(orders.id, shipment.orderId))
   if (!order) {
     throw new Error(`No purchase order for shipment ${id}`)
+  }
+  // How the cartons travel, from the shipment's route.
+  const { transport } = await withRoute(db(), shipment, order.data)
+  if (!transport) {
+    throw new Error("Choose who moves each leg of the shipment's route first")
   }
   const data = shipment.snapshot ?? order.data
   const [[buyer], [supplier], numbered] = await Promise.all([
@@ -90,7 +96,7 @@ export async function packetFromDatabase(id: string) {
     generatedDate: new Date().toISOString().slice(0, 10),
     order: data,
     packing: shipment.packing,
-    transport: shipment.transport,
+    transport,
     destination,
     ...(onward && { onward }),
     amazonPending: !data.via && orderDestination(data) === "amazon",

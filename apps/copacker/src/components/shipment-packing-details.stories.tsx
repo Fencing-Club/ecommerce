@@ -4,13 +4,12 @@ import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { harborWarehouse, northwindFactory } from "@/stories/fixtures/parties"
 import { pickupLocations } from "@/stories/fixtures/purchase-orders"
-import { baylineStop, fbaStop, harborStop, northwindStop } from "@/stories/fixtures/routes"
+import { aglStop, baylineStop, fbaStop, harborStop, northwindStop } from "@/stories/fixtures/routes"
 import { shownDialog, chooseOption } from "@/stories/play"
 import { PackingDetailsFields } from "./packing-form"
-import { ShipmentTransportLegs } from "./shipment-packing-details"
 
 // The packing's own fields on the shipment's route: the pickup address, ready date and pallets on its first stop, and
-// how the cartons travel under it.
+// who moves the cartons on each leg.
 function Example({
   forwarder = false,
   amazonPickup = false,
@@ -23,10 +22,7 @@ function Example({
   const form = useForm({ defaultValues: { origin: northwindFactory, readyDate: "2026-10-21" } })
   const [pickup, setPickup] = useState("supplier-origin")
   const destination = buyerWarehouse ? harborStop : fbaStop
-  let legs = [amazonPickup ? "Amazon pickup from Northwind Textiles." : `Supplier ships to ${destination.name}.`]
-  if (forwarder) {
-    legs = ["Supplier ships to Bayline Freight.", "Amazon pickup from Bayline Freight."]
-  }
+  const stops = [northwindStop, ...(forwarder ? [baylineStop] : []), ...(amazonPickup ? [aglStop] : []), destination]
   return (
     <div className="max-w-4xl">
       <FormProvider {...form}>
@@ -35,9 +31,8 @@ function Example({
           onPickupChange={setPickup}
           addresses={pickupLocations}
           route={{
-            route: { stops: [northwindStop, ...(forwarder ? [baylineStop] : []), destination], legs: [] },
-            buyer: "Harbor Goods",
-            notes: <ShipmentTransportLegs legs={legs} />
+            route: { stops, legs: stops.slice(1).map(() => "senderArranges" as const) },
+            buyer: "Harbor Goods"
           }}
         />
       </FormProvider>
@@ -59,7 +54,7 @@ export const ViaForwarder = meta.story({
   args: { forwarder: true },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Bayline Freight")).toBeVisible()
-    await expect(canvas.getByText("Supplier ships to Bayline Freight.")).toBeVisible()
+    await expect(canvas.getByText("Northwind Textiles arranges shipping")).toBeVisible()
     await expect(canvas.getByLabelText("Ready date", { exact: false })).toBeRequired()
   }
 })
@@ -110,17 +105,19 @@ export const SaveNewAddress = meta.story({
   }
 })
 
+// AGL collects the cartons from the supplier.
 export const AmazonPickup = meta.story({
   args: { amazonPickup: true },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Amazon pickup from Northwind Textiles.")).toBeVisible()
+    await expect(canvas.getByText("Amazon Global Logistics (AGL)")).toBeVisible()
+    await expect(canvas.getByText(/AGL collects the cartons from Northwind Textiles/)).toBeVisible()
   }
 })
 
 export const SupplierShipsToBuyer = meta.story({
   args: { buyerWarehouse: true },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Supplier ships to Harbor Goods / Portland warehouse.")).toBeVisible()
+    await expect(canvas.getByText("Northwind Textiles arranges shipping")).toBeVisible()
     await expect(canvas.getByText(harborWarehouse.addressLine1)).toBeVisible()
     await expect(canvas.queryByText(/Amazon picks/)).toBeNull()
   }

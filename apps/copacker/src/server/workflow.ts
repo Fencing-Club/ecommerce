@@ -10,6 +10,7 @@ import { linesMissingLabels } from "./product-barcodes"
 import type { ReadinessIssue } from "./readiness"
 import { orderCoverage, packingReadiness, releaseIssues } from "./readiness"
 import { forwarderLeg } from "./shipment-legs"
+import { withRoutes } from "./shipment-routes"
 import { serverText } from "./text"
 import type { Session } from "./workspace-session"
 
@@ -31,7 +32,11 @@ export async function orderWorkflow(s: Session, po: string | AccessibleOrder) {
   return db().transaction(async (tx) => {
     // Whether the goods pass through a forwarder, whose leg comes after the supplier's.
     const leg = forwarderLeg(order.data) !== null
-    const rows = await tx.select().from(shipments).where(eq(shipments.orderId, order.id)).orderBy(shipments.createdAt)
+    const rows = await withRoutes(
+      tx,
+      await tx.select().from(shipments).where(eq(shipments.orderId, order.id)).orderBy(shipments.createdAt),
+      order.data
+    )
     const docs = await tx.select().from(documents).where(eq(documents.orderId, order.id))
     return {
       order: {

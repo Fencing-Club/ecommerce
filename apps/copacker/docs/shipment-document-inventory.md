@@ -7,7 +7,7 @@ Review reference for the files associated with a shipment. This is separate from
 | File | Applies to | Available when | Source |
 | --- | --- | --- | --- |
 | Packing list | Every shipment | Packing is submitted, the destination is known and the PDF is generated | Shipment packing snapshot |
-| Packing checklist | Every shipment with packing or handling tasks | Tasks and the shipping arrangement are confirmed and the PDF is generated | PO product requirements and shipment transport |
+| Packing checklist | Every shipment with packing or handling tasks | Tasks and the shipping arrangement are confirmed and the PDF is generated | PO product requirements and the shipment's route |
 | Carton label reference | Shipments with carton label assignments | Required label files are matched to physical cartons and the reference PDF is generated | Verified carton-to-label mapping |
 | Carton labels | FBA and AWD | Amazon supplies the original label files for the confirmed shipment | Amazon |
 | Pallet labels | FBA shipments on pallets | Amazon supplies four labels for each pallet once it labels the cartons | Amazon |

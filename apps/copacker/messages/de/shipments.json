@@ -87,12 +87,6 @@
       "units": "Einheiten",
       "grossWeight": "Bruttogewicht",
       "volume": "Volumen"
-    },
-    "legs": {
-      "shipsTo": "Der Lieferant versendet an {place}.",
-      "amazonPickup": "Amazon-Abholung bei {place}.",
-      "carrierPickup": "Abholung durch den Spediteur bei {place}.",
-      "dropoff": "{place} übergibt die Kartons an den Spediteur."
     }
   },
   "actions": {
@@ -161,25 +155,6 @@
     "suffocationLabel": "Bringen Sie auf jedem Polybeutel einen Erstickungswarnhinweis an.",
     "amazonDestination": "Amazon {networks}"
   },
-  "transport": {
-    "title": "Transport",
-    "service": "Dienst",
-    "parcel": "Paketdienst",
-    "agl": "Amazon Global Logistics (AGL)",
-    "freight": "Frachtführer",
-    "handoff": "Übergabeort",
-    "supplier": "Lieferant",
-    "forwarder": "Spediteur",
-    "collection": "Übergabeart",
-    "pickup": "Abholung durch Frachtführer",
-    "dropoff": "An Frachtführer liefern",
-    "carrierLabels": "Versandetiketten",
-    "perCarton": "Eines pro Karton",
-    "none": "Nicht erforderlich",
-    "instructions": "Übergabeanweisungen",
-    "save": "Transport speichern",
-    "unconfirmed": "Transport nicht bestätigt"
-  },
   "route": {
     "title": "Route",
     "editRoute": "Route bearbeiten",
@@ -200,6 +175,7 @@
     "removeStop": "{name} entfernen",
     "addStop": "Stopp hinzufügen",
     "chooseStop": "Stopp auswählen",
+    "forwarders": "Spediteure",
     "newStop": "Neuer Stopp",
     "endsRoute": "Die Route endet bei {name}. Entferne es, um davor einen Stopp hinzuzufügen.",
     "issues": {
@@ -213,6 +189,7 @@
     "ready": "Bereit am {date}",
     "legs": {
       "label": "Versand, {from} nach {to}",
+      "choose": "Wähle, wer versendet",
       "senderArranges": "{company} organisiert den Versand",
       "receiverArranges": "{company} organisiert den Versand",
       "senderMoves": "{company} liefert",

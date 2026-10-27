@@ -20,6 +20,7 @@ import { signedIn } from "../test-session"
 import {
   actor,
   amazonCartonLabels,
+  bookedRoute,
   buyer,
   buyerId,
   itemId,
@@ -419,22 +420,9 @@ describe("PO to a released Amazon shipment", () => {
     expect(shipment!.labels.map((row) => row.cartonId)).toEqual(["A1", "A2"])
 
     expect(
-      (
-        await post("shipment.transport", {
-          id: shipmentId,
-          revision: 1,
-          expected: null,
-          transport: {
-            service: "parcel",
-            handoff: "supplier",
-            collection: "pickup",
-            carrierLabels: "per_carton",
-            instructions: ""
-          }
-        })
-      ).status
+      (await post("shipment.route", { id: shipmentId, revision: 1, ...(await bookedRoute(shipmentId)) })).status
     ).toBe(200)
-    // The buyer books parcel transport; all that's left is its carrier labels.
+    // The buyer books a carrier; all that's left is its carrier labels.
     expect(await shipmentState(shipmentId)).toEqual({
       status: "waiting_labels",
       issues: ["missing_shipping_label", "missing_shipping_label"]

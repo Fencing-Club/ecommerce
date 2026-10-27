@@ -15,17 +15,19 @@ import { StatusError, errorText } from "./errors"
 import { pageId } from "./page-id"
 import { hasProductLabels, lineLabels } from "./product-barcodes"
 import { releaseIssues } from "./readiness"
+import { withRoute } from "./shipment-routes"
 import { requireMembership, type Session } from "./workspace-session"
 
 // Read a released revision, never the live PO's editable values. No price or storage credential leaves this module.
 export async function releasedPacket(s: Session, rawId: string, expected?: string) {
   requireAccess(s, "shipments")
   const id = pageId(rawId)
-  const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id))
-  if (!shipment) {
+  const [row] = await db().select().from(shipments).where(eq(shipments.id, id))
+  if (!row) {
     throw new NotFoundError()
   }
-  const { order, supplier } = await accessibleOrder(s, shipment.orderId)
+  const { order, supplier } = await accessibleOrder(s, row.orderId)
+  const shipment = await withRoute(db(), row, order.data)
   if (!releasedStates.includes(shipment.status)) {
     throw new StatusError(expected ? "packetChanged" : "packetNotReleased", 409)
   }
@@ -45,7 +47,7 @@ export async function releasedPacket(s: Session, rawId: string, expected?: strin
         revision: shipment.revision,
         snapshot: shipment.snapshot,
         packing: shipment.packing,
-        transport: shipment.transport,
+        route: shipment.route,
         labels: shipment.labels,
         productLabels: labels,
         documents: docs

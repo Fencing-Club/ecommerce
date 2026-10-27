@@ -86,7 +86,6 @@ import { RouteSection } from "@/components/route-section"
 import { ShipmentDetails } from "@/components/shipment-details"
 import { ShipmentDocuments } from "@/components/shipment-documents"
 import { ShipmentLayout } from "@/components/shipment-layout"
-import { ShipmentTransportLegs } from "@/components/shipment-packing-details"
 import { useMoney } from "@/hooks/use-money"
 import { cartonMeasures, editorPallets, groupCartons } from "@/lib/carton-groups"
 import { packingLabelOptions, preparationOptions, type PackingRequirements } from "@/lib/packing-requirements"
@@ -2912,6 +2911,20 @@ export function PurchaseOrderFlow({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+// How the cartons travel in this prototype, one line per leg, under the shipment's route.
+function ShipmentTransportLegs({ legs }: { legs: string[] }) {
+  return (
+    <div className="space-y-1.5 text-xs">
+      {legs.map((leg, index) => (
+        <p key={`${index}-${leg}`} className="flex items-start gap-2">
+          <Truck aria-hidden className="mt-px size-3.5 shrink-0 text-muted-foreground" />
+          {leg}
+        </p>
+      ))}
     </div>
   )
 }

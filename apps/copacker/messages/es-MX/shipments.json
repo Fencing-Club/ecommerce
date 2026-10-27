@@ -87,12 +87,6 @@
       "units": "Unidades",
       "grossWeight": "Peso bruto",
       "volume": "Volumen"
-    },
-    "legs": {
-      "shipsTo": "El proveedor envía a {place}.",
-      "amazonPickup": "Amazon recoge en {place}.",
-      "carrierPickup": "El transportista recoge en {place}.",
-      "dropoff": "{place} entrega las cajas al transportista."
     }
   },
   "actions": {
@@ -161,25 +155,6 @@
     "suffocationLabel": "Pon una etiqueta de advertencia de asfixia en cada bolsa de polietileno.",
     "amazonDestination": "Amazon {networks}"
   },
-  "transport": {
-    "title": "Transporte",
-    "service": "Servicio",
-    "parcel": "Paquetería",
-    "agl": "Amazon Global Logistics (AGL)",
-    "freight": "Transportista de carga",
-    "handoff": "Lugar de entrega",
-    "supplier": "Proveedor",
-    "forwarder": "Agente de carga",
-    "collection": "Método de entrega",
-    "pickup": "Recolección por el transportista",
-    "dropoff": "Entregar al transportista",
-    "carrierLabels": "Etiquetas del transportista",
-    "perCarton": "Una por caja",
-    "none": "No se requieren",
-    "instructions": "Instrucciones de entrega",
-    "save": "Guardar transporte",
-    "unconfirmed": "Transporte sin confirmar"
-  },
   "route": {
     "title": "Ruta",
     "editRoute": "Editar ruta",
@@ -200,6 +175,7 @@
     "removeStop": "Quitar {name}",
     "addStop": "Agregar parada",
     "chooseStop": "Elige una parada",
+    "forwarders": "Agentes de carga",
     "newStop": "Nueva parada",
     "endsRoute": "La ruta termina en {name}. Quítalo para agregar una parada antes.",
     "issues": {
@@ -213,6 +189,7 @@
     "ready": "Listo el {date}",
     "legs": {
       "label": "Envío, de {from} a {to}",
+      "choose": "Elige quién envía",
       "senderArranges": "{company} organiza el envío",
       "receiverArranges": "{company} organiza el envío",
       "senderMoves": "{company} entrega",

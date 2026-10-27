@@ -9,6 +9,7 @@ import { PollAgain } from "./job-runtime"
 import { describeError, logEvent } from "./log"
 import { lineLabels } from "./product-barcodes"
 import { releaseIssues } from "./readiness"
+import { withRoute } from "./shipment-routes"
 
 // A labels job sends a shipment's labels once they're complete, or those of every shipment of a buyer's that waits on
 // them. It's queued in the transaction of the change that can complete them, so they still go when sending them right
@@ -57,7 +58,7 @@ export async function labelsJob(input: JobInput<"labels">) {
 }
 
 // A shipment's labels go to its supplier as soon as its packet is complete, with no step of the buyer's: when Amazon's
-// carton labels arrive for a shipment that needs nothing else, or when the buyer adds the carrier labels, transport or
+// carton labels arrive for a shipment that needs nothing else, or when the buyer adds the carrier labels, route or
 // product barcode it was still waiting for. `actor` is whoever completed it, "amazon" for Amazon's labels. Returns
 // whether the labels went.
 export async function sendLabelsWhenComplete(shipmentId: string, actor: string) {
@@ -77,10 +78,11 @@ export async function sendLabelsWhenComplete(shipmentId: string, actor: string) 
   )
   return withJobWake(
     db().transaction(async (tx) => {
-      const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
-      if (shipment?.status !== "waiting_labels") {
+      const [locked] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
+      if (locked?.status !== "waiting_labels") {
         return false
       }
+      const shipment = await withRoute(tx, locked, row.order.data)
       const docs = await tx
         .select()
         .from(documents)

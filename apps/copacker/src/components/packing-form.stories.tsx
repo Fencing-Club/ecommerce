@@ -1,5 +1,6 @@
 import type { OrderInput } from "@repo/copacker-orders"
 import type { PackingDraft } from "@repo/copacker-shipments"
+import type { ShipmentRoute } from "@repo/copacker-shipments/route"
 import { useRouter } from "@tanstack/react-router"
 import { HttpResponse } from "msw/http"
 import { type ComponentProps, useSyncExternalStore } from "react"
@@ -7,6 +8,7 @@ import { expect, fireEvent, fn, screen, spyOn, userEvent, waitFor, within } from
 import { storyTimeZone } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
+import { useAction } from "@/hooks/use-action"
 import { addDays, zonedDay } from "@/lib/time-zone"
 import { type ActionRequest, recordActions } from "@/stories/actions"
 import { supplierId } from "@/stories/fixtures/orders"
@@ -16,9 +18,13 @@ import { throughForwarder } from "@/stories/fixtures/routes"
 import { chooseMenuItem, chooseOption, shownDialog } from "@/stories/play"
 import { member } from "@/stories/workspace"
 import { PackingForm } from "./packing-form"
-import { ShipmentTransportSettings } from "./shipment-transport"
 
 const sent: ActionRequest[] = []
+// The route Save route sends: AGL from the supplier into Amazon.
+const aglRoute: ShipmentRoute = {
+  stops: [{ kind: "supplier" }, { kind: "agl" }, { kind: "receiver" }],
+  legs: [null, null]
+}
 const shipment = shipmentRecord()
 const [tote, apron, basket] = order.items
 // The PO's other shipments hold all but these pieces of each line, which this shipment packs.
@@ -65,7 +71,7 @@ function packingActions(check: { canSubmit: boolean; requiresApproval: boolean; 
 }
 
 // The shipment as the stories' server keeps it, and as the page last read it. Saving the draft or linking moves it to
-// its next revision, and an action sent with an older revision fails, as on the server. Saving the transport keeps the
+// its next revision, and an action sent with an older revision fails, as on the server. Saving the route keeps the
 // revision.
 type StoredShipment = { revision: number; linkedAmazonShipmentId: string | null }
 let stored: StoredShipment = { revision: 1, linkedAmazonShipmentId: null }
@@ -78,8 +84,8 @@ function shipmentServer(linkedAmazonShipmentId: string | null) {
       return HttpResponse.json(
         {
           error:
-            body.action === "shipment.transport"
-              ? "Transport changed or is already released. Reload the shipment."
+            body.action === "shipment.route"
+              ? "Route changed or the shipment is already released. Reload the shipment."
               : "The purchase order or packing draft has changed. Refresh before saving."
         },
         { status: 409 }
@@ -97,8 +103,8 @@ function shipmentServer(linkedAmazonShipmentId: string | null) {
   })
 }
 
-// The shipment page around the form, as a buyer edits it: the transport settings follow the header, and both send the
-// shipment's revision as the page last read it. Like the page's loader data, it reads the shipment again each time the
+// The shipment page around the form, as a buyer edits it: the route heads the form, and both send the shipment's
+// revision as the page last read it. Like the page's loader data, it reads the shipment again each time the
 // router loads, and shows it in the same render as the router's own state.
 function PackingPage(args: ComponentProps<typeof PackingForm>) {
   const router = useRouter()
@@ -110,22 +116,27 @@ function PackingPage(args: ComponentProps<typeof PackingForm>) {
       }),
     () => read
   )
+  const saveRoute = useAction("shipment.route")
   return (
     <PackingForm
       {...args}
       revision={shipment.revision}
       linkedAmazonShipmentId={args.linkedAmazonShipmentId === undefined ? undefined : shipment.linkedAmazonShipmentId}
-      renderHeader={(formActions) => (
-        <>
-          <div className="flex justify-end">{formActions}</div>
-          <ShipmentTransportSettings
-            id={args.shipmentId}
-            revision={shipment.revision}
-            initial={null}
-            hasForwarder={false}
-          />
-        </>
-      )}
+      renderHeader={(formActions) => <div className="flex justify-end">{formActions}</div>}
+      route={{
+        ...args.route,
+        saving: saveRoute.pending,
+        error: saveRoute.error,
+        onSave: async () =>
+          Boolean(
+            await saveRoute.run({
+              id: args.shipmentId,
+              revision: shipment.revision,
+              route: aglRoute,
+              expected: aglRoute
+            })
+          )
+      }}
     />
   )
 }
@@ -191,8 +202,8 @@ export const LinkExistingAwd = meta.story({
 })
 
 // Saving the draft moves the shipment to its next revision, and the page reads it again before the save is done, so
-// the buyer's transport settings beside the form, and the next save, send the new one.
-export const SaveDraftThenTransport = meta.story({
+// the buyer's route in the form, and the next save, send the new one.
+export const SaveDraftThenRoute = meta.story({
   beforeEach: ({ msw }) => {
     msw.use(shipmentServer(null))
   },
@@ -206,16 +217,17 @@ export const SaveDraftThenTransport = meta.story({
       data: expect.objectContaining({ revision: 1 })
     })
 
-    await userEvent.click(canvas.getByRole("button", { name: "Save transport" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Edit route" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Save route" }))
     await waitFor(() =>
       expect(sent.at(-1)).toEqual({
-        action: "shipment.transport",
-        data: expect.objectContaining({ id: shipment.id, revision: 2, expected: null })
+        action: "shipment.route",
+        data: expect.objectContaining({ id: shipment.id, revision: 2, route: aglRoute })
       })
     )
-    // The transport form reads the page again only once it has saved.
+    // Saving the route reads the page again once it has saved.
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledTimes(2))
-    await expect(canvas.queryByText(/Transport changed/)).toBeNull()
+    await expect(canvas.queryByText(/Route changed/)).toBeNull()
 
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
     await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalledTimes(3))

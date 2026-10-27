@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto"
 import { purchaseOrderPdf } from "@repo/copacker-shipments/documents"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { describe, expect, it, vi } from "vitest"
 import * as tables from "../../src/db/schema"
 import { accessibleOrder, forwarderOrder, forwarderOrders } from "../../src/server/access"
+import { deleteContact } from "../../src/server/contacts"
 import { generatePo } from "../../src/server/documents"
 import {
   acceptForwarderInvitation,
@@ -29,6 +30,7 @@ import {
   otherId,
   post,
   preparation,
+  saveStops,
   setUpWorkflowTests,
   supplier,
   supplierId
@@ -106,7 +108,7 @@ describe("freight forwarders", () => {
     ).rejects.toThrow("keeps its own addresses")
   })
 
-  it("hands a forwarder that keeps its own addresses only the saved ones POs stop at, and moves those POs there", async () => {
+  it("hands a forwarder that keeps its own addresses only the saved ones POs stop at, and moves those POs and routes there", async () => {
     const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
     await saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Yiwu warehouse", address })
     await saveForwarderAddress(buyerId, {
@@ -122,6 +124,10 @@ describe("freight forwarders", () => {
       .insert(tables.shipments)
       .values({ orderId, orderRevision: 1, snapshot: data })
       .returning()
+    await saveStops(shipment!.id, {
+      stops: [{ kind: "supplier" }, { kind: "forwarder", ...data.via }, { kind: "receiver" }],
+      legs: ["senderArranges", "senderArranges"]
+    })
     const forwarderOrg = await joinForwarder(forwarder.id, [
       { name: "Main warehouse", address: { ...address, addressLine1: "1 Main Road" } }
     ])
@@ -137,7 +143,14 @@ describe("freight forwarders", () => {
       .where(eq(tables.orderRevisions.orderId, orderId))
     const [moved] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipment!.id))
     expect([order?.data.via, revision?.data.via, moved?.snapshot?.via]).toEqual([via, via, via])
+    const [stop] = await database
+      .select()
+      .from(tables.shipmentStops)
+      .where(and(eq(tables.shipmentStops.shipmentId, shipment!.id), eq(tables.shipmentStops.kind, "forwarder")))
+    expect(stop).toMatchObject(via)
     expect((await forwarderAddresses(buyerId)).map((row) => row.addressId)).toContain(copy.id)
+    // While a route stops at it, the forwarder keeps the address.
+    await expect(deleteContact(forwarderOrg, copy.id)).rejects.toMatchObject({ key: "addressOnRoute" })
   })
 
   it("keeps forwarders to the buyer that added them", async () => {
