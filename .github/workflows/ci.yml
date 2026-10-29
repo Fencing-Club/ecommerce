@@ -49,7 +49,7 @@ jobs:
     needs: changes
     permissions:
       contents: read
-    uses: betterapps-hq/pipelines/.github/workflows/ci-verify.yml@978c87e0f9676edfb85ea5ca735e3cea656c8475 # v1.1.0
+    uses: betterapps-hq/pipelines/.github/workflows/ci-verify.yml@8b4311a69b28ad7423898dceda366cee6644f92c # v1.1.1
     with:
       os: '["blacksmith-4vcpu-ubuntu-2404"]'
       command: |
