@@ -93,7 +93,7 @@ are mocked. Separate PR #170 preview acceptance completed real WorkOS sign-in, c
 logout and revoked-token rejection. That preview returned no workspaces, so it did not qualify business-data reads.
 
 Production promotion of `93aa9f9bba3bffad34916e6d103cc3b132376833` completed on October 22, 2026
-([release run](https://github.com/Fencing-Club/ecommerce/actions/runs/39879377317)). Health reported that exact commit,
+([release run](https://github.com/betterapps-hq/ecommerce/actions/runs/39879377317)). Health reported that exact commit,
 release smoke tests passed, and signed-out resource reads returned `401 unauthenticated`.
 
 Authenticated CLI validation then exercised 24 read operations across the buyer workspace and three supplier
