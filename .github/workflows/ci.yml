@@ -43,13 +43,12 @@ jobs:
   # (stories) run side by side.
   #
   # Through the shared pipelines' ci-verify template, which checks out, installs Node from .nvmrc and pnpm at
-  # packageManager's version, and runs a frozen install with pnpm's store cached. A called workflow doesn't get this
-  # workflow's env and ci-verify takes no secrets yet, so these checks run without Turbo's remote cache.
+  # packageManager's version, and runs a frozen install with pnpm's store cached.
   verify:
     needs: changes
     permissions:
       contents: read
-    uses: betterapps-hq/pipelines/.github/workflows/ci-verify.yml@8b4311a69b28ad7423898dceda366cee6644f92c # v1.1.1
+    uses: betterapps-hq/pipelines/.github/workflows/ci-verify.yml@c3b85f070cf22fbf7a4dae841461f82e2b16ea20 # v1.2.0
     with:
       os: '["blacksmith-4vcpu-ubuntu-2404"]'
       command: |
@@ -60,9 +59,19 @@ jobs:
         pnpm turbo run test:coverage --filter=!copacker
       # GitHub's default, which verify had before.
       timeout-minutes: 360
-      # A newer push to a pull request cancels its run, as before. On main a newer push doesn't cancel one, but
-      # ci-verify groups runs by branch, so main's wait their turn, and a third push replaces the one waiting.
-      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+      # Grouped like the other jobs: a newer push to a pull request cancels its run, and runs on main never wait on or
+      # cancel each other.
+      concurrency-key: ${{ github.event.pull_request.number || github.run_id }}
+      # A called workflow doesn't get this workflow's env, and with can't read the env context, so the values are
+      # repeated here. They reach the install too.
+      env: |
+        PNPM_CONFIG_REGISTRY=https://registry.npmjs.org/
+        TURBO_API=https://turbo.copacker.ai
+        TURBO_TEAM=ecommerce
+    # Only the command gets them, not the install.
+    secrets:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
 
   # Copacker's unit tests took seven minutes on one machine, so they're split across three. Each shard keeps its results
   # and coverage as a blob, and unit-coverage merges them into one report.
