@@ -85,7 +85,9 @@ it uses, or anything every app shares, such as the workflows, the lockfile or th
 design files don't count. A pull request is compared with its target branch, and a push with the commit staging serves.
 Then, side by side:
 
-- `verify`: format, lint, types, unused code (`check:unused`) and the other packages' tests, always.
+- `verify`: format, lint, types, unused code (`check:unused`) and the other packages' tests, always. It runs through
+  the shared pipelines' [`ci-verify`](https://github.com/betterapps-hq/pipelines/blob/main/github/README.md#ci-verify)
+  template, which doesn't take Turbo's remote-cache token yet, so its tasks run in full instead of replaying.
 - `unit`: Copacker's unit tests, in three shards, when Copacker is affected. `unit-coverage` merges the shards' results
   and coverage into one report.
 - `worker`: Copacker's build, the built-Worker webhook and job regressions and every migration on an empty Postgres 18,
@@ -93,7 +95,7 @@ Then, side by side:
 - `stories`: the Storybook tests, in four shards, when Copacker is affected.
 - `e2e`: the [end-to-end suite](e2e.md), in three shards, when Copacker is affected.
 
-Turbo replays tasks whose inputs have not changed. `ci-ok` is the required aggregate check. The Cloudflare release
+The other jobs' Turbo tasks replay from the remote cache when their inputs haven't changed. `ci-ok` is the required aggregate check. The Cloudflare release
 workflow is gated by `CLOUDFLARE_RELEASE_ENABLED` and the environment's `RELEASE_CUTOVER_READY`. These gates are enabled
 following storage, callback, database and rollback qualification. Production promotion is a manual dispatch of an exact
 tested staging commit; GitHub required reviewers are not configured.

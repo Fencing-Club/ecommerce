@@ -41,35 +41,28 @@ jobs:
 
   # pnpm verify, split across machines: these checks, Copacker's unit tests (unit), its Worker (worker) and its stories
   # (stories) run side by side.
+  #
+  # Through the shared pipelines' ci-verify template, which checks out, installs Node from .nvmrc and pnpm at
+  # packageManager's version, and runs a frozen install with pnpm's store cached. A called workflow doesn't get this
+  # workflow's env and ci-verify takes no secrets yet, so these checks run without Turbo's remote cache.
   verify:
     needs: changes
-    concurrency:
-      group: verify-${{ github.event.pull_request.number || github.run_id }}
-      cancel-in-progress: true
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    steps:
-      - uses: useblacksmith/checkout@v1
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          # The pnpm store has its own cache step below, and pnpm isn't installed yet.
-          package-manager-cache: false
-      # Bootstrap the pinned pnpm release from the public registry.
-      - run: npm install --global pnpm@12.10.1
-      - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
-      - uses: actions/cache@v6
-        with:
-          path: ${{ env.PNPM_STORE }}
-          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: pnpm-${{ runner.os }}-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check:format
-      - run: pnpm check:lint
-      - run: pnpm check:types
-      - run: pnpm check:unused
-      - run: pnpm turbo run test:coverage --filter=!copacker
+    permissions:
+      contents: read
+    uses: betterapps-hq/pipelines/.github/workflows/ci-verify.yml@8b4311a69b28ad7423898dceda366cee6644f92c # v1.1.1
+    with:
+      os: '["blacksmith-4vcpu-ubuntu-2404"]'
+      command: |
+        pnpm check:format
+        pnpm check:lint
+        pnpm check:types
+        pnpm check:unused
+        pnpm turbo run test:coverage --filter=!copacker
+      # GitHub's default, which verify had before.
+      timeout-minutes: 360
+      # A newer push to a pull request cancels its run, as before. On main a newer push doesn't cancel one, but
+      # ci-verify groups runs by branch, so main's wait their turn, and a third push replaces the one waiting.
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
   # Copacker's unit tests took seven minutes on one machine, so they're split across three. Each shard keeps its results
   # and coverage as a blob, and unit-coverage merges them into one report.
