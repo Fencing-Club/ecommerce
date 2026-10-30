@@ -378,7 +378,7 @@ They are deliberately **not** a typed union. Shopify owns the filter vocabulary,
 ships notification-only filters such as `attach_as_pdf` that appear in no public schema. Any closed list we shipped as a
 type would be a stale copy that eventually rejects valid Liquid.
 
-They are checked all the same. The package carries a catalog of all 154 filters Shopify documents, classified into the
+They are checked all the same. The package carries a catalog of all 155 filters Shopify documents, classified into the
 ones a notification can use, the ones it cannot — theme-only colour and asset filters, cart links, storefront markup —
 and a handful nobody has confirmed either way. `compileTemplate` and `compileSubject` read the filters out of their own
 output and refuse anything the catalog rules out:
