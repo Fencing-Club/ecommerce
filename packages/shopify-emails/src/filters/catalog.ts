@@ -1,7 +1,7 @@
 /*
  * Which Liquid filters a notification template may use.
  *
- * Shopify documents 154 filters, but the reference covers themes: notification templates are a
+ * Shopify documents 155 filters, but the reference covers themes: notification templates are a
  * narrower, undocumented surface that has no cart, no theme settings and no asset pipeline. Naming
  * a filter that surface lacks produces no error on Shopify, only a blank space in a customer's
  * inbox, so the catalog is what turns that into a build failure instead.
@@ -114,7 +114,11 @@ const unverified: readonly (readonly [note: string, names: readonly string[]])[]
   ["Shopify's blake3 has no Node equivalent, so a preview cannot reproduce the digest", ["blake3"]],
   ["reads the store's Files, which a notification may not expose", ["file_img_url", "file_url"]],
   ["emits a <time> element that most email clients strip", ["time_tag"]],
-  ["reads a metafield, which only some notification drops carry", ["metafield_text"]]
+  ["reads a metafield, which only some notification drops carry", ["metafield_text"]],
+  [
+    "filters disclosure metafields by the buyer's jurisdiction, which a notification may not know",
+    ["applicable_disclosures"]
+  ]
 ]
 
 const unavailable: readonly (readonly [note: string, names: readonly string[]])[] = [

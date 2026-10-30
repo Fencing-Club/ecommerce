@@ -116,7 +116,7 @@ template was not given and Shopify is not known to supply.
 | `filterNamesIn`            | `(source: string) => readonly string[]`                           |
 | `assertFiltersAreAvailable`| `(source: string, templateId: string) => void`                    |
 
-`FilterStatus` is `"supported"`, `"unavailable"`, or `"unverified"`. The catalog classifies all 154 filters Shopify
+`FilterStatus` is `"supported"`, `"unavailable"`, or `"unverified"`. The catalog classifies all 155 filters Shopify
 documents plus the four that only notifications have, and a test conforms it against Shopify's own published data.
 
 `createShopifyEngine` registers the supported ones, and replaces both the unavailable ones and the 28 filters liquidjs
