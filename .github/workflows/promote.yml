@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   staging:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read

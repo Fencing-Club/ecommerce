@@ -16,11 +16,11 @@ jobs:
   # the docs skips another app's tests and deploy. A pull request is compared with its target branch; a push to main
   # with the commit staging serves, so a change an earlier failed run didn't deploy still counts.
   changes:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     outputs:
       copacker: ${{ steps.affected.outputs.copacker }}
     steps:
-      - uses: useblacksmith/checkout@v1
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - id: base
@@ -48,9 +48,9 @@ jobs:
     needs: changes
     permissions:
       contents: read
-    uses: betterapps-hq/pipelines/.github/workflows/ci-verify.yml@c3b85f070cf22fbf7a4dae841461f82e2b16ea20 # v1.2.0
+    uses: betterapps-hq/pipelines/.github/workflows/ci-verify.yml@main
     with:
-      os: '["blacksmith-4vcpu-ubuntu-2404"]'
+      os: '["ubuntu-latest"]'
       command: |
         pnpm check:format
         pnpm check:lint
@@ -81,13 +81,13 @@ jobs:
       group: unit-${{ github.event.pull_request.number || github.run_id }}-${{ matrix.shard }}
       cancel-in-progress: true
     if: needs.changes.outputs.copacker == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2, 3]
     steps:
-      - uses: useblacksmith/checkout@v1
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -120,9 +120,9 @@ jobs:
     concurrency:
       group: unit-coverage-${{ github.event.pull_request.number || github.run_id }}
       cancel-in-progress: true
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
-      - uses: useblacksmith/checkout@v1
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -149,7 +149,7 @@ jobs:
       group: worker-${{ github.event.pull_request.number || github.run_id }}
       cancel-in-progress: true
     if: needs.changes.outputs.copacker == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:18
@@ -161,7 +161,7 @@ jobs:
     env:
       TEST_DATABASE_URL: postgresql://postgres:copacker_test@localhost:5432/copacker_test
     steps:
-      - uses: useblacksmith/checkout@v1
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -193,13 +193,13 @@ jobs:
       group: stories-${{ github.event.pull_request.number || github.run_id }}-${{ matrix.shard }}
       cancel-in-progress: true
     if: needs.changes.outputs.copacker == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - uses: useblacksmith/checkout@v1
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -230,7 +230,7 @@ jobs:
       group: e2e-${{ github.event.pull_request.number || github.run_id }}-${{ matrix.shard }}
       cancel-in-progress: true
     if: needs.changes.outputs.copacker == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     # Split in three, each with its own Worker build, database and R2 emulator. In two, the slower shard took nine minutes.
     strategy:
       fail-fast: false
@@ -258,7 +258,7 @@ jobs:
             echo "::error::Add the WORKOS_API_KEY repository secret (the WorkOS staging environment's API key)"
             exit 1
           fi
-      - uses: useblacksmith/checkout@v1
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -303,7 +303,7 @@ jobs:
   storybook-build:
     needs: changes
     if: needs.changes.outputs.copacker == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     concurrency:
       group: storybook-build-${{ github.event.pull_request.number || github.run_id }}
       cancel-in-progress: true
@@ -312,7 +312,7 @@ jobs:
     env:
       APP_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
-      - uses: useblacksmith/checkout@v1
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.APP_COMMIT_SHA }}
       - uses: actions/setup-node@v7
@@ -346,7 +346,7 @@ jobs:
     if: >-
       github.event_name == 'pull_request' && needs.changes.outputs.copacker == 'true' &&
       github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
@@ -370,7 +370,7 @@ jobs:
       PREVIEW_TIMINGS_FILE: .cloudflare/preview-timings.json
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: useblacksmith/checkout@v1
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-node@v7
@@ -439,7 +439,7 @@ jobs:
   ci-ok:
     if: always()
     needs: [changes, verify, unit, unit-coverage, worker, stories, e2e, storybook-build, preview, deploy-staging]
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - run: |
           echo "$RESULTS"
