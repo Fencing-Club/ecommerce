@@ -48,9 +48,10 @@ jobs:
     needs: changes
     permissions:
       contents: read
-    uses: betterapps-hq/pipelines/.github/workflows/ci-verify.yml@c3b85f070cf22fbf7a4dae841461f82e2b16ea20 # v1.2.0
+    uses: betterapps-hq/pipelines/.github/workflows/ci-verify.yml@main
     with:
       os: '["blacksmith-4vcpu-ubuntu-2404"]'
+      # On Blacksmith's runner, ci-verify checks out with Blacksmith's checkout, as the other jobs do, by itself.
       command: |
         pnpm check:format
         pnpm check:lint
