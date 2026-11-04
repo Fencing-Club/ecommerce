@@ -12,7 +12,7 @@ jobs:
   # A staging release of a commit main has already moved past is skipped, not failed: the newer commit's own run
   # deploys it. Checked in its own job so a skipped release never opens a staging deployment.
   current:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     outputs:
       release: ${{ steps.check.outputs.release }}
     steps:
@@ -37,7 +37,7 @@ jobs:
   release:
     needs: current
     if: needs.current.outputs.release == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.mode }}
       url: ${{ vars.APP_URL }}
@@ -60,7 +60,7 @@ jobs:
       DATABASE_TLS_SERVER_NAME: ${{ vars.DATABASE_TLS_SERVER_NAME }}
       VITE_GOOGLE_MAPS_API_KEY: ${{ vars.GOOGLE_MAPS_BROWSER_KEY }}
     steps:
-      - uses: useblacksmith/checkout@v1
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.commit }}
       # A backstop for a commit that lands while this release waits in the deploy queue.
