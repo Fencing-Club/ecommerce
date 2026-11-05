@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "brand-voice": {
+      "source": "betterapps-hq/playbook",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/brand-voice/SKILL.md",
+      "computedHash": "b18ac30bb62b3cd0945e310f9ab9895b9e76f3d55d83227fe9161db1c5edd02c"
+    },
+    "copy-editing": {
+      "source": "betterapps-hq/playbook",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/copy-editing/SKILL.md",
+      "computedHash": "ea326770577d54cd2cbff3b09fa90f6ac09ab71164666838ec0765f91e4e71fa"
+    },
+    "deslopify-writing": {
+      "source": "betterapps-hq/playbook",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/deslopify-writing/SKILL.md",
+      "computedHash": "01f4017a42de0384e0929ea7cf5b9bca369df0858776b2da38b49f9685004920"
+    },
+    "writing-style-guide": {
+      "source": "betterapps-hq/playbook",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/writing-style-guide/SKILL.md",
+      "computedHash": "c240f23404ccdd292e59ef104e7541f61d0640f7b475aede5714748c287e13c8"
+    }
+  }
+}

@@ -41,3 +41,6 @@ crash.log
 crash.*.log
 .cloudflare/
 .wrangler/
+
+# Per-machine junctions the skills CLI makes into .agents/skills.
+/.claude/skills/

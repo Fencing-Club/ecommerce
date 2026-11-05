@@ -1,9 +1,12 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignoreExportsUsedInFile": true,
-  "ignore": ["beachball.config.js"],
+  "ignore": ["beachball.config.js", ".agents/skills/**"],
   "tags": ["-vendored"],
   "workspaces": {
+    ".": {
+      "ignoreDependencies": ["rulesync"]
+    },
     "packages/fc-theme": {
       "entry": ["assets/*.js"],
       "ignore": ["assets/vendor-scripts-v11.js"]
