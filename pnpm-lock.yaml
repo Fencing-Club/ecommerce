@@ -378,8 +378,8 @@ importers:
         specifier: 0.1.1
         version: 0.1.1(magicast@0.5.5)
       '@buildkitgg/shadcn-sync':
-        specifier: ^0.1.4
-        version: 0.1.4(@date-fns/tz@1.5.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(redux@5.0.1)(supports-color@8.1.1)
+        specifier: ^0.2.0
+        version: 0.2.0(@date-fns/tz@1.5.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(redux@5.0.1)(supports-color@8.1.1)
       '@cloudflare/vite-plugin':
         specifier: 1.64.0
         version: 1.64.0(@types/node@24.19.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(wrangler@4.151.0(@types/node@24.19.2))
@@ -1458,8 +1458,8 @@ packages:
     peerDependencies:
       react: 19.2.7
 
-  '@buildkitgg/shadcn-sync@0.1.4':
-    resolution: {integrity: sha512-yCLWO+sUtlfLZsNugIEELTltix1eXa609IUjWWwPGx6Vjnl1w9RCgzpDSfUAfv80oWFli3yrpsdImEpYBroAiA==}
+  '@buildkitgg/shadcn-sync@0.2.0':
+    resolution: {integrity: sha512-6PObGcLR1HODqkr/9ioynm0lY58qSUNOtB9gzimHZneK476FZAwg7NE7KOspf7vjxAPh8F1LnQBcS47pN44prQ==}
     engines: {node: '>=24'}
     hasBin: true
     peerDependencies:
@@ -9990,7 +9990,7 @@ snapshots:
 
   '@babel/helper-annotate-as-pure@7.29.7':
     dependencies:
-      '@babel/types': 7.29.8
+      '@babel/types': 7.29.14
 
   '@babel/helper-compilation-targets@7.29.7':
     dependencies:
@@ -10051,7 +10051,7 @@ snapshots:
 
   '@babel/helper-optimise-call-expression@7.29.7':
     dependencies:
-      '@babel/types': 7.29.8
+      '@babel/types': 7.29.14
 
   '@babel/helper-plugin-utils@7.29.7': {}
 
@@ -10060,7 +10060,7 @@ snapshots:
       '@babel/core': 7.29.7(supports-color@8.1.1)
       '@babel/helper-member-expression-to-functions': 7.29.14(supports-color@8.1.1)
       '@babel/helper-optimise-call-expression': 7.29.7
-      '@babel/traverse': 7.29.8(supports-color@8.1.1)
+      '@babel/traverse': 7.29.14(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -10303,7 +10303,7 @@ snapshots:
       '@buildkitgg/theme-core': 0.1.2
       react: 19.2.7
 
-  '@buildkitgg/shadcn-sync@0.1.4(@date-fns/tz@1.5.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(redux@5.0.1)(supports-color@8.1.1)':
+  '@buildkitgg/shadcn-sync@0.2.0(@date-fns/tz@1.5.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(redux@5.0.1)(supports-color@8.1.1)':
     dependencies:
       '@base-ui/react': 1.9.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@clack/prompts': 1.8.1
@@ -12578,7 +12578,7 @@ snapshots:
   '@shadcn/registry@0.2.1(supports-color@8.1.1)':
     dependencies:
       '@babel/core': 7.29.7(supports-color@8.1.1)
-      '@babel/parser': 7.29.8
+      '@babel/parser': 7.29.14
       '@babel/plugin-transform-typescript': 7.29.9(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1)
       '@babel/preset-typescript': 7.29.7(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1)
       '@dotenvx/dotenvx': 1.75.1
@@ -12591,7 +12591,7 @@ snapshots:
       fuzzysort: 3.1.0
       kleur: 4.1.5
       ora: 8.2.0
-      postcss: 8.5.30
+      postcss: 8.5.32
       prompts: 2.4.2
       recast: 0.23.21
       socks: 2.8.10
@@ -17444,7 +17444,7 @@ snapshots:
   shadcn@4.23.0(supports-color@8.1.1):
     dependencies:
       '@babel/core': 7.29.7(supports-color@8.1.1)
-      '@babel/parser': 7.29.8
+      '@babel/parser': 7.29.14
       '@babel/plugin-transform-typescript': 7.29.9(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1)
       '@babel/preset-typescript': 7.29.7(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1)
       '@dotenvx/dotenvx': 1.75.1
@@ -17464,7 +17464,7 @@ snapshots:
       kleur: 4.1.5
       open: 11.0.4
       ora: 8.2.0
-      postcss: 8.5.30
+      postcss: 8.5.32
       postcss-selector-parser: 7.1.6
       prompts: 2.4.2
       recast: 0.23.21
