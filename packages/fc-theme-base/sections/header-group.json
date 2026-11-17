@@ -18,7 +18,7 @@
           "type": "announcement",
           "settings": {
             "text": "Free shipping",
-            "message": "On orders over $150",
+            "message": "On orders over $250",
             "tone": "announcement",
             "text_alignment": "center",
             "color_scheme": "scheme-footer",

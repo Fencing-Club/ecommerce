@@ -321,7 +321,9 @@
     <div class="footer__content-bottom-wrapper page-width{% if section.settings.enable_country_selector == false and section.settings.enable_language_selector == false %} footer__content-bottom-wrapper--center{% endif %}">
       <div class="footer__copyright caption">
         <small class="copyright__content"
-          >&copy; {{ 'now' | date: '%Y' }} {{ section.settings.copyright_name | default: shop.name | escape }}. {{ section.settings.rights_text | escape }}</small
+          >&copy; {{ 'now' | date: '%Y' }} {{ section.settings.copyright_name | default: shop.name | escape }}
+          {%- if section.settings.rights_text != blank %}. {{ section.settings.rights_text | escape }}{% endif -%}
+        </small
         >
         {%- if section.settings.legal_menu != blank and section.settings.legal_menu.links.size > 0 -%}
           <ul class="policies list-unstyled">
@@ -529,7 +531,6 @@
     {
       "type": "text",
       "id": "rights_text",
-      "default": "All rights reserved.",
       "label": "Rights text"
     },
     {
