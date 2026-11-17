@@ -34,7 +34,7 @@
     "@repo/copacker-packing-rules": "workspace:*",
     "zod": "^4.6.7",
     "pdf-lib": "1.17.1",
-    "pdfjs-dist": "6.4.299",
+    "pdfjs-dist": "6.5.438",
     "yauzl": "3.4.0",
     "remark-parse": "^11.0.0",
     "unified": "^11.0.5",
@@ -46,8 +46,8 @@
     "@types/node": "catalog:",
     "@types/yauzl": "^3.0.0",
     "typescript": "catalog:",
-    "vitest": "5.0.5",
-    "@vitest/coverage-v8": "5.0.5",
+    "vitest": "5.1.0",
+    "@vitest/coverage-v8": "5.1.0",
     "@types/mdast": "^4.0.4"
   }
 }

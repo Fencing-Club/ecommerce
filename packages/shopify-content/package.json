@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@shopify/cli": "^4.9.4",
-    "commander": "^15.0.0",
+    "commander": "^15.1.0",
     "tsx": "^4.23.15",
     "zod": "^4.6.7"
   },
@@ -21,8 +21,8 @@
     "@repo/oxlint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "catalog:",
-    "@vitest/coverage-v8": "5.0.5",
+    "@vitest/coverage-v8": "5.1.0",
     "typescript": "catalog:",
-    "vitest": "5.0.5"
+    "vitest": "5.1.0"
   }
 }
