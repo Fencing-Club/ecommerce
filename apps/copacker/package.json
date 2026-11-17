@@ -115,7 +115,7 @@
     "@babel/core": "^8.0.9",
     "@buildkitgg/dev-domains": "0.1.1",
     "@buildkitgg/shadcn-sync": "^0.2.0",
-    "@cloudflare/vite-plugin": "1.64.0",
+    "@cloudflare/vite-plugin": "2.0.0-beta.v.17",
     "@electric-sql/pglite": "^0.5.12",
     "@napi-rs/canvas": "1.0.13",
     "@playwright/test": "^1.64.1",
