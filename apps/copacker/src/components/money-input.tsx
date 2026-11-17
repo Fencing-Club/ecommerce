@@ -1,4 +1,4 @@
-import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@buildkitgg/shadcn-baseui-kit"
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@buildkitgg/shadcn"
 import { useId, useState } from "react"
 import { useLocale } from "use-intl"
 import { currencySymbol } from "@/lib/currency"

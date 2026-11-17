@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -20,7 +19,7 @@ import {
   TableHeader,
   TableRow,
   Textarea
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { Link, useRouter } from "@tanstack/react-router"
 import { ArrowRight } from "lucide-react"
 import { useState, useTransition } from "react"
@@ -29,6 +28,7 @@ import { useCan } from "@/components/access"
 import { StatusBadge } from "@/components/common"
 import { FlushCard } from "@/components/flush-card"
 import { NoValue } from "@/components/no-value"
+import { DialogContent } from "@/components/overlay-content"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { insetTable } from "@/lib/controls"

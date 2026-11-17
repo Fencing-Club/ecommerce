@@ -1,4 +1,4 @@
-import { Button, Card, CardContent, Spinner } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Card, CardContent, Spinner } from "@buildkitgg/shadcn"
 import { useTranslations } from "use-intl"
 import { readPeriod } from "@/lib/date-range"
 import type { OverviewSearch } from "@/lib/page-search"

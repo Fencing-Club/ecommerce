@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { MailCheck } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"

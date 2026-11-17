@@ -3,7 +3,6 @@ import {
   Checkbox,
   Dialog,
   DialogClose,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -13,12 +12,13 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { countriesIn } from "@repo/copacker-shipments/countries"
 import { useController, useFormContext, useWatch } from "react-hook-form"
 import { useLocale, useTranslations } from "use-intl"
 import { FormTextarea } from "@/components/form-controls"
 import { FormSelect } from "@/components/form-select"
+import { DialogContent } from "@/components/overlay-content"
 import type { OrderForm } from "@/lib/order-form"
 
 // The labels a line's units can get, each with its message under orders.builder.

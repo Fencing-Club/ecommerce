@@ -1,5 +1,5 @@
 import { Toast } from "@base-ui/react/toast"
-import { Button, Checkbox, Label, Tooltip, TooltipContent, TooltipTrigger } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Checkbox, Label, Tooltip, TooltipContent, TooltipTrigger } from "@buildkitgg/shadcn"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { OrderInput } from "@repo/copacker-orders"
 import { checkPallets, palletRules, validatePallets } from "@repo/copacker-packing-rules"

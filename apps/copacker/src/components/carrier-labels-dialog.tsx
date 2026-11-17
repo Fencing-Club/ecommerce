@@ -1,15 +1,5 @@
 import { Toast } from "@base-ui/react/toast"
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  Input,
-  Label,
-  Spinner
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Dialog, DialogDescription, DialogHeader, DialogTitle, Input, Label, Spinner } from "@buildkitgg/shadcn"
 import {
   type CollisionDetection,
   DndContext,
@@ -54,6 +44,7 @@ import {
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal, flushSync } from "react-dom"
 import { useTranslations } from "use-intl"
+import { DialogContent } from "@/components/overlay-content"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useSaveCarrierLabelsMutation } from "@/lib/api"
 import { type CartonGroup, groupCartons } from "@/lib/carton-groups"

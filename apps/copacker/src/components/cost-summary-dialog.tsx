@@ -2,7 +2,6 @@ import {
   Button,
   Dialog,
   DialogClose,
-  DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -12,12 +11,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { adjustmentTypes } from "@repo/copacker-orders"
 import { Plus, X } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { MoneyInput } from "@/components/money-input"
+import { DialogContent } from "@/components/overlay-content"
 import { adjustmentKeys, knownName } from "@/lib/order-lines"
 
 type Adjustment = { description: string; amount: number }

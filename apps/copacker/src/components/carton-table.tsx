@@ -1,10 +1,4 @@
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@buildkitgg/shadcn"
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { OrderInput } from "@repo/copacker-orders"
 import type { ValidationIssue } from "@repo/copacker-packing-rules"

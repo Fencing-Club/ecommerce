@@ -1,4 +1,4 @@
-import { Dialog } from "@buildkitgg/shadcn-baseui-kit"
+import { Dialog } from "@buildkitgg/shadcn"
 import { http, HttpResponse } from "msw/http"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"

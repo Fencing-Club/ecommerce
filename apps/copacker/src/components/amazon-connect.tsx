@@ -1,17 +1,17 @@
 import {
   Button,
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { amazonMarketplaceSchema } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { countriesIn } from "@repo/copacker-shipments/countries"
 import { useId, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
+import { DialogContent } from "@/components/overlay-content"
 import { useActionForm } from "@/hooks/use-action-form"
 import { selfAuthorizationSchema } from "@/lib/amazon"
 import { ActionForm } from "./action-form"

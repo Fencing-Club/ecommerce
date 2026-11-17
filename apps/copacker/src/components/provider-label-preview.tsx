@@ -1,6 +1,6 @@
 "use client"
 
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { Download } from "lucide-react"
 import { useEffect, useState } from "react"
 import { readPdfPages, type PagePreview } from "@/lib/pdf-preview"

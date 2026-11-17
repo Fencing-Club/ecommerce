@@ -1,4 +1,4 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@buildkitgg/shadcn-baseui-kit"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@buildkitgg/shadcn"
 import { type OrderInput } from "@repo/copacker-orders"
 import { useFormatter, useTranslations } from "use-intl"
 import { useCartonTemplate } from "@/hooks/use-import-templates"

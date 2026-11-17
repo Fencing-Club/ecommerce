@@ -12,7 +12,7 @@ import {
   RadioGroup,
   RadioGroupItem,
   Switch
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { Mail, UserPlus } from "lucide-react"
 import { useId, useState } from "react"
 import { useController, useFormContext, useFormState, useWatch } from "react-hook-form"

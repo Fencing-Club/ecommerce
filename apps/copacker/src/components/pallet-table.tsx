@@ -10,7 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { cartonList, cartonRunLabel, cartonRuns, type ValidationIssue } from "@repo/copacker-packing-rules"
 import { ChevronRight, Copy, Ellipsis, Trash2, X } from "lucide-react"
 import { useId, useState } from "react"

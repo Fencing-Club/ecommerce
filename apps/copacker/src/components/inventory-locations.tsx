@@ -7,7 +7,7 @@ import {
   FieldDescription,
   FieldLabel,
   Skeleton
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import type { ShopifyLocationKind } from "@repo/copacker-marketplaces/shopify"
 import { Link } from "@tanstack/react-router"
 import { MapPin } from "lucide-react"

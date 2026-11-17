@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { Wrench } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"

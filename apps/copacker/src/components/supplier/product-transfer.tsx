@@ -2,7 +2,6 @@ import {
   Badge,
   Button,
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -13,12 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   Input
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { Download, Ellipsis, FileSpreadsheet, Upload } from "lucide-react"
 import { parseAsBoolean, useQueryState } from "nuqs"
 import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
+import { DialogContent } from "@/components/overlay-content"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { type ImportPreview, useImportProductsMutation, usePreviewProductImportMutation } from "@/lib/supplier-api"
 

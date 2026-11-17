@@ -18,7 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { CircleAlert, CircleCheck, CircleSlash, TriangleAlert } from "lucide-react"
 import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { PageLink } from "@/components/access"

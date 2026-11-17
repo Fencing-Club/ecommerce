@@ -10,7 +10,7 @@ import {
   InputGroupInput,
   InputGroupText,
   Textarea
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { CalendarDays } from "lucide-react"
 import { useId } from "react"
 import { useController } from "react-hook-form"

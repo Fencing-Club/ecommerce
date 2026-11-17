@@ -1,4 +1,4 @@
-import { FieldLabel, RadioGroup, RadioGroupItem } from "@buildkitgg/shadcn-baseui-kit"
+import { FieldLabel, RadioGroup, RadioGroupItem } from "@buildkitgg/shadcn"
 import { useRouter } from "@tanstack/react-router"
 import { Plus } from "lucide-react"
 import { useState } from "react"

@@ -125,13 +125,7 @@
   },
   "ui": {
     "close": "बंद करें",
-    "toggleSidebar": "साइडबार दिखाएं/छिपाएं",
-    "sidebar": "साइडबार",
-    "sidebarDescription": "मोबाइल साइडबार दिखाता है।",
-    "clear": "साफ़ करें",
-    "showOptions": "विकल्प दिखाएं",
-    "remove": "{label} हटाएं",
-    "loading": "लोड हो रहा है"
+    "toggleSidebar": "साइडबार दिखाएं/छिपाएं"
   },
   "pages": {
     "error": {

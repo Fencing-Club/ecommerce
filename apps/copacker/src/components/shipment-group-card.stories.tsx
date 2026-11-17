@@ -1,4 +1,4 @@
-import { Checkbox } from "@buildkitgg/shadcn-baseui-kit"
+import { Checkbox } from "@buildkitgg/shadcn"
 import { expect, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { ShipmentGroupCard } from "./shipment-group-card"

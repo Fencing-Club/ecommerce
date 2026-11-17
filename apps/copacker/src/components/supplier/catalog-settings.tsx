@@ -20,7 +20,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
   InputGroupText
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useTranslations } from "use-intl"
 import { RequiredMark } from "@/components/form-controls"
 import { OptionSelect } from "@/components/option-select"

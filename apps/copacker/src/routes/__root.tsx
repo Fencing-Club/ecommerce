@@ -4,7 +4,7 @@ import { createIsomorphicFn } from "@tanstack/react-start"
 import { NuqsAdapter } from "nuqs/adapters/tanstack-router"
 import { IntlProvider } from "use-intl"
 import NotFound from "@/app/not-found"
-import { KitProvider } from "@/components/kit-provider"
+import { ShadcnProvider } from "@/components/shadcn-provider"
 import { ThemeScript } from "@/components/theme-script"
 import { direction } from "@/i18n/locales"
 import { documentKey } from "@/lib/document-key"
@@ -12,7 +12,7 @@ import { pageTitle } from "@/lib/page-title"
 import { documentFonts } from "@/styles/document-fonts"
 import common from "../../messages/en/common.json"
 import { readDocument } from "../document.functions"
-// Tailwind with the kit's stylesheet, then the theme's colors, which override the kit's defaults.
+// Tailwind with shadcn's stylesheet, then the theme's colors, which override shadcn's defaults.
 import "@/app/globals.css"
 import "@/styles/theme.css"
 
@@ -75,9 +75,9 @@ function Document({ children }: { children: React.ReactNode }) {
           {config.messages.common.skipToContent}
         </a>
         <IntlProvider key={result?.key} locale={config.locale} messages={config.messages} timeZone={config.timeZone}>
-          <KitProvider>
+          <ShadcnProvider>
             <NuqsAdapter>{children}</NuqsAdapter>
-          </KitProvider>
+          </ShadcnProvider>
         </IntlProvider>
         <Scripts />
       </body>

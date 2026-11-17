@@ -3,13 +3,12 @@ import {
   Checkbox,
   Dialog,
   DialogClose,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useDebouncedValue, useSelection } from "@mantine/hooks"
 import { skipToken } from "@reduxjs/toolkit/query"
 import { Search } from "lucide-react"
@@ -18,6 +17,7 @@ import { useTranslations } from "use-intl"
 import { FormError } from "@/components/form-feedback"
 import { SearchField } from "@/components/list/search-field"
 import { NoValue } from "@/components/no-value"
+import { DialogContent } from "@/components/overlay-content"
 import { ProductThumb } from "@/components/product-thumb"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { type CatalogProduct, type ListedVariant, useInventoryProductsQuery, useLazyCatalogQuery } from "@/lib/api"

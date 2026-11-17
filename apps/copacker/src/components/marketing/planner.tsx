@@ -1,4 +1,4 @@
-import { Label, Slider, Switch } from "@buildkitgg/shadcn-baseui-kit"
+import { Label, Slider, Switch } from "@buildkitgg/shadcn"
 import { useMediaQuery, useReducedMotion } from "@mantine/hooks"
 import { Check, GlassWater } from "lucide-react"
 import { useEffect, useRef, useState } from "react"

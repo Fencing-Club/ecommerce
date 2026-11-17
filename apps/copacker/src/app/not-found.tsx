@@ -1,10 +1,10 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { Link } from "@tanstack/react-router"
 import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { EmptyState } from "@/components/common"
-// Outside the app's layouts, so it brings the app's stylesheet itself: Tailwind with the kit's stylesheet, then the
-// theme's colors, which override the kit's defaults.
+// Outside the app's layouts, so it brings the app's stylesheet itself: Tailwind with shadcn's stylesheet, then the
+// theme's colors, which override shadcn's defaults.
 import "./globals.css"
 import "@/styles/theme.css"
 

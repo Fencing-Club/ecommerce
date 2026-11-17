@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertTitle } from "@buildkitgg/shadcn-baseui-kit"
+import { Alert, AlertDescription, AlertTitle } from "@buildkitgg/shadcn"
 import type { OrderInput } from "@repo/copacker-orders"
 import { Clock3 } from "lucide-react"
 import type { ComponentProps } from "react"

@@ -1,4 +1,4 @@
-import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, FieldError } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, FieldError } from "@buildkitgg/shadcn"
 import { useUncontrolled } from "@mantine/hooks"
 import { type Route, routeIssues } from "@repo/copacker-packing-rules"
 import { ChevronRight, Pencil } from "lucide-react"

@@ -1,10 +1,4 @@
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@buildkitgg/shadcn"
 import { Ellipsis } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { SubmitButton } from "@/components/form-feedback"

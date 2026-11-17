@@ -1,4 +1,4 @@
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@buildkitgg/shadcn-baseui-kit"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@buildkitgg/shadcn"
 import { Search } from "lucide-react"
 
 // A list's search box, with a magnifier before what's typed. `label` names it for screen readers, and is its

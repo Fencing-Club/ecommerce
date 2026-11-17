@@ -1,4 +1,4 @@
-import { Button, buttonVariants, Spinner } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, buttonVariants, Spinner } from "@buildkitgg/shadcn"
 import { CircleAlert, CircleCheck, Clock3, RefreshCw } from "lucide-react"
 import { useId } from "react"
 import { useFormatter, useTranslations } from "use-intl"

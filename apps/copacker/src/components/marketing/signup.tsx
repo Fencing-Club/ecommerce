@@ -1,4 +1,4 @@
-import { Button, Input } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Input } from "@buildkitgg/shadcn"
 import { Check } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { useTranslations } from "use-intl"

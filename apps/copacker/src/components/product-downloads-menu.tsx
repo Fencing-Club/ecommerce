@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { ChevronDown, Download, MoreHorizontal } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { Attachment, AttachmentContent, attachmentClassName } from "./attachment"

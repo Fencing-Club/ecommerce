@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { useSwitchWorkspace } from "@/hooks/use-switch-workspace"

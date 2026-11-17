@@ -2,7 +2,6 @@ import {
   Button,
   Checkbox,
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -10,11 +9,12 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import type { OrderInput } from "@repo/copacker-orders"
 import { Plus, Search } from "lucide-react"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
+import { DialogContent } from "@/components/overlay-content"
 import { ProductIdentity } from "./product-identity"
 
 // Adds products to a carton configuration from the shipment's products that still have units left to pack.

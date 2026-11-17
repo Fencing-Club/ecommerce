@@ -1,4 +1,4 @@
-import { Button, useSidebar } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, useSidebar } from "@buildkitgg/shadcn"
 import { Menu } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { CopackerMark } from "@/components/auth/stage"

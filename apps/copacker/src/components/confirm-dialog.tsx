@@ -9,7 +9,7 @@ import {
   Field,
   FieldLabel,
   Input
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
 import { FormError, SubmitButton } from "@/components/form-feedback"

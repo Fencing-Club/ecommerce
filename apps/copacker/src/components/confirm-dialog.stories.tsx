@@ -1,4 +1,4 @@
-import { AlertDialogTrigger, Button } from "@buildkitgg/shadcn-baseui-kit"
+import { AlertDialogTrigger, Button } from "@buildkitgg/shadcn"
 import { HttpResponse } from "msw/http"
 import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"

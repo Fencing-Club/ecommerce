@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -18,7 +17,7 @@ import {
   FieldLabel,
   Input,
   Textarea
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { commonPaymentTerms, orderSubtotal } from "@repo/copacker-orders"
 import { Link, useRouter } from "@tanstack/react-router"
 import { CircleAlert, Plus, Undo2, X } from "lucide-react"
@@ -31,6 +30,7 @@ import { SelectControl } from "@/components/form-select"
 import { matches } from "@/components/list/matches"
 import { SearchField } from "@/components/list/search-field"
 import { MoneyInput } from "@/components/money-input"
+import { DialogContent } from "@/components/overlay-content"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { useProposeChangesMutation } from "@/lib/supplier-api"

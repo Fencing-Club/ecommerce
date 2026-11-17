@@ -1,4 +1,4 @@
-import { AlertDialogTrigger, Button, DialogTrigger } from "@buildkitgg/shadcn-baseui-kit"
+import { AlertDialogTrigger, Button, DialogTrigger } from "@buildkitgg/shadcn"
 import { Pencil } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"

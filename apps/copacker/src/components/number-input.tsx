@@ -1,4 +1,4 @@
-import { Input, InputGroupInput } from "@buildkitgg/shadcn-baseui-kit"
+import { Input, InputGroupInput } from "@buildkitgg/shadcn"
 import { cn } from "@/lib/utils"
 
 // A number without the browser's up and down buttons, which crowd a short field, its digits lined up.

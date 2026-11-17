@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
   Textarea
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { Lock, Users, X } from "lucide-react"
 import { useId } from "react"
 import { useController } from "react-hook-form"

@@ -8,7 +8,7 @@ import {
   ItemMedia,
   ItemTitle,
   Spinner
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { Check, Download, ExternalLink } from "lucide-react"
 import { createContext, use, useId } from "react"
 import { useTranslations } from "use-intl"

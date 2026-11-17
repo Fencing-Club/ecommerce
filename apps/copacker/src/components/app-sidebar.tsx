@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
   useSidebar
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { PanelLeft } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { useEdge } from "@/hooks/use-edge"
@@ -65,6 +65,7 @@ export function AppSidebar({ pathname, kind, active, name, workspaces, userName,
   const { setOpenMobile } = useSidebar()
   const side = useEdge("start")
   const t = useTranslations("navigation")
+  const ui = useTranslations("common.ui")
   // A member sees only the pages they were given.
   const navigation = navigationFor(kind, usePermissions())
 
@@ -118,7 +119,8 @@ export function AppSidebar({ pathname, kind, active, name, workspaces, userName,
       <SidebarFooter className="border-t p-3 group-data-[collapsible=icon]:p-2">
         <AccountMenu name={userName ?? email} email={email} />
       </SidebarFooter>
-      <SidebarRail />
+      {/* shadcn labels its rail in English. */}
+      <SidebarRail aria-label={ui("toggleSidebar")} title={ui("toggleSidebar")} />
     </Sidebar>
   )
 }

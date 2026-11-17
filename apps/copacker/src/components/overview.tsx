@@ -1,4 +1,4 @@
-import { Card, CardAction, CardContent, CardHeader, CardTitle, Skeleton } from "@buildkitgg/shadcn-baseui-kit"
+import { Card, CardAction, CardContent, CardHeader, CardTitle, Skeleton } from "@buildkitgg/shadcn"
 import { isPresent } from "ts-extras"
 import { useLocale, useTranslations } from "use-intl"
 import { rangeLabel } from "@/lib/date-range"

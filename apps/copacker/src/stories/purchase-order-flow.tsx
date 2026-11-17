@@ -9,7 +9,6 @@ import {
   ComboboxItem,
   ComboboxList,
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -38,7 +37,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { type OrderInput, orderLine, orderSubtotal } from "@repo/copacker-orders"
 import { packingTasks } from "@repo/copacker-orders/packing-requirements"
 // Interactive fixtures for the approved Pen flow. These local transitions do not call order APIs.
@@ -75,6 +74,7 @@ import { FileDropzone, pdfFiles } from "@/components/file-dropzone"
 import { SelectControl } from "@/components/form-select"
 import { Markdown } from "@/components/markdown"
 import { NumberInput, InputGroupNumberInput } from "@/components/number-input"
+import { DialogContent } from "@/components/overlay-content"
 import { PackedProductsTable } from "@/components/packed-products-table"
 import { PackingForm } from "@/components/packing-form"
 import { PalletList } from "@/components/pallet-list"

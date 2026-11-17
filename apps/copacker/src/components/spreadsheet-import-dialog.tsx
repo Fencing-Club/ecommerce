@@ -1,17 +1,17 @@
 import {
   Button,
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
   RadioGroup,
   RadioGroupItem,
   Spinner
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { CircleAlert, Download } from "lucide-react"
 import { type ReactNode, useId, useReducer } from "react"
 import { useTranslations } from "use-intl"
+import { DialogContent } from "@/components/overlay-content"
 import { downloadSpreadsheet } from "@/lib/spreadsheet-import"
 import { cn } from "@/lib/utils"
 import { FileDropzone } from "./file-dropzone"

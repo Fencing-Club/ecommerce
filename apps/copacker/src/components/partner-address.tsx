@@ -3,11 +3,10 @@ import {
   DialogTrigger,
   DropdownMenuItem,
   Sheet,
-  SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import type { Address } from "@repo/copacker-orders"
 import { addressLine, addressSchema } from "@repo/copacker-orders"
 import { originSchema } from "@repo/copacker-shipments"
@@ -15,6 +14,7 @@ import { MapPin, MapPinPlus } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
+import { SheetContent } from "@/components/overlay-content"
 import { useAction } from "@/hooks/use-action"
 import type { ActionFormOptions, FormSchema } from "@/hooks/use-action-form"
 import { useEdge } from "@/hooks/use-edge"

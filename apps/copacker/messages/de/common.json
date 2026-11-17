@@ -125,13 +125,7 @@
   },
   "ui": {
     "close": "Schließen",
-    "toggleSidebar": "Seitenleiste ein-/ausblenden",
-    "sidebar": "Seitenleiste",
-    "sidebarDescription": "Zeigt die mobile Seitenleiste an.",
-    "clear": "Leeren",
-    "showOptions": "Optionen anzeigen",
-    "remove": "{label} entfernen",
-    "loading": "Wird geladen"
+    "toggleSidebar": "Seitenleiste ein-/ausblenden"
   },
   "pages": {
     "error": {

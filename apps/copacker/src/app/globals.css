@@ -1,8 +1,11 @@
 @import "tailwindcss";
-/* buildkit's base-vega components: their sources for Tailwind to scan, shadcn's variants and animations, the token
-   mappings, and the `dark` variant, which a `.light` element inside a dark page (the marketing page's product shots)
-   opts out of. Its default colors are overridden by src/styles/theme.css.ts, which loads after this file. */
-@import "@buildkitgg/shadcn-baseui-kit/tailwind.css";
+/* shadcn's base-vega components, which shadcn-sync generates: their sources for Tailwind to scan, shadcn's variants
+   and animations, and the token mappings. Its default colors are overridden by src/styles/theme.css.ts, which loads
+   after this file. */
+@import "@buildkitgg/shadcn/tailwind.css";
+/* shadcn's `dark` variant, also on the `.dark` element itself (a dark dialog), and opted out of by a `.light` element
+   inside a dark page (the marketing page's product shots). */
+@custom-variant dark (&:where(.dark, .dark *):not(:where(.light, .light *)));
 
 /* Urdu pages, set in Nastaliq, whose letters rise and hang well past the lines Latin text sits on. */
 @custom-variant urdu (&:lang(ur));
@@ -22,7 +25,7 @@
   }
 }
 
-/* The kit maps shadcn's colors and radii into Tailwind; these are the app's own shadows and fonts. */
+/* shadcn's stylesheet maps shadcn's colors and radii into Tailwind; these are the app's own shadows and fonts. */
 @theme inline {
   --shadow-menu: var(--elevation-menu);
   --shadow-dialog: var(--elevation-dialog);
@@ -36,7 +39,7 @@
   --font-heading: var(--font-sans);
 }
 
-/* The kit's animate-in and animate-out (tw-animate-css's) also animate filter: blur(), even at no blur, and a filter animation
+/* shadcn's animate-in and animate-out (tw-animate-css's) also animate filter: blur(), even at no blur, and a filter animation
    can't run on the compositor. Nothing here blurs in or out, so these replace them with only opacity and transform. */
 @theme inline {
   @keyframes enter {

@@ -1,4 +1,4 @@
-import { SidebarInset, SidebarProvider } from "@buildkitgg/shadcn-baseui-kit"
+import { SidebarInset, SidebarProvider } from "@buildkitgg/shadcn"
 import { useMounted } from "@mantine/hooks"
 import type { AppSidebarProps } from "./app-sidebar"
 import { AppSidebar, SidebarToggle } from "./app-sidebar"

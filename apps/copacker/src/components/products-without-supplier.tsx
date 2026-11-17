@@ -1,13 +1,4 @@
-import {
-  Button,
-  Checkbox,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Checkbox, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn"
 import { useSet } from "@mantine/hooks"
 import { useState } from "react"
 import { useTranslations } from "use-intl"

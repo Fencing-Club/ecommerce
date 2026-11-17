@@ -9,12 +9,11 @@ import {
   Field,
   FieldLabel,
   Sheet,
-  SheetContent,
   SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { ChevronDown, Download, Tags } from "lucide-react"
 import { useState } from "react"
 import invariant from "tiny-invariant"
@@ -23,6 +22,7 @@ import { useCan } from "@/components/access"
 import { FormError } from "@/components/form-feedback"
 import { matches } from "@/components/list/matches"
 import { SearchField } from "@/components/list/search-field"
+import { SheetContent } from "@/components/overlay-content"
 import { useEdge } from "@/hooks/use-edge"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"

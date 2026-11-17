@@ -1,4 +1,4 @@
-import { Button, DialogTrigger } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, DialogTrigger } from "@buildkitgg/shadcn"
 import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import { z } from "zod"

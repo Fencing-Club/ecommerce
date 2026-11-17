@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useRouter } from "@tanstack/react-router"
 import { Download, Ellipsis, Trash2 } from "lucide-react"
 import { useState } from "react"

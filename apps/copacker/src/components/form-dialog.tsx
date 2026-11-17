@@ -1,11 +1,12 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@buildkitgg/shadcn-baseui-kit"
+import { Dialog, DialogDescription, DialogHeader, DialogTitle } from "@buildkitgg/shadcn"
 import { useUncontrolled } from "@mantine/hooks"
 import { useState } from "react"
+import { DialogContent } from "@/components/overlay-content"
 import { type ActionFormOptions, type FormSchema, useActionForm } from "@/hooks/use-action-form"
 import { cn } from "@/lib/utils"
 import { ActionForm } from "./action-form"
 
-// The dialog's width from small screens up: the kit's default, a little wider, or wide enough for an address in two
+// The dialog's width from small screens up: shadcn's default, a little wider, or wide enough for an address in two
 // columns.
 const sizes = { default: "", md: "sm:max-w-md", lg: "sm:max-w-2xl" }
 
