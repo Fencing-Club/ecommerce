@@ -54,7 +54,8 @@
     "preview:remove": "node --import tsx scripts/preview.ts remove",
     "preview:discover": "node --import tsx scripts/preview.ts discover",
     "export:shipment-packet": "node --env-file-if-exists=.env --import tsx scripts/export-shipment-packet.ts",
-    "carrier-label-examples": "node --import tsx scripts/carrier-label-examples.ts"
+    "carrier-label-examples": "node --import tsx scripts/carrier-label-examples.ts",
+    "postinstall": "shadcn-sync sync --base base --icons lucide --style vega --theme neutral --css tailwind"
   },
   "dependencies": {
     "@aws-sdk/client-eventbridge": "^3.1157.0",
@@ -62,7 +63,7 @@
     "@aws-sdk/client-sqs": "^3.1157.0",
     "@base-ui/react": "^1.9.0",
     "@buildkitgg/react-theme": "0.1.2",
-    "@buildkitgg/shadcn-baseui-kit": "npm:@buildkitgg/shadcn-baseui-vega@^0.4.0",
+    "@buildkitgg/shadcn": "link:node_modules/.buildkit/shadcn",
     "@buildkitgg/shadcn-theme": "0.1.2",
     "@dnd-kit/core": "6.3.1",
     "@hookform/resolvers": "^6.0.0",
@@ -113,6 +114,7 @@
     "@axe-core/playwright": "^4.14.0",
     "@babel/core": "^8.0.9",
     "@buildkitgg/dev-domains": "0.1.1",
+    "@buildkitgg/shadcn-sync": "^0.1.4",
     "@cloudflare/vite-plugin": "1.64.0",
     "@electric-sql/pglite": "^0.5.12",
     "@napi-rs/canvas": "1.0.13",

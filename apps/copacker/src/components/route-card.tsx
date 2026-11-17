@@ -1,12 +1,4 @@
-import {
-  Button,
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@buildkitgg/shadcn"
 import { type Destination, destinationSchema } from "@repo/copacker-orders"
 import { Building2, MapPin, Plus, Warehouse, X } from "lucide-react"
 import { useState } from "react"

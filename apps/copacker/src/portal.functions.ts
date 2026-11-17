@@ -6,7 +6,7 @@ import { identity } from "@/server/auth"
 import { portalSession, portalShell } from "@/server/portal-session"
 import { workspaceCookie } from "@/server/workspace-session"
 
-// The cookie the kit's SidebarProvider keeps the sidebar's open state in, so the server renders it as it was left.
+// The cookie shadcn's SidebarProvider keeps the sidebar's open state in, so the server renders it as it was left.
 const sidebarCookie = "sidebar_state"
 // The page's whole URL. A new purchase order's link carries up to 100 variants, about 7,500 characters; Cloudflare
 // rejects request URLs over 16 KB before they get here.

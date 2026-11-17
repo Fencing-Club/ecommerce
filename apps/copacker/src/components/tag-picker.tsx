@@ -1,4 +1,4 @@
-import { Badge, Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Badge, Button } from "@buildkitgg/shadcn"
 import { Plus, X } from "lucide-react"
 import type { RefObject } from "react"
 import { useRef, useState } from "react"

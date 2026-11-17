@@ -1,4 +1,4 @@
-import { Button, Field, FieldLabel } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Field, FieldLabel } from "@buildkitgg/shadcn"
 import { ExternalLink, Info, Tags, Truck, Warehouse } from "lucide-react"
 import { useId, useState } from "react"
 import { useFormatter, useLocale, useTimeZone, useTranslations } from "use-intl"

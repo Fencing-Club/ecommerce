@@ -1,4 +1,4 @@
-import { Button, Checkbox, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Checkbox, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn"
 import { useSet } from "@mantine/hooks"
 import type { PriceBasis } from "@repo/copacker-orders"
 import { Link, useRouter } from "@tanstack/react-router"

@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { SelectionBar } from "./selection-bar"

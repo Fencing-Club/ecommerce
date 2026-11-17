@@ -8,7 +8,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
   Button
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"

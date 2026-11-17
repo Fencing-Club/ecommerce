@@ -43,7 +43,7 @@ export const vars = createGlobalThemeContract(
     radius: { sm: "radius-sm", md: "radius-md", lg: "radius-lg", xl: "radius-xl", full: "radius-full" },
     font: { sans: "font-sans", mono: "font-mono" },
     shadow: { xs: "shadow-xs", sm: "shadow-sm", md: "shadow-md", lg: "shadow-lg" },
-    // The kit's shadows, which only overlays and the action bar take: menus and popovers, dialogs, the command menu, a
+    // shadcn's shadows, which only overlays and the action bar take: menus and popovers, dialogs, the command menu, a
     // phone's bottom sheet, the floating and docked action bar, and tooltips.
     elevation: {
       menu: "elevation-menu",

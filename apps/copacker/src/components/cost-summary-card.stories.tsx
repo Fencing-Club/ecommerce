@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { CostSummaryCard } from "./cost-summary-card"

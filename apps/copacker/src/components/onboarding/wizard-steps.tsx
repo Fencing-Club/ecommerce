@@ -8,7 +8,7 @@ import {
   FieldTitle,
   RadioGroup,
   RadioGroupItem
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { Factory, Ship, Store } from "lucide-react"
 import { useController } from "react-hook-form"
 import { objectKeys } from "ts-extras"

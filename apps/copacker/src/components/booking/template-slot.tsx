@@ -8,7 +8,7 @@ import {
   ItemTitle,
   Progress,
   ProgressLabel
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useDropzone } from "@uploadcn/react"
 import { CircleCheck, Upload } from "lucide-react"
 import { useId, useRef } from "react"

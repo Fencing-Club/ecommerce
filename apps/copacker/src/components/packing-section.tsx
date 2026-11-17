@@ -6,7 +6,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { ChevronRight, Download, Plus, Upload } from "lucide-react"
 import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"

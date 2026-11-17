@@ -18,7 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useDebouncedValue, useLocalStorage, useMap, useSet, useWindowEvent } from "@mantine/hooks"
 import { skipToken } from "@reduxjs/toolkit/query/react"
 import { Link } from "@tanstack/react-router"

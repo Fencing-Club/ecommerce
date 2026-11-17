@@ -13,7 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { Link } from "@tanstack/react-router"
 import { Ellipsis } from "lucide-react"
 import { useState } from "react"

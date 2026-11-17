@@ -10,7 +10,7 @@ import {
   Kbd,
   KbdGroup,
   Skeleton
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useDebouncedValue, useHotkeys, useOs } from "@mantine/hooks"
 import { Command as CommandPrimitive, defaultFilter } from "cmdk"
 import { ArrowDown, ArrowUp, ClipboardList, CornerDownLeft, Package, Receipt, Search, Truck, Users } from "lucide-react"
@@ -22,7 +22,7 @@ import { navigationFor } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 import { useCan, usePermissions } from "./access"
 
-// cmdk's loading row, which the kit's Command doesn't wrap, padded like its groups.
+// cmdk's loading row, which shadcn's Command doesn't wrap, padded like its groups.
 function CommandLoading(props: React.ComponentProps<typeof CommandPrimitive.Loading>) {
   return <CommandPrimitive.Loading data-slot="command-loading" className="p-1" {...props} />
 }

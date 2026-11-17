@@ -1,11 +1,4 @@
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@buildkitgg/shadcn"
 import { Store } from "lucide-react"
 import { useTranslations } from "use-intl"
 

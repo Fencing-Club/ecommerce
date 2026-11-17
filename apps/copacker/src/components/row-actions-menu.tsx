@@ -1,4 +1,4 @@
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Spinner } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Spinner } from "@buildkitgg/shadcn"
 import { Ellipsis } from "lucide-react"
 
 // A list row's actions behind its ⋯ button, such as Edit and Remove. While one of them runs, a spinner takes the

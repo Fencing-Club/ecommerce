@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowRight, Check, Handshake, LifeBuoy, MessageCircle, Newspaper, Presentation, Rocket } from "lucide-react"
 import { useEffect, useRef, useState } from "react"

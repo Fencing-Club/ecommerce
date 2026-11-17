@@ -13,7 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { itemTotal, orderCharges, orderTotal, orderUnits, lineName, shipmentGroups } from "@repo/copacker-orders"
 import { isAmazonNetwork, orderDestination } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"

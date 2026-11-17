@@ -1,4 +1,4 @@
-import { Button, Spinner, Tooltip, TooltipContent, TooltipTrigger } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Spinner, Tooltip, TooltipContent, TooltipTrigger } from "@buildkitgg/shadcn"
 import { Download, Eye, EyeOff, Trash2, Upload } from "lucide-react"
 import { useRef, useState } from "react"
 import invariant from "tiny-invariant"

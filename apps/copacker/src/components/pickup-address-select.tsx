@@ -7,7 +7,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { MapPin, Plus } from "lucide-react"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"

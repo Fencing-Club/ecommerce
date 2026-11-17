@@ -1,4 +1,4 @@
-import { Button, Card, CardContent, CardHeader, CardTitle } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@buildkitgg/shadcn"
 import { ImagePlus, Star, X } from "lucide-react"
 import { useRef, useState } from "react"
 import { useTranslations } from "use-intl"

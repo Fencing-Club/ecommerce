@@ -1,4 +1,4 @@
-import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn-baseui-kit"
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn"
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { FramedTable } from "./framed-table"

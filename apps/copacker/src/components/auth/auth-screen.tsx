@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Alert, AlertDescription, Button } from "@buildkitgg/shadcn"
 import { CircleAlert } from "lucide-react"
 import { useTranslations } from "use-intl"
 import type { AuthPageData } from "@/lib/auth-pages"

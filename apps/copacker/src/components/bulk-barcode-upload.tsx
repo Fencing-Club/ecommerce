@@ -4,17 +4,17 @@ import {
   FieldLabel,
   Input,
   Sheet,
-  SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useDropzone, useFileValidation, usePasteFiles } from "@uploadcn/react"
 import { CircleCheck, UploadCloud } from "lucide-react"
 import { useRef, useState } from "react"
 import { useTranslations } from "use-intl"
+import { SheetContent } from "@/components/overlay-content"
 import { useEdge } from "@/hooks/use-edge"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { cn } from "@/lib/utils"

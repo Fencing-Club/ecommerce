@@ -6,14 +6,13 @@ import {
   FieldLabel,
   Input,
   Sheet,
-  SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
   Switch,
   Textarea
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { orderCurrencies, type OrderCurrency, priceBases, type PriceBasis } from "@repo/copacker-orders"
 import { SlidersHorizontal } from "lucide-react"
 import { useState } from "react"
@@ -22,6 +21,7 @@ import { useCan } from "@/components/access"
 import { RequiredMark } from "@/components/form-controls"
 import { MoneyInput } from "@/components/money-input"
 import { OptionSelect } from "@/components/option-select"
+import { SheetContent } from "@/components/overlay-content"
 import { useDraft } from "@/hooks/use-draft"
 import { useEdge } from "@/hooks/use-edge"
 import type { PriceBreak, QuantityRules } from "@/lib/catalog-pricing"

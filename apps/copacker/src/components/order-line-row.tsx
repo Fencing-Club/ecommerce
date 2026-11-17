@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Input
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { itemTotal, lineName } from "@repo/copacker-orders"
 import { Ellipsis, Package, X } from "lucide-react"
 import { useState } from "react"

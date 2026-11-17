@@ -2,7 +2,6 @@ import {
   Button,
   Checkbox,
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -10,11 +9,12 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { cartonList } from "@repo/copacker-packing-rules"
 import { ChevronDown, ListChecks, Search } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
+import { DialogContent } from "@/components/overlay-content"
 import type { PalletCarton, PalletValue } from "@/lib/carton-groups"
 import { cn } from "@/lib/utils"
 import { useMeasure } from "./packing-fields"

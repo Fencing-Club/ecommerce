@@ -1,4 +1,4 @@
-import { DropdownMenuItem } from "@buildkitgg/shadcn-baseui-kit"
+import { DropdownMenuItem } from "@buildkitgg/shadcn"
 import { expect, fn, screen, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { RowActionsMenu } from "./row-actions-menu"

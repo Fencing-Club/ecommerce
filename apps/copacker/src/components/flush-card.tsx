@@ -1,4 +1,4 @@
-import { Card } from "@buildkitgg/shadcn-baseui-kit"
+import { Card } from "@buildkitgg/shadcn"
 import { cn } from "@/lib/utils"
 
 // A card whose content runs edge to edge, such as a table or a list: no gap or padding of its own, and a header (a

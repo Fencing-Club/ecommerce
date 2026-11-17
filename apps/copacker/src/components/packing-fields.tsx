@@ -1,4 +1,4 @@
-import { Badge, InputGroup, InputGroupAddon } from "@buildkitgg/shadcn-baseui-kit"
+import { Badge, InputGroup, InputGroupAddon } from "@buildkitgg/shadcn"
 import { CircleAlert, ExternalLink } from "lucide-react"
 import { useFormatter, useTranslations } from "use-intl"
 import { InputGroupNumberInput } from "@/components/number-input"

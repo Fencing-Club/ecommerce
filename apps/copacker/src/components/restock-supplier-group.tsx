@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useSet } from "@mantine/hooks"
 import { Link } from "@tanstack/react-router"
 import { ChevronRight } from "lucide-react"

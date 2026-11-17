@@ -125,13 +125,7 @@
   },
   "ui": {
     "close": "Close",
-    "toggleSidebar": "Toggle sidebar",
-    "sidebar": "Sidebar",
-    "sidebarDescription": "Displays the mobile sidebar.",
-    "clear": "Clear",
-    "showOptions": "Show options",
-    "remove": "Remove {label}",
-    "loading": "Loading"
+    "toggleSidebar": "Toggle sidebar"
   },
   "pages": {
     "error": {

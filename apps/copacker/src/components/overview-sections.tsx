@@ -19,7 +19,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { ChevronRight, Circle, CircleAlert, CircleCheck, Info, Package, TriangleAlert } from "lucide-react"
 import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { Status } from "@/components/common"

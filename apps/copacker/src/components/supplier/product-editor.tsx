@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
   Textarea
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, Pencil, Plus, Trash2, X } from "lucide-react"
 import { useState } from "react"

@@ -10,8 +10,8 @@ const app = fileURLToPath(new URL("..", import.meta.url))
 const withoutStories = new Set([
   "src/components/access.tsx",
   "src/components/app-providers.tsx",
-  "src/components/kit-provider.tsx",
   "src/components/providers.tsx",
+  "src/components/shadcn-provider.tsx",
   "src/components/theme-script.tsx"
 ])
 

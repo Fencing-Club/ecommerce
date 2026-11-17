@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
   Spinner
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useLocalStorage } from "@mantine/hooks"
 import { shippingCopy } from "@repo/copacker-shipments/shipping-copy"
 import {

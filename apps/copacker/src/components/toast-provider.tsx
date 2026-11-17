@@ -1,5 +1,5 @@
 import { Toast } from "@base-ui/react/toast"
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { CircleAlert, CircleCheck } from "lucide-react"
 import type { ReactNode } from "react"
 

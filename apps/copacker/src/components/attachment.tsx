@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { ChevronDown, Download, FileArchive, FileText } from "lucide-react"
 import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"

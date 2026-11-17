@@ -62,8 +62,9 @@ Project-specific requirements below take precedence over shared recommendations 
   runs them.
 - **Package manager:** pnpm `>=12` on Node `>=24` · **Tasks:** Turborepo
 - **Git hooks:** lefthook (pre-commit: `oxlint --fix` + `oxfmt`; pre-push: `check:types`). Don't use `--no-verify`.
-- **Styling:** shadcn/ui components from buildkit's Vega kit (`@buildkitgg/shadcn-baseui-kit`), used as they are, with
-  Tailwind v4; no local copies of shadcn's source. Existing vanilla-extract page styles stay. See
+- **Styling:** shadcn/ui components from `@buildkitgg/shadcn`, which shadcn-sync generates on install (base-vega
+  style), used as they are, with Tailwind v4; no local copies or patches of shadcn's source. Existing vanilla-extract
+  page styles stay. See
   [apps/copacker/docs/styling.md](apps/copacker/docs/styling.md).
 - **Reuse first:** prefer `@mantine/hooks`, `ts-extras`, `ts-pattern`, and `tiny-invariant` over hand-rolled hooks /
   type helpers; narrow with type guards, not `as`.

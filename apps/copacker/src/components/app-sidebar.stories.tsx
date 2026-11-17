@@ -1,4 +1,4 @@
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@buildkitgg/shadcn-baseui-kit"
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@buildkitgg/shadcn"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { shownDialog } from "@/stories/play"
@@ -33,7 +33,7 @@ const meta = preview.meta({
       <SidebarProvider defaultOpen={parameters.sidebarOpen !== false} className="[--header-height:0px]">
         {Story()}
         <SidebarInset className="p-4">
-          <SidebarTrigger />
+          <SidebarTrigger aria-label="Toggle sidebar" />
         </SidebarInset>
       </SidebarProvider>
     )
@@ -166,7 +166,7 @@ export const Collapsed = meta.story({
   }
 })
 
-// On a phone the sidebar is a sheet, in the kit's width, with the page still showing beside it (Create stays on
+// On a phone the sidebar is a sheet, in shadcn's width, with the page still showing beside it (Create stays on
 // desktop; each list page has its own primary action). It closes once a page is chosen.
 export const Phone = meta.story({
   globals: { viewport: { value: "mobile", isRotated: false } },

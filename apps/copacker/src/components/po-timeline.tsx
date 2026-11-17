@@ -1,10 +1,4 @@
-import {
-  Avatar,
-  AvatarFallback,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Avatar, AvatarFallback, Collapsible, CollapsibleContent, CollapsibleTrigger } from "@buildkitgg/shadcn"
 import type { OrderInput } from "@repo/copacker-orders"
 import { money } from "@repo/copacker-orders"
 import { ChevronDown, Lock, Users } from "lucide-react"

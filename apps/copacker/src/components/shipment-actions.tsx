@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@buildkitgg/shadcn-baseui-kit"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@buildkitgg/shadcn"
 import { awdShipmentIdPattern, fbaInboundPlanIdPattern } from "@repo/copacker-shipments/amazon-inbound"
 import { useTranslations } from "use-intl"
 import { z } from "zod"

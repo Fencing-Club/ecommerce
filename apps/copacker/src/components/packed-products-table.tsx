@@ -1,4 +1,4 @@
-import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn-baseui-kit"
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn"
 import { money, type OrderInput } from "@repo/copacker-orders"
 import { CircleCheck } from "lucide-react"
 import type { ReactNode } from "react"

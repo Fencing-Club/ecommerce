@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { Building2, MapPin, Warehouse } from "lucide-react"
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"

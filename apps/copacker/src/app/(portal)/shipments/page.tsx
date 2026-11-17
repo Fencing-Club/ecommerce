@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertTitle, Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Alert, AlertDescription, AlertTitle, Button } from "@buildkitgg/shadcn"
 import { Link } from "@tanstack/react-router"
 import { AlertTriangle } from "lucide-react"
 import { useTranslations } from "use-intl"

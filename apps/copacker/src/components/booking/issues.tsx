@@ -7,7 +7,7 @@ import {
   ItemMedia,
   ItemTitle,
   Spinner
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { RefreshCw, TriangleAlert } from "lucide-react"
 import { useId } from "react"
 import { useTranslations } from "use-intl"

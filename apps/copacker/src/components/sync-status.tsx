@@ -1,4 +1,4 @@
-import { Spinner } from "@buildkitgg/shadcn-baseui-kit"
+import { Spinner } from "@buildkitgg/shadcn"
 import { useLocale, useTranslations } from "use-intl"
 
 // When a sync last finished, as "Synced Sep 27, 12:00 AM", with the full date on hover.

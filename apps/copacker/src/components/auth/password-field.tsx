@@ -1,4 +1,4 @@
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@buildkitgg/shadcn-baseui-kit"
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@buildkitgg/shadcn"
 import { Check, Eye, EyeOff } from "lucide-react"
 import { useId, useState } from "react"
 import { useWatch } from "react-hook-form"

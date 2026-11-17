@@ -10,7 +10,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { Pencil } from "lucide-react"
 import { useId, useState } from "react"
 import { useLocale, useTranslations } from "use-intl"

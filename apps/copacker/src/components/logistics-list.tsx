@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { Download } from "lucide-react"
 import { parseAsStringLiteral, useQueryState } from "nuqs"
 import { useReducer, useState } from "react"

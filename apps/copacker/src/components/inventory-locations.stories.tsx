@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { http, HttpResponse } from "msw/http"
 import { delay } from "msw/utils/delay"
 import { expect, screen, userEvent, waitFor } from "storybook/test"

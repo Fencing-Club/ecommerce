@@ -17,7 +17,7 @@ import {
   ItemGroup,
   ItemTitle,
   Spinner
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { money } from "@repo/copacker-orders"
 import { orderDestination, type Route } from "@repo/copacker-packing-rules"

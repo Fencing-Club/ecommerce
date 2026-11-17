@@ -7,7 +7,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useSyncExternalStore } from "react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"

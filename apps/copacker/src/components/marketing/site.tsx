@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { Link } from "@tanstack/react-router"
 import { ArrowRight, Box } from "lucide-react"
 import { useState } from "react"

@@ -2,17 +2,17 @@ import {
   Button,
   Dialog,
   DialogClose,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   Progress,
   ProgressLabel
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useDidUpdate, useElementSize } from "@mantine/hooks"
 import { useRef } from "react"
 import { useTranslations } from "use-intl"
+import { DialogContent } from "@/components/overlay-content"
 import { cn } from "@/lib/utils"
 
 // Whether the dialog is open, held by its parent (`open`) or by the dialog (`defaultOpen`).

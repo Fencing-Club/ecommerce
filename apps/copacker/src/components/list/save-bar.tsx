@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { useWindowEvent } from "@mantine/hooks"
 import { useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"

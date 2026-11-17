@@ -1,4 +1,4 @@
-import { Input, Label } from "@buildkitgg/shadcn-baseui-kit"
+import { Input, Label } from "@buildkitgg/shadcn"
 import { variantStockTargetSchema } from "@repo/copacker-contract"
 import { useId } from "react"
 import { useController, useWatch } from "react-hook-form"

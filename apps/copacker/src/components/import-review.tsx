@@ -5,14 +5,13 @@ import {
   CardHeader,
   CardTitle,
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
   Field,
   FieldGroup,
   Input
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import { useRouter } from "@tanstack/react-router"
@@ -23,6 +22,7 @@ import { arrayIncludes, objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"
 import { FieldError } from "@/components/field-error"
 import { FormError, SubmitButton } from "@/components/form-feedback"
+import { DialogContent } from "@/components/overlay-content"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import type { ImportProposal } from "@/lib/import-proposal"

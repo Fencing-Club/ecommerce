@@ -1,7 +1,6 @@
 import {
   Button,
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -13,12 +12,13 @@ import {
   InputGroupAddon,
   InputGroupInput,
   InputGroupText
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import type { PriceBasis } from "@repo/copacker-orders"
 import { Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"
 import { moneyText, parseMoney } from "@/components/money-input"
+import { DialogContent } from "@/components/overlay-content"
 import { useMoney } from "@/hooks/use-money"
 import { countOf, type PriceBreak, pricingProblem, type QuantityRules } from "@/lib/catalog-pricing"
 import { currencySymbol } from "@/lib/currency"

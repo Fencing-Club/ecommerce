@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@buildkitgg/shadcn-baseui-kit"
+import { Card, CardContent, CardHeader, CardTitle } from "@buildkitgg/shadcn"
 import { Link } from "@tanstack/react-router"
 import { Globe, Mail, Phone, User } from "lucide-react"
 import { useTranslations } from "use-intl"

@@ -1,4 +1,4 @@
-import { Input } from "@buildkitgg/shadcn-baseui-kit"
+import { Input } from "@buildkitgg/shadcn"
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { SupplierSkuCell } from "./supplier-sku-cell"

@@ -1,4 +1,4 @@
-import { Alert, AlertAction, AlertDescription, AlertTitle, Button, Card, Spinner } from "@buildkitgg/shadcn-baseui-kit"
+import { Alert, AlertAction, AlertDescription, AlertTitle, Button, Card, Spinner } from "@buildkitgg/shadcn"
 import { usMarketplaceId } from "@repo/copacker-marketplaces/amazon-marketplaces"
 import { Link } from "@tanstack/react-router"
 import { CircleAlert, Package } from "lucide-react"

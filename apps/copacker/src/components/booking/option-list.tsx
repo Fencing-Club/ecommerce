@@ -1,4 +1,4 @@
-import { RadioGroup, RadioGroupItem } from "@buildkitgg/shadcn-baseui-kit"
+import { RadioGroup, RadioGroupItem } from "@buildkitgg/shadcn"
 import { useId } from "react"
 import { StatusBadge } from "@/components/common"
 import { cn } from "@/lib/utils"

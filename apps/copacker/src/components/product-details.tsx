@@ -4,12 +4,11 @@ import {
   Separator,
   Sheet,
   SheetClose,
-  SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { PrepCategory } from "@repo/copacker-orders"
 import { prepCategories } from "@repo/copacker-orders"
@@ -22,6 +21,7 @@ import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
 import { FormServerError, SubmitButton } from "@/components/form-feedback"
+import { SheetContent } from "@/components/overlay-content"
 import { ProductThumb } from "@/components/product-thumb"
 import { useEdge } from "@/hooks/use-edge"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
