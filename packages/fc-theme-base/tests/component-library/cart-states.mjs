@@ -3,6 +3,8 @@ import { Drop } from 'liquidjs';
 // Cart fixtures for the cart state lab. Every state renders the production flyout or cart page section;
 // states that only exist in the browser are applied by cart-states.js through the production controllers.
 const image = name => ({ src: `/assets/${name}`, alt: '' });
+// The store's own gift photos, served from tests/component-library/images.
+const labImage = name => ({ src: `/lab/images/${name}`, alt: '' });
 
 // Shopify's cart equals `empty` when it has no items; liquidjs compares a drop by its value.
 class CartDrop extends Drop {
@@ -69,7 +71,7 @@ const socks = { 'Free gift at $600': 'Club socks, One size' };
 // Cart gift metaobject entries, shaped like shop.metaobjects.cart_gift.values.
 const gift = (handle, name, details, value, minimum, picture, available = true) => ({
   system: { handle }, name: { value: name }, details: { value: details }, value: { value }, minimum_total: { value: minimum },
-  available: { value: available }, image: { value: image(picture) },
+  available: { value: available }, image: { value: typeof picture === 'string' ? image(picture) : picture },
 });
 // Gifts with the same minimum total share a tier: two to choose from at $600 and at $900.
 export const cartGifts = (towelAvailable = true) => [
@@ -80,8 +82,8 @@ export const cartGifts = (towelAvailable = true) => [
 ];
 // One gift per tier, as the store runs it: each is added without a choice.
 export const singleGifts = () => [
-  gift('harut-point-protectors', 'Harut point protectors', 'Set of 3', null, 175, 'mega-club-repair.jpg'),
-  gift('fencing-journal', 'The Fencing Journal', '', null, 375, 'mega-sizing-guide.jpg'),
+  gift('harut-point-protectors', 'Harut point protectors', 'Set of 3', null, 175, labImage('harut-point-protectors.jpg')),
+  gift('fencing-journal', 'The Fencing Journal', '', null, 375, labImage('fencing-journal.jpg')),
 ];
 
 // Each state names the cart it starts from. `client` states are finished by cart-states.js in the browser.
