@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { Liquid } from 'liquidjs';
 import { products, articles, sections, blogs, localization, announcements, catalogProducts, catalogFixture, commerce, gallery, policy } from './component-library/fixtures.mjs';
 import { chartFixtures } from './helpers/sizing-liquid.mjs';
+import { cartPageStates, cartSettings, cartState, cartStates, recommendations } from './component-library/cart-states.mjs';
 
 const directory = dirname(fileURLToPath(import.meta.url));
 const themeRoot = resolve(directory, '..');
@@ -46,7 +47,8 @@ engine.registerFilter('t', (key, ...options) => {
   if (value && typeof value === 'object') value = Object.fromEntries(options).count === 1 ? value.one : value.other;
   if (typeof value !== 'string') return key;
   for (const [name, replacement] of options) value = value.replaceAll(`{{ ${name} }}`, String(replacement));
-  return value;
+  // Shopify escapes translations unless the key ends in _html.
+  return key.endsWith('_html') ? value : escapeAttribute(value).replaceAll("'", '&#39;');
 });
 engine.registerFilter('item_count_for_variant', () => 1);
 engine.registerFilter('json', JSON.stringify);
@@ -88,12 +90,16 @@ function menuLink(item) {
   };
 }
 
-export async function renderLibrary() {
+function labSettings() {
   const configuration = JSON.parse(readFileSync(resolve(themeRoot, 'config/settings_data.json'), 'utf8'));
   const schema = JSON.parse(readFileSync(resolve(themeRoot, 'config/settings_schema.json'), 'utf8'));
   const defaults = Object.fromEntries(schema.flatMap(group => (group.settings || []).filter(setting => setting.id && setting.default !== undefined).map(setting => [setting.id, setting.default])));
   const current = typeof configuration.current === 'string' ? configuration.presets[configuration.current] : configuration.current;
-  const settings = { ...defaults, ...current, popular_categories_menu: popularCategoriesMenu, social_instagram_link: '#utilities', social_facebook_link: '#utilities', predictive_search_enabled: true, predictive_search_show_price: true, size_chart_index_page: { url: '#disclosures' }, type_body_font: { family: 'Inter', fallback_families: 'sans-serif', style: 'normal', weight: 400 }, type_header_font: { family: 'Archivo', fallback_families: 'sans-serif', style: 'normal', weight: 400 } };
+  return { ...defaults, ...current, popular_categories_menu: popularCategoriesMenu, social_instagram_link: '#utilities', social_facebook_link: '#utilities', predictive_search_enabled: true, predictive_search_show_price: true, size_chart_index_page: { url: '#disclosures' }, type_body_font: { family: 'Inter', fallback_families: 'sans-serif', style: 'normal', weight: 400 }, type_header_font: { family: 'Archivo', fallback_families: 'sans-serif', style: 'normal', weight: 400 } };
+}
+
+export async function renderLibrary() {
+  const settings = labSettings();
   const section = { id: 'component-lab', settings: { menu: { links: navigation.menus[0].items.map(menuLink) }, menu_color_scheme: 'scheme-1', image_zoom: 'modal' } };
   const values = ['S', 'M', 'L', 'XL'].map((label, index) => {
     const value = new String(label);
@@ -105,6 +111,33 @@ export async function renderLibrary() {
     variant: { id: 'lab-quantity', title: 'Practice glove', quantity_rule: { min: 1, max: 5, increment: 1 } },
     cart: { currency: { symbol: '$' } }, localization, announcements, commerce, gallery, policy, dropdown_section: { id: 'lab-dropdown' }, share_block: { id: 'lab-share', settings: { share_label: 'Share' } }, chart: chartFixtures()[0], catalog: catalogFixture(), routes: { root_url: '/', all_products_collection_url: '#cards', search_url: '/lab/search' },
   }, { globals: { section, settings, linklists, localization, cart: { currency: { symbol: '$' } }, routes: { root_url: '/', all_products_collection_url: '#cards', search_url: '/lab/search' }, pages: {}, collections: {}, blogs, shop: { privacy_policy: { url: '#privacy' } } } });
+}
+
+export function renderCartIndex() {
+  const groups = [];
+  for (const state of cartStates) {
+    let group = groups.find(entry => entry.name === state.group);
+    if (!group) groups.push((group = { name: state.group, id: `cart-${state.group.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, states: [] }));
+    group.states.push(state);
+  }
+  return engine.renderFileSync('cart', { groups, page_states: cartPageStates.map(cartState) });
+}
+
+const cartRoutes = { cart_url: '/lab/cart-store', root_url: '/', all_products_collection_url: '#collection' };
+
+export function renderCartFrame(parameters) {
+  const view = parameters.get('view') === 'page' ? 'page' : 'flyout';
+  const state = cartState(parameters.get('state'));
+  const { liquid, json } = state.cart();
+  const settings = { ...labSettings(), ...cartSettings, cart_type: view === 'page' ? 'page' : 'drawer' };
+  const section = { id: 'lab-cart', blocks: [], settings: {} };
+  const cartJson = JSON.stringify(json).replaceAll('</', `<${String.fromCharCode(92)}/`);
+  return engine.renderFileSync('cart-frame', { view, state, section, cart_json: cartJson }, { globals: { settings, cart: liquid, routes: cartRoutes } });
+}
+
+export function renderCartRecommendations() {
+  const { liquid } = cartState('ready').cart();
+  return `<div id="shopify-section-cart-suggestions">${engine.renderFileSync('cart-suggestions', { recommendations }, { globals: { cart: liquid, routes: cartRoutes } })}</div>`;
 }
 
 export function renderCatalog(parameters) {
@@ -135,6 +168,9 @@ export function createLibraryServer() {
       if (pathname === '/') body = await renderLibrary();
       else if (pathname === '/lab/catalog') body = renderCatalog(url.searchParams);
       else if (pathname === '/lab/search') body = renderSearch(url.searchParams);
+      else if (pathname === '/lab/cart') body = renderCartIndex();
+      else if (pathname === '/lab/cart/frame') body = renderCartFrame(url.searchParams);
+      else if (pathname === '/lab/cart/recommendations') body = renderCartRecommendations();
       else if (pathname === '/lab/country-flags.css') {
         type = 'text/css';
         body = engine.parseAndRenderSync(readFileSync(resolve(themeRoot, 'assets/country-flags.css.liquid'), 'utf8'));

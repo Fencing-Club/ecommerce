@@ -1,19 +1,42 @@
 {% doc %}
-  Shared order note editor with explicit save feedback.
+  Order note. Saving is explicit: the editor stays open until the note is saved or cleared, and an unsaved note blocks checkout.
   @param {string} context - Unique cart view name.
   @param {string} form_id - Owning checkout form.
 {% enddoc %}
-<details class="fc-cart-disclosure" id="CartNoteDetails-{{ context }}">
-  <summary><span class="svg-wrapper">{{ 'icon-chat-bubble.svg' | inline_asset_content }}</span>{{ 'sections.cart.order_note' | t }} {% render 'fc-icon', icon: 'chevron-down', size: 16 %}</summary>
-  <cart-note data-saved="{{ 'sections.cart.note_saved' | t | escape }}" data-error="{{ 'sections.cart.note_error' | t | escape }}" data-dirty="{{ 'sections.cart.note_unsaved' | t | escape }}">
-    {%- assign note_id = 'CartNote-' | append: context -%}
-    {%- assign note_status = 'CartNoteStatus-' | append: context -%}
-    {%- assign note_label = 'sections.cart.order_note' | t -%}
-    {% render 'ui-text-field', id: note_id, name: 'note', label: note_label, hide_label: true, multiline: true, form_id: form_id, rows: 3, maxlength: 5000, described_by: note_status, value: cart.note %}
-    <div class="fc-cart-note-actions">
-      {%- assign save_label = 'sections.cart.save_note' | t -%}
-      {% render 'ui-button', label: save_label, icon: 'check', variant: 'secondary', additional_props: 'data-save-note' %}
-      <p id="CartNoteStatus-{{ context }}" role="status" data-note-status></p>
+{%- liquid
+  assign note_max = 500
+  assign note_length = cart.note | size
+  assign field_id = 'CartNote-' | append: context
+  assign count_id = 'CartNoteCount-' | append: context
+  assign status_id = 'CartNoteStatus-' | append: context
+  assign count_template = 'sections.cart.note_length' | t: count: '[count]', max: note_max
+-%}
+<cart-note
+  class="fc-note"
+  data-saved-note="{{ cart.note | escape }}"
+  data-max="{{ note_max }}"
+  data-count="{{ count_template }}"
+  data-error="{{ 'sections.cart.note_error' | t }}"
+  data-save="{{ 'sections.cart.save_note' | t }}"
+  data-saving="{{ 'sections.cart.saving' | t }}"
+>
+  <div class="fc-note__saved">
+    <div class="fc-editor__head">
+      <p class="fc-editor__label">{% render 'fc-icon', icon: 'message-square', size: 16 %}{{ 'sections.cart.order_note' | t }}</p>
+      <button type="button" class="fc-icon-button fc-icon-button--small" data-edit-note aria-label="{{ 'sections.cart.edit_note' | t }}" aria-controls="CartNoteEditor-{{ context }}" aria-expanded="false">{% render 'fc-icon', icon: 'pencil', size: 16 %}</button>
     </div>
-  </cart-note>
-</details>
+    <p class="fc-note__text" data-note-text>{{ cart.note | escape }}</p>
+  </div>
+  <div class="fc-editor fc-note__editor" id="CartNoteEditor-{{ context }}">
+    <div class="fc-editor__head">
+      <label class="fc-editor__label" for="{{ field_id }}">{% render 'fc-icon', icon: 'message-square', size: 16 %}{{ 'sections.cart.order_note' | t }}</label>
+      <span class="fc-editor__hint">{{ 'sections.cart.optional' | t }}</span>
+    </div>
+    <textarea class="fc-input fc-note__input" id="{{ field_id }}" name="note" form="{{ form_id }}" rows="3" maxlength="{{ note_max }}" aria-describedby="{{ count_id }} {{ status_id }}">{{ cart.note | escape }}</textarea>
+    <div class="fc-note__foot">
+      <span class="fc-note__count" id="{{ count_id }}" data-note-count>{{ 'sections.cart.note_length' | t: count: note_length, max: note_max }}</span>
+      <button type="button" class="fc-button fc-button--primary" data-save-note>{{ 'sections.cart.save_note' | t }}</button>
+    </div>
+    {%- render 'cart-feedback', id: status_id -%}
+  </div>
+</cart-note>

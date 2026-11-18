@@ -2,6 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createLibraryServer, renderLibrary } from './component-library.mjs';
 import { catalogFixture } from './component-library/fixtures.mjs';
+import { cartPageStates, cartStates } from './component-library/cart-states.mjs';
 
 let server;
 let base;
@@ -35,7 +36,7 @@ describe('local component library', () => {
     for (const stylesheet of ['section-contact-form.css', 'section-main-search.css']) expect(html).toContain(`/assets/${stylesheet}`);
     for (const token of ['--inputs-border-width: 1px', '--buttons-radius: 14px', '--font-heading-weight: 400', '--popup-border-width: 1px']) expect(html).toContain(token);
     for (const token of ['cookie-consent', 'ui-product-card--search', 'ui-article-card', 'ui-page-link-card', 'ui-contact-intent-card', 'data-section-example="journal"', 'data-section-example="support"', 'aria-disabled="true"', 'role="img"']) expect(html).toContain(token);
-    for (const token of ['<ui-select', '<price-range', '<localization-form', '<predictive-search', '<header-drawer', '<media-gallery', '<product-modal', '<size-chart', '<policy-page', '<share-button', '<cart-note', '<cart-discount', 'data-tone="sale"', 'data-tone="event"', 'data-tone="vacation"']) expect(html).toContain(token);
+    for (const token of ['<ui-select', '<price-range', '<localization-form', '<predictive-search', '<header-drawer', '<media-gallery', '<product-modal', '<size-chart', '<policy-page', '<share-button', 'href="/lab/cart"', 'data-tone="sale"', 'data-tone="event"', 'data-tone="vacation"']) expect(html).toContain(token);
     expect(html).toContain('LabCountry-country-results');
     expect(html).toContain('LabLanguageList');
     expect(html).toContain('<img id="Thumbnail-lab-media-0"');
@@ -85,6 +86,25 @@ describe('local component library', () => {
     expect(css).not.toContain('--lab-fast');
     expect(css).toContain('body[data-reduced-motion]');
     expect(css).not.toContain('transition: all');
+  });
+  it('serves every cart state as the production flyout and cart page without real cart requests', async () => {
+    const index = await (await fetch(`${base}/lab/cart`)).text();
+    for (const state of cartStates) expect(index).toContain(`/lab/cart/frame?view=flyout&amp;state=${state.id}`);
+    for (const state of cartPageStates) expect(index).toContain(`/lab/cart/frame?view=page&amp;state=${state}`);
+    const flyout = await (await fetch(`${base}/lab/cart/frame?view=flyout&state=ready`)).text();
+    for (const token of ['<cart-drawer', '<cart-drawer-items', '<cart-extras', '<cart-note', '<cart-discount', '<cart-checkout-bar', '/assets/cart-drawer.js', '/lab/cart-shim.js', '/lab/cart-states.js']) expect(flyout).toContain(token);
+    const page = await (await fetch(`${base}/lab/cart/frame?view=page&state=empty`)).text();
+    expect(page).toContain('data-cart-state="empty"');
+    expect(page).toContain('/assets/cart.js');
+    for (const html of [flyout, page]) {
+      expect(html).not.toMatch(/(sections|general|products)\.[a-z_]+\.[a-z_]+/);
+      expect(html).not.toContain('action="/cart');
+    }
+    const suggestions = await (await fetch(`${base}/lab/cart/recommendations`)).text();
+    expect(suggestions).toContain('data-cart-suggestions-content');
+    expect(suggestions).not.toContain('Competition jacket 350N');
+    const shim = await (await fetch(`${base}/lab/cart-shim.js`)).text();
+    expect(shim).toContain("startsWith('/lab/cart-store')");
   });
   it('filters, sorts and paginates deterministic local products', () => {
     const jackets = catalogFixture(new URLSearchParams('type=Jackets&sort_by=price-descending'));

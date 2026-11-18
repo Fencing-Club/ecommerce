@@ -1,18 +1,37 @@
+/*
+ * Cart flyout and cart page controller.
+ *
+ * Both views mark the parts that change with data-cart-region. After every cart request the views fetch their
+ * section again and swap only those regions, so open editors, unsaved notes and scroll position survive.
+ * Every request goes through one queue (CartItems.mutate); checkout waits until the queue is empty.
+ */
+// Shopify's t filter HTML-escapes translations, so window.cartStrings holds entities such as &#39;.
+const cartText = (key, replacements = {}) => {
+  let text = new DOMParser().parseFromString(window.cartStrings?.[key] || '', 'text/html').documentElement.textContent;
+  for (const [name, value] of Object.entries(replacements)) text = text.replace(`[${name}]`, value);
+  return text;
+};
+
 class CartRemoveButton extends HTMLElement {
   constructor() {
     super();
-
-    this.addEventListener('click', (event) => {
+    this.addEventListener('click', event => {
       event.preventDefault();
-      const cartItems = this.closest('cart-items') || this.closest('cart-drawer-items');
-      cartItems.updateQuantity(this.dataset.index, 0, event);
+      const view = this.closest('cart-items, cart-drawer-items');
+      const row = this.closest('.fc-line');
+      view?.updateQuantity(row?.dataset.line, 0, event);
     });
   }
 }
 
-customElements.define('cart-remove-button', CartRemoveButton);
+if (!customElements.get('cart-remove-button')) customElements.define('cart-remove-button', CartRemoveButton);
 
 class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement) {
+  static pendingCartDataPromise = null;
+  static mutationCount = 0;
+  static mutationQueue = Promise.resolve();
+  static pendingQuantities = new Set();
+
   constructor() {
     super();
     this.addEventListener('change', event => {
@@ -26,21 +45,36 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
         CartItems.updateCheckoutState();
       }, ON_CHANGE_DEBOUNCE_TIMER);
     });
+    this.addEventListener('click', event => {
+      const retry = event.target.closest('[data-cart-retry]');
+      const undo = event.target.closest('[data-undo-remove]');
+      const suggestion = event.target.closest('[data-add-suggestion]');
+      if (retry) this.refresh({ visible: true });
+      else if (undo) this.undoRemove(undo.closest('.fc-line--removed'));
+      else if (suggestion) this.addSuggestion(suggestion);
+    });
   }
 
   cartUpdateUnsubscriber = undefined;
 
-  static pendingCartDataPromise = null;
-  static mutationCount = 0;
-  static mutationQueue = Promise.resolve();
-  static pendingQuantities = new Set();
+  /** The element that holds the whole view: the drawer for the flyout, this element for the page. */
+  get viewRoot() {
+    return this.closest('cart-drawer') || this;
+  }
 
-  static updateCheckoutState() {
-    const blocked = CartItems.mutationCount > 0 || CartItems.pendingQuantities.size > 0 || !!document.querySelector('cart-note[data-unsaved]');
-    document.querySelectorAll('button[name="checkout"]').forEach(button => {
-      button.disabled = blocked || !!button.closest('.is-empty');
+  connectedCallback() {
+    super.connectedCallback();
+    this.cartUpdateUnsubscriber = subscribe(PUB_SUB_EVENTS.cartUpdate, event => {
+      if (event.source === 'cart-items') return;
+      return this.onCartUpdate();
     });
-    document.documentElement.toggleAttribute('data-cart-busy', CartItems.mutationCount > 0);
+    this.loadSuggestions();
+  }
+
+  disconnectedCallback() {
+    clearTimeout(this.quantityTimer);
+    CartItems.pendingQuantities.delete(this);
+    this.cartUpdateUnsubscriber?.();
   }
 
   static mutate(operation) {
@@ -54,90 +88,177 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     });
   }
 
-  get lineItemStatusElement() {
-    return this.querySelector('[data-cart-loading]') || this.querySelector('#shopping-cart-line-item-status') || this.querySelector('#CartDrawer-LineItemStatus');
-  }
-
-  connectedCallback() {
-    // The factory base class auto-dispatches cart:view from the
-    // `view-event-payload` attribute (Liquid filter output). The drawer
-    // sets `view-event-trigger="manual"` to skip auto-dispatch.
-    super.connectedCallback();
-
-    this.cartUpdateUnsubscriber = subscribe(PUB_SUB_EVENTS.cartUpdate, (event) => {
-      if (event.source === 'cart-items') return;
-      return this.onCartUpdate();
-    });
-  }
-
-  // Fetches the full cart shape (used to resolve the cart:lines-update event
-  // promise after /cart/add.js, which only returns the added line — not the
-  // post-mutation cart aggregates). De-duplicated across concurrent callers.
+  // Fetches the full cart. De-duplicated across concurrent callers.
   static fetchCartData() {
     if (!CartItems.pendingCartDataPromise) {
-      const pendingCartDataPromise = fetch(`${routes.cart_url}.json`)
-        .then((response) => response.json())
+      const pendingCartDataPromise = fetch(`${routes.cart_url}.js`)
+        .then(response => (response.ok ? response.json() : null))
         .catch(() => null)
         .finally(() => {
           if (CartItems.pendingCartDataPromise === pendingCartDataPromise) CartItems.pendingCartDataPromise = null;
         });
-
       CartItems.pendingCartDataPromise = pendingCartDataPromise;
     }
     return CartItems.pendingCartDataPromise;
   }
 
-  disconnectedCallback() {
-    clearTimeout(this.quantityTimer);
-    CartItems.pendingQuantities.delete(this);
-    if (this.cartUpdateUnsubscriber) {
-      this.cartUpdateUnsubscriber();
+  /**
+   * Works out each checkout button's state. Waiting covers queued requests and the quantity debounce; the
+   * reasons a shopper can fix themselves come next, so the message under the button says what to do.
+   */
+  static updateCheckoutState() {
+    const waiting = CartItems.mutationCount > 0 || CartItems.pendingQuantities.size > 0;
+    const unsavedNote = [...document.querySelectorAll('cart-note')].some(note => note.isDirty);
+    document.querySelectorAll('[data-checkout-state]').forEach(holder => {
+      const view = holder.closest('cart-drawer, cart-items');
+      if (!view) return;
+      const unavailable = view.querySelectorAll('.fc-line[data-unavailable]').length;
+      let state = 'ready';
+      let reason = '';
+      let tone = 'error';
+      if (holder.hasAttribute('data-opening')) state = 'opening';
+      else if (waiting) state = 'waiting';
+      else if (unsavedNote) {
+        state = 'blocked';
+        reason = cartText('blockedNote');
+        tone = 'info';
+      } else if (unavailable > 0) {
+        state = 'blocked';
+        reason = cartText(unavailable === 1 ? 'blockedUnavailableOne' : 'blockedUnavailableOther', { count: unavailable });
+      } else if (holder.hasAttribute('data-failed')) {
+        state = 'failed';
+        reason = cartText('checkoutFailed');
+      }
+      holder.dataset.checkoutState = state;
+      holder.dataset.reasonTone = tone;
+      const button = holder.querySelector('button[name="checkout"]');
+      if (button) button.disabled = ['waiting', 'opening', 'blocked'].includes(state) || view.dataset.cartState === 'empty';
+      const text = holder.querySelector('[data-checkout-reason]');
+      if (text && text.textContent !== reason) text.textContent = reason;
+    });
+    document.documentElement.toggleAttribute('data-cart-busy', CartItems.mutationCount > 0);
+  }
+
+  /** Copies the state the shopper is in the middle of into freshly rendered markup. */
+  static preserveControls(target, source) {
+    target.querySelectorAll('details[open][id]').forEach(details => {
+      source.querySelector(`#${CSS.escape(details.id)}`)?.setAttribute('open', '');
+    });
+  }
+
+  /** Swaps every region in the view for the matching region in the rendered section. */
+  static applyRegions(root, html) {
+    const sourceRoot = html.querySelector('[data-cart-state]');
+    root.querySelectorAll('[data-cart-region]').forEach(region => {
+      const source = html.querySelector(`[data-cart-region="${region.dataset.cartRegion}"]`);
+      if (!source) return;
+      CartItems.preserveControls(region, source);
+      region.replaceChildren(...source.childNodes);
+    });
+    if (sourceRoot) root.dataset.cartState = sourceRoot.dataset.cartState;
+    const slot = root.querySelector('[data-cart-suggestions]');
+    const sourceSlot = html.querySelector('[data-cart-suggestions]');
+    if (slot && sourceSlot) slot.dataset.productId = sourceSlot.dataset.productId;
+    root.dispatchEvent(new CustomEvent('cart:regions-updated', { bubbles: true }));
+  }
+
+  getSectionsToRender() {
+    return [
+      { id: 'main-cart', section: this.dataset.id, selector: '[data-cart-state]' },
+      { id: 'cart-icon-bubble', section: 'cart-icon-bubble', selector: '.shopify-section' },
+      { id: 'cart-live-region-text', section: 'cart-live-region-text', selector: '.shopify-section' },
+    ];
+  }
+
+  /** Puts rendered sections into the page. sections maps a section id to its HTML. */
+  renderSections(sections, entries = this.getSectionsToRender()) {
+    entries.forEach(entry => {
+      const markup = sections?.[entry.section];
+      if (!markup) return;
+      const html = new DOMParser().parseFromString(markup, 'text/html');
+      if (entry.id === 'main-cart' || entry.id === 'CartDrawer') {
+        CartItems.applyRegions(this.viewRoot, html);
+        return;
+      }
+      const target = document.getElementById(entry.id);
+      const source = html.querySelector(entry.selector);
+      if (!target || !source) return;
+      (target.querySelector(entry.selector) || target).innerHTML = source.innerHTML;
+    });
+    delete this.viewRoot.dataset.loadState;
+    CartItems.updateCheckoutState();
+    this.loadSuggestions();
+    customElements.get('cart-discount')?.syncShippingCodes?.();
+  }
+
+  async fetchSections() {
+    const entries = this.getSectionsToRender();
+    const response = await fetch(`${routes.cart_url}?sections=${entries.map(entry => entry.section).join(',')}`);
+    if (!response.ok) throw new Error(`Cart sections returned ${response.status}`);
+    const sections = await response.json();
+    if (!entries.every(entry => sections[entry.section])) throw new Error('Cart sections missing');
+    return { sections, entries };
+  }
+
+  /** Reloads the view. A visible refresh shows the loading skeleton; any failure shows the load failed message. */
+  async refresh({ visible = false } = {}) {
+    const root = this.viewRoot;
+    if (visible) root.dataset.loadState = 'loading';
+    delete root.dataset.stale;
+    try {
+      const { sections, entries } = await this.fetchSections();
+      this.renderSections(sections, entries);
+    } catch (error) {
+      console.error(error);
+      root.dataset.loadState = 'failed';
+      if (visible) root.querySelector('[data-cart-retry]')?.focus({ preventScroll: true });
     }
   }
 
-  resetQuantityInput(id) {
-    const input = this.querySelector(`#Quantity-${id}`) || this.querySelector(`#Drawer-quantity-${id}`);
-    input.value = input.getAttribute('value');
-    this.isEnterPressed = false;
+  onCartUpdate() {
+    return this.refresh();
   }
 
-  setValidity(event, index, message) {
+  lineByKey(key) {
+    return [...this.querySelectorAll('.fc-line[data-line-key]')].find(row => row.dataset.lineKey === key);
+  }
+
+  lineByIndex(line) {
+    return this.querySelector(`.fc-line[data-line="${line}"]`);
+  }
+
+  resetQuantityInput(line) {
+    const input = this.lineByIndex(line)?.querySelector('input[data-index]');
+    if (!input) return;
+    input.value = input.getAttribute('value');
+    input.closest('quantity-input')?.validateQtyRules?.();
+  }
+
+  setValidity(event, line, message) {
     event.target.setCustomValidity(message);
     event.target.reportValidity();
-    this.resetQuantityInput(index);
+    this.resetQuantityInput(line);
     event.target.select();
   }
 
   validateQuantity(event) {
-    const inputValue = parseInt(event.target.value);
-    const index = event.target.dataset.index;
-    let message = '';
-
-    if (!Number.isFinite(inputValue)) {
-      this.resetQuantityInput(index);
+    const input = event.target;
+    const value = parseInt(input.value);
+    const line = input.dataset.index;
+    if (!Number.isFinite(value)) {
+      this.resetQuantityInput(line);
       return;
     }
-    if (inputValue < event.target.dataset.min) {
-      message = window.quickOrderListStrings.min_error.replace('[min]', event.target.dataset.min);
-    } else if (inputValue > parseInt(event.target.max)) {
-      message = window.quickOrderListStrings.max_error.replace('[max]', event.target.max);
-    } else if (inputValue % parseInt(event.target.step) !== 0) {
-      message = window.quickOrderListStrings.step_error.replace('[step]', event.target.step);
-    }
-
+    let message = '';
+    if (value > 0 && value < Number(input.dataset.min)) message = window.quickOrderListStrings.min_error.replace('[min]', input.dataset.min);
+    else if (input.max && value > parseInt(input.max)) message = window.quickOrderListStrings.max_error.replace('[max]', input.max);
+    else if (value % parseInt(input.step) !== 0) message = window.quickOrderListStrings.step_error.replace('[step]', input.step);
     if (message) {
-      this.setValidity(event, index, message);
-    } else {
-      event.target.setCustomValidity('');
-      event.target.reportValidity();
-      this.updateQuantity(
-        index,
-        inputValue,
-        event,
-        document.activeElement.getAttribute('name'),
-        event.target.dataset.quantityVariantId
-      );
+      this.setValidity(event, line, message);
+      return;
     }
+    input.setCustomValidity('');
+    this.updateQuantity(line, value, event, document.activeElement?.getAttribute('name'));
   }
 
   onChange(event) {
@@ -145,248 +266,213 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     this.validateQuantity(event);
   }
 
-  onCartUpdate() {
-    if (this.tagName === 'CART-DRAWER-ITEMS') {
-      return fetch(`${routes.cart_url}?section_id=cart-drawer`)
-        .then((response) => response.text())
-        .then((responseText) => {
-          const html = new DOMParser().parseFromString(responseText, 'text/html');
-          const drawer = document.querySelector('cart-drawer');
-          const target = drawer.querySelector('.drawer__inner');
-          const source = html.querySelector('.drawer__inner');
-          const focusedId = target.contains(document.activeElement) ? document.activeElement.id : null;
-          CartItems.preserveControls(target, source);
-          target.innerHTML = source.innerHTML;
-          drawer.classList.toggle('is-empty', html.querySelector('cart-drawer').classList.contains('is-empty'));
-          if (drawer.classList.contains('active')) {
-            const focus = focusedId && target.querySelector(`#${CSS.escape(focusedId)}`);
-            trapFocus(target, focus || target.querySelector('.drawer__close'));
-          }
-          CartItems.updateCheckoutState();
-        })
-        .catch((e) => {
-          console.error(e);
-        });
-    } else {
-      const sections = this.getSectionsToRender();
-      return fetch(`${routes.cart_url}?sections=${sections.map(section => section.section).join(',')}`)
-        .then((response) => response.json())
-        .then((html) => {
-          sections.forEach(section => {
-            const target = document.getElementById(section.id)?.querySelector(section.selector);
-            if (target && html[section.section]) {
-              const source = new DOMParser().parseFromString(html[section.section], 'text/html').querySelector(section.selector);
-              CartItems.preserveControls(target, source);
-              target.innerHTML = source.innerHTML;
-            }
-          });
-          const cartHtml = new DOMParser().parseFromString(html[sections[0].section], 'text/html');
-          const count = cartHtml.querySelector('[data-cart-count]');
-          if (count) this.querySelector('[data-cart-count]').textContent = count.textContent;
-          const empty = cartHtml.querySelector('cart-items').classList.contains('is-empty');
-          this.classList.toggle('is-empty', empty);
-          document.getElementById('main-cart-footer')?.classList.toggle('is-empty', empty);
-          CartItems.updateCheckoutState();
-        })
-        .catch((e) => {
-          console.error(e);
-        });
+  setLineFeedback(row, message, tone = 'error') {
+    const feedback = row?.querySelector('.fc-feedback');
+    if (!feedback) return;
+    feedback.dataset.tone = tone;
+    feedback.querySelector('.fc-feedback__text').textContent = message;
+    feedback.hidden = !message;
+  }
+
+  /** Changes one line's quantity; 0 removes it. Only the changed row shows progress or errors. */
+  updateQuantity(line, quantity, event, focusName) {
+    const row = this.lineByIndex(line);
+    if (!row) return;
+    const input = row.querySelector('input[data-index]');
+    const key = row.dataset.lineKey;
+    const variantId = row.dataset.variantId;
+    const removing = quantity === 0;
+    const snapshot = {
+      variantId,
+      quantity: Number(row.dataset.quantity),
+      title: row.dataset.title,
+      properties: JSON.parse(row.dataset.properties || '{}'),
+      sellingPlan: row.dataset.sellingPlan || null,
+    };
+    const eventTarget = event?.currentTarget instanceof CartRemoveButton ? 'clear' : 'change';
+    const marker = window.CartPerformance?.createStartingMarker(`${eventTarget}:user-action`);
+    const deferred = this.createCartLinesUpdateEvent(removing ? 'remove' : 'update', variantId, quantity, key);
+    const entries = this.getSectionsToRender();
+    const body = JSON.stringify({ id: key, quantity, sections: entries.map(entry => entry.section), sections_url: window.location.pathname });
+
+    this.setLineFeedback(row, '');
+    row.dataset.state = 'updating';
+    this.clearJustAdded();
+
+    return CartItems.mutate(async () => {
+      let state;
+      let status = 0;
+      try {
+        const response = await fetch(routes.cart_change_url, { ...fetchConfig(), body });
+        status = response.status;
+        state = await response.json();
+        if (!response.ok || state.errors || state.status) throw new Error(state.description || state.errors || state.message || 'Cart change failed');
+      } catch (error) {
+        const current = this.lineByKey(key) || row;
+        delete current.dataset.state;
+        this.resetQuantityInput(current.dataset.line);
+        const stock = Number(input?.dataset.stock);
+        if (removing) this.setLineFeedback(current, cartText('removeError'));
+        else if (status === 422 && Number.isFinite(stock) && quantity > stock) this.setLineFeedback(current, cartText('stockLimit', { count: stock }), 'info');
+        else this.setLineFeedback(current, cartText('quantityChangeError'));
+        this.dispatchCartErrorEvent(error.message, status === 422 ? 'INVALID' : 'SERVICE_UNAVAILABLE');
+        deferred?.reject(error);
+        return;
+      }
+
+      this.resolveCartLinesUpdate(deferred, state);
+      const lines = [...this.querySelectorAll('[data-cart-lines] > .fc-line')];
+      const position = lines.indexOf(row);
+      this.renderSections(state.sections, entries);
+      this.announce();
+
+      if (removing) {
+        this.showRemoved(position, snapshot);
+      } else {
+        const updated = state.items?.find(item => item.key === key);
+        const current = this.lineByKey(key);
+        if (updated && current && updated.quantity < quantity) this.setLineFeedback(current, cartText('stockLimit', { count: updated.quantity }), 'info');
+        const control = focusName && current?.querySelector(`[name="${focusName}"]`);
+        if (control) this.focusInView(control);
+      }
+
+      publish(PUB_SUB_EVENTS.cartUpdate, { source: 'cart-items', cartData: state, variantId });
+      if (marker) window.CartPerformance.measureFromMarker(`${eventTarget}:user-action`, marker);
+      await Promise.all([...document.querySelectorAll('cart-items, cart-drawer-items')].filter(view => view !== this).map(view => view.onCartUpdate()));
+    });
+  }
+
+  focusInView(element) {
+    const drawer = this.closest('cart-drawer');
+    if (drawer?.classList.contains('active') && typeof trapFocus === 'function') trapFocus(drawer.querySelector('.fc-flyout'), element);
+    else element.focus({ preventScroll: true });
+  }
+
+  /** Leaves a row where the removed product was, with Undo. It stays until the next cart change. */
+  showRemoved(position, snapshot) {
+    const list = this.querySelector('[data-cart-lines]');
+    const template = this.querySelector('template[data-removed-template]');
+    if (!list || !template || this.viewRoot.dataset.cartState === 'empty') return;
+    const row = template.content.firstElementChild.cloneNode(true);
+    row.snapshot = snapshot;
+    row.querySelector('[data-removed-text]').textContent = cartText('removed', { title: snapshot.title });
+    const feedback = row.querySelector('.fc-feedback');
+    feedback.id = `${feedback.id}-${Date.now()}`;
+    list.insertBefore(row, list.children[position] || null);
+    this.focusInView(row.querySelector('[data-undo-remove]'));
+  }
+
+  undoRemove(row) {
+    const snapshot = row?.snapshot;
+    if (!snapshot || row.hasAttribute('data-busy')) return;
+    const button = row.querySelector('[data-undo-remove]');
+    row.setAttribute('data-busy', '');
+    button.disabled = true;
+    this.setLineFeedback(row, '');
+    const item = { id: Number(snapshot.variantId), quantity: snapshot.quantity };
+    // Liquid serializes empty line properties as [], which /cart/add rejects.
+    const { properties } = snapshot;
+    if (properties && !Array.isArray(properties) && Object.keys(properties).length) item.properties = properties;
+    if (snapshot.sellingPlan) item.selling_plan = Number(snapshot.sellingPlan);
+    return this.addItems([item], () => {
+      row.removeAttribute('data-busy');
+      button.disabled = false;
+      this.setLineFeedback(row, cartText('undoError', { title: snapshot.title }));
+    });
+  }
+
+  addSuggestion(button) {
+    if (button.disabled) return;
+    button.disabled = true;
+    return this.addItems([{ id: Number(button.dataset.addSuggestion), quantity: 1 }], () => {
+      button.disabled = false;
+    }, { highlight: true });
+  }
+
+  /** Adds items through the queue and renders the result. onError runs when the request fails. */
+  addItems(items, onError, { highlight = false } = {}) {
+    const entries = this.getSectionsToRender();
+    this.clearJustAdded();
+    return CartItems.mutate(async () => {
+      let state;
+      try {
+        const response = await fetch(routes.cart_add_url, { ...fetchConfig(), body: JSON.stringify({ items, sections: entries.map(entry => entry.section), sections_url: window.location.pathname }) });
+        state = await response.json();
+        if (!response.ok || state.status) throw new Error(state.description || state.message || 'Cart add failed');
+      } catch (error) {
+        onError?.(error);
+        this.dispatchCartErrorEvent(error.message, 'SERVICE_UNAVAILABLE');
+        return;
+      }
+      this.renderSections(state.sections, entries);
+      this.announce();
+      const added = state.items?.[0];
+      const row = added && this.lineByKey(added.key);
+      if (row) {
+        if (highlight) this.markJustAdded(added);
+        this.focusInView(row.querySelector('.fc-line__name'));
+      }
+      publish(PUB_SUB_EVENTS.cartUpdate, { source: 'cart-items', cartData: state });
+      await Promise.all([...document.querySelectorAll('cart-items, cart-drawer-items')].filter(view => view !== this).map(view => view.onCartUpdate()));
+    });
+  }
+
+  markJustAdded(item) {
+    const row = this.lineByKey(item.key);
+    if (row) row.dataset.justAdded = '';
+    const toast = this.viewRoot.querySelector('[data-cart-toast]');
+    if (toast && item.product_title) {
+      toast.querySelector('[data-cart-toast-text]').textContent = cartText('itemAdded', { title: item.product_title });
+      toast.hidden = false;
     }
   }
 
-  static preserveControls(target, source) {
-    target.querySelectorAll('details[open][id]').forEach(details => {
-      source.querySelector(`#${CSS.escape(details.id)}`)?.setAttribute('open', '');
-    });
-    target.querySelectorAll('cart-note[data-unsaved]').forEach(note => {
-      const replacement = source.querySelector(`textarea[id="${note.querySelector('textarea').id}"]`);
-      if (replacement) {
-        replacement.value = note.querySelector('textarea').value;
-        replacement.textContent = replacement.value;
-        replacement.closest('cart-note').setAttribute('data-unsaved', '');
-      }
-    });
-    target.querySelectorAll('cart-discount').forEach(control => {
-      const input = control.querySelector('input');
-      const replacement = source.querySelector(`input[id="${input.id}"]`);
-      if (replacement) {
-        replacement.value = input.value;
-        replacement.setAttribute('value', input.value);
-      }
-    });
+  clearJustAdded() {
+    this.viewRoot.querySelectorAll('.fc-line[data-just-added]').forEach(row => row.removeAttribute('data-just-added'));
+    const toast = this.viewRoot.querySelector('[data-cart-toast]');
+    if (toast) toast.hidden = true;
   }
 
-  getSectionsToRender() {
-    return [
-      {
-        id: 'main-cart-items',
-        section: document.getElementById('main-cart-items').dataset.id,
-        selector: '.js-contents',
-      },
-      {
-        id: 'cart-icon-bubble',
-        section: 'cart-icon-bubble',
-        selector: '.shopify-section',
-      },
-      {
-        id: 'cart-live-region-text',
-        section: 'cart-live-region-text',
-        selector: '.shopify-section',
-      },
-      {
-        id: 'main-cart-footer',
-        section: document.getElementById('main-cart-footer').dataset.id,
-        selector: '.js-contents',
-      },
-    ];
+  announce() {
+    const status = this.querySelector('#cart-live-region-text, #CartDrawer-LiveRegionText');
+    const source = document.getElementById('cart-live-region-text');
+    if (status && source && status !== source) status.textContent = source.textContent;
   }
 
-  updateQuantity(line, quantity, event, name, variantId) {
-    if (CartItems.mutationCount > 0) {
-      this.resetQuantityInput(line);
+  /** Loads complementary products for the newest line. Shows nothing when there are none or the request fails. */
+  loadSuggestions() {
+    const slot = this.viewRoot.querySelector('[data-cart-suggestions]');
+    const productId = slot?.dataset.productId;
+    if (!slot || !routes.product_recommendations_url) return;
+    if (!productId || this.viewRoot.dataset.cartState === 'empty') {
+      slot.replaceChildren();
       return;
     }
-    const eventTarget = event.currentTarget instanceof CartRemoveButton ? 'clear' : 'change';
-    const cartPerformanceUpdateMarker = CartPerformance.createStartingMarker(`${eventTarget}:user-action`);
-
-      const errorRegion = this.closest('cart-drawer')?.querySelector('#CartDrawer-CartErrors') || document.getElementById('cart-errors');
-      if (errorRegion) errorRegion.textContent = '';
-    this.enableLoading(line);
-
-    const action = quantity === 0 ? 'remove' : 'update';
-    const quantityInput = this.querySelector(`#Quantity-${line}`) || this.querySelector(`#Drawer-quantity-${line}`);
-    const lineVariantId = variantId || quantityInput?.dataset.quantityVariantId;
-    const lineKey = quantityInput?.dataset.quantityLineKey;
-    const linesUpdateDeferred = this.createCartLinesUpdateEvent(action, lineVariantId, quantity, lineKey);
-
-    // Cache sections before the fetch so we read dataset.id while elements still exist in the DOM
-    const sectionsToRender = this.getSectionsToRender();
-
-    const body = JSON.stringify({
-      id: lineKey,
-      quantity,
-      sections: sectionsToRender.map((section) => section.section),
-      sections_url: window.location.pathname,
-    });
-
-    return CartItems.mutate(() => fetch(`${routes.cart_change_url}`, { ...fetchConfig(), ...{ body } })
-      .then((response) => {
-        return response.text();
+    const request = (this.suggestionRequest = Symbol('suggestions'));
+    fetch(`${routes.product_recommendations_url}?product_id=${encodeURIComponent(productId)}&limit=6&intent=complementary&section_id=cart-suggestions`)
+      .then(response => (response.ok ? response.text() : ''))
+      .then(markup => {
+        if (request !== this.suggestionRequest) return;
+        const content = new DOMParser().parseFromString(markup, 'text/html').querySelector('[data-cart-suggestions-content]');
+        if (content?.children.length) slot.replaceChildren(content);
+        else slot.replaceChildren();
       })
-      .then((state) => {
-        const parsedState = JSON.parse(state);
-
-        if (parsedState.errors) {
-          this.dispatchCartErrorEvent(parsedState.errors, 'INVALID');
-          linesUpdateDeferred?.reject(new Error(parsedState.errors));
-        } else {
-          this.resolveCartLinesUpdate(linesUpdateDeferred, parsedState);
-        }
-
-        CartPerformance.measure(`${eventTarget}:paint-updated-sections`, () => {
-          const quantityElement =
-            this.querySelector(`#Quantity-${line}`) || this.querySelector(`#Drawer-quantity-${line}`);
-          const items = this.querySelectorAll('.cart-item');
-
-          if (parsedState.errors) {
-            quantityElement.value = quantityElement.getAttribute('value');
-            this.updateLiveRegions(line, parsedState.errors);
-            return;
-          }
-
-          this.classList.toggle('is-empty', parsedState.item_count === 0);
-          const cartDrawerWrapper = this.closest('cart-drawer');
-          const cartFooter = document.getElementById('main-cart-footer');
-
-          if (cartFooter) cartFooter.classList.toggle('is-empty', parsedState.item_count === 0);
-          if (cartDrawerWrapper) cartDrawerWrapper.classList.toggle('is-empty', parsedState.item_count === 0);
-
-          sectionsToRender.forEach((section) => {
-            const elementToReplace =
-              document.getElementById(section.id).querySelector(section.selector) ||
-              document.getElementById(section.id);
-            const source = new DOMParser().parseFromString(parsedState.sections[section.section], 'text/html').querySelector(section.selector);
-            CartItems.preserveControls(elementToReplace, source);
-            elementToReplace.innerHTML = source.innerHTML;
-          });
-          const updatedValue = parsedState.items[line - 1] ? parsedState.items[line - 1].quantity : undefined;
-          let message = '';
-          if (items.length === parsedState.items.length && updatedValue !== parseInt(quantityElement.value)) {
-            if (typeof updatedValue === 'undefined') {
-              message = window.cartStrings.error;
-            } else {
-              message = window.cartStrings.quantityError.replace('[quantity]', updatedValue);
-            }
-          }
-          this.updateLiveRegions(line, message);
-
-          const pageSection = sectionsToRender.find(section => section.id === 'main-cart-items');
-          if (pageSection) {
-            const count = new DOMParser().parseFromString(parsedState.sections[pageSection.section], 'text/html').querySelector('[data-cart-count]');
-            if (count) this.querySelector('[data-cart-count]').textContent = count.textContent;
-          }
-
-          const lineItem =
-            this.querySelector(`#CartItem-${line}`) || document.querySelector(`cart-drawer-items #CartDrawer-Item-${line}`);
-          if (lineItem && lineItem.querySelector(`[name="${name}"]`)) {
-            cartDrawerWrapper
-              ? trapFocus(cartDrawerWrapper, lineItem.querySelector(`[name="${name}"]`))
-              : lineItem.querySelector(`[name="${name}"]`).focus();
-          } else if (parsedState.item_count === 0 && cartDrawerWrapper?.querySelector('.drawer__inner-empty')) {
-            trapFocus(cartDrawerWrapper.querySelector('.drawer__inner-empty'), cartDrawerWrapper.querySelector('a'));
-          } else if (cartDrawerWrapper?.querySelector('.cart-item')) {
-            trapFocus(cartDrawerWrapper, cartDrawerWrapper.querySelector('.cart-item__name'));
-          } else if (!cartDrawerWrapper) {
-            const focusTarget = this.querySelector('.cart-item__name') || this.querySelector('.cart__warnings a');
-            focusTarget?.focus();
-          }
-        });
-
-        publish(PUB_SUB_EVENTS.cartUpdate, { source: 'cart-items', cartData: parsedState, variantId: variantId });
-        const viewName = this.tagName;
-        return Promise.all([...document.querySelectorAll('cart-items, cart-drawer-items')]
-          .filter(view => view.tagName !== viewName)
-          .map(view => view.onCartUpdate()));
-      })
-      .catch((e) => {
-        const input = this.querySelector(`#Quantity-${line}`) || this.querySelector(`#Drawer-quantity-${line}`);
-        if (input) input.value = input.getAttribute('value');
-        this.querySelectorAll('.loading__spinner').forEach((overlay) => overlay.classList.add('hidden'));
-        const errors = this.closest('cart-drawer')?.querySelector('#CartDrawer-CartErrors') || document.getElementById('cart-errors');
-        if (errors) errors.textContent = window.cartStrings.error;
-        this.dispatchCartErrorEvent(window.cartStrings.error, 'SERVICE_UNAVAILABLE');
-        linesUpdateDeferred?.reject(e);
-      })
-      .finally(() => {
-        this.disableLoading(line);
-        CartPerformance.measureFromMarker(`${eventTarget}:user-action`, cartPerformanceUpdateMarker);
-      }));
+      .catch(() => {
+        if (request === this.suggestionRequest) slot.replaceChildren();
+      });
   }
 
   createCartLinesUpdateEvent(action, variantId, quantity, lineKey) {
     const { CartLinesUpdateEvent } = window.StandardEvents || {};
-    if (!CartLinesUpdateEvent || !variantId) return null;
-    // No AJAX line key on the row — likely cached HTML rendered before this
-    // attribute landed. Skip dispatch rather than emit an event with id: ''.
-    if (!lineKey) return null;
-
+    if (!CartLinesUpdateEvent || !variantId || !lineKey) return null;
     const deferred = CartLinesUpdateEvent.createPromise();
-    this.dispatchEvent(
-      new CartLinesUpdateEvent({
-        action,
-        context: 'cart',
-        lines: [{ id: lineKey, quantity }],
-        promise: deferred.promise,
-      })
-    );
+    this.dispatchEvent(new CartLinesUpdateEvent({ action, context: 'cart', lines: [{ id: lineKey, quantity }], promise: deferred.promise }));
     return deferred;
   }
 
   resolveCartLinesUpdate(deferred, parsedState) {
-    if (!deferred) return;
     const { CartLinesUpdateEvent } = window.StandardEvents || {};
-    if (!CartLinesUpdateEvent) return;
-
+    if (!deferred || !CartLinesUpdateEvent) return;
     deferred.resolve({ cart: CartLinesUpdateEvent.createCartFromAjaxResponse(parsedState) });
   }
 
@@ -395,129 +481,57 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     if (!CartErrorEvent) return;
     this.dispatchEvent(new CartErrorEvent({ error: message, code }));
   }
-
-  updateLiveRegions(line, message) {
-    const lineItemError =
-      this.querySelector(`#Line-item-error-${line}`) || this.querySelector(`#CartDrawer-LineItemError-${line}`);
-    if (lineItemError) lineItemError.querySelector('.cart-item__error-text').textContent = message;
-
-    this.lineItemStatusElement?.setAttribute('aria-hidden', true);
-
-    const cartStatus =
-      this.querySelector('#cart-live-region-text') || this.querySelector('#CartDrawer-LiveRegionText');
-    cartStatus?.setAttribute('aria-hidden', false);
-
-    setTimeout(() => {
-      cartStatus?.setAttribute('aria-hidden', true);
-    }, 1000);
-  }
-
-  getSectionInnerHTML(html, selector) {
-    return new DOMParser().parseFromString(html, 'text/html').querySelector(selector).innerHTML;
-  }
-
-  enableLoading(line) {
-    const mainCartItems = this.querySelector('#main-cart-items') || this.querySelector('#CartDrawer-CartItems');
-    mainCartItems.classList.add('cart__items--disabled');
-
-    const cartItemElements = this.querySelectorAll(`#CartItem-${line} .loading__spinner`);
-    const cartDrawerItemElements = this.querySelectorAll(`#CartDrawer-Item-${line} .loading__spinner`);
-
-    [...cartItemElements, ...cartDrawerItemElements].forEach((overlay) => overlay.classList.remove('hidden'));
-
-    document.activeElement.blur();
-    this.lineItemStatusElement?.setAttribute('aria-hidden', false);
-  }
-
-  disableLoading(line) {
-    const mainCartItems = this.querySelector('#main-cart-items') || this.querySelector('#CartDrawer-CartItems');
-    mainCartItems?.classList.remove('cart__items--disabled');
-
-    const cartItemElements = this.querySelectorAll(`#CartItem-${line} .loading__spinner`);
-    const cartDrawerItemElements = this.querySelectorAll(`#CartDrawer-Item-${line} .loading__spinner`);
-
-    cartItemElements.forEach((overlay) => overlay.classList.add('hidden'));
-    cartDrawerItemElements.forEach((overlay) => overlay.classList.add('hidden'));
-  }
 }
 
-customElements.define('cart-items', CartItems);
+if (!customElements.get('cart-items')) customElements.define('cart-items', CartItems);
 
-if (!customElements.get('cart-note')) {
-  customElements.define(
-    'cart-note',
-    class CartNote extends HTMLElement {
-      constructor() {
-        super();
+if (!window.cartCheckoutGuard) {
+  window.cartCheckoutGuard = true;
+  const pendingKey = 'fc-cart-checkout-pending';
 
-        this.addEventListener('input', () => {
-          this.setAttribute('data-unsaved', '');
-          this.status(this.dataset.dirty);
-          CartItems.updateCheckoutState();
-        });
-        this.addEventListener('click', event => {
-          if (event.target.closest('[data-save-note]')) this.save();
-        });
-      }
-
-      status(message, error = false) {
-        const status = this.querySelector('[data-note-status]');
-        if (!status) return;
-        status.textContent = message;
-        status.toggleAttribute('data-error', error);
-      }
-
-      async save() {
-        if (this.saving) return;
-        this.saving = true;
-        const textarea = this.querySelector('textarea');
-        const newNote = textarea.value;
-        const button = this.querySelector('[data-save-note]');
-        button.disabled = true;
-        const deferred = this.dispatchNoteUpdateEvent(newNote);
-        try {
-          await CartItems.mutate(async () => {
-            const response = await fetch(routes.cart_update_url, { ...fetchConfig(), body: JSON.stringify({ note: newNote }) });
-            const cart = await response.json();
-            if (!response.ok || cart.errors || (cart.note || '') !== newNote) throw new Error(this.dataset.error);
-            document.querySelectorAll('cart-note').forEach(note => {
-              const input = note.querySelector('textarea');
-              if (note !== this && note.hasAttribute('data-unsaved')) return;
-              if (note === this && input.value !== newNote) return;
-              input.value = newNote;
-              note.removeAttribute('data-unsaved');
-              note.status(note.dataset.saved);
-            });
-            const { CartNoteUpdateEvent } = window.StandardEvents || {};
-            deferred?.resolve({ cart: CartNoteUpdateEvent.createCartFromAjaxResponse(cart) });
-          });
-        } catch (error) {
-          this.status(this.dataset.error, true);
-          deferred?.reject(error);
-        } finally {
-          this.saving = false;
-          button.disabled = false;
-          CartItems.updateCheckoutState();
-        }
-      }
-
-      dispatchNoteUpdateEvent(newNote) {
-        const { CartNoteUpdateEvent } = window.StandardEvents || {};
-        if (!CartNoteUpdateEvent) return null;
-
-        const context = this.closest('dialog') || this.closest('cart-drawer') ? 'dialog' : 'cart';
-        const deferred = CartNoteUpdateEvent.createPromise();
-
-        this.dispatchEvent(
-          new CartNoteUpdateEvent({
-            context,
-            note: newNote,
-            promise: deferred.promise,
-          })
-        );
-
-        return deferred;
-      }
+  document.addEventListener('submit', event => {
+    if (!['cart', 'CartDrawer-Form'].includes(event.target.id)) return;
+    const submitter = event.submitter;
+    if (!submitter?.matches('[name="checkout"]')) return;
+    const holder = submitter.closest('[data-checkout-state]');
+    CartItems.updateCheckoutState();
+    if (holder && holder.dataset.checkoutState !== 'ready' && holder.dataset.checkoutState !== 'failed') {
+      event.preventDefault();
+      const note = [...document.querySelectorAll('cart-note')].find(element => element.isDirty && element.closest('cart-drawer, cart-items') === submitter.closest('cart-drawer, cart-items'));
+      note?.reveal();
+      return;
     }
-  );
+    document.querySelectorAll('[data-checkout-state]').forEach(element => element.removeAttribute('data-failed'));
+    holder?.setAttribute('data-opening', '');
+    CartItems.updateCheckoutState();
+    try {
+      sessionStorage.setItem(pendingKey, String(Date.now()));
+    } catch {}
+  });
+
+  window.addEventListener('pageshow', event => {
+    if (!event.persisted) return;
+    document.querySelectorAll('[data-checkout-state]').forEach(element => element.removeAttribute('data-opening'));
+    try {
+      sessionStorage.removeItem(pendingKey);
+    } catch {}
+    document.querySelectorAll('cart-items').forEach(view => view.refresh({ visible: true }));
+    document.querySelectorAll('cart-drawer').forEach(drawer => {
+      drawer.dataset.stale = '';
+    });
+    CartItems.updateCheckoutState();
+  });
+
+  // Shopify sends the shopper back to the cart when checkout can't start.
+  document.addEventListener('DOMContentLoaded', () => {
+    let pending = null;
+    try {
+      pending = Number(sessionStorage.getItem(pendingKey));
+      sessionStorage.removeItem(pendingKey);
+    } catch {}
+    const navigation = performance.getEntriesByType?.('navigation')?.[0];
+    const returned = pending && Date.now() - pending < 30000 && navigation?.type === 'navigate' && !document.referrer.includes('/checkouts/');
+    if (returned) document.querySelectorAll('[data-checkout-state]').forEach(element => element.setAttribute('data-failed', ''));
+    CartItems.updateCheckoutState();
+  });
 }

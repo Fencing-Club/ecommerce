@@ -1494,7 +1494,20 @@
         "id": "cart_color_scheme",
         "label": "t:sections.all.colors.label",
         "default": "scheme-1"
-      }
+      },
+      { "type": "header", "content": "t:settings_schema.cart.settings.cart_trust.header" },
+      { "type": "text", "id": "cart_trust_dispatch", "label": "t:settings_schema.cart.settings.cart_trust.dispatch.label", "default": "Ships in 1 business day" },
+      { "type": "text", "id": "cart_trust_returns", "label": "t:settings_schema.cart.settings.cart_trust.returns.label", "default": "Free 30-day returns" },
+      { "type": "header", "content": "t:settings_schema.cart.settings.cart_empty.header" },
+      { "type": "text", "id": "cart_empty_link_label", "label": "t:settings_schema.cart.settings.cart_empty.link_label.label", "default": "Shop starter kits" },
+      { "type": "url", "id": "cart_empty_link", "label": "t:settings_schema.cart.settings.cart_empty.link.label" },
+      { "type": "text", "id": "cart_popular_heading", "label": "t:settings_schema.cart.settings.cart_empty.popular_heading.label", "default": "Popular with new fencers" },
+      { "type": "collection", "id": "cart_popular_collection_1", "label": "t:settings_schema.cart.settings.cart_empty.popular_collection_1.label" },
+      { "type": "text", "id": "cart_popular_text_1", "label": "t:settings_schema.cart.settings.cart_empty.popular_text_1.label", "default": "Foil, epee, saber" },
+      { "type": "collection", "id": "cart_popular_collection_2", "label": "t:settings_schema.cart.settings.cart_empty.popular_collection_2.label" },
+      { "type": "text", "id": "cart_popular_text_2", "label": "t:settings_schema.cart.settings.cart_empty.popular_text_2.label", "default": "Jackets, pants, protectors" },
+      { "type": "collection", "id": "cart_popular_collection_3", "label": "t:settings_schema.cart.settings.cart_empty.popular_collection_3.label" },
+      { "type": "text", "id": "cart_popular_text_3", "label": "t:settings_schema.cart.settings.cart_empty.popular_text_3.label", "default": "Ready-made or custom" }
     ]
   },
   {

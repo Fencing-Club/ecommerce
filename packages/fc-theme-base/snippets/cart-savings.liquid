@@ -1,0 +1,18 @@
+{% doc %}
+  Outputs the cart's total savings in cents: compare-at savings and line discounts on each item, plus order discounts.
+  Capture it and add 0 to use it as a number.
+{% enddoc %}
+{%- liquid
+  assign total = 0
+  for item in cart.items
+    assign compare_total = item.original_line_price
+    if item.variant.compare_at_price > item.variant.price
+      assign compare_total = item.variant.compare_at_price | times: item.quantity
+    endif
+    assign total = total | plus: compare_total | minus: item.final_line_price
+  endfor
+  for application in cart.cart_level_discount_applications
+    assign total = total | plus: application.total_allocated_amount
+  endfor
+  echo total | at_least: 0
+-%}

@@ -68,11 +68,6 @@
     <output id="product-details-status" role="status">White, size M</output>
   </div>
 </section>
-<section id="cart-components" class="lab-section"><h2>Cart details <code>cart-item-contents / cart-note-editor / cart-discount</code></h2>
-  <div class="lab-state-row"><label><input id="cart-detail-fail" type="checkbox"> Simulate save failure</label></div>
-  <div class="specimen lab-cart-details">
-    {% render 'cart-item-contents', item: commerce.bundle, context: 'lab' %}
-    {% render 'cart-note-editor', context: 'lab', form_id: 'lab-cart-form' %}
-    {% render 'cart-discount', context: 'lab' %}
-  </div>
+<section id="cart-components" class="lab-section"><h2>Cart <code>cart-drawer / main-cart-items</code></h2>
+  <p>The flyout and cart page have their own page with every state at tablet, phone and desktop widths: <a href="/lab/cart">Cart states</a>.</p>
 </section>

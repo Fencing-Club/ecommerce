@@ -1,21 +1,17 @@
 {% doc %}
-  Shows the components of a native bundle without independent purchase controls.
+  Lists the items inside a native bundle, such as a starter kit. Contents have no purchase controls of their own.
   @param {line_item} item - Cart line item.
   @param {string} context - Unique cart view name.
 {% enddoc %}
 {%- if item.item_components.size > 0 -%}
-  <details class="fc-cart-contents" id="CartContents-{{ context }}-{{ item.key | replace: ':', '-' }}">
-    <summary>{{ 'sections.cart.included_items' | t }} {% render 'fc-icon', icon: 'chevron-down', size: 16 %}</summary>
-    <ul role="list">
+  <details class="fc-line__contents" id="CartContents-{{ context }}-{{ item.key | replace: ':', '-' }}">
+    <summary>{{ 'sections.cart.included_items' | t: count: item.item_components.size }}{% render 'fc-icon', icon: 'chevron-down', size: 16 %}</summary>
+    <ul class="fc-kit" role="list">
       {%- for component in item.item_components -%}
         <li>
-          {%- if component.image -%}
-            {{ component.image | image_url: width: 120 | image_tag: loading: 'lazy', widths: '60, 120', sizes: '48px', class: 'fc-cart-contents__image' }}
-          {%- endif -%}
-          <div>
-            <span>{{ component.quantity }} &times; {{ component.product.title | escape }}</span>
-            {%- unless component.product.has_only_default_variant -%}<small>{{ component.variant.title | escape }}</small>{%- endunless -%}
-          </div>
+          {% render 'fc-icon', icon: 'check', size: 14 %}
+          <span class="fc-kit__name">{% if component.quantity > 1 %}{{ component.quantity }} &times; {% endif %}{{ component.product.title | escape }}</span>
+          {%- unless component.product.has_only_default_variant -%}<span class="fc-kit__spec">{{ component.variant.title | escape }}</span>{%- endunless -%}
         </li>
       {%- endfor -%}
     </ul>

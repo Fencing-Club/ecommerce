@@ -1,0 +1,37 @@
+{%- comment -%}
+  Rendered through the product recommendations endpoint for the newest cart line.
+  Shows up to two complementary products that are not already in the cart.
+{%- endcomment -%}
+{%- liquid
+  assign cart_product_ids = cart.items | map: 'product_id'
+  assign shown = 0
+-%}
+<div class="fc-suggestions" data-cart-suggestions-content>
+  {%- if recommendations.performed and recommendations.products_count > 0 -%}
+    {%- capture cards -%}
+      {%- for product in recommendations.products -%}
+        {%- if shown < 2 and product.available -%}
+          {%- unless cart_product_ids contains product.id -%}
+            {%- assign shown = shown | plus: 1 -%}
+            <li class="fc-suggestion">
+              <span class="fc-suggestion__photo">{%- if product.featured_image -%}{{ product.featured_image | image_url: width: 112 | image_tag: loading: 'lazy', widths: '56, 112', sizes: '56px', alt: '' }}{%- endif -%}</span>
+              <span class="fc-suggestion__details">
+                <a class="fc-suggestion__name" href="{{ product.url }}">{{ product.title | escape }}</a>
+                <span class="fc-suggestion__price">{{ product.price | money }}</span>
+              </span>
+              {%- if product.has_only_default_variant -%}
+                <button type="button" class="fc-suggestion__add" data-add-suggestion="{{ product.selected_or_first_available_variant.id }}" aria-label="{{ 'sections.cart.add_suggestion' | t: title: product.title | escape }}">{% render 'fc-icon', icon: 'plus', size: 16 %}</button>
+              {%- else -%}
+                <a class="fc-suggestion__add" href="{{ product.url }}" aria-label="{{ 'sections.cart.choose_suggestion' | t: title: product.title | escape }}">{% render 'fc-icon', icon: 'plus', size: 16 %}</a>
+              {%- endif -%}
+            </li>
+          {%- endunless -%}
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if shown > 0 -%}
+      <h3 class="fc-suggestions__title">{{ 'sections.cart.suggestions_title' | t }}</h3>
+      <ul class="fc-suggestions__cards" role="list">{{ cards }}</ul>
+    {%- endif -%}
+  {%- endif -%}
+</div>

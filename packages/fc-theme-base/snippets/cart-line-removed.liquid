@@ -1,0 +1,8 @@
+{% doc %}
+  Row left behind after a product is removed, with a way to put it back. Scripts fill in the text.
+{% enddoc %}
+<li class="fc-line fc-line--removed">
+  <p class="fc-line__removed">{% render 'fc-icon', icon: 'check', size: 16 %}<span data-removed-text></span></p>
+  <button type="button" class="fc-button fc-button--outline fc-button--small" data-undo-remove>{{ 'sections.cart.undo' | t }}</button>
+  {%- render 'cart-feedback', id: 'CartUndoMessage' -%}
+</li>

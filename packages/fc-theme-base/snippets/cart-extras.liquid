@@ -1,0 +1,17 @@
+{% doc %}
+  Discount code and order note. Each opens in place of the two buttons.
+  @param {string} context - Unique cart view name.
+  @param {string} form_id - Owning checkout form.
+{% enddoc %}
+<cart-extras class="fc-extras" {% if settings.show_cart_note and cart.note != blank %}data-has-note{% endif %}>
+  <div class="fc-extras__buttons">
+    <button type="button" class="fc-extras__button" data-open-editor="discount" aria-controls="CartDiscountEditor-{{ context }}" aria-expanded="false">{% render 'fc-icon', icon: 'tag', size: 16 %}{{ 'sections.cart.discount_code' | t }}</button>
+    {%- if settings.show_cart_note -%}
+      <button type="button" class="fc-extras__button" data-open-editor="note" aria-controls="CartNoteEditor-{{ context }}" aria-expanded="false">{% render 'fc-icon', icon: 'message-square', size: 16 %}{{ 'sections.cart.order_note' | t }}</button>
+    {%- endif -%}
+  </div>
+  {% render 'cart-discount', context: context %}
+  {%- if settings.show_cart_note -%}
+    {% render 'cart-note-editor', context: context, form_id: form_id %}
+  {%- endif -%}
+</cart-extras>

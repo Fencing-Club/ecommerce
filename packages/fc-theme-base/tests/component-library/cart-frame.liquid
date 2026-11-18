@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en" class="js">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ state.label }}</title>
+  <style>{% render 'theme-tokens' %}</style>
+  <link rel="stylesheet" href="/assets/base.css">
+  <link rel="stylesheet" href="/lab/cart-lab.css">
+  <script>
+    window.routes = { cart_url: '/lab/cart-store', cart_add_url: '/lab/cart-store/add.js', cart_change_url: '/lab/cart-store/change.js', cart_update_url: '/lab/cart-store/update.js', product_recommendations_url: '/lab/cart/recommendations' };
+    window.cartStrings = {
+      error: `{{ 'sections.cart.cart_error' | t }}`,
+      quantityChangeError: `{{ 'sections.cart.quantity_error' | t }}`,
+      removeError: `{{ 'sections.cart.remove_error' | t }}`,
+      stockLimit: `{{ 'sections.cart.stock_limit' | t: count: '[count]' }}`,
+      removed: `{{ 'sections.cart.removed' | t: title: '[title]' }}`,
+      undoError: `{{ 'sections.cart.undo_error' | t: title: '[title]' }}`,
+      itemAdded: `{{ 'sections.cart.item_added' | t: title: '[title]' }}`,
+      blockedNote: `{{ 'sections.cart.blocked_note' | t }}`,
+      blockedUnavailableOne: `{{ 'sections.cart.blocked_unavailable.one' | t: count: '[count]' }}`,
+      blockedUnavailableOther: `{{ 'sections.cart.blocked_unavailable.other' | t: count: '[count]' }}`,
+      checkoutFailed: `{{ 'sections.cart.checkout_failed' | t }}`,
+    };
+    window.quickOrderListStrings = { min_error: 'At least [min]', max_error: 'At most [max]', step_error: 'Multiples of [step]' };
+  </script>
+  <script type="application/json" id="LabCart">{{ cart_json }}</script>
+  <script src="/lab/cart-shim.js"></script>
+  <script src="/assets/constants.js" defer></script><script src="/assets/pubsub.js" defer></script><script src="/assets/global.js" defer></script>
+</head>
+<body class="lab-cart-frame lab-cart-frame--{{ view }}" data-lab-state="{{ state.id }}">
+  {%- if view == 'flyout' -%}
+    {% render 'cart-drawer' %}
+    <script src="/assets/cart-drawer.js" defer></script>
+  {%- else -%}
+    {% render 'main-cart-items', section: section %}
+  {%- endif -%}
+  <script src="/lab/cart-states.js" defer></script>
+</body>
+</html>

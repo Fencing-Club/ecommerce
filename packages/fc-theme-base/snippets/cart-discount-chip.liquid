@@ -1,0 +1,18 @@
+{% doc %}
+  An applied discount. Codes can be removed from the chip; automatic discounts cannot.
+  @param {discount_application} [application] - Applied discount.
+  @param {string} [code] - Code without a cart amount, such as a shipping code.
+{% enddoc %}
+{%- liquid
+  assign label = code | default: application.title
+  assign removable = false
+  if code != blank or application.type == 'discount_code'
+    assign removable = true
+  endif
+-%}
+<span class="fc-chip" data-discount-chip="{{ label | escape }}">
+  <span class="fc-chip__label">{{ label | escape }}</span>
+  {%- if removable -%}
+    <button type="button" class="fc-chip__remove" data-remove-code="{{ label | escape }}" aria-label="{{ 'sections.cart.remove_discount' | t: code: label | escape }}">{% render 'fc-icon', icon: 'x', size: 12 %}</button>
+  {%- endif -%}
+</span>

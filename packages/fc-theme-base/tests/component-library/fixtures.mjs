@@ -67,7 +67,6 @@ export const commerce = {
   regular: { ...products[0], price_varies: false },
   sale: { ...products[1], compare_at_price: 3495, price_varies: false },
   soldOut: { ...products[2], available: false, price_varies: false },
-  bundle: { key: 'lab:bundle', item_components: [{ quantity: 2, image: products[2].featured_image, product: { title: 'Fencing socks', has_only_default_variant: false }, variant: { title: 'M' } }] },
   swatches: [{ label: 'White', color: { rgb: '255, 255, 255' } }, { label: 'Black', color: { rgb: '16, 16, 18' } }, { label: 'Unavailable', color: { rgb: '180, 180, 185' } }],
 };
 

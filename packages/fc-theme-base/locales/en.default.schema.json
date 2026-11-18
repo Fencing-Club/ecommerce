@@ -347,6 +347,23 @@
             "label": "Collection",
             "info": "Shown when cart drawer is empty"
           }
+        },
+        "cart_trust": {
+          "header": "Cart reassurance",
+          "dispatch": { "label": "Dispatch note" },
+          "returns": { "label": "Returns note" }
+        },
+        "cart_empty": {
+          "header": "Empty cart",
+          "link_label": { "label": "Primary link label" },
+          "link": { "label": "Primary link" },
+          "popular_heading": { "label": "Collections heading" },
+          "popular_collection_1": { "label": "Collection 1" },
+          "popular_text_1": { "label": "Collection 1 description" },
+          "popular_collection_2": { "label": "Collection 2" },
+          "popular_text_2": { "label": "Collection 2 description" },
+          "popular_collection_3": { "label": "Collection 3" },
+          "popular_text_3": { "label": "Collection 3 description" }
         }
       }
     },
@@ -1747,7 +1764,7 @@
       }
     },
     "main-cart-items": {
-      "name": "Items"
+      "name": "Cart"
     },
     "main-collection-banner": {
       "name": "Collection banner",

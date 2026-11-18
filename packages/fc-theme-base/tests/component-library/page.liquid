@@ -25,7 +25,6 @@
   <link rel="stylesheet" href="/assets/component-price.css">
   <link rel="stylesheet" href="/assets/component-swatch.css">
   <link rel="stylesheet" href="/assets/component-swatch-input.css">
-  <link rel="stylesheet" href="/assets/cart-experience.css">
   <link rel="stylesheet" href="/assets/component-menu-drawer.css">
   <link rel="stylesheet" href="/assets/section-main-product.css">
   <link rel="stylesheet" href="/assets/component-list-social.css">
@@ -53,7 +52,7 @@
     <label class="lab-motion"><input type="checkbox" id="reduce-motion"> Reduce motion</label>
     <button type="button" id="reset-lab" title="Reset examples" aria-label="Reset examples">{% render 'fc-icon', icon: 'rotate-ccw', size: 20 %}</button>
   </header>
-  <nav class="lab-nav" aria-label="Component sections"><a href="#commands">Commands</a><a href="#selection">Selection</a><a href="#navigation">Navigation</a><a href="#browsing">Filters and sorting</a><a href="#search-components">Search</a><a href="#announcements">Announcements</a><a href="#localization">Language and currency</a><a href="#forms">Forms</a><a href="#product-details">Product details</a><a href="#cart-components">Cart details</a><a href="#disclosures">Disclosures</a><a href="#menu">Mega menu</a><a href="#cards">Cards</a><a href="#sections">Sections</a><a href="#privacy">Privacy</a><a href="#coverage">Coverage</a></nav>
+  <nav class="lab-nav" aria-label="Component sections"><a href="#commands">Commands</a><a href="#selection">Selection</a><a href="#navigation">Navigation</a><a href="#browsing">Filters and sorting</a><a href="#search-components">Search</a><a href="#announcements">Announcements</a><a href="#localization">Language and currency</a><a href="#forms">Forms</a><a href="#product-details">Product details</a><a href="/lab/cart">Cart</a><a href="#disclosures">Disclosures</a><a href="#menu">Mega menu</a><a href="#cards">Cards</a><a href="#sections">Sections</a><a href="#privacy">Privacy</a><a href="#coverage">Coverage</a></nav>
   <main id="lab-main" tabindex="-1">
     <section id="commands" class="lab-section"><h2>Commands <code>ui-button / ui-link</code></h2>
       <div class="specimen lab-row">
@@ -111,7 +110,8 @@
         <tr><td>Filters, price range, sorting, pagination</td><td>Selected, unavailable, clear, loading, failed/retry, empty, keyboard</td><td>Production Liquid; local catalog response adapter</td></tr>
         <tr><td>Search</td><td>Idle, recent, grouped results, skeleton, empty, failed/retry, clear, keyboard</td><td>Production controller; local request and recent-history adapters</td></tr>
         <tr><td>Announcements, language, country/currency</td><td>Single, carousel, tone variants, open, selected, Escape</td><td>Production renderers/controllers; localization submissions stay local</td></tr>
-        <tr><td>Forms and cart details</td><td>Required, invalid, readonly, disabled, busy, success, error, bundle disclosure</td><td>Production field styles and cart snippets; no messages or discounts submitted</td></tr>
+        <tr><td>Forms</td><td>Required, invalid, readonly, disabled, busy, success, error</td><td>Production field styles; no messages submitted</td></tr>
+        <tr><td>Cart flyout and cart page</td><td>Line item, discount code, order note, summary and checkout, phone checkout bar, empty, loading, load failed</td><td>Production section, snippets and controllers on the Cart states page; every cart change fails locally</td></tr>
         <tr><td>Mobile navigation, gallery, sizing, reading</td><td>Nested/back, thumbnail, zoom, units, compare sizes, downloads, contents/table</td><td>Production snippets/controllers with fixture context</td></tr>
         <tr><td>Platform-dependent commerce</td><td>Orders, checkout/payment, live inventory/discounts, pickup, gift-card recipients</td><td>Requires separate store acceptance; no live actions here</td></tr>
         <tr><td>Optional base-theme integrations</td><td>Bulk quick order, accelerated checkout, video/3D, app blocks</td><td>Audited; not simulated as working integrations</td></tr>

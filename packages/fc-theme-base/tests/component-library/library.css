@@ -101,7 +101,6 @@ output { display: block; margin-top: 12px; font-size: 14px; color: var(--cp-text
 .lab-form .ui-button { justify-self: start; }
 .lab-field-error { margin: 6px 0 0; color: var(--cp-danger); }
 .lab-state-row[hidden], .lab-field-error[hidden] { display: none; }
-.lab-cart-details { max-width: 760px; }
 .lab-mobile-menu.specimen { position: relative; min-height: 600px; padding: 0; isolation: isolate; }
 .lab-mobile-menu header-drawer { display: block; }
 .lab-mobile-menu .header__icon--menu { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 10px 16px; }

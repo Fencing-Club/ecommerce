@@ -1,15 +1,15 @@
 {% doc %}
-  Compact checkout action shared by both cart views.
+  Checkout button with the reason it is unavailable shown right under it.
+  The nearest [data-checkout-state] ancestor sets the state: ready, waiting, opening, blocked or failed.
+  Its data-reason-tone is error, or info when the shopper only needs to finish something, such as saving the note.
   @param {string} form_id - Cart form to submit.
-  @param {string} context - page or drawer.
+  @param {string} context - Unique cart view name.
+  @param {string} [reason] - Why checkout is unavailable.
 {% enddoc %}
-<div class="fc-cart-checkout" data-cart-checkout>
-  <div class="totals"><h2 class="totals__total">{{ 'sections.cart.estimated_total' | t }}</h2><p class="totals__total-value">{{ cart.total_price | money_with_currency }}</p></div>
-  <button type="submit" class="cart__checkout-button button" name="checkout" form="{{ form_id }}" id="CartCheckout-{{ context }}" {% if cart == empty %}disabled{% endif %}>{{ 'sections.cart.checkout' | t }} {% render 'fc-icon', icon: 'arrow-right', size: 18 %}</button>
-  <p class="fc-cart-checkout__note">
-    {%- if cart.duties_included and cart.taxes_included -%}{{ 'sections.cart.duties_and_taxes_included_shipping_at_checkout_without_policy' | t }}
-    {%- elsif cart.taxes_included -%}{{ 'sections.cart.taxes_included_shipping_at_checkout_without_policy' | t }}
-    {%- elsif cart.duties_included -%}{{ 'sections.cart.duties_included_taxes_at_checkout_shipping_at_checkout_without_policy' | t }}
-    {%- else -%}{{ 'sections.cart.taxes_at_checkout_shipping_at_checkout_without_policy' | t }}{%- endif -%}
-  </p>
+<div class="fc-checkout" data-cart-checkout>
+  <button type="submit" class="fc-checkout__button" name="checkout" form="{{ form_id }}" id="CartCheckout-{{ context }}" aria-describedby="CartCheckoutReason-{{ context }}" {% if cart == empty or reason != blank %}disabled{% endif %}>
+    <span class="fc-checkout__idle">{% render 'fc-icon', icon: 'lock', size: 16 %}{{ 'sections.cart.checkout' | t }}</span>
+    <span class="fc-checkout__busy" aria-hidden="true">{% render 'fc-icon', icon: 'loader-circle', size: 16 %}{{ 'sections.cart.opening_checkout' | t }}</span>
+  </button>
+  <p class="fc-checkout__reason" id="CartCheckoutReason-{{ context }}" role="status"><span class="fc-checkout__icon" data-icon="error">{% render 'fc-icon', icon: 'circle-alert', size: 14 %}</span><span class="fc-checkout__icon" data-icon="info">{% render 'fc-icon', icon: 'info', size: 14 %}</span><span data-checkout-reason>{{ reason }}</span></p>
 </div>

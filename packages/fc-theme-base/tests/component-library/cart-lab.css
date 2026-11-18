@@ -1,0 +1,14 @@
+/* Cart state lab: the index of frames, and the frame pages that hold one production cart view. */
+.lab-cart-index main { max-width: none; }
+.lab-cart-back { margin-left: auto; color: var(--cp-text); }
+.lab-cart-state { padding-block: 16px; }
+.lab-cart-state > h3 { display: flex; align-items: baseline; gap: 12px; margin: 0 0 12px; font: 600 15px/1.4 'Segoe UI', sans-serif; }
+.lab-cart-state > h3 a { color: var(--cp-link); font-weight: 400; font-size: 13px; }
+.lab-cart-frames { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; }
+.lab-cart-frame-box { flex: none; width: calc(var(--frame-w) * var(--scale) * 1px); height: calc(var(--frame-h) * var(--scale) * 1px); overflow: hidden; border: 1px solid var(--cp-border); border-radius: 6px; background: #fff; }
+.lab-cart-frame-box iframe { display: block; width: calc(var(--frame-w) * 1px); height: calc(var(--frame-h) * 1px); border: 0; transform: scale(var(--scale)); transform-origin: 0 0; }
+.lab-cart-note { color: var(--cp-text-muted); font-size: 13px; }
+
+.lab-cart-frame { margin: 0; background: #fff; }
+.lab-cart-frame--flyout { min-height: 100vh; background: #e9e7e3; }
+.lab-cart-frame--page { padding-top: 1px; }

@@ -1,34 +1,59 @@
-{{ 'component-cart.css' | asset_url | stylesheet_tag }}
-{{ 'component-cart-items.css' | asset_url | stylesheet_tag }}
-{{ 'component-price.css' | asset_url | stylesheet_tag }}
-{{ 'component-discounts.css' | asset_url | stylesheet_tag }}
 {{ 'cart-experience.css' | asset_url | stylesheet_tag }}
 {%- unless settings.cart_type == 'drawer' -%}<script src="{{ 'cart.js' | asset_url }}" defer="defer"></script>{%- endunless -%}
 <script src="{{ 'cart-controls.js' | asset_url }}" defer="defer"></script>
-<cart-items class="fc-cart-page{% if cart == empty %} is-empty{% endif %}" view-event-payload="{{ cart | standard_event_data: 'view', context: 'page' | escape }}">
-  <header class="fc-cart-page__header title-wrapper-with-link">
-    <h1>{{ 'sections.cart.title' | t }} <span class="fc-cart-count" data-cart-count>{{ 'sections.header.cart_count' | t: count: cart.item_count }}</span></h1>
-    <a href="{{ routes.all_products_collection_url }}"><span class="fc-cart-back">{% render 'fc-icon', icon: 'arrow-right', size: 16 %}</span>{{ 'general.continue_shopping' | t }}</a>
+{%- liquid
+  assign cart_state = 'ready'
+  if cart == empty
+    assign cart_state = 'empty'
+  endif
+-%}
+<cart-items class="fc-cart-page" id="main-cart" data-id="{{ section.id }}" data-cart-state="{{ cart_state }}" view-event-payload="{{ cart | standard_event_data: 'view', context: 'page' | escape }}">
+  <header class="fc-cart-page__heading">
+    <h1 class="fc-cart-page__title">{{ 'sections.cart.title' | t }}<span class="fc-cart-page__count" data-cart-region="count">{{ 'sections.header.cart_count' | t: count: cart.item_count }}</span></h1>
+    <a class="fc-cart-page__back" href="{{ routes.all_products_collection_url }}">{% render 'fc-icon', icon: 'arrow-left', size: 16 %}{{ 'general.continue_shopping' | t }}</a>
   </header>
-  <div class="cart__warnings">
-    <h1 class="cart__empty-text">{{ 'sections.cart.empty' | t }}</h1>
-    <a href="{{ routes.all_products_collection_url }}" class="button">{{ 'general.continue_shopping' | t }}</a>
-  </div>
-  <form action="{{ routes.cart_url }}" class="cart__contents" method="post" id="cart">
-    <div id="main-cart-items" data-id="{{ section.id }}"><div class="js-contents">{% render 'cart-lines', context: 'page' %}</div></div>
+  <div class="fc-cart-page__ready">
+    <form action="{{ routes.cart_url }}" class="fc-cart-page__columns" method="post" id="cart" novalidate>
+      <div class="fc-cart-page__items">
+        <div class="fc-cart-page__progress" data-cart-region="progress"></div>
+        <div class="fc-cart-page__lines" id="main-cart-items" data-cart-region="lines">{% render 'cart-lines', context: 'page' %}</div>
+        <div class="fc-suggestions-slot" data-cart-suggestions data-product-id="{{ cart.items.first.product_id }}"></div>
+      </div>
+      <section class="fc-cart-page__summary" aria-labelledby="CartSummaryHeading">
+        <h2 class="fc-cart-page__summary-title" id="CartSummaryHeading">{{ 'sections.cart.order_summary' | t }}</h2>
+        <div class="fc-cart-page__card">{% render 'cart-summary', context: 'page', form_id: 'cart' %}</div>
+        {%- for block in section.blocks -%}{%- if block.type == '@app' -%}{% render block %}{%- endif -%}{%- endfor -%}
+      </section>
+    </form>
+    {% render 'cart-checkout-bar', context: 'page', form_id: 'cart' %}
     <p class="visually-hidden" id="cart-live-region-text" role="status"></p>
-    <p class="visually-hidden" id="shopping-cart-line-item-status" aria-hidden="true" role="status">{{ 'accessibility.loading' | t }}</p>
-    <noscript><button type="submit" name="update" class="button">{{ 'sections.cart.update' | t }}</button></noscript>
-  </form>
+    <noscript><button type="submit" name="update" class="fc-button fc-button--outline" form="cart">{{ 'sections.cart.update' | t }}</button></noscript>
+  </div>
+  <div class="fc-cart-page__empty">
+    {% render 'cart-message', kind: 'empty', context: 'page' %}
+    {% render 'cart-popular' %}
+  </div>
+  <div class="fc-cart-page__failed">{% render 'cart-message', kind: 'failed', context: 'page' %}</div>
+  <div class="fc-cart-page__loading">
+    <p class="visually-hidden">{{ 'sections.cart.loading' | t }}</p>
+    <div class="fc-cart-page__columns">
+      <div class="fc-cart-page__items">
+        <div class="fc-cart-page__progress">{% render 'cart-skeleton', part: 'progress' %}</div>
+        <div class="fc-cart-page__lines">{% render 'cart-skeleton', part: 'lines' %}</div>
+      </div>
+      <div class="fc-cart-page__summary">
+        <p class="fc-cart-page__summary-title">{{ 'sections.cart.order_summary' | t }}</p>
+        <div class="fc-cart-page__card">{% render 'cart-skeleton', part: 'summary' %}</div>
+      </div>
+    </div>
+    {% render 'cart-skeleton', part: 'bar' %}
+  </div>
 </cart-items>
 {% schema %}
 {
   "name": "t:sections.main-cart-items.name",
-  "class": "fc-cart-items-section",
-  "settings": [
-    { "type": "color_scheme", "id": "color_scheme", "label": "t:sections.all.colors.label", "default": "scheme-1" },
-    { "type": "range", "id": "padding_top", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "t:sections.all.padding.padding_top", "default": 36 },
-    { "type": "range", "id": "padding_bottom", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "t:sections.all.padding.padding_bottom", "default": 36 }
-  ]
+  "class": "fc-cart-section",
+  "settings": [],
+  "blocks": [{ "type": "@app" }]
 }
 {% endschema %}
