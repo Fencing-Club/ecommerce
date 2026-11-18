@@ -369,11 +369,8 @@
           "link": { "label": "Primary link" },
           "popular_heading": { "label": "Collections heading" },
           "popular_collection_1": { "label": "Collection 1" },
-          "popular_text_1": { "label": "Collection 1 description" },
           "popular_collection_2": { "label": "Collection 2" },
-          "popular_text_2": { "label": "Collection 2 description" },
-          "popular_collection_3": { "label": "Collection 3" },
-          "popular_text_3": { "label": "Collection 3 description" }
+          "popular_collection_3": { "label": "Collection 3" }
         }
       }
     },
