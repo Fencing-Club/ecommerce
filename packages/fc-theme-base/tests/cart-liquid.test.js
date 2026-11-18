@@ -167,6 +167,7 @@ describe('free gifts', () => {
       expect(options.querySelector('.fc-gift__input').name).toBe(`CartGift-${context}-60000`);
       expect(options.querySelector('.fc-gift__input:checked')).toBeNull();
       expect(text(options.querySelector('.fc-gift__price'))).toBe('Free$18.00');
+      expect([...options.querySelectorAll('.fc-gift')].map(option => text(option.querySelector('.fc-gift__description')) || '')).toEqual(['Cushioned for long training days.', '']);
       expect(text(panel.querySelector('.fc-gift-choice__next'))).toBe("Another gift unlocks at $900. You're $256.20 away.");
       expect(text(page.querySelector('.fc-progress__message'))).toBe('$256.20 away from another free gift');
       expect(page.querySelector('[data-gift-line], cart-gift-sync')).toBeNull();
@@ -227,6 +228,8 @@ describe('free gifts', () => {
       const lines = [...page.querySelectorAll('.fc-lines--gifts > [data-gift-line]')];
       expect(lines.map(line => line.dataset.giftKey)).toEqual(['Free gift at $175', 'Free gift at $375']);
       expect(lines.map(line => text(line.querySelector('.fc-line__name')))).toEqual(['Harut point protectors', 'The Fencing Journal']);
+      expect(lines.map(line => line.querySelector('.fc-line__name').tagName)).toEqual(['P', 'P']);
+      expect(lines.map(line => text(line.querySelector('.fc-line__description')))).toEqual(['Keeps your point safe in your bag.', 'Log bouts, drills and goals in one place.']);
       expect(text(lines[0].querySelector('.fc-line__price'))).toBe('Free');
       const sync = page.querySelector('cart-gift-sync');
       expect(JSON.parse(sync.dataset.set)).toEqual([['Free gift at $175', 'Harut point protectors, Set of 3'], ['Free gift at $375', 'The Fencing Journal']]);

@@ -19,6 +19,11 @@ class CartRemoveButton extends HTMLElement {
       event.preventDefault();
       const view = this.closest('cart-items, cart-drawer-items');
       const row = this.closest('.fc-line');
+      // Edit and remove stay usable while the row updates, so a second click mustn't remove it twice.
+      if (!row || row.hasAttribute('data-removing')) return;
+      row.setAttribute('data-removing', '');
+      // A quantity change still waiting on the debounce goes first, so it can't land after the removal.
+      view?.flushQuantity();
       view?.updateQuantity(row?.dataset.line, 0, event);
     });
   }
@@ -37,19 +42,18 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     this.addEventListener('change', event => {
       if (!event.target.matches('input[data-index]')) return;
       clearTimeout(this.quantityTimer);
+      this.pendingChange = event;
       CartItems.pendingQuantities.add(this);
       CartItems.updateCheckoutState();
-      this.quantityTimer = setTimeout(() => {
-        CartItems.pendingQuantities.delete(this);
-        this.onChange(event);
-        CartItems.updateCheckoutState();
-      }, ON_CHANGE_DEBOUNCE_TIMER);
+      this.quantityTimer = setTimeout(() => this.flushQuantity(), ON_CHANGE_DEBOUNCE_TIMER);
     });
     this.addEventListener('click', event => {
       const retry = event.target.closest('[data-cart-retry]');
       const undo = event.target.closest('[data-undo-remove]');
       const suggestion = event.target.closest('[data-add-suggestion]');
-      if (retry) this.refresh({ visible: true });
+      const edit = event.target.closest('[data-cart-edit]');
+      if (edit) this.openEdit(edit, event);
+      else if (retry) this.refresh({ visible: true });
       else if (undo) this.undoRemove(undo.closest('.fc-line--removed'));
       else if (suggestion) this.addSuggestion(suggestion);
     });
@@ -71,8 +75,32 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     this.loadSuggestions();
   }
 
+  /** Sends the quantity change waiting on the debounce now. */
+  flushQuantity() {
+    clearTimeout(this.quantityTimer);
+    const event = this.pendingChange;
+    this.pendingChange = null;
+    CartItems.pendingQuantities.delete(this);
+    if (event) this.onChange(event);
+    CartItems.updateCheckoutState();
+  }
+
+  /** Edit leaves the cart, so it waits for pending changes first; leaving earlier would drop them. */
+  openEdit(link, event) {
+    const waiting = CartItems.mutationCount > 0 || CartItems.pendingQuantities.size > 0;
+    if (!waiting || event.defaultPrevented || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    CartItems.pendingQuantities.forEach(view => view.flushQuantity());
+    CartItems.mutationQueue.then(() => this.leaveTo(link.href));
+  }
+
+  leaveTo(url) {
+    window.location.assign(url);
+  }
+
   disconnectedCallback() {
     clearTimeout(this.quantityTimer);
+    this.pendingChange = null;
     CartItems.pendingQuantities.delete(this);
     this.cartUpdateUnsubscriber?.();
   }
@@ -310,6 +338,8 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
       } catch (error) {
         const current = this.lineByKey(key) || row;
         delete current.dataset.state;
+        current.removeAttribute('data-removing');
+        row.removeAttribute('data-removing');
         this.resetQuantityInput(current.dataset.line);
         const stock = Number(input?.dataset.stock);
         if (removing) this.setLineFeedback(current, cartText('removeError'));

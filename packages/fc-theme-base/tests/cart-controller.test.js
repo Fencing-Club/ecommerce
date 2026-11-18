@@ -142,6 +142,44 @@ describe('line changes', () => {
     expect(removed.querySelector('[data-undo-remove]').disabled).toBe(false);
   });
 
+  it('keeps edit and remove usable while a row updates, sending a waiting quantity change before the removal', async () => {
+    const view = mount('flyout');
+    vi.spyOn(view, 'renderSections').mockImplementation(() => {});
+    const bodies = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url, options) => {
+      bodies.push(JSON.parse(options.body));
+      return json({ items: [], sections: {} });
+    }));
+    const row = view.querySelector('.fc-line[data-line="3"]');
+    expect(row.querySelector('.fc-line__updating')).toBeNull();
+    const input = row.querySelector('input[data-index]');
+    input.value = '3';
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    const remove = row.querySelector('cart-remove-button a');
+    remove.click();
+    remove.click();
+    await vi.waitFor(() => expect(bodies.length).toBe(2));
+    expect(bodies.map(body => [body.id, body.quantity])).toEqual([[row.dataset.lineKey, 3], [row.dataset.lineKey, 0]]);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(bodies.length).toBe(2);
+  });
+
+  it('waits for pending changes before Edit leaves for the product page', async () => {
+    const view = mount('page');
+    const leave = vi.spyOn(view, 'leaveTo').mockImplementation(() => {});
+    let finish;
+    const pending = controller().mutate(() => new Promise(resolve => { finish = resolve; }));
+    const edit = view.querySelector('[data-cart-edit]');
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    edit.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(true);
+    await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
+    expect(leave).not.toHaveBeenCalled();
+    finish();
+    await pending;
+    await vi.waitFor(() => expect(leave).toHaveBeenCalledWith(edit.href));
+  });
+
   it('highlights a just added row with a toast until the next change', () => {
     const view = mount('flyout');
     view.markJustAdded({ key: '8021:kit', product_title: 'Club starter kit' });

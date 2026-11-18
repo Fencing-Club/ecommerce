@@ -96,6 +96,7 @@ The merchant sets this up in Shopify admin; the theme creates nothing on the sto
    | `name`          | Single line text        | The gift's name. Make it required.                                  |
    | `image`         | File, images only       | The photo in the choices and on the gift line.                      |
    | `details`       | Single line text        | A size, color or similar, shown under the name.                     |
+   | `description`   | Single line text        | A short line on what the gift is, shown under the details.          |
    | `value`         | Money                   | Shown struck through beside Free.                                   |
    | `minimum_total` | Decimal                 | The cart total, in the store currency, that earns it. Required.     |
    | `available`     | True or false           | False shows the gift as Unavailable. Blank counts as available.     |

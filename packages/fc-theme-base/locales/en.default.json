@@ -370,7 +370,6 @@
       "unavailable_hint": "Remove it to check out.",
       "remove": "Remove",
       "edit_title": "Edit {{ title }}",
-      "updating": "Updating",
       "quantity_error": "We couldn't change the quantity.",
       "remove_error": "We couldn't remove this item.",
       "stock_limit": "Only {{ count }} in stock.",

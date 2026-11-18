@@ -119,13 +119,12 @@
         </quantity-input>
         <div class="fc-line__actions">
           {%- if editable -%}
-            <a class="fc-icon-button" href="{{ item.url }}" aria-label="{{ 'sections.cart.edit_title' | t: title: item.product.title | escape }}" title="{{ 'sections.cart.edit_title' | t: title: item.product.title | escape }}">{% render 'fc-icon', icon: 'pencil', size: 18 %}</a>
+            <a class="fc-icon-button" href="{{ item.url }}" data-cart-edit aria-label="{{ 'sections.cart.edit_title' | t: title: item.product.title | escape }}" title="{{ 'sections.cart.edit_title' | t: title: item.product.title | escape }}">{% render 'fc-icon', icon: 'pencil', size: 18 %}</a>
           {%- endif -%}
           {%- if can_remove -%}
             <cart-remove-button data-index="{{ line }}"><a href="{{ item.url_to_remove }}" class="fc-icon-button" aria-label="{{ 'sections.cart.remove_title' | t: title: item.product.title | escape }}" title="{{ 'sections.cart.remove_title' | t: title: item.product.title | escape }}">{% render 'fc-icon', icon: 'trash-2', size: 18 %}</a></cart-remove-button>
           {%- endif -%}
         </div>
-        <p class="fc-line__updating">{% render 'fc-icon', icon: 'loader-circle', size: 16 %}{{ 'sections.cart.updating' | t }}</p>
       {%- endif -%}
     </div>
     {%- if item.variant.quantity_rule.min > 1 or item.variant.quantity_rule.increment > 1 or item.variant.quantity_price_breaks.size > 0 -%}

@@ -69,21 +69,21 @@ const bothGiftsCart = () => cart([jacket(0, 2), kit(1), glove(2), mask(3), bag(4
 const socks = { 'Free gift at $600': 'Club socks, One size' };
 
 // Cart gift metaobject entries, shaped like shop.metaobjects.cart_gift.values.
-const gift = (handle, name, details, value, minimum, picture, available = true) => ({
-  system: { handle }, name: { value: name }, details: { value: details }, value: { value }, minimum_total: { value: minimum },
-  available: { value: available }, image: { value: typeof picture === 'string' ? image(picture) : picture },
+const gift = (handle, name, details, value, minimum, picture, available = true, description = '') => ({
+  system: { handle }, name: { value: name }, details: { value: details }, description: { value: description }, value: { value },
+  minimum_total: { value: minimum }, available: { value: available }, image: { value: typeof picture === 'string' ? image(picture) : picture },
 });
 // Gifts with the same minimum total share a tier: two to choose from at $600 and at $900.
 export const cartGifts = (towelAvailable = true) => [
-  gift('club-socks', 'Club socks', 'One size', 1800, 600, 'collection-fencing-socks-2-pack.jpg'),
+  gift('club-socks', 'Club socks', 'One size', 1800, 600, 'collection-fencing-socks-2-pack.jpg', true, 'Cushioned for long training days.'),
   gift('training-towel', 'Training towel', 'Charcoal', 2400, 600, 'mega-footwear-socks.jpg', towelAvailable),
   gift('mask-bag', 'Mask bag', 'Black', 3200, 900, 'mega-bags-carry.jpg'),
   gift('repair-kit', 'Repair kit', 'Foil and epee', 2800, 900, 'mega-club-repair.jpg'),
 ];
 // One gift per tier, as the store runs it: each is added without a choice.
 export const singleGifts = () => [
-  gift('harut-point-protectors', 'Harut point protectors', 'Set of 3', null, 175, labImage('harut-point-protectors.jpg')),
-  gift('fencing-journal', 'The Fencing Journal', '', null, 375, labImage('fencing-journal.jpg')),
+  gift('harut-point-protectors', 'Harut point protectors', 'Set of 3', null, 175, labImage('harut-point-protectors.jpg'), true, 'Keeps your point safe in your bag.'),
+  gift('fencing-journal', 'The Fencing Journal', '', null, 375, labImage('fencing-journal.jpg'), true, 'Log bouts, drills and goals in one place.'),
 ];
 
 // Each state names the cart it starts from. `client` states are finished by cart-states.js in the browser.

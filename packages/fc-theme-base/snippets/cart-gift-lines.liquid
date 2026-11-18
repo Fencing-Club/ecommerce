@@ -57,6 +57,7 @@
             </p>
           </div>
           {%- if match.details.value != blank -%}<p class="fc-line__variant">{{ match.details.value | escape }}</p>{%- endif -%}
+          {%- if match.description.value != blank -%}<p class="fc-line__description">{{ match.description.value | escape }}</p>{%- endif -%}
           <div class="fc-line__badges"><span class="fc-badge">{{ 'sections.cart.gift_badge' | t }}</span></div>
           {%- if option_count > 1 -%}
             <details class="fc-line__contents fc-gift-change" id="{{ change_id }}">

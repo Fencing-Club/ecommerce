@@ -45,6 +45,7 @@
         <span class="fc-gift__details">
           <span class="fc-gift__name">{{ gift_name | escape }}</span>
           {%- if gift.details.value != blank -%}<span class="fc-gift__variant">{{ gift.details.value | escape }}</span>{%- endif -%}
+          {%- if gift.description.value != blank -%}<span class="fc-gift__description">{{ gift.description.value | escape }}</span>{%- endif -%}
           <span class="fc-gift__price">
             {%- if available -%}
               <span class="fc-gift__free">{{ 'sections.cart.free' | t }}</span>
