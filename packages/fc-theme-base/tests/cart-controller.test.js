@@ -203,6 +203,26 @@ describe('discount code and order note', () => {
     expect(note.feedback.textContent).toContain("We couldn't save your note.");
   });
 
+  it('closes the note editor without saving, putting back the saved note and freeing checkout', () => {
+    mount('flyout', 'note-saved');
+    const extras = document.querySelector('cart-extras');
+    const note = document.querySelector('cart-note');
+    const saved = note.savedNote;
+    extras.open('note');
+    expect(note.textarea.selectionStart).toBe(saved.length);
+    note.textarea.value = 'Changed';
+    note.textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(holder().dataset.checkoutState).toBe('blocked');
+    vi.stubGlobal('fetch', vi.fn());
+    note.querySelector('[data-cancel-note]').click();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(extras.hasAttribute('data-open')).toBe(false);
+    expect(note.textarea.value).toBe(saved);
+    expect(note.isDirty).toBe(false);
+    expect(holder().dataset.checkoutState).toBe('ready');
+    expect(document.querySelector('.fc-editor__hint')).toBeNull();
+  });
+
   it('adds a code to the ones already applied and closes the editor', async () => {
     mount('flyout');
     const extras = document.querySelector('cart-extras');

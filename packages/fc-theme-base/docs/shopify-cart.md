@@ -32,8 +32,9 @@ Dawn cart stylesheets are gone.
   message; other failures say the change failed and put the quantity back.
 - Removing a line leaves a row with Undo until the next cart change. Undo adds the same variant, quantity, properties
   and selling plan back.
-- The order note saves only with Save note. The editor stays open until the note is saved or cleared, and an unsaved
-  note blocks checkout. There is no saved indicator. A saved note shows as a card with an edit button.
+- The order note saves only with Save note. The editor stays open until the note is saved or the shopper closes it,
+  which puts back the saved note. An unsaved note blocks checkout. There is no saved indicator. A saved note shows
+  as a card with an edit button.
 - Discount codes keep the other applied codes. A code Shopify does not accept is named in the message and stays in
   the field. Applied codes show as removable chips; codes with no amount in the cart, such as shipping codes, show on
   the Shipping row, which then reads Free. Automatic discounts show without a remove button.

@@ -38,6 +38,8 @@ if (!customElements.get('cart-extras')) {
         this.syncButtons();
         const field = kind === 'discount' ? this.querySelector('cart-discount input') : this.querySelector('cart-note textarea');
         field?.focus();
+        // Editing a saved note continues it, so the cursor starts at the end.
+        if (kind === 'note' && field) field.setSelectionRange(field.value.length, field.value.length);
       }
 
       /** Closes the open editor and returns focus to the control that opened it. */
@@ -74,6 +76,7 @@ if (!customElements.get('cart-note')) {
         });
         this.addEventListener('click', event => {
           if (event.target.closest('[data-save-note]')) this.save();
+          else if (event.target.closest('[data-cancel-note]')) this.cancel();
         });
         this.updateCount();
       }
@@ -108,8 +111,20 @@ if (!customElements.get('cart-note')) {
         this.querySelector('[data-save-note]')?.focus();
       }
 
+      /** Closes the editor and puts back the saved note, dropping unsaved changes. */
+      cancel() {
+        if (this.saving) return;
+        this.textarea.value = this.savedNote;
+        this.updateCount();
+        setFeedback(this.feedback, '');
+        this.closest('cart-extras')?.close();
+        cartController()?.updateCheckoutState();
+      }
+
       setSaving(saving) {
         const button = this.querySelector('[data-save-note]');
+        const cancel = this.querySelector('[data-cancel-note]');
+        if (cancel) cancel.disabled = saving;
         this.toggleAttribute('data-saving', saving);
         button.disabled = saving;
         button.toggleAttribute('aria-busy', saving);

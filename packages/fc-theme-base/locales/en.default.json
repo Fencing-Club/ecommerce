@@ -380,7 +380,7 @@
       "applying": "Applying",
       "discount_remove_error": "We couldn't remove {{ code }}.",
       "close_discount": "Close discount code",
-      "optional": "Optional",
+      "close_note": "Close order note",
       "saving": "Saving",
       "edit_note": "Edit order note",
       "note_length": "{{ count }}/{{ max }}",

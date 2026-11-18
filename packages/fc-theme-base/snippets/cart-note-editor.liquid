@@ -1,5 +1,6 @@
 {% doc %}
-  Order note. Saving is explicit: the editor stays open until the note is saved or cleared, and an unsaved note blocks checkout.
+  Order note. Saving is explicit: the editor stays open until the note is saved or the shopper closes it, which drops
+  unsaved changes. An unsaved note blocks checkout.
   @param {string} context - Unique cart view name.
   @param {string} form_id - Owning checkout form.
 {% enddoc %}
@@ -30,7 +31,7 @@
   <div class="fc-editor fc-note__editor" id="CartNoteEditor-{{ context }}">
     <div class="fc-editor__head">
       <label class="fc-editor__label" for="{{ field_id }}">{% render 'fc-icon', icon: 'message-square', size: 16 %}{{ 'sections.cart.order_note' | t }}</label>
-      <span class="fc-editor__hint">{{ 'sections.cart.optional' | t }}</span>
+      <button type="button" class="fc-icon-button fc-icon-button--small" data-cancel-note aria-label="{{ 'sections.cart.close_note' | t }}">{% render 'fc-icon', icon: 'x', size: 16 %}</button>
     </div>
     <textarea class="fc-input fc-note__input" id="{{ field_id }}" name="note" form="{{ form_id }}" rows="3" maxlength="{{ note_max }}" aria-describedby="{{ count_id }} {{ status_id }}">{{ cart.note | escape }}</textarea>
     <div class="fc-note__foot">
