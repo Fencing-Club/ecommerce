@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { X } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { filterKeys, type ListAction, type ListCriteria, type ListKind, type ListViewer } from "@/lib/logistics-list"

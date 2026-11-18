@@ -1,4 +1,4 @@
-import { InputGroup, InputGroupAddon, InputGroupText } from "@buildkitgg/shadcn-baseui-kit"
+import { InputGroup, InputGroupAddon, InputGroupText } from "@buildkitgg/shadcn"
 import { Factory, Warehouse } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { InputGroupNumberInput } from "@/components/number-input"

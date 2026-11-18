@@ -1,4 +1,4 @@
-import { Button, Checkbox, Input, TableCell, TableRow } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Checkbox, Input, TableCell, TableRow } from "@buildkitgg/shadcn"
 import { ChevronDown, ChevronRight } from "lucide-react"
 import { match } from "ts-pattern"
 import { useFormatter, useTranslations } from "use-intl"

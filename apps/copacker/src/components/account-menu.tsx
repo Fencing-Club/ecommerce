@@ -12,7 +12,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { LogOut, Monitor, Moon, Palette, Sun, UserRound } from "lucide-react"
 import { useId } from "react"
 import { useTranslations } from "use-intl"

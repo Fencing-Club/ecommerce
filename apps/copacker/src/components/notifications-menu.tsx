@@ -1,11 +1,4 @@
-import {
-  Button,
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } from "@buildkitgg/shadcn"
 import { Bell, Inbox } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { EmptyState } from "@/components/common"

@@ -1,12 +1,4 @@
-import {
-  Badge,
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Badge, Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@buildkitgg/shadcn"
 import { AlertTriangle, ChevronLeft, ChevronRight, Eye, PackageOpen } from "lucide-react"
 import { useTranslations } from "use-intl"
 import type { Messages } from "@/i18n/messages"

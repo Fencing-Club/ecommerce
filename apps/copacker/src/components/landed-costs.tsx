@@ -8,7 +8,7 @@ import {
   DialogTrigger,
   DropdownMenuItem,
   Separator
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { Plus, Trash2 } from "lucide-react"
 import { useFormatter, useTranslations } from "use-intl"
 import { z } from "zod"

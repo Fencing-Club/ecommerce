@@ -1,11 +1,4 @@
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@buildkitgg/shadcn"
 import { useRef } from "react"
 import { FormField, type FormFieldProps, useFormField } from "@/components/form-controls"
 import { cn } from "@/lib/utils"

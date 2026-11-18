@@ -1,4 +1,4 @@
-import { AlertDialogTrigger, Button, buttonVariants, Dialog, DialogTrigger } from "@buildkitgg/shadcn-baseui-kit"
+import { AlertDialogTrigger, Button, buttonVariants, Dialog, DialogTrigger } from "@buildkitgg/shadcn"
 import { ArrowRight, CircleCheck, CircleDashed, Unplug, Wallet } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"

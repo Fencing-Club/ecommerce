@@ -1,4 +1,4 @@
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@buildkitgg/shadcn-baseui-kit"
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@buildkitgg/shadcn"
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react"
 import { Children } from "react"
 import { useFormatter, useTranslations } from "use-intl"

@@ -1,4 +1,4 @@
-import { Button, Spinner } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Spinner } from "@buildkitgg/shadcn"
 import { CircleAlert, Lock, Plus, Repeat } from "lucide-react"
 import { expect, waitFor, within } from "storybook/test"
 import { useTranslations } from "use-intl"
@@ -113,7 +113,7 @@ export const ProductStatusInUkrainian = meta.story({
   }
 })
 
-// Each tone's pill as the kit draws it: its soft fill, with its dot and label in the tone's color. The colors are for
+// Each tone's pill as shadcn draws it: its soft fill, with its dot and label in the tone's color. The colors are for
 // visual tests; the play checks each pill takes its tone.
 export const TonesMatchTheKit = meta.story({
   render: () => (

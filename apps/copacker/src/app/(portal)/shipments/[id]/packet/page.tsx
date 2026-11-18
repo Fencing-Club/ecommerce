@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { type DocumentSettings } from "@repo/copacker-shipments/shipping-model"
 import { Download } from "lucide-react"
 import { useTranslations } from "use-intl"

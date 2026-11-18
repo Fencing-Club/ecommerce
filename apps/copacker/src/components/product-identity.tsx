@@ -1,4 +1,4 @@
-import { Badge } from "@buildkitgg/shadcn-baseui-kit"
+import { Badge } from "@buildkitgg/shadcn"
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import { useTranslations } from "use-intl"
 

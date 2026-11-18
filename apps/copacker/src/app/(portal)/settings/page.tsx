@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@buildkitgg/shadcn-baseui-kit"
+import { Card, CardContent } from "@buildkitgg/shadcn"
 import { useTranslations } from "use-intl"
 import { PageHeader } from "@/components/common"
 import { DangerZone } from "@/components/danger-zone"

@@ -1,4 +1,4 @@
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@buildkitgg/shadcn-baseui-kit"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@buildkitgg/shadcn"
 import { ChevronDown, Package } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { FlushCard } from "@/components/flush-card"

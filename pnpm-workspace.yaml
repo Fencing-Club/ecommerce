@@ -50,5 +50,4 @@ minimumReleaseAgeExclude:
   - "@turbo/windows-64@2.11.9"
   - "@turbo/windows-arm64@2.11.9"
   - turbo@2.11.9
-  - "@buildkitgg/shadcn-baseui-vega@0.4.0"
-  - "@buildkitgg/shadcn-runtime@0.1.1"
+  - "@buildkitgg/shadcn-sync@0.2.0"

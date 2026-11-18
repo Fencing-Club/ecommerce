@@ -1,6 +1,6 @@
-// Classes the app adds to the kit's controls, in `className`.
+// Classes the app adds to shadcn's controls, in `className`.
 
-// A button a finger can hit on a phone: 44px tall there, and the kit's own size from `sm` up. On a Button of the
+// A button a finger can hit on a phone: 44px tall there, and shadcn's own size from `sm` up. On a Button of the
 // default size.
 export const touchButton = "h-11 sm:h-9"
 

@@ -1,8 +1,91 @@
+# AGENTS.md
+
+## Permission to change guidance
+
+Treat repository rules, agent instructions, skills, and best practices as read-only unless the user explicitly
+authorizes a concrete change. This covers this rule itself, every `AGENTS.md` and `CLAUDE.md`, instructions loaded
+from other files, and everything in [best-practices/](best-practices/README.md). It applies to creating, editing,
+formatting, moving, renaming, and deleting protected files, including changes made by tools or scripts.
+
+When permission is needed, show the proposed changes in a table with **File**, **Before**, and **After** columns.
+Give the exact affected wording or paths, with a row for each change. For additions or deletions, mark the absent
+side as “absent.” Ask for approval of that table and wait before applying it. If the user has already explicitly
+authorized the concrete change, apply only that change. A feature request, review, or failing check does not authorize
+changing the rules.
+
+## Repository instructions
+
+- Start at the [best-practices index](best-practices/README.md). For every code change, apply the
+  [coding principles](best-practices/principles.md) and [conventions](best-practices/conventions.md).
+- Check the [preferred tech stack](best-practices/tech-stack.md) and discuss new libraries before adding them.
+- Before adding a script to any `package.json`, get explicit user permission for the script name and command.
+  If an existing script or a direct `vp` command covers the task, use it.
+
+## Copy and UX
+
+- Review every new or changed user-facing string with at least one writing skill before opening a PR. Use
+  [writing-style-guide](.agents/skills/writing-style-guide/SKILL.md) for interface text, including labels, errors,
+  empty states, and accessible names. Use [copy-editing](.agents/skills/copy-editing/SKILL.md) for marketing copy.
+  Apply [brand-voice](.agents/skills/brand-voice/SKILL.md) when shaping the voice or
+  [deslopify-writing](.agents/skills/deslopify-writing/SKILL.md) when checking for formulaic phrasing.
+- Exercise changed user workflows in the running app with the integrated browser. Check desktop and mobile layouts,
+  keyboard use, and accessible names.
+
+## Documentation and data
+
+- Update product documentation alongside behavior changes. Keep each page focused on one topic. Review prose, evidence
+  ledgers, status tables, and narrative records directly. Reserve executable tests for code and generated artifacts
+  that affect behavior, fabrication, or an external interface.
+- Treat stale prototype data as disposable. Only migrate or repair it on explicit request. Preserve integration
+  credentials and unrelated external configuration during a data reset unless the user explicitly requests a full reset.
+
+## Before opening a PR
+
+- Open pull requests on GitHub, where these repositories are hosted.
+- When the change is ready for review, run the relevant focused checks, fix related failures together, and run
+  `pnpm verify`.
+- Only bypass a Git hook with explicit user permission for an unrelated failure. Run focused checks on the files
+  being committed and report the blocker and checks in the handoff.
+
+# Project-specific guidance
+
+Project-specific requirements below take precedence over shared recommendations when they differ.
+
+# Ecommerce agent guidance
+
+- **Lint:** `oxlint` (not eslint) · **Format:** `oxfmt` (not prettier)
+- **Type-check:** TypeScript 7 RC native compiler via `pnpm check:types`
+- **Test:** Vitest via `pnpm test`; Playwright end-to-end via `pnpm --filter copacker test:e2e`
+  ([apps/copacker/docs/e2e.md](apps/copacker/docs/e2e.md)) · **Build:** TanStack Start / package builds via `pnpm build`
+- **Never test migrations:** no test runs, replays or checks them. Database tests build the schema from
+  `src/db/schema.ts` with `applySchema` (`apps/copacker/tests/database.ts`). Only CI's one `db:migrate` release gate
+  runs them.
+- **Package manager:** pnpm `>=12` on Node `>=24` · **Tasks:** Turborepo
+- **Git hooks:** lefthook (pre-commit: `oxlint --fix` + `oxfmt`; pre-push: `check:types`). Don't use `--no-verify`.
+- **Styling:** shadcn/ui components from `@buildkitgg/shadcn`, which shadcn-sync generates on install (base-vega
+  style), used as they are, with Tailwind v4; no local copies or patches of shadcn's source. Existing vanilla-extract
+  page styles stay. See
+  [apps/copacker/docs/styling.md](apps/copacker/docs/styling.md).
+- **Reuse first:** prefer `@mantine/hooks`, `ts-extras`, `ts-pattern`, and `tiny-invariant` over hand-rolled hooks /
+  type helpers; narrow with type guards, not `as`.
+- **Product copy:** use clear, concise wording. Never use `·`, `•`, or another dot glyph as a visual separator.
+- **Storybook:** every page and component has sibling `*.stories.tsx` with `play` tests
+  (`pnpm --filter copacker storybook`); `tests/stories.test.ts` fails on a missing one. See
+  [apps/copacker/docs/storybook.md](apps/copacker/docs/storybook.md).
+- **Docs:** root [`docs/`](docs/README.md) is for monorepo-wide engineering only. Anything specific to one app or
+  package goes in that app or package's own `docs/` folder, indexed by its `docs/README.md`; every app and package gets
+  one.
+- **UX acceptance:** verify every UX change through the integrated browser before calling it complete. Component tests
+  alone are not sufficient.
+
+Verify loop (must be clean before finishing): run **`pnpm verify`** (format, lint, types, knip, and the unit tests the
+change reaches). Stories, e2e and coverage run in PR validation; `pnpm verify:ci` runs every test with coverage.
+
 # Ecommerce Monorepo — Project Guidelines
 
 A Turborepo + pnpm monorepo with React 19 and TypeScript applications. UI systems are selected at the app or
-product-surface boundary. Shared config lives in `@repo/*` packages under `packages/`. See [README.md](../README.md) for
-setup and the [docs index](../docs/README.md) for conventions.
+product-surface boundary. Shared config lives in `@repo/*` packages under `packages/`. See [README.md](README.md) for
+setup and the [docs index](docs/README.md) for conventions.
 
 ## Tooling (differs from common defaults)
 
@@ -12,7 +95,6 @@ setup and the [docs index](../docs/README.md) for conventions.
 - **Package manager:** pnpm (`>=12`) on Node `>=24`, enforced via root `engines` + `engine-strict`.
 - **Task runner:** Turborepo.
 - oxlint rules live in the shared `@repo/oxlint-config` base; add new rules there so every package benefits.
-- Hosted on **GitHub** — use GitHub for PRs and issues.
 
 ## Build / verify loop
 
@@ -42,12 +124,12 @@ checks run directly.
 
 ## Conventions
 
-Coding conventions live in the [`docs/`](../docs/README.md) folder — start at the index and read the relevant page
-before writing code. Working in an app or package, read its own `docs/README.md` too. Two points worth stating up front:
-the **React Compiler is on** (don't hand-write `useMemo`/`useCallback`/`memo`), and **reuse before building** — check
-the [hooks](../docs/hooks.md) and [type-helper](../docs/typescript.md) catalogs before writing your own.
+Coding conventions live in the [`docs/`](docs/README.md) folder — start at the index and read the relevant page before
+writing code. Working in an app or package, read its own `docs/README.md` too. Two points worth stating up front: the
+**React Compiler is on** (don't hand-write `useMemo`/`useCallback`/`memo`), and **reuse before building** — check the
+[hooks](docs/hooks.md) and [type-helper](docs/typescript.md) catalogs before writing your own.
 
-Prefer the tools in the [preferred tech stack](../docs/tech-stack.md); **introducing a library that isn't already used
+Prefer the tools in the [preferred tech stack](docs/tech-stack.md); **introducing a library that isn't already used
 needs a human discussion**, not a silent add.
 
 - **Correctness over expediency.** Fix root causes and keep contracts coherent, even when a shortcut is faster.
@@ -60,11 +142,11 @@ needs a human discussion**, not a silent add.
 ## Documentation
 
 - **Keep this file brief** — it's the entry point; link to `docs/` articles rather than duplicating detail.
-- **Docs live with what they describe.** The root [`docs/`](../docs/README.md) is only for engineering across the whole
+- **Docs live with what they describe.** The root [`docs/`](docs/README.md) is only for engineering across the whole
   monorepo (setup, TypeScript, hooks, the preferred stack). Everything specific to one app or package — its product
   rules, pages, APIs, operations, tests and specs — goes in that app or package's own `docs/` folder, indexed by its
-  `docs/README.md` (for example [Copacker's](../apps/copacker/docs/README.md)). A new app or package gets a `docs/`
-  folder with its first doc, and a link from the root index.
+  `docs/README.md` (for example [Copacker's](apps/copacker/docs/README.md)). A new app or package gets a `docs/` folder
+  with its first doc, and a link from the root index.
 - **One topic per page, kept short**, and updated (with its folder's `README.md` index) in the same change as the
   behavior, tooling or convention it describes.
 - Don't write tests or validators for prose docs, backlogs or status tables; review them directly. Tests cover code and
@@ -81,21 +163,21 @@ needs a human discussion**, not a silent add.
 
 ## Copacker
 
-- Local servers use [Portless](../apps/copacker/docs/development.md). Discover worktree URLs with
+- Local servers use [Portless](apps/copacker/docs/development.md). Discover worktree URLs with
   `pnpm --filter copacker dev:urls`; never kill another checkout's server, replace its route with `--force`, or stop the
-  shared proxy. Update the [domain/provider inventory](../apps/copacker/docs/domains.md) for integration changes.
+  shared proxy. Update the [domain/provider inventory](apps/copacker/docs/domains.md) for integration changes.
 
 - Every page and component has stories with `play` tests beside its source (`<name>.stories.tsx`); add or update them
-  with the change. See [apps/copacker/docs/storybook.md](../apps/copacker/docs/storybook.md).
+  with the change. See [apps/copacker/docs/storybook.md](apps/copacker/docs/storybook.md).
 - Production data must survive every release. Keep applied migrations immutable and append forward migrations; never
   replace deployed migration history with a fresh baseline or reset a database as part of a release. Remove obsolete
   runtime compatibility paths only when stored data meets the current contract. For schema changes, edit
   `apps/copacker/src/db/schema.ts` and run `pnpm --filter copacker db:generate`. See
-  [database setup](../apps/copacker/docs/operations.md#databases-and-migrations). Database resets require explicit
+  [database setup](apps/copacker/docs/operations.md#databases-and-migrations). Database resets require explicit
   authorization.
 - Never test migrations. The one exception is CI's `worker` job, which applies them to an empty Postgres once per run as
   a release gate. How database tests get their schema is in
-  [database setup](../apps/copacker/docs/operations.md#databases-and-migrations).
+  [database setup](apps/copacker/docs/operations.md#databases-and-migrations).
 - Develop against the local Docker database (`pnpm --filter copacker db:up`), never production. Local prototype data is
   disposable; never reset or delete production data unless the user explicitly asks, and keep integration credentials
   and unrelated external configuration when resetting application data unless a full reset is requested.

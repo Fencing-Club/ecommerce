@@ -1,4 +1,4 @@
-import { Button, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn"
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { useLocale, useTranslations } from "use-intl"

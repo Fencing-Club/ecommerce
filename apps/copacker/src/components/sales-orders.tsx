@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { useDebouncedValue } from "@mantine/hooks"
 import { Link } from "@tanstack/react-router"
 import { ShoppingBag, ReceiptText, ExternalLink, Repeat, Search } from "lucide-react"

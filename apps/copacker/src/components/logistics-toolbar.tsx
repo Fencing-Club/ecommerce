@@ -9,7 +9,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { ArrowDownUp, Columns3, PlusCircle, SlidersHorizontal } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"

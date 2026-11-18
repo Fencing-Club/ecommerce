@@ -3,10 +3,15 @@ import { expect, test } from "../fixtures"
 
 test.use({ role: "buyer" })
 
-// A day as "YYYY-MM-DD" in the store's time zone, which follows the browser's (Los Angeles in playwright.config.ts).
-function dayAgo(days: number) {
-  const date = new Date(Date.now() - days * 86400000)
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(date)
+// Today as "YYYY-MM-DD" in the store's time zone, which follows the browser's (Los Angeles in playwright.config.ts).
+function today() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(Date.now())
+}
+
+// The day a number of calendar days before another, counted as the Overview counts them. Stepping back 24 hours at a
+// time instead would land a day off for the last hour before midnight when a daylight saving change falls between.
+function daysBefore(day: string, days: number) {
+  return new Date(Date.parse(`${day}T00:00:00Z`) - days * 86400000).toISOString().slice(0, 10)
 }
 
 const salesByDay = (page: Page) => page.getByRole("table", { name: "Sales by day" })
@@ -64,8 +69,9 @@ test("picks a preset period", async ({ page }) => {
 })
 
 test("picks a custom range of days", async ({ page }) => {
-  const from = dayAgo(20)
-  const to = dayAgo(11)
+  const day = today()
+  const from = daysBefore(day, 20)
+  const to = daysBefore(day, 11)
   await page.getByRole("button", { name: "Last 30 days" }).click()
   const picker = page.getByRole("dialog", { name: "Choose a period" })
   await picker.getByRole("button", { name: "Custom range" }).click()

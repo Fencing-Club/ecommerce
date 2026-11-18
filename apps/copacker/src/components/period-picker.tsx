@@ -1,4 +1,4 @@
-import { Button, Popover, PopoverContent, PopoverTrigger } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Popover, PopoverContent, PopoverTrigger } from "@buildkitgg/shadcn"
 import { ArrowLeft, ArrowRight, CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import { useState } from "react"
 import { useFormatter, useLocale, useTranslations } from "use-intl"

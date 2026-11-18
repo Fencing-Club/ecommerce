@@ -17,7 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { variantName } from "@repo/copacker-marketplaces/shopify"
 import type { CatalogVariant } from "@repo/copacker-marketplaces/shopify"
 import { Ellipsis, Plus, Search, X } from "lucide-react"

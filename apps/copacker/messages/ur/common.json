@@ -125,13 +125,7 @@
   },
   "ui": {
     "close": "بند کریں",
-    "toggleSidebar": "سائیڈبار ٹوگل کریں",
-    "sidebar": "سائیڈبار",
-    "sidebarDescription": "موبائل سائیڈبار دکھاتا ہے۔",
-    "clear": "صاف کریں",
-    "showOptions": "اختیارات دکھائیں",
-    "remove": "{label} ہٹائیں",
-    "loading": "لوڈ ہو رہا ہے"
+    "toggleSidebar": "سائیڈبار ٹوگل کریں"
   },
   "pages": {
     "error": {

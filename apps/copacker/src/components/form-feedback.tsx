@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, Button, Spinner } from "@buildkitgg/shadcn-baseui-kit"
+import { Alert, AlertDescription, Button, Spinner } from "@buildkitgg/shadcn"
 import { AlertCircle } from "lucide-react"
 import { useFormState } from "react-hook-form"
 import { useMessageText } from "@/hooks/use-error-text"

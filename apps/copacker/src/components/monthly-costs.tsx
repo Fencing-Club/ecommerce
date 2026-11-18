@@ -1,4 +1,4 @@
-import { Button, DialogTrigger, DropdownMenuItem } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, DialogTrigger, DropdownMenuItem } from "@buildkitgg/shadcn"
 import { Plus } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"

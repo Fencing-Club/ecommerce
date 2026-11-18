@@ -1,11 +1,4 @@
-import {
-  Combobox,
-  ComboboxInput,
-  ComboboxContent,
-  ComboboxList,
-  ComboboxItem,
-  FieldGroup
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem, FieldGroup } from "@buildkitgg/shadcn"
 import { useDebouncedValue } from "@mantine/hooks"
 import { countriesIn } from "@repo/copacker-shipments/countries"
 import { useEffect, useRef, useState } from "react"

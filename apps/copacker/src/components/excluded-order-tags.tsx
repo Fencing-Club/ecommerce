@@ -1,4 +1,4 @@
-import { Badge, Button, DialogTrigger } from "@buildkitgg/shadcn-baseui-kit"
+import { Badge, Button, DialogTrigger } from "@buildkitgg/shadcn"
 import { Tags } from "lucide-react"
 import { useRef } from "react"
 import { useTranslations } from "use-intl"

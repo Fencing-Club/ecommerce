@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { useState } from "react"
 import { expect, fn, screen, spyOn, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"

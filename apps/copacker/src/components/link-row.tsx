@@ -1,4 +1,4 @@
-import { TableRow } from "@buildkitgg/shadcn-baseui-kit"
+import { TableRow } from "@buildkitgg/shadcn"
 import { usePermissions } from "@/components/access"
 import { canOpen } from "@/lib/access"
 import { cn } from "@/lib/utils"

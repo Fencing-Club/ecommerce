@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import {
   Bell,
   Box,

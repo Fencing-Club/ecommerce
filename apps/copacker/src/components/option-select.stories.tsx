@@ -1,4 +1,4 @@
-import { Field, FieldLabel } from "@buildkitgg/shadcn-baseui-kit"
+import { Field, FieldLabel } from "@buildkitgg/shadcn"
 import { ArrowDownUp } from "lucide-react"
 import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"

@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { CircleCheck } from "lucide-react"
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"

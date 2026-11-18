@@ -1,14 +1,8 @@
-import {
-  Button,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Button, DialogClose, DialogDescription, DialogHeader, DialogTitle } from "@buildkitgg/shadcn"
 import { CircleCheck } from "lucide-react"
 import { useId, useRef } from "react"
 import { useTranslations } from "use-intl"
+import { DialogContent } from "@/components/overlay-content"
 import type { Store } from "@/lib/stores"
 import { StatusBadge } from "./common"
 import { InventorySyncRow } from "./inventory-sync"

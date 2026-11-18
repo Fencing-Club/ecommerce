@@ -1,4 +1,4 @@
-import { Input, Switch, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn-baseui-kit"
+import { Input, Switch, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@buildkitgg/shadcn"
 import { useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { arrayIncludes } from "ts-extras"

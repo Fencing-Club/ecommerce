@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { Link } from "@tanstack/react-router"
 import { useTranslations } from "use-intl"
 import { EmptyState, PageHeader } from "@/components/common"

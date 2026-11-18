@@ -1,13 +1,4 @@
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Checkbox,
-  FieldGroup,
-  Separator
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Card, CardContent, CardHeader, CardTitle, Checkbox, FieldGroup, Separator } from "@buildkitgg/shadcn"
 import { useSelection } from "@mantine/hooks"
 import { skipToken } from "@reduxjs/toolkit/query"
 import {

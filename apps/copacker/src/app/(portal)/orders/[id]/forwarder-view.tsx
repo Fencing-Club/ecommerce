@@ -9,7 +9,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { orderDestination, receivers } from "@repo/copacker-packing-rules"
 import { amazonNetworkNames } from "@repo/copacker-shipments"
 import { Building2, MapPin, Warehouse } from "lucide-react"

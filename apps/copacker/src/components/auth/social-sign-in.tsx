@@ -1,4 +1,4 @@
-import { Button, FieldSeparator, Spinner } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, FieldSeparator, Spinner } from "@buildkitgg/shadcn"
 import { useState } from "react"
 import { objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"

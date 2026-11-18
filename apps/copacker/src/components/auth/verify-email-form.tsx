@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { useInterval } from "@mantine/hooks"
 import { useState } from "react"
 import { useFormState } from "react-hook-form"

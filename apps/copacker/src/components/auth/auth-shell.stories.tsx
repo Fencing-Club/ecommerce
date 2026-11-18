@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { AuthPage, AuthShell, AuthSwitch } from "./auth-shell"

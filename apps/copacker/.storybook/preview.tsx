@@ -8,8 +8,8 @@ import { configure } from "storybook/test"
 import { IntlProvider } from "use-intl"
 import { getStoryRouter } from "#.storybook/router"
 import { AccessProvider } from "@/components/access"
-import { KitProvider } from "@/components/kit-provider"
 import { Providers } from "@/components/providers"
+import { ShadcnProvider } from "@/components/shadcn-provider"
 import { direction, localeNames, locales, type Locale } from "@/i18n/locales"
 import type { Messages } from "@/i18n/messages"
 import { type Permissions } from "@/lib/access"
@@ -20,8 +20,8 @@ import { mockRows } from "./mocks/db"
 import { handlers } from "./mocks/handlers"
 import { prepareStoryRouter, StoryRouter } from "./router"
 import { viewports } from "./viewports"
-// The app's stylesheet, as the root route brings it: Tailwind with the kit's stylesheet, then the theme's colors, which
-// override the kit's defaults.
+// The app's stylesheet, as the root route brings it: Tailwind with shadcn's stylesheet, then the theme's colors, which
+// override shadcn's defaults.
 import "@/app/globals.css"
 import "@/styles/theme.css"
 
@@ -83,7 +83,7 @@ function StoryFrame({
   }, [locale])
   return (
     <IntlProvider locale={locale} messages={messages} timeZone={storyTimeZone}>
-      <KitProvider>
+      <ShadcnProvider>
         <Providers>
           <NuqsTestingAdapter searchParams={query} hasMemory>
             <AccessProvider permissions={permissions}>
@@ -91,7 +91,7 @@ function StoryFrame({
             </AccessProvider>
           </NuqsTestingAdapter>
         </Providers>
-      </KitProvider>
+      </ShadcnProvider>
     </IntlProvider>
   )
 }

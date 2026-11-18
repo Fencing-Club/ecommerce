@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { useTranslations } from "use-intl"
 import { AuthPage } from "./auth-shell"
 

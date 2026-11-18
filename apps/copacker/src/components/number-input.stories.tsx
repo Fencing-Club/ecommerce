@@ -1,4 +1,4 @@
-import { InputGroup, InputGroupAddon, InputGroupText } from "@buildkitgg/shadcn-baseui-kit"
+import { InputGroup, InputGroupAddon, InputGroupText } from "@buildkitgg/shadcn"
 import { expect, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { InputGroupNumberInput, NumberInput } from "./number-input"

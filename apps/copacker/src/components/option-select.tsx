@@ -1,11 +1,4 @@
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@buildkitgg/shadcn"
 
 // One choice, and what the menu says about it under its label.
 export type SelectOption<T extends string> = { value: T; label: string; description?: string }

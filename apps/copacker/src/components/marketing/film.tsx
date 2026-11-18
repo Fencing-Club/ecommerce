@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { Play } from "lucide-react"
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { useTranslations } from "use-intl"

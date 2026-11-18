@@ -1,4 +1,4 @@
-import { CardHeader, CardTitle, Table, TableBody, TableCell, TableRow } from "@buildkitgg/shadcn-baseui-kit"
+import { CardHeader, CardTitle, Table, TableBody, TableCell, TableRow } from "@buildkitgg/shadcn"
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { insetTable } from "@/lib/controls"

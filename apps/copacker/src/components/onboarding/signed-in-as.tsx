@@ -1,4 +1,4 @@
-import { Button } from "@buildkitgg/shadcn-baseui-kit"
+import { Button } from "@buildkitgg/shadcn"
 import { useTranslations } from "use-intl"
 
 // Getting started's corner: who's signed in, and signing out to use another account.

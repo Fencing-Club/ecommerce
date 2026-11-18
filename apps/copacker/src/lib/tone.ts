@@ -15,5 +15,5 @@ export const toneSurface = {
 // destructive when it failed or is lost.
 export type StatusTone = keyof typeof toneSurface
 
-// A badge in a status tone, on the kit's secondary Badge: the tone's surface, without an outline.
+// A badge in a status tone, on shadcn's secondary Badge: the tone's surface, without an outline.
 export const toneBadge = (tone: StatusTone) => ["border-0", toneSurface[tone]]

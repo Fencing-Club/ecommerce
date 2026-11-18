@@ -1,12 +1,4 @@
-import {
-  Button,
-  Card,
-  CardContent,
-  CardFooter,
-  DialogClose,
-  DialogFooter,
-  FieldGroup
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Button, Card, CardContent, CardFooter, DialogClose, DialogFooter, FieldGroup } from "@buildkitgg/shadcn"
 import { Check } from "lucide-react"
 import type { UseFormReturn } from "react-hook-form"
 import { type FieldValues, FormProvider, useFormState } from "react-hook-form"

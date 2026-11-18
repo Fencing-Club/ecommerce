@@ -1,4 +1,4 @@
-import { TooltipProvider } from "@buildkitgg/shadcn-baseui-kit"
+import { TooltipProvider } from "@buildkitgg/shadcn"
 import { ApiProvider } from "@reduxjs/toolkit/query/react"
 import { useEffect } from "react"
 import { api } from "@/lib/api"

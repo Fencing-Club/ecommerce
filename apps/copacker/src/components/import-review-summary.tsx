@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
   Input
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { Plus, Trash2 } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { useMoney } from "@/hooks/use-money"

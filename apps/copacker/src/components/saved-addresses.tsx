@@ -1,4 +1,4 @@
-import { Badge, Button, DialogTrigger, DropdownMenuItem } from "@buildkitgg/shadcn-baseui-kit"
+import { Badge, Button, DialogTrigger, DropdownMenuItem } from "@buildkitgg/shadcn"
 import type { Address } from "@repo/copacker-orders"
 import { Plus } from "lucide-react"
 import { useState } from "react"

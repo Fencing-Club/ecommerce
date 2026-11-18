@@ -1,10 +1,4 @@
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@buildkitgg/shadcn-baseui-kit"
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@buildkitgg/shadcn"
 import { ChevronDown, Plus } from "lucide-react"
 import { parseAsStringLiteral, useQueryState } from "nuqs"
 import { useTranslations } from "use-intl"

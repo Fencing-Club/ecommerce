@@ -3,16 +3,24 @@
 Copacker uses [shadcn/ui](https://ui.shadcn.com) components styled with [Tailwind CSS](https://tailwindcss.com) v4.
 [vanilla-extract](https://vanilla-extract.style) holds the theme tokens, and nothing else.
 
-- **Shared components** come from buildkit's Vega kit, `@buildkitgg/shadcn-baseui-kit`: shadcn's `base-vega` style on
-  Base UI, with logical classes (`ms-`, `ps-`, `start-`) for right-to-left pages. Import them from the package. The app
-  keeps no copy of shadcn's source and has no shadcn CLI.
-- **Take the kit as it is.** When a component needs something it doesn't do, wrap it in `src/components` (as
-  `FlushCard` and `NumberInput` do) or pass a class from `@/lib/controls`. Never copy a component's source to change
-  it; a bug in one goes to buildkit.
-- **The kit's words and direction** come from `KitProvider` (`components/kit-provider.tsx`): its labels, such as a
-  dialog's Close, from `common.ui` in the locale's language, and the page's direction. It also gives the kit the app's
-  `cn()`.
-- **New UI** uses Tailwind classes, kit components and shadcn's conventions: `data-slot`, and `cn()` from
+- **Shared components** come from `@buildkitgg/shadcn`, which
+  [shadcn-sync](https://github.com/betterapps-hq/buildkit/tree/main/packages/shadcn/shadcn-sync) builds into
+  `node_modules/.buildkit/shadcn` on every install: stock shadcn in the `base-vega` style on Base UI, with lucide
+  icons, the neutral theme, and logical classes (`ms-`, `ps-`, `start-`) for right-to-left pages. The `postinstall`
+  in `package.json` holds those settings. `shadcn-registry.json` is the registry snapshot the build reads, so every
+  install gets the same components until someone runs `pnpm exec shadcn-sync update` and commits the new snapshot.
+  Import the components from the package. The app keeps no copy of shadcn's source, no `components.json` and no
+  shadcn CLI.
+- **Take the components as they are.** When one needs something it doesn't do, wrap it in `src/components` (as
+  `FlushCard` and `NumberInput` do) or pass a class from `@/lib/controls`. Never copy or patch a component's source,
+  generated or not; a bug in one goes to shadcn-sync in buildkit, or to shadcn.
+- **Direction and words.** `ShadcnProvider` (`components/shadcn-provider.tsx`) gives the components the page's
+  direction, through Base UI's `DirectionProvider`, and the app's `cn()`. shadcn's built-in labels are English, so
+  the app passes translated ones from `common.ui`: `DialogContent` and `SheetContent` come from
+  `components/overlay-content.tsx`, whose close button reads in the locale's language; the sidebar's rail and toggle
+  take an `aria-label`; and every `Spinner` sits beside text and is `aria-hidden`. The mobile sidebar's hidden title
+  and a combobox chip's remove button have no prop for a label, so they stay English or unnamed.
+- **New UI** uses Tailwind classes, shadcn components and shadcn's conventions: `data-slot`, and `cn()` from
   `@/lib/utils`.
 - **Reset:** Tailwind's preflight. `globals.css` adds the few base rules it leaves out: the body's full height and font
   smoothing, and the pointer on buttons.
@@ -22,7 +30,7 @@ Copacker uses [shadcn/ui](https://ui.shadcn.com) components styled with [Tailwin
 The colors are shadcn's tokens and nothing else: `background`, `primary`, `muted-foreground`, `destructive`, `border`,
 `ring`, `chart-1` to `chart-5`, the `sidebar-*` family and the rest. Their light and dark values live once, in
 `src/styles/theme.css.ts`, which sets the CSS variables on `:root` and `.dark`. It loads after `globals.css`, so its
-values replace the kit's defaults. The kit's stylesheet, which `globals.css` imports, maps those variables into
+values replace the generated defaults. `@buildkitgg/shadcn/tailwind.css`, which `globals.css` imports, maps those variables into
 Tailwind's theme (`bg-primary`, `text-muted-foreground`), so both systems read the same tokens. The
 values are shadcn's orange theme on neutral, in Tailwind v4's colors, as in `designs/CopackerShadcn.lib.pen`. Two
 differ from shadcn's on purpose, for contrast: `sidebar-primary` is orange-700, where shadcn's is lighter, and
@@ -57,7 +65,7 @@ Every color in the app is a shadcn token or a Tailwind palette color from the ta
 `rgb()`. The exceptions are content, not UI: store and sign-in provider logos, product option swatches, and the
 marketing site, sign-in, getting started and maintenance pages, which have their own look.
 
-Controls and cards take the kit's sizes and radii. Don't resize them, except for touch: a control a finger has to hit
+Controls and cards take shadcn's sizes and radii. Don't resize them, except for touch: a control a finger has to hit
 on a phone, or while packing, is 44px.
 
 Dark mode is the `.dark` class on `<html>`; use Tailwind's `dark:` variant. The account menu's Theme chooses it:
@@ -79,7 +87,7 @@ Dark mode is the `.dark` class on `<html>`; use Tailwind's `dark:` variant. The 
 of them doesn't replace it.
 
 - `focus-ring`: the ring a control shows when the keyboard reaches it (`outline-none`, then `ring-3 ring-ring/50` on
-  `:focus-visible`). Every interactive element that isn't a kit component takes it, with a `rounded-*` to shape it.
+  `:focus-visible`). Every interactive element that isn't a shadcn component takes it, with a `rounded-*` to shape it.
 - `text-link`: a link inside a sentence, underlined in the text's own color, with the focus ring. A link that's
   underlined only on hover, such as a record's name in a table, takes `focus-ring rounded-sm` instead.
 
@@ -91,7 +99,7 @@ Reach for these before writing the classes they stand for:
 | --------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | A card whose table or list runs edge to edge  | `FlushCard` (`components/flush-card.tsx`): no gap or padding; a direct `CardHeader` keeps the padding, with a rule under it when something follows |
 | A table's edge columns in line with its card  | `insetTable` from `@/lib/controls`, on the `Table`                                        |
-| A table on its own, outside a card            | `FramedTable` (`components/framed-table.tsx`): the kit's `Table` in a rounded border      |
+| A table on its own, outside a card            | `FramedTable` (`components/framed-table.tsx`): shadcn's `Table` in a rounded border      |
 | A button that's 44px on a phone               | `touchButton` from `@/lib/controls`                                                       |
 | A quiet remove or disconnect                  | `variant="ghost"` with `ghostDestructive` from `@/lib/controls`: muted until pointed at, then red |
 | A menu, popover or dialog trigger that's a button | `render={<Button variant=… size=… />}` on the trigger, never the button's classes copied |
@@ -107,7 +115,7 @@ One component per concept, from the redesign's kit ([consistency](specs/app-rede
 
 | Component                                        | Use                                                                                          |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| `Alert` (the kit's)                              | A page's notice, above its content: what happened and, in its action, what deals with it     |
+| `Alert` (shadcn's)                              | A page's notice, above its content: what happened and, in its action, what deals with it     |
 | `ActionBar` (`components/action-bar.tsx`)        | Unsaved changes, a task flow's summary and submit, a proposal to review, bulk actions. Floats over the column, docks on a phone |
 | `LifecycleTracker` (`components/lifecycle-tracker.tsx`) | A record's stages: done, current, waiting on the viewer, not started. A compact card on a phone |
 | `NextStepCard` (`components/next-step.tsx`)      | A record's one next step for the viewer, or who it waits on. On a phone its actions go in the `ActionBar` |
@@ -124,15 +132,15 @@ goes. Tables, card lists and forms keep the page's full width.
 
 | Module                    | Use it for                                                                                   |
 | ------------------------- | -------------------------------------------------------------------------------------------- |
-| `src/app/globals.css`     | Tailwind, the kit's stylesheet, the shadow and font mapping, `text-meta`, the base rules preflight leaves out, and the `focus-ring` and `text-link` utilities. Imported by the root layout and the marketing pages, before `theme.css`. |
+| `src/app/globals.css`     | Tailwind, `@buildkitgg/shadcn/tailwind.css`, the shadow and font mapping, `text-meta`, the base rules preflight leaves out, and the `focus-ring` and `text-link` utilities. Imported by the root layout and the marketing pages, before `theme.css`. |
 | `@/styles/theme.css`      | The color, radius, font and shadow tokens as CSS variables, and `vars` for TypeScript that needs a token, such as the charts. |
-| `@/lib/controls`          | Classes the app adds to the kit's controls: touch sizes, the quiet destructive button, a table inset in its card. |
+| `@/lib/controls`          | Classes the app adds to shadcn's controls: touch sizes, the quiet destructive button, a table inset in its card. |
 | `@/lib/tone`              | The five status tones' surfaces, and `toneBadge` for a `Badge` in one.                       |
 
 ## Tables
 
-A table on its own is a `FramedTable`: the kit's `Table` in a rounded border, like shadcn's data table. A table that
-sits inside a card runs edge to edge instead: the kit's `Table` with `insetTable` in a `FlushCard`, under its
+A table on its own is a `FramedTable`: shadcn's `Table` in a rounded border, like shadcn's data table. A table that
+sits inside a card runs edge to edge instead: shadcn's `Table` with `insetTable` in a `FlushCard`, under its
 `CardHeader`. Never put a framed table inside a card. Numbers are right-aligned with `tabular-nums`, and a
 value that doesn't apply is `NoValue` (`components/no-value.tsx`): a muted `—` that screen readers hear as "None", or
 as its `reason`. A row that opens a record is clickable as a whole through `LinkRow` (`components/link-row.tsx`), given
@@ -155,5 +163,5 @@ never takes two tones. Its words agree with what the status is of: `labels="sale
 `supplier.shared.status`; anything else reads `common.status`. The full list is in
 [consistency](specs/app-redesign/consistency.md#statuses). Don't style badges by hand.
 
-`StatusBadge` is the kit's secondary `Badge` with `toneBadge(tone)` from `@/lib/tone`: the tone's surface, its soft
+`StatusBadge` is shadcn's secondary `Badge` with `toneBadge(tone)` from `@/lib/tone`: the tone's surface, its soft
 fill with text in the tone's color, without an outline. The Overview's change pills and the action bar's lead tile use the same surfaces.

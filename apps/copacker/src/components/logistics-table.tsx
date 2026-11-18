@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import { Link } from "@tanstack/react-router"
 import { ArrowRight, Check, Ellipsis, ExternalLink, Factory, Package, Ship, Truck, User } from "lucide-react"
 import { useTranslations } from "use-intl"

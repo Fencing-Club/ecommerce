@@ -1,4 +1,4 @@
-import { Table, TableBody } from "@buildkitgg/shadcn-baseui-kit"
+import { Table, TableBody } from "@buildkitgg/shadcn"
 import { useState } from "react"
 import { expect, fn, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"

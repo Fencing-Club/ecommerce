@@ -45,7 +45,7 @@ each hook.
 - `useMessageText`, `useFormErrorMap`, `useErrorMessage` (`use-error-text.ts`): translate a message key or pass text
   through; localized Zod field errors for `zodResolver`; localized `errorMessage` with generic and offline fallbacks.
   Use them when showing validation or request errors outside `useAction` and `useActionForm`.
-- `useIsMobile` (from `@buildkitgg/shadcn-baseui-kit`, the kit's sidebar's own): `true` below 768px. Use it for
+- `useIsMobile` (from `@buildkitgg/shadcn`, shadcn's sidebar's own): `true` below 768px. Use it for
   layout switches that CSS can't handle.
 - `useEdge` (`use-edge.ts`): the reading direction's `"start"` or `"end"` edge as the physical `"left"` or `"right"`
   that a Sidebar's or Sheet's `side` takes. Urdu's start is the right.

@@ -3,7 +3,6 @@ import {
   buttonVariants,
   Dialog,
   DialogClose,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -13,7 +12,7 @@ import {
   FieldDescription,
   FieldLabel,
   Input
-} from "@buildkitgg/shadcn-baseui-kit"
+} from "@buildkitgg/shadcn"
 import type { AmazonConnectionHealth } from "@repo/copacker-marketplaces/amazon"
 import { normalizeShopDomain, shopDomainSchema } from "@repo/copacker-marketplaces/shopify"
 import { ArrowRight, CircleAlert, CircleCheck, CircleDashed, Clock3, Globe } from "lucide-react"
@@ -21,6 +20,7 @@ import { useId, useState } from "react"
 import { useTranslations } from "use-intl"
 import { StatusBadge } from "@/components/common"
 import { FieldError } from "@/components/field-error"
+import { DialogContent } from "@/components/overlay-content"
 import { touchButton } from "@/lib/controls"
 import { storeNames, type Store } from "@/lib/stores"
 import { cn } from "@/lib/utils"

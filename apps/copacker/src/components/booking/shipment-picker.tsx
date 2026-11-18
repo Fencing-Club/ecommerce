@@ -1,4 +1,4 @@
-import { Button, RadioGroup } from "@buildkitgg/shadcn-baseui-kit"
+import { Button, RadioGroup } from "@buildkitgg/shadcn"
 import { Check, RefreshCw, SearchIcon, SearchX, TriangleAlert } from "lucide-react"
 import { useId, useState } from "react"
 import { useTranslations } from "use-intl"

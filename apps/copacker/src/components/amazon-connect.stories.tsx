@@ -1,4 +1,4 @@
-import { Dialog } from "@buildkitgg/shadcn-baseui-kit"
+import { Dialog } from "@buildkitgg/shadcn"
 import { expect, fn, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { type ActionRequest, recordActions } from "@/stories/actions"
