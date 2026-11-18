@@ -1,0 +1,21 @@
+{% doc %}
+  Prints the gift tier minimums in cents, lowest first and comma separated, or nothing when gifts are off.
+  The amounts come from the First and Second gift minimum theme settings, in the store currency, so carts in another
+  currency get no gifts. A second minimum only counts when it's above the first.
+{% enddoc %}
+{%- liquid
+  assign tiers = ''
+  if cart.currency.iso_code == shop.currency
+    assign first = settings.cart_gift_tier_1 | times: 100 | round
+    assign second = settings.cart_gift_tier_2 | times: 100 | round
+    if first > 0
+      assign tiers = first | append: ''
+      if second > first
+        assign tiers = tiers | append: ',' | append: second
+      endif
+    elsif second > 0
+      assign tiers = second | append: ''
+    endif
+  endif
+  echo tiers
+-%}

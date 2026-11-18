@@ -1,5 +1,5 @@
 /*
- * Discount code, order note and the phone checkout bar. Each view has its own copy; saves update the others.
+ * Discount code, order note, gift choices and the phone checkout bar. Each view has its own copy; saves update the others.
  */
 const cartViews = () => [...document.querySelectorAll('cart-items, cart-drawer-items')];
 const refreshCartViews = () => Promise.all(cartViews().map(view => view.onCartUpdate()));
@@ -366,6 +366,89 @@ if (!customElements.get('cart-checkout-bar')) {
         const open = this.hasAttribute('data-open');
         this.querySelector('.fc-bar__breakdown').hidden = !open;
         this.querySelector('[data-toggle-breakdown]')?.setAttribute('aria-expanded', String(open));
+      }
+    }
+  );
+}
+
+if (!customElements.get('cart-gift-options')) {
+  customElements.define(
+    'cart-gift-options',
+    class CartGiftOptions extends HTMLElement {
+      connectedCallback() {
+        if (this.initialized) return;
+        this.initialized = true;
+        this.addEventListener('change', event => {
+          if (event.target.matches('.fc-gift__input')) this.choose(event.target);
+        });
+      }
+
+      get feedback() {
+        return this.querySelector('.fc-feedback');
+      }
+
+      setBusy(busy) {
+        this.toggleAttribute('aria-busy', busy);
+        this.querySelectorAll('.fc-gift__input').forEach(input => {
+          input.disabled = busy || Boolean(input.closest('[data-unavailable]'));
+        });
+      }
+
+      /** Saves the choice as the tier's cart attribute right away. A failure puts the previous choice back. */
+      async choose(input) {
+        const key = this.dataset.giftKey;
+        const { value } = input;
+        // The checked attribute is the saved choice from the last render; clicking only changes the property.
+        const previous = this.querySelector('.fc-gift__input[checked]')?.value || '';
+        const view = this.closest('cart-drawer, cart-items');
+        const inLine = Boolean(this.closest('[data-gift-line]'));
+        setFeedback(this.feedback, '');
+        this.setBusy(true);
+        try {
+          await cartController().mutate(async () => {
+            const response = await fetch(routes.cart_update_url, { ...fetchConfig(), body: JSON.stringify({ attributes: { [key]: value } }) });
+            const cart = await response.json();
+            if (!response.ok || cart.errors || cart.attributes?.[key] !== value) throw new Error('Gift update failed');
+            await refreshCartViews();
+          });
+          // A panel turns into a gift line, so focus follows the gift.
+          const line = [...(view?.querySelectorAll('[data-gift-line]') || [])].find(row => row.dataset.giftKey === key);
+          (inLine ? line?.querySelector('.fc-gift__input:checked') : line?.querySelector('summary'))?.focus({ preventScroll: true });
+        } catch {
+          this.setBusy(false);
+          this.querySelectorAll('.fc-gift__input').forEach(radio => {
+            radio.checked = radio.value === previous;
+          });
+          const template = previous ? this.dataset.changeError : this.dataset.addError;
+          setFeedback(this.feedback, (template || '').replace('[gift]', input.dataset.giftName || value));
+        }
+      }
+    }
+  );
+}
+
+if (!customElements.get('cart-gift-sync')) {
+  const clearing = new Set();
+  customElements.define(
+    'cart-gift-sync',
+    /** Clears gift choices the cart no longer qualifies for. The gift removed notice stays until the next change. */
+    class CartGiftSync extends HTMLElement {
+      connectedCallback() {
+        let keys = [];
+        try {
+          keys = JSON.parse(this.dataset.clear || '[]');
+        } catch {}
+        keys = keys.filter(key => !clearing.has(key));
+        if (!keys.length || !cartController()) return;
+        keys.forEach(key => clearing.add(key));
+        const attributes = Object.fromEntries(keys.map(key => [key, '']));
+        cartController()
+          .mutate(async () => {
+            const response = await fetch(routes.cart_update_url, { ...fetchConfig(), body: JSON.stringify({ attributes }) });
+            if (!response.ok) throw new Error('Gift cleanup failed');
+          })
+          .catch(() => {})
+          .finally(() => keys.forEach(key => clearing.delete(key)));
       }
     }
   );

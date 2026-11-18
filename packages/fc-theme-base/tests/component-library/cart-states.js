@@ -90,6 +90,13 @@
       bar.setAttribute('data-open', '');
       bar.sync();
     },
+    'gift-changing': () => root.querySelector('.fc-gift-change')?.setAttribute('open', ''),
+    'gift-change-error': () => {
+      const change = root.querySelector('.fc-gift-change');
+      change.setAttribute('open', '');
+      const options = change.querySelector('cart-gift-options');
+      setFeedback(options.feedback, options.dataset.changeError.replace('[gift]', 'Training towel'));
+    },
     loading: () => {
       root.dataset.loadState = 'loading';
     },

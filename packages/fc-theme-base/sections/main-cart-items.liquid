@@ -20,6 +20,7 @@
     <form action="{{ routes.cart_url }}" class="fc-cart-page__columns" method="post" id="cart" novalidate>
       <div class="fc-cart-page__items">
         <div class="fc-cart-page__progress" data-cart-region="progress">{% render 'cart-reward-progress' %}</div>
+        <div class="fc-cart-page__gifts" data-cart-region="gifts">{% render 'cart-gifts', context: 'page' %}</div>
         <div class="fc-cart-page__lines" id="main-cart-items" data-cart-region="lines">{% render 'cart-lines', context: 'page' %}</div>
         <div class="fc-suggestions-slot" data-cart-suggestions data-product-id="{{ cart.items.first.product_id }}"></div>
       </div>

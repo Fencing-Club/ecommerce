@@ -292,6 +292,69 @@ describe('discount code and order note', () => {
   });
 });
 
+describe('free gifts', () => {
+  const giftKey = 'Free gift at $600';
+  const pick = (options, value) => {
+    const input = options.querySelector(`.fc-gift__input[value="${value}"]`);
+    input.checked = true;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return input;
+  };
+
+  it('saves the chosen gift on the cart as the tier attribute and refreshes the views', async () => {
+    mount('flyout', 'gift-ready');
+    const refresh = vi.spyOn(customElements.get('cart-drawer-items').prototype, 'onCartUpdate').mockResolvedValue();
+    const posts = [];
+    vi.stubGlobal('fetch', vi.fn(async (url, options) => {
+      const body = JSON.parse(options.body);
+      posts.push([url, body]);
+      return json({ attributes: body.attributes });
+    }));
+    const options = document.querySelector('cart-gift-options');
+    pick(options, 'Club socks, One size');
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(posts).toEqual([['/cart/update.js', { attributes: { [giftKey]: 'Club socks, One size' } }]]);
+    expect(options.feedback.hidden).toBe(true);
+  });
+
+  it('puts the earlier choice back and names the gift when a pick fails', async () => {
+    mount('flyout', 'gift-unavailable');
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Offline'); }));
+    const options = document.querySelector('cart-gift-options');
+    pick(options, 'Club socks, One size');
+    await vi.waitFor(() => expect(options.feedback.hidden).toBe(false));
+    expect(options.feedback.textContent).toContain("We couldn't add Club socks.");
+    expect(options.querySelector('.fc-gift__input:checked')).toBeNull();
+    expect(options.hasAttribute('aria-busy')).toBe(false);
+    expect(options.querySelector('.fc-gift:not([data-unavailable]) input').disabled).toBe(false);
+    expect(options.querySelector('.fc-gift[data-unavailable] input').disabled).toBe(true);
+  });
+
+  it('keeps the chosen gift when Shopify does not save the change', async () => {
+    mount('page', 'gift-chosen');
+    vi.stubGlobal('fetch', vi.fn(async () => json({ attributes: { [giftKey]: 'Club socks, One size' } })));
+    const options = document.querySelector('.fc-gift-change cart-gift-options');
+    pick(options, 'Training towel, Charcoal');
+    await vi.waitFor(() => expect(options.feedback.hidden).toBe(false));
+    expect(options.feedback.textContent).toContain("We couldn't switch to Training towel.");
+    expect(options.querySelector('.fc-gift__input:checked').value).toBe('Club socks, One size');
+  });
+
+  it('clears a gift the cart no longer reaches with one request, however many views ask', async () => {
+    const posts = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url, options) => {
+      posts.push(JSON.parse(options.body));
+      return json({});
+    }));
+    mount('flyout', 'gift-removed');
+    document.body.append(document.querySelector('cart-gift-sync').cloneNode());
+    await vi.waitFor(() => expect(posts).toEqual([{ attributes: { [giftKey]: '' } }]));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(posts.length).toBe(1);
+    expect(document.querySelector('.fc-gift-notice')).not.toBeNull();
+  });
+});
+
 describe('phone checkout bar', () => {
   it('opens the breakdown from Total and closes it on Escape or a tap behind it', () => {
     mount('flyout');

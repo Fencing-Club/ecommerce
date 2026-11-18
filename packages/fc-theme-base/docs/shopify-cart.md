@@ -10,8 +10,11 @@ Dawn cart stylesheets are gone.
 
 - `cart-lines` and `cart-line-item`: product rows with price, savings badge, kit contents (`item_components`),
   quantity stepper, edit and remove. A row's message line shows stock limits and failed changes for that row only.
-- `cart-reward-progress`: free shipping progress above the lines. `cart-free-shipping` prints the minimum that the
-  progress, the Shipping row and the empty message share.
+- `cart-reward-progress`: free shipping and gift tier progress above the lines. `cart-free-shipping` prints the
+  minimum that the progress, the Shipping row and the empty message share; `cart-gift-tiers` prints the gift tiers.
+- `cart-gifts`: a gift choice panel for each reached tier without a choice, and the gift removed notice.
+  `cart-gift-options` draws one tier's gift radios; `cart-gift-lines` draws chosen gifts as free lines after the
+  products, with Change gift.
 - `cart-summary`: discount code and order note (`cart-extras`), summary rows (`cart-breakdown`), total, savings,
   checkout (`cart-checkout`) and the reassurance row. `cart-checkout-bar` is the phone version.
 - `cart-message`: the empty cart and the load failed message. `cart-popular` shows collections chosen in the theme's
@@ -44,11 +47,15 @@ Dawn cart stylesheets are gone.
 
 ## Rewards
 
-- Free shipping is the only reward built so far. The Free shipping minimum theme setting (Cart, Rewards) turns on
-  the reward progress above the lines, the Free reading on the Shipping row and the free shipping sentence in the
-  empty message. Leaving it blank turns all three off.
-- Progress counts the cart total after discounts, as the Reward progress states in the Pen say. The amount is in the
-  store currency and isn't converted, so a cart in another currency shows no free shipping.
+- The reward progress shows free shipping and the gift tiers on one track, each marker at its share of the highest
+  amount. The message names the next reward and the note names the last one reached.
+- Progress counts the cart total after discounts, as the Reward progress states in the Pen say. Amounts are in the
+  store currency and aren't converted, so a cart in another currency shows no rewards.
+
+### Free shipping
+
+- The Free shipping minimum theme setting (Cart, Rewards) turns on the free shipping marker, the Free reading on the
+  Shipping row and the free shipping sentence in the empty message. Leaving it blank turns all three off.
 - The theme only shows free shipping. Shopify gives it at checkout through an automatic discount the merchant
   creates in Shopify admin, under Discounts:
   - Type: Free shipping. Method: Automatic.
@@ -56,7 +63,47 @@ Dawn cart stylesheets are gone.
   - Countries: the countries that ship free.
   - Combinations: product discounts and order discounts, so a code like WELCOME10 keeps free shipping.
   - Nothing links the discount to the theme setting. Change both together.
-- Gift tiers aren't built. They wait on how gifts are stored, since the gifts aren't sold as products.
+
+### Free gifts
+
+- Gifts aren't products. Each gift is a Cart gift metaobject entry, so it never shows in the catalog, search or
+  collections, and has no inventory.
+- The First gift minimum and Second gift minimum theme settings (Cart, Rewards) set the tiers. The second only counts
+  when it's above the first. Leaving both blank turns gifts off.
+- A tier offers every gift whose minimum total is at or below the tier. When the cart reaches a tier, a panel above
+  the lines offers that tier's gifts. A pick saves right away as a cart attribute named for the tier, such as
+  `Free gift at $600`, with the gift's name and details as the value. The gift then shows as a free line after the
+  products, with Change gift.
+- When the cart drops under a chosen tier, the theme clears that tier's attribute and says the gift came out. It also
+  clears a choice that no longer matches an available gift, such as after a gift is renamed or switched off, so the
+  shopper chooses again.
+- The order shows the choice under Additional details, for example `Free gift at $600: Club socks, One size`. Whoever
+  packs the order adds the gift.
+- Nothing at checkout enforces a gift. A shopper can check out without choosing one, and the gift doesn't show in
+  Shopify's checkout summary. The theme clears a choice only when a cart view renders, so check the order total
+  before packing a gift.
+
+#### Admin setup
+
+The merchant sets this up in Shopify admin; the theme creates nothing on the store.
+
+1. Settings, Custom data, Metaobject definitions: add a definition named Cart gift with the type `cart_gift` and
+   these fields:
+
+   | Key             | Type                    | Use                                                                 |
+   | --------------- | ----------------------- | ------------------------------------------------------------------- |
+   | `name`          | Single line text        | The gift's name. Make it required.                                  |
+   | `image`         | File, images only       | The photo in the choices and on the gift line.                      |
+   | `details`       | Single line text        | A size, color or similar, shown under the name.                     |
+   | `value`         | Money                   | Shown struck through beside Free.                                   |
+   | `minimum_total` | Decimal                 | The lowest cart total, in the store currency, that offers the gift. |
+   | `available`     | True or false           | False shows the gift as Unavailable. Blank counts as available.     |
+
+   Turn on Storefronts access, since the theme reads the entries in Liquid (`shop.metaobjects.cart_gift`).
+2. Content, Metaobjects, Cart gift: add one entry per gift.
+3. Online Store, Themes, Customize, Theme settings, Cart: set the First gift minimum and, for a second tier, the
+   Second gift minimum. A gift's minimum total decides the lowest tier that offers it, so set each gift's minimum to
+   one of the tier amounts.
 
 ## Boundaries
 
@@ -76,4 +123,5 @@ fails, so a click on a cart control in the lab shows that control's failure stat
 
 Run the theme Vitest suite, then `pnpm verify`. Check each state in the lab, then the live flows on the development
 store: adding from a product page, quantity changes, removal and undo, a real discount code, note saving, checkout,
-and the back button from checkout.
+and the back button from checkout. Gifts can only be checked live once the store has the Cart gift definition and
+entries from the admin setup above.

@@ -1,0 +1,140 @@
+{% doc %}
+  Gift choice panels and gift removed notices, from the Gift states in the Pen. A reached tier without a choice gets
+  a panel; a chosen tier shows as a gift line instead (cart-gift-lines). When the cart drops under a chosen tier, the
+  notice says so and cart-gift-sync clears that tier's cart attribute. It also clears choices that no longer match a
+  gift and attributes left from tiers that were removed. A reached tier gets a panel unless it holds a choice that
+  still matches a gift, since only those choices stay off the clear list.
+  @param {string} context - Unique cart view name.
+{% enddoc %}
+{%- liquid
+  capture tier_list
+    render 'cart-gift-tiers'
+  endcapture
+  assign tiers = tier_list | strip | split: ','
+  assign prefix = 'Free gift at '
+  assign keys = '|'
+  assign clear = ''
+  assign ready_count = 0
+
+  for tier_text in tiers
+    assign tier = tier_text | plus: 0
+    assign tier_money = tier | money_without_trailing_zeros
+    assign key = prefix | append: tier_money
+    assign keys = keys | append: key | append: '|'
+    assign chosen = cart.attributes[key]
+    assign valid = false
+    for gift in shop.metaobjects.cart_gift.values
+      assign minimum = gift.minimum_total.value | times: 100 | round
+      assign label = gift.name.value | default: ''
+      if gift.details.value != blank
+        assign label = label | append: ', ' | append: gift.details.value
+      endif
+      if chosen == label and minimum <= tier and gift.available.value != false
+        assign valid = true
+      endif
+    endfor
+    if cart.total_price >= tier
+      if valid == false
+        assign ready_count = ready_count | plus: 1
+        if chosen != blank
+          assign clear = clear | append: ',' | append: key
+        endif
+      endif
+    elsif chosen != blank
+      assign clear = clear | append: ',' | append: key
+    endif
+  endfor
+
+  for attribute in cart.attributes
+    assign attribute_key = attribute | first
+    assign wrapped = '|' | append: attribute_key | append: '|'
+    if attribute_key contains prefix
+      unless keys contains wrapped
+        assign clear = clear | append: ',' | append: attribute_key
+      endunless
+    endif
+  endfor
+  assign clear_keys = clear | remove_first: ',' | split: ','
+-%}
+{%- for tier_text in tiers -%}
+  {%- liquid
+    assign tier = tier_text | plus: 0
+    assign tier_money = tier | money_without_trailing_zeros
+    assign key = prefix | append: tier_money
+    assign chosen = cart.attributes[key]
+  -%}
+  {%- if chosen != blank and cart.total_price < tier -%}
+    {%- liquid
+      assign gift_name = chosen
+      for gift in shop.metaobjects.cart_gift.values
+        assign label = gift.name.value | default: ''
+        if gift.details.value != blank
+          assign label = label | append: ', ' | append: gift.details.value
+        endif
+        if chosen == label
+          assign gift_name = gift.name.value
+        endif
+      endfor
+      assign remaining = tier | minus: cart.total_price | money
+    -%}
+    <div class="fc-gift-notice" role="status">
+      <span class="fc-gift-notice__badge">{% render 'fc-icon', icon: 'gift', size: 18 %}</span>
+      <div class="fc-gift-notice__text">
+        <p class="fc-gift-notice__title">{{ 'sections.cart.gift_removed' | t }}</p>
+        <p class="fc-gift-notice__body">{{ 'sections.cart.gift_removed_body' | t: amount: tier_money, gift: gift_name, remaining: remaining }}</p>
+      </div>
+    </div>
+  {%- endif -%}
+{%- endfor -%}
+{%- assign ready_seen = 0 -%}
+{%- for tier_text in tiers -%}
+  {%- liquid
+    assign tier = tier_text | plus: 0
+    assign tier_money = tier | money_without_trailing_zeros
+    assign key = prefix | append: tier_money
+    assign show = false
+    if cart.total_price >= tier
+      if cart.attributes[key] == blank or clear_keys contains key
+        assign show = true
+      endif
+    endif
+  -%}
+  {%- if show -%}
+    {%- liquid
+      assign ready_seen = ready_seen | plus: 1
+      assign title_id = 'CartGiftTitle-' | append: context | append: '-' | append: tier
+      if ready_count > 1
+        assign title = 'sections.cart.gift_tier_ready' | t: amount: tier_money
+      else
+        assign title = 'sections.cart.gift_ready' | t
+      endif
+      assign next_tier = 0
+      if ready_seen == ready_count
+        for later_text in tiers
+          assign later = later_text | plus: 0
+          if later > cart.total_price and next_tier == 0
+            assign next_tier = later
+          endif
+        endfor
+      endif
+    -%}
+    <section class="fc-gift-choice" aria-labelledby="{{ title_id }}">
+      <div class="fc-gift-choice__head">
+        <span class="fc-gift-choice__badge">{% render 'fc-icon', icon: 'gift', size: 18 %}</span>
+        <div class="fc-gift-choice__text">
+          <h3 class="fc-gift-choice__title" id="{{ title_id }}">{{ title }}</h3>
+          <p class="fc-gift-choice__body">{{ 'sections.cart.gift_ready_body' | t }}</p>
+        </div>
+      </div>
+      {% render 'cart-gift-options', tier: tier, key: key, context: context, labelled_by: title_id %}
+      {%- if next_tier > 0 -%}
+        {%- assign next_money = next_tier | money_without_trailing_zeros -%}
+        {%- assign next_remaining = next_tier | minus: cart.total_price | money -%}
+        <p class="fc-gift-choice__next">{% render 'fc-icon', icon: 'lock', size: 14 %}<span>{{ 'sections.cart.gift_next' | t: amount: next_money, remaining: next_remaining }}</span></p>
+      {%- endif -%}
+    </section>
+  {%- endif -%}
+{%- endfor -%}
+{%- if clear_keys.size > 0 -%}
+  <cart-gift-sync data-clear="{{ clear_keys | json | escape }}" hidden></cart-gift-sync>
+{%- endif -%}

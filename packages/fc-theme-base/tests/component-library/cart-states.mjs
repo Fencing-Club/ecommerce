@@ -32,26 +32,28 @@ function line(index, { key, productId, variantId, title, options = [], price, co
 }
 
 const component = (title, variant, quantity = 1) => ({ quantity, product: { title, has_only_default_variant: !variant }, variant: { title: variant || 'Default Title' } });
-const jacket = index => line(index, { key: '8011:jacket', productId: 801, variantId: 8011, title: 'Competition jacket 350N', options: [['Cut', 'Mens'], ['Size', '44']], price: 18995, compareAt: 21995, picture: 'collection-fie-800n-jacket.jpg' });
+const jacket = (index, quantity = 1) => line(index, { key: '8011:jacket', productId: 801, variantId: 8011, title: 'Competition jacket 350N', options: [['Cut', 'Mens'], ['Size', '44']], price: 18995, compareAt: 21995, quantity, picture: 'collection-fie-800n-jacket.jpg' });
 const kit = index => line(index, {
   key: '8021:kit', productId: 802, variantId: 8021, title: 'Club starter kit', price: 32900, picture: 'mega-club-kids.jpg',
   components: [component('Foil', 'French grip, size 5'), component('Mask', 'M'), component('Glove', 'M'), component('Fencing socks', 'M', 2)],
 });
 const glove = (index, stock = 20) => line(index, { key: '8031:glove', productId: 803, variantId: 8031, title: 'Grip fencing glove', options: [['Size', 'M']], price: 3495, quantity: 2, stock, picture: 'collection-grip-fencing-glove.jpg' });
+const mask = index => line(index, { key: '8051:mask', productId: 805, variantId: 8051, title: 'Club mask 350N', options: [['Size', 'M']], price: 5495, picture: 'mega-club-repair.jpg' });
+const bag = index => line(index, { key: '8061:bag', productId: 806, variantId: 8061, title: 'Wheeled fencing bag', price: 9995, picture: 'mega-bags-wheel.jpg' });
 const plastron = index => line(index, { key: '8041:plastron', productId: 804, variantId: 8041, title: 'Underarm protector 800N', options: [['Side', 'Right'], ['Size', 'M']], price: 4995, available: false, picture: 'collection-underarm-plastron-800n.jpg' });
 
-function cart(items, { note = '', discounts = [], codes = [] } = {}) {
+function cart(items, { note = '', discounts = [], codes = [], attributes = {} } = {}) {
   const subtotal = items.reduce((sum, item) => sum + item.final_line_price, 0);
   const applications = discounts.map(([title, amount, type = 'discount_code']) => ({ title, type, total_allocated_amount: amount, target_selection: 'all', target_type: 'line_item' }));
   return {
     liquid: new CartDrop({
-      items, note, item_count: items.reduce((sum, item) => sum + item.quantity, 0), items_subtotal_price: subtotal,
+      items, note, attributes, item_count: items.reduce((sum, item) => sum + item.quantity, 0), items_subtotal_price: subtotal,
       total_price: subtotal - applications.reduce((sum, application) => sum + application.total_allocated_amount, 0),
       cart_level_discount_applications: applications, discount_applications: applications, requires_shipping: items.length > 0,
       taxes_included: false, currency: { symbol: '$', iso_code: 'USD' },
     }),
     json: {
-      note, item_count: items.reduce((sum, item) => sum + item.quantity, 0),
+      note, attributes, item_count: items.reduce((sum, item) => sum + item.quantity, 0),
       items: items.map(item => ({ key: item.key, quantity: item.quantity, product_title: item.product.title })),
       discount_codes: codes.map(code => ({ code, applicable: true })),
     },
@@ -59,11 +61,32 @@ function cart(items, { note = '', discounts = [], codes = [] } = {}) {
 }
 
 const standard = () => cart([jacket(0), kit(1), glove(2)]);
+// $643.80 reaches the $600 gift; $933.70 reaches both gifts; the standard cart ($588.85) is under the first.
+const giftCart = (options = {}) => cart([jacket(0), kit(1), glove(2), mask(3)], options);
+const bothGiftsCart = () => cart([jacket(0, 2), kit(1), glove(2), mask(3), bag(4)]);
+const socks = { 'Free gift at $600': 'Club socks, One size' };
+
+// Cart gift metaobject entries, shaped like shop.metaobjects.cart_gift.values.
+const gift = (handle, name, details, value, minimum, picture, available = true) => ({
+  system: { handle }, name: { value: name }, details: { value: details }, value: { value }, minimum_total: { value: minimum },
+  available: { value: available }, image: { value: image(picture) },
+});
+export const cartGifts = (towelAvailable = true) => [
+  gift('club-socks', 'Club socks', 'One size', 1800, 600, 'collection-fencing-socks-2-pack.jpg'),
+  gift('training-towel', 'Training towel', 'Charcoal', 2400, 600, 'mega-footwear-socks.jpg', towelAvailable),
+];
 
 // Each state names the cart it starts from. `client` states are finished by cart-states.js in the browser.
 export const cartStates = [
   { id: 'ready', group: 'Flyout and cart page', label: 'Items', cart: standard },
   { id: 'below-free-shipping', group: 'Reward progress', label: 'Below free shipping', cart: () => cart([glove(0)]) },
+  { id: 'gift-ready', group: 'Gifts', label: 'Choose a gift', cart: giftCart },
+  { id: 'gift-unavailable', group: 'Gifts', label: 'Choose a gift, one unavailable', cart: giftCart, gifts: () => cartGifts(false) },
+  { id: 'gift-two-ready', group: 'Gifts', label: 'Two gifts to choose', cart: bothGiftsCart },
+  { id: 'gift-chosen', group: 'Gifts', label: 'Free gift line', cart: () => giftCart({ attributes: socks }) },
+  { id: 'gift-changing', group: 'Gifts', label: 'Changing gift', cart: () => giftCart({ attributes: socks }), client: true },
+  { id: 'gift-change-error', group: 'Gifts', label: 'Gift change failed', cart: () => giftCart({ attributes: socks }), client: true },
+  { id: 'gift-removed', group: 'Gifts', label: 'Gift removed', cart: () => cart([jacket(0), kit(1), glove(2)], { attributes: socks }) },
   { id: 'just-added', group: 'Line item', label: 'Just added', cart: standard, client: true },
   { id: 'updating', group: 'Line item', label: 'Updating quantity', cart: standard, client: true },
   { id: 'stock-limit', group: 'Line item', label: 'Stock limit', cart: () => cart([jacket(0), kit(1), glove(2, 2)]) },
@@ -93,7 +116,7 @@ export const cartStates = [
   { id: 'load-failed', group: 'Cart message', label: 'Load failed', cart: standard, client: true },
 ];
 
-export const cartPageStates = ['ready', 'below-free-shipping', 'empty', 'loading', 'load-failed'];
+export const cartPageStates = ['ready', 'below-free-shipping', 'gift-ready', 'gift-chosen', 'empty', 'loading', 'load-failed'];
 
 export function cartState(id) {
   return cartStates.find(state => state.id === id) || cartStates[0];
@@ -107,6 +130,8 @@ export const cartSettings = {
   cart_popular_collection_3: collection('Weapons', 'mega-club-reels.jpg'),
   cart_empty_link: '#collection',
   cart_free_shipping_threshold: 250,
+  cart_gift_tier_1: 600,
+  cart_gift_tier_2: 900,
 };
 
 const suggestion = (id, title, picture, price, single) => ({

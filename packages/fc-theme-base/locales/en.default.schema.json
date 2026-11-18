@@ -352,7 +352,12 @@
           "header": "Rewards",
           "free_shipping": {
             "label": "Free shipping minimum",
-            "info": "Cart total after discounts, in the store currency. Needs a matching free shipping automatic discount in Shopify admin. Leave blank to hide reward progress."
+            "info": "Cart total after discounts, in the store currency. Needs a matching free shipping automatic discount in Shopify admin. Leave blank to turn free shipping off."
+          },
+          "gift_tier_1": { "label": "First gift minimum" },
+          "gift_tier_2": { "label": "Second gift minimum" },
+          "gift_tier": {
+            "info": "Cart total after discounts, in the store currency. Shoppers pick from the Cart gift entries in Shopify admin whose minimum total is at or below this amount. Leave blank for no gift."
           }
         },
         "cart_trust": {

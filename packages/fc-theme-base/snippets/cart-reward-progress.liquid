@@ -1,40 +1,97 @@
 {% doc %}
-  Reward progress above the cart lines, from the Reward progress states in the Pen. Free shipping is the only reward
-  so far; gift tiers join the same track once they're built. Renders nothing when free shipping is off.
+  Reward progress above the cart lines, from the Reward progress states in the Pen: free shipping and the gift tiers
+  on one track, each marker at its share of the highest amount. The message names the next reward; the note names the
+  last one reached. Renders nothing when no reward is set up. Stops are "amount:kind" text with the amount padded to
+  the same length, so a text sort orders them by amount.
 {% enddoc %}
 {%- liquid
-  capture threshold_cents
+  capture shipping_text
     render 'cart-free-shipping'
   endcapture
-  assign threshold = threshold_cents | plus: 0
+  capture tier_list
+    render 'cart-gift-tiers'
+  endcapture
+  assign shipping = shipping_text | plus: 0
+  assign stops = ''
+  if shipping > 0
+    assign padded = shipping | plus: 10000000000
+    assign stops = stops | append: ',' | append: padded | append: ':shipping'
+  endif
+  assign tiers = tier_list | strip | split: ','
+  for tier_text in tiers
+    assign padded = tier_text | plus: 10000000000
+    assign stops = stops | append: ',' | append: padded | append: ':gift'
+  endfor
+  assign stops = stops | remove_first: ',' | split: ',' | sort
 -%}
-{%- if threshold > 0 and cart != empty -%}
+{%- if stops.size > 0 and cart != empty -%}
   {%- liquid
-    assign remaining = threshold | minus: cart.total_price
-    assign remaining_money = remaining | money
-    assign fill = cart.total_price | times: 100.0 | divided_by: threshold
+    assign total = cart.total_price
+    assign highest = stops.last | split: ':' | first | minus: 10000000000
+    assign fill = total | times: 100.0 | divided_by: highest
     if fill > 100
       assign fill = 100
     endif
-    assign reached = false
-    if remaining <= 0
-      assign reached = true
-    endif
+    assign next_amount = 0
+    assign next_kind = ''
+    assign reached_kind = ''
+    assign gifts_reached = 0
+    for stop in stops
+      assign amount = stop | split: ':' | first | minus: 10000000000
+      assign kind = stop | split: ':' | last
+      if total >= amount
+        assign reached_kind = kind
+        if kind == 'gift'
+          assign gifts_reached = gifts_reached | plus: 1
+        endif
+      elsif next_amount == 0
+        assign next_amount = amount
+        assign next_kind = kind
+      endif
+    endfor
+    assign remaining_money = next_amount | minus: total | money
   -%}
   <div class="fc-progress">
-    <p class="fc-progress__message">
-      {%- if reached -%}
-        {% render 'fc-icon', icon: 'gift', size: 16 %}<strong>{{ 'sections.cart.rewards_unlocked' | t }}</strong>
-      {%- else -%}
-        {% render 'fc-icon', icon: 'truck', size: 16 %}<span>{{ 'sections.cart.free_shipping_remaining_html' | t: amount: remaining_money }}</span>
+    <div class="fc-progress__head">
+      <p class="fc-progress__message">
+        {%- if next_amount == 0 -%}
+          {% render 'fc-icon', icon: 'gift', size: 16 %}<strong>{{ 'sections.cart.rewards_unlocked' | t }}</strong>
+        {%- elsif next_kind == 'shipping' -%}
+          {% render 'fc-icon', icon: 'truck', size: 16 %}<span>{{ 'sections.cart.free_shipping_remaining_html' | t: amount: remaining_money }}</span>
+        {%- elsif gifts_reached > 0 -%}
+          {% render 'fc-icon', icon: 'gift', size: 16 %}<span>{{ 'sections.cart.another_gift_remaining_html' | t: amount: remaining_money }}</span>
+        {%- else -%}
+          {% render 'fc-icon', icon: 'gift', size: 16 %}<span>{{ 'sections.cart.gift_remaining_html' | t: amount: remaining_money }}</span>
+        {%- endif -%}
+      </p>
+      {%- if next_amount > 0 and reached_kind != '' -%}
+        <p class="fc-progress__note">
+          {% render 'fc-icon', icon: 'check', size: 14 %}
+          {%- if reached_kind == 'shipping' -%}
+            <span class="fc-progress__note-long">{{ 'sections.cart.free_shipping_unlocked' | t }}</span><span class="fc-progress__note-short">{{ 'sections.cart.free_shipping_unlocked_short' | t }}</span>
+          {%- else -%}
+            <span class="fc-progress__note-long">{{ 'sections.cart.gift_unlocked' | t }}</span><span class="fc-progress__note-short">{{ 'sections.cart.gift_unlocked_short' | t }}</span>
+          {%- endif -%}
+        </p>
       {%- endif -%}
-    </p>
+    </div>
     <div class="fc-progress__track" aria-hidden="true">
       <span class="fc-progress__fill" style="width: {{ fill | round: 2 }}%"></span>
-      <span class="fc-progress__stop" style="--at: 100%"{% if reached %} data-reached{% endif %}>
-        <span class="fc-progress__marker">{% render 'fc-icon', icon: 'truck', size: 12 %}</span>
-        <span class="fc-progress__label">{{ threshold | money_without_trailing_zeros }}</span>
-      </span>
+      {%- for stop in stops -%}
+        {%- liquid
+          assign amount = stop | split: ':' | first | minus: 10000000000
+          assign kind = stop | split: ':' | last
+          assign at = amount | times: 100.0 | divided_by: highest | round: 2
+          assign icon = 'gift'
+          if kind == 'shipping'
+            assign icon = 'truck'
+          endif
+        -%}
+        <span class="fc-progress__stop" style="--at: {{ at }}%"{% if total >= amount %} data-reached{% endif %}>
+          <span class="fc-progress__marker">{% render 'fc-icon', icon: icon, size: 12 %}</span>
+          <span class="fc-progress__label">{{ amount | money_without_trailing_zeros }}</span>
+        </span>
+      {%- endfor -%}
     </div>
   </div>
 {%- endif -%}

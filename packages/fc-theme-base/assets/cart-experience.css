@@ -70,6 +70,50 @@
 .fc-kit svg { flex: none; color: var(--cart-benefit); }
 .fc-kit__name { flex: 1; min-width: 0; }
 .fc-kit__spec { color: var(--cart-ink-soft); font-size: 12px; text-align: end; }
+
+/* Gifts: choice panels, radios, the removed notice and the free gift line */
+.fc-line__free { color: var(--cart-benefit); }
+.fc-gift-choice { display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: 12px; background: var(--cart-benefit-surface); }
+.fc-gift-choice__head,
+.fc-gift-notice { display: flex; align-items: center; gap: 12px; }
+.fc-gift-choice__badge,
+.fc-gift-notice__badge { display: flex; flex: none; align-items: center; justify-content: center; box-sizing: border-box; width: 36px; height: 36px; border-radius: 50%; }
+.fc-gift-choice__badge { background: var(--cart-benefit); color: var(--cart-bg); }
+.fc-gift-choice__text,
+.fc-gift-notice__text { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.fc-gift-choice__title,
+.fc-gift-notice__title { margin: 0; color: var(--cart-ink); font: 600 15px/1.3 var(--cart-body); letter-spacing: 0; }
+.fc-gift-choice__body,
+.fc-gift-notice__body { color: var(--cart-ink-soft); font: 13px/1.4 var(--cart-body); }
+.fc-gift-choice__next { display: flex; align-items: center; gap: 6px; color: var(--cart-ink-soft); font: 12px/1.4 var(--cart-body); }
+.fc-gift-choice__next svg { flex: none; }
+.fc-gift-notice { align-items: flex-start; padding: 16px; border-radius: 12px; background: var(--cart-surface); }
+.fc-gift-notice__badge { border: 1px solid var(--cart-line); background: var(--cart-bg); color: var(--cart-ink-soft); }
+.fc-gift-notice__text { gap: 4px; }
+.fc-gifts { min-width: 0; margin: 0; padding: 0; border: 0; }
+.fc-gifts--grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.fc-gifts--list { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.fc-gift { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--cart-line-strong); border-radius: 10px; background: var(--cart-bg); cursor: pointer; }
+.fc-gift:has(.fc-gift__input:checked) { border-color: var(--cart-ink); }
+.fc-gift:has(.fc-gift__input:focus-visible) { outline: 2px solid var(--cart-alert); outline-offset: 2px; }
+.fc-gift__input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+.fc-gift__photo { display: block; flex: 0 0 56px; width: 56px; height: 56px; overflow: hidden; border-radius: 6px; background: var(--cart-surface); }
+.fc-gift__photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.fc-gift__details { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.fc-gift__name { font: 600 14px/1.3 var(--cart-body); overflow-wrap: anywhere; }
+.fc-gift__variant { color: var(--cart-ink-soft); font: 12px/1.3 var(--cart-body); }
+.fc-gift__price { display: flex; align-items: baseline; gap: 6px; padding-top: 2px; color: var(--cart-ink-soft); font: 600 13px/1.3 var(--cart-body); }
+.fc-gift__free { color: var(--cart-benefit); }
+.fc-gift__price s { font-size: 12px; font-weight: 400; }
+.fc-gift__radio { display: flex; flex: none; align-items: center; justify-content: center; box-sizing: border-box; width: 20px; height: 20px; border: 1.5px solid var(--cart-line-strong); border-radius: 50%; }
+.fc-gift:has(.fc-gift__input:checked) .fc-gift__radio { border-color: var(--cart-ink); }
+.fc-gift:has(.fc-gift__input:checked) .fc-gift__radio::after { width: 10px; height: 10px; border-radius: 50%; background: var(--cart-ink); content: ''; }
+.fc-gift[data-unavailable] { cursor: default; }
+.fc-gift[data-unavailable] .fc-gift__photo img { opacity: 0.4; }
+.fc-gift[data-unavailable] .fc-gift__name { color: var(--cart-ink-soft); }
+.fc-gift[data-unavailable] .fc-gift__radio { border-color: var(--cart-line); background: var(--cart-surface); }
+cart-gift-options[aria-busy] .fc-gift { cursor: progress; }
+cart-gift-options .fc-feedback { margin-top: 4px; }
 .fc-line__controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 6px; }
 .fc-stepper.quantity { display: inline-flex; align-items: center; width: auto; height: 40px; min-height: 40px; border: 1px solid var(--cart-line-strong); border-radius: 8px; background: var(--cart-bg); }
 .fc-stepper.quantity::before,
@@ -259,7 +303,16 @@ cart-discount.fc-editor,
 .fc-skeleton-checkout { display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; border-radius: 8px; background: var(--cart-line); color: var(--cart-ink-soft); font: 600 15px/1 var(--cart-body); }
 .fc-skeleton-bar { display: none; flex-direction: column; gap: 12px; padding: 14px 16px 16px; border-top: 1px solid var(--cart-line); background: var(--cart-bg); box-shadow: 0 -6px 16px rgb(16 16 18 / 0.08); }
 /* Reward progress: markers sit at their share of the highest reward amount. */
-.fc-progress { display: flex; flex-direction: column; gap: 12px; padding: 14px 24px 16px; background: var(--cart-bg); }
+.fc-progress { display: flex; flex-direction: column; gap: 12px; padding: 14px 24px 16px; background: var(--cart-bg); container-type: inline-size; }
+.fc-progress__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fc-progress__note { display: flex; align-items: center; gap: 4px; color: var(--cart-benefit); font: 500 12px/1.3 var(--cart-body); white-space: nowrap; }
+.fc-progress__note svg { flex: none; }
+.fc-progress__note-short { display: none; }
+/* Narrow tracks (phone flyout, tablet cart page) shorten the unlocked note, as the Pen does. */
+@container (max-width: 440px) {
+  .fc-progress__note-long { display: none; }
+  .fc-progress__note-short { display: inline; }
+}
 .fc-progress__message { display: flex; align-items: center; gap: 6px; font: 400 14px/1.3 var(--cart-body); }
 .fc-progress__message svg { flex: none; color: var(--cart-benefit); }
 .fc-progress__message strong { font-weight: 600; }
@@ -300,6 +353,8 @@ cart-discount.fc-editor,
 .fc-flyout__form { display: flex; flex: 1; flex-direction: column; min-height: 0; }
 .fc-flyout__progress:empty { display: none; }
 .fc-flyout__progress { border-bottom: 1px solid var(--cart-line); }
+.fc-flyout__gifts { display: flex; flex-direction: column; gap: 12px; padding: 16px 24px 20px; border-bottom: 1px solid var(--cart-line); }
+.fc-flyout__gifts:empty { display: none; }
 .fc-flyout__scroll { display: flex; flex: 1; flex-direction: column; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
 .fc-flyout__summary { position: sticky; bottom: 0; z-index: 1; margin-top: auto; border-top: 1px solid var(--cart-line); background: var(--cart-bg); }
 .fc-flyout .fc-summary { padding: 14px 24px 18px; }
@@ -337,6 +392,8 @@ body:has(.fc-cart-page) .header__heading-logo { width: 80px; height: 100px; obje
 .fc-cart-page__progress { overflow: hidden; border: 1px solid var(--cart-line); border-radius: 12px; }
 .fc-cart-page__progress:empty { display: none; }
 .fc-cart-page__progress .fc-skeleton-progress { border-bottom: 0; }
+.fc-cart-page__gifts { display: flex; flex-direction: column; gap: 12px; }
+.fc-cart-page__gifts:empty { display: none; }
 .fc-cart-page__lines { border-top: 1px solid var(--cart-line); }
 .fc-cart-page .fc-line { padding: 20px 0; }
 .fc-cart-page .fc-line__photo { flex-basis: 96px; width: 96px; height: 96px; }
@@ -385,6 +442,7 @@ body:has(.fc-cart-page) .header__heading-logo { width: 80px; height: 100px; obje
   .fc-flyout__failed { padding: 24px 16px; }
   .fc-flyout .fc-skeleton-line { padding: 16px; }
   .fc-flyout :is(.fc-progress, .fc-skeleton-progress) { padding: 12px 16px 14px; }
+  .fc-flyout__gifts { padding: 16px; }
   .fc-flyout__loading-summary { display: none; }
   .fc-flyout__loading .fc-skeleton-bar { display: flex; margin-top: auto; }
   .fc-popular .fc-popular__tiles { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 150px; margin-inline: -16px; padding-inline: 16px; overflow-x: auto; scroll-padding-inline: 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
