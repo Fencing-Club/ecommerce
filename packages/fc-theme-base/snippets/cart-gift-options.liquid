@@ -1,5 +1,5 @@
 {% doc %}
-  The gift radios for one tier: every Cart gift entry whose minimum total is at or below the tier. A choice applies
+  The gift radios for one tier: every Cart gift entry whose minimum total is the tier. A choice applies
   right away (cart-controls.js) and is saved as a cart attribute named by `key`, so it shows on the order.
   @param {number} tier - Tier minimum in cents.
   @param {string} key - Cart attribute that holds the choice.
@@ -25,7 +25,7 @@
   <fieldset class="fc-gifts {{ layout_class }}" aria-labelledby="{{ labelled_by }}" aria-describedby="{{ feedback_id }}">
     {%- for gift in shop.metaobjects.cart_gift.values -%}
       {%- assign minimum = gift.minimum_total.value | times: 100 | round -%}
-      {%- if minimum <= tier -%}
+      {%- if minimum == tier -%}
       {%- liquid
         assign gift_name = gift.name.value | default: ''
         assign gift_label = gift_name

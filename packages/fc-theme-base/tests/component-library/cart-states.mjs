@@ -71,9 +71,17 @@ const gift = (handle, name, details, value, minimum, picture, available = true) 
   system: { handle }, name: { value: name }, details: { value: details }, value: { value }, minimum_total: { value: minimum },
   available: { value: available }, image: { value: image(picture) },
 });
+// Gifts with the same minimum total share a tier: two to choose from at $600 and at $900.
 export const cartGifts = (towelAvailable = true) => [
   gift('club-socks', 'Club socks', 'One size', 1800, 600, 'collection-fencing-socks-2-pack.jpg'),
   gift('training-towel', 'Training towel', 'Charcoal', 2400, 600, 'mega-footwear-socks.jpg', towelAvailable),
+  gift('mask-bag', 'Mask bag', 'Black', 3200, 900, 'mega-bags-carry.jpg'),
+  gift('repair-kit', 'Repair kit', 'Foil and epee', 2800, 900, 'mega-club-repair.jpg'),
+];
+// One gift per tier, as the store runs it: each is added without a choice.
+export const singleGifts = () => [
+  gift('harut-point-protectors', 'Harut point protectors', 'Set of 3', null, 175, 'mega-club-repair.jpg'),
+  gift('fencing-journal', 'The Fencing Journal', '', null, 375, 'mega-sizing-guide.jpg'),
 ];
 
 // Each state names the cart it starts from. `client` states are finished by cart-states.js in the browser.
@@ -87,6 +95,8 @@ export const cartStates = [
   { id: 'gift-changing', group: 'Gifts', label: 'Changing gift', cart: () => giftCart({ attributes: socks }), client: true },
   { id: 'gift-change-error', group: 'Gifts', label: 'Gift change failed', cart: () => giftCart({ attributes: socks }), client: true },
   { id: 'gift-removed', group: 'Gifts', label: 'Gift removed', cart: () => cart([jacket(0), kit(1), glove(2)], { attributes: socks }) },
+  { id: 'gift-added', group: 'Gifts', label: 'One gift per tier, added', cart: giftCart, gifts: singleGifts },
+  { id: 'gift-added-removed', group: 'Gifts', label: 'One gift per tier, removed', cart: () => cart([glove(0)], { attributes: { 'Free gift at $175': 'Harut point protectors, Set of 3' } }), gifts: singleGifts },
   { id: 'just-added', group: 'Line item', label: 'Just added', cart: standard, client: true },
   { id: 'updating', group: 'Line item', label: 'Updating quantity', cart: standard, client: true },
   { id: 'stock-limit', group: 'Line item', label: 'Stock limit', cart: () => cart([jacket(0), kit(1), glove(2, 2)]) },
@@ -130,8 +140,6 @@ export const cartSettings = {
   cart_popular_collection_3: collection('Weapons', 'mega-club-reels.jpg'),
   cart_empty_link: '#collection',
   cart_free_shipping_threshold: 250,
-  cart_gift_tier_1: 600,
-  cart_gift_tier_2: 900,
 };
 
 const suggestion = (id, title, picture, price, single) => ({

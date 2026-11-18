@@ -1,7 +1,8 @@
 {% doc %}
-  Free gift lines for the tiers the cart has reached and chosen a gift for, after the product rows. A gift isn't a
-  Shopify line item: it's the Cart gift entry named by the tier's cart attribute. Gift lines have no quantity or
-  remove controls; Change gift opens the tier's radios.
+  Free gift lines for the tiers the cart has reached, after the product rows. A gift isn't a Shopify line item: it's
+  the Cart gift entry named by the tier's cart attribute or, for a tier with only one gift, that gift, which
+  cart-gifts saves to the attribute. Gift lines have no quantity or remove controls; Change gift opens the tier's
+  radios when the tier has more than one gift to choose from.
   @param {string} context - Unique cart view name.
 {% enddoc %}
 {%- liquid
@@ -18,16 +19,25 @@
       assign key = 'Free gift at ' | append: tier_money
       assign chosen = cart.attributes[key]
       assign match = nil
+      assign only_gift = nil
+      assign option_count = 0
       for gift in shop.metaobjects.cart_gift.values
         assign minimum = gift.minimum_total.value | times: 100 | round
-        assign label = gift.name.value | default: ''
-        if gift.details.value != blank
-          assign label = label | append: ', ' | append: gift.details.value
-        endif
-        if chosen != blank and chosen == label and minimum <= tier and gift.available.value != false
-          assign match = gift
+        if minimum == tier
+          assign option_count = option_count | plus: 1
+          assign only_gift = gift
+          assign label = gift.name.value | default: ''
+          if gift.details.value != blank
+            assign label = label | append: ', ' | append: gift.details.value
+          endif
+          if chosen != blank and chosen == label and gift.available.value != false
+            assign match = gift
+          endif
         endif
       endfor
+      if option_count == 1 and only_gift.available.value != false
+        assign match = only_gift
+      endif
       if cart.total_price < tier
         assign match = nil
       endif
@@ -48,11 +58,13 @@
           </div>
           {%- if match.details.value != blank -%}<p class="fc-line__variant">{{ match.details.value | escape }}</p>{%- endif -%}
           <div class="fc-line__badges"><span class="fc-badge">{{ 'sections.cart.gift_badge' | t }}</span></div>
-          <details class="fc-line__contents fc-gift-change" id="{{ change_id }}">
-            <summary id="{{ change_id }}-label">{{ 'sections.cart.gift_change' | t }}{% render 'fc-icon', icon: 'chevron-down', size: 16 %}</summary>
-            {%- assign labelled_by = change_id | append: '-label' -%}
-            {% render 'cart-gift-options', tier: tier, key: key, context: context, labelled_by: labelled_by, layout: 'list' %}
-          </details>
+          {%- if option_count > 1 -%}
+            <details class="fc-line__contents fc-gift-change" id="{{ change_id }}">
+              <summary id="{{ change_id }}-label">{{ 'sections.cart.gift_change' | t }}{% render 'fc-icon', icon: 'chevron-down', size: 16 %}</summary>
+              {%- assign labelled_by = change_id | append: '-label' -%}
+              {% render 'cart-gift-options', tier: tier, key: key, context: context, labelled_by: labelled_by, layout: 'list' %}
+            </details>
+          {%- endif -%}
         </div>
       </li>
     {%- endif -%}

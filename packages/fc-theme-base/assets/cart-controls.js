@@ -428,27 +428,36 @@ if (!customElements.get('cart-gift-options')) {
 }
 
 if (!customElements.get('cart-gift-sync')) {
-  const clearing = new Set();
+  const syncing = new Set();
   customElements.define(
     'cart-gift-sync',
-    /** Clears gift choices the cart no longer qualifies for. The gift removed notice stays until the next change. */
+    /**
+     * Clears gift choices the cart no longer qualifies for and saves the gift of a reached tier that has only one.
+     * The gift removed notice and the gift line are already on screen, so nothing renders again.
+     */
     class CartGiftSync extends HTMLElement {
       connectedCallback() {
-        let keys = [];
-        try {
-          keys = JSON.parse(this.dataset.clear || '[]');
-        } catch {}
-        keys = keys.filter(key => !clearing.has(key));
-        if (!keys.length || !cartController()) return;
-        keys.forEach(key => clearing.add(key));
-        const attributes = Object.fromEntries(keys.map(key => [key, '']));
+        const parse = (value, fallback) => {
+          try {
+            return JSON.parse(value) ?? fallback;
+          } catch {
+            return fallback;
+          }
+        };
+        const clear = parse(this.dataset.clear || '[]', []);
+        const set = parse(this.dataset.set || '[]', []);
+        const entries = [...clear.map(key => [key, '']), ...set].filter(([key]) => !syncing.has(key));
+        if (!entries.length || !cartController()) return;
+        const keys = entries.map(([key]) => key);
+        keys.forEach(key => syncing.add(key));
+        const attributes = Object.fromEntries(entries);
         cartController()
           .mutate(async () => {
             const response = await fetch(routes.cart_update_url, { ...fetchConfig(), body: JSON.stringify({ attributes }) });
-            if (!response.ok) throw new Error('Gift cleanup failed');
+            if (!response.ok) throw new Error('Gift sync failed');
           })
           .catch(() => {})
-          .finally(() => keys.forEach(key => clearing.delete(key)));
+          .finally(() => keys.forEach(key => syncing.delete(key)));
       }
     }
   );

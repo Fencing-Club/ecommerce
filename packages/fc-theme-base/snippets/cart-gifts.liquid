@@ -1,9 +1,10 @@
 {% doc %}
-  Gift choice panels and gift removed notices, from the Gift states in the Pen. A reached tier without a choice gets
-  a panel; a chosen tier shows as a gift line instead (cart-gift-lines). When the cart drops under a chosen tier, the
-  notice says so and cart-gift-sync clears that tier's cart attribute. It also clears choices that no longer match a
-  gift and attributes left from tiers that were removed. A reached tier gets a panel unless it holds a choice that
-  still matches a gift, since only those choices stay off the clear list.
+  Gift choice panels and gift removed notices, from the Gift states in the Pen. A tier offers the Cart gift entries
+  whose minimum total is that tier. A reached tier with two or more gifts and no choice gets a panel, which shows
+  unavailable gifts too; a chosen tier shows as a gift line instead (cart-gift-lines). A reached tier with one gift
+  needs no choice: its gift line shows right away and cart-gift-sync saves the gift to the tier's cart attribute. When the cart drops
+  under a chosen tier, the notice says so and cart-gift-sync clears that tier's attribute. It also clears choices that
+  no longer match a gift and attributes left from tiers that were removed.
   @param {string} context - Unique cart view name.
 {% enddoc %}
 {%- liquid
@@ -14,6 +15,7 @@
   assign prefix = 'Free gift at '
   assign keys = '|'
   assign clear = ''
+  assign set_pairs = ''
   assign ready_count = 0
 
   for tier_text in tiers
@@ -23,21 +25,33 @@
     assign keys = keys | append: key | append: '|'
     assign chosen = cart.attributes[key]
     assign valid = false
+    assign option_count = 0
+    assign only_label = ''
     for gift in shop.metaobjects.cart_gift.values
       assign minimum = gift.minimum_total.value | times: 100 | round
-      assign label = gift.name.value | default: ''
-      if gift.details.value != blank
-        assign label = label | append: ', ' | append: gift.details.value
-      endif
-      if chosen == label and minimum <= tier and gift.available.value != false
-        assign valid = true
+      if minimum == tier
+        assign label = gift.name.value | default: ''
+        if gift.details.value != blank
+          assign label = label | append: ', ' | append: gift.details.value
+        endif
+        assign option_count = option_count | plus: 1
+        assign only_label = label
+        if chosen == label and gift.available.value != false
+          assign valid = true
+        endif
       endif
     endfor
     if cart.total_price >= tier
       if valid == false
-        assign ready_count = ready_count | plus: 1
-        if chosen != blank
-          assign clear = clear | append: ',' | append: key
+        if option_count == 1
+          assign key_json = key | json
+          assign only_json = only_label | json
+          assign set_pairs = set_pairs | append: ',[' | append: key_json | append: ',' | append: only_json | append: ']'
+        else
+          assign ready_count = ready_count | plus: 1
+          if chosen != blank
+            assign clear = clear | append: ',' | append: key
+          endif
         endif
       endif
     elsif chosen != blank
@@ -55,6 +69,7 @@
     endif
   endfor
   assign clear_keys = clear | remove_first: ',' | split: ','
+  assign set_json = set_pairs | remove_first: ','
 -%}
 {%- for tier_text in tiers -%}
   {%- liquid
@@ -66,7 +81,9 @@
   {%- if chosen != blank and cart.total_price < tier -%}
     {%- liquid
       assign gift_name = chosen
+      assign option_count = 0
       for gift in shop.metaobjects.cart_gift.values
+        assign minimum = gift.minimum_total.value | times: 100 | round
         assign label = gift.name.value | default: ''
         if gift.details.value != blank
           assign label = label | append: ', ' | append: gift.details.value
@@ -74,14 +91,22 @@
         if chosen == label
           assign gift_name = gift.name.value
         endif
+        if minimum == tier
+          assign option_count = option_count | plus: 1
+        endif
       endfor
       assign remaining = tier | minus: cart.total_price | money
+      if option_count == 1
+        assign body = 'sections.cart.gift_removed_body_single' | t: amount: tier_money, gift: gift_name, remaining: remaining
+      else
+        assign body = 'sections.cart.gift_removed_body' | t: amount: tier_money, gift: gift_name, remaining: remaining
+      endif
     -%}
     <div class="fc-gift-notice" role="status">
       <span class="fc-gift-notice__badge">{% render 'fc-icon', icon: 'gift', size: 18 %}</span>
       <div class="fc-gift-notice__text">
         <p class="fc-gift-notice__title">{{ 'sections.cart.gift_removed' | t }}</p>
-        <p class="fc-gift-notice__body">{{ 'sections.cart.gift_removed_body' | t: amount: tier_money, gift: gift_name, remaining: remaining }}</p>
+        <p class="fc-gift-notice__body">{{ body }}</p>
       </div>
     </div>
   {%- endif -%}
@@ -94,8 +119,17 @@
     assign key = prefix | append: tier_money
     assign show = false
     if cart.total_price >= tier
-      if cart.attributes[key] == blank or clear_keys contains key
-        assign show = true
+      assign option_count = 0
+      for gift in shop.metaobjects.cart_gift.values
+        assign minimum = gift.minimum_total.value | times: 100 | round
+        if minimum == tier
+          assign option_count = option_count | plus: 1
+        endif
+      endfor
+      if option_count > 1
+        if cart.attributes[key] == blank or clear_keys contains key
+          assign show = true
+        endif
       endif
     endif
   -%}
@@ -135,6 +169,10 @@
     </section>
   {%- endif -%}
 {%- endfor -%}
-{%- if clear_keys.size > 0 -%}
-  <cart-gift-sync data-clear="{{ clear_keys | json | escape }}" hidden></cart-gift-sync>
+{%- if clear_keys.size > 0 or set_json != blank -%}
+  <cart-gift-sync
+    {% if clear_keys.size > 0 %}data-clear="{{ clear_keys | json | escape }}"{% endif %}
+    {% if set_json != blank %}data-set="[{{ set_json | escape }}]"{% endif %}
+    hidden
+  ></cart-gift-sync>
 {%- endif -%}

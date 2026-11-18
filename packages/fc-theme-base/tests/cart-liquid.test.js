@@ -175,7 +175,9 @@ describe('free gifts', () => {
 
   it('names each tier when two panels show and says every reward is unlocked', () => {
     const page = render('flyout', 'gift-two-ready');
-    expect([...page.querySelectorAll('.fc-gift-choice h3')].map(text)).toEqual(['Your $600 gift is ready', 'Your $900 gift is ready']);
+    const panels = [...page.querySelectorAll('.fc-gift-choice')];
+    expect(panels.map(panel => text(panel.querySelector('h3')))).toEqual(['Your $600 gift is ready', 'Your $900 gift is ready']);
+    expect(values(panels[1])).toEqual(['Mask bag, Black', 'Repair kit, Foil and epee']);
     expect(page.querySelector('.fc-gift-choice__next')).toBeNull();
     expect(text(page.querySelector('.fc-progress__message'))).toBe('Every reward unlocked');
     expect([...page.querySelectorAll('.fc-progress__stop')].every(stop => stop.hasAttribute('data-reached'))).toBe(true);
@@ -218,24 +220,49 @@ describe('free gifts', () => {
     expect(page.querySelector('[data-gift-line], .fc-gift-choice')).toBeNull();
   });
 
+  it('adds the gift of a tier that has only one, with no choice to make', () => {
+    for (const view of ['flyout', 'page']) {
+      const page = render(view, 'gift-added');
+      expect(page.querySelector('.fc-gift-choice, .fc-gift-change, .fc-gift-notice')).toBeNull();
+      const lines = [...page.querySelectorAll('.fc-lines--gifts > [data-gift-line]')];
+      expect(lines.map(line => line.dataset.giftKey)).toEqual(['Free gift at $175', 'Free gift at $375']);
+      expect(lines.map(line => text(line.querySelector('.fc-line__name')))).toEqual(['Harut point protectors', 'The Fencing Journal']);
+      expect(text(lines[0].querySelector('.fc-line__price'))).toBe('Free');
+      const sync = page.querySelector('cart-gift-sync');
+      expect(JSON.parse(sync.dataset.set)).toEqual([['Free gift at $175', 'Harut point protectors, Set of 3'], ['Free gift at $375', 'The Fencing Journal']]);
+      expect(sync.hasAttribute('data-clear')).toBe(false);
+      expect([...page.querySelectorAll('.fc-progress__label')].map(text)).toEqual(['$175', '$250', '$375']);
+      expect(text(page.querySelector('.fc-progress__message'))).toBe('Every reward unlocked');
+    }
+  });
+
+  it('says a single gift came out and clears it when the cart drops under its tier', () => {
+    const page = render('flyout', 'gift-added-removed');
+    expect(text(page.querySelector('.fc-gift-notice__body'))).toBe('Your cart is under $175 now, so Harut point protectors came out. Add $105.10 to get your free gift back.');
+    expect(JSON.parse(page.querySelector('cart-gift-sync').dataset.clear)).toEqual(['Free gift at $175']);
+    expect(page.querySelector('[data-gift-line]')).toBeNull();
+  });
+
   it('clears choices that match no gift and attributes left from removed tiers', async () => {
     const gifts = cartGifts().map(gift => ({ ...gift, image: { value: null } }));
     const cart = { total_price: 64380, currency: { iso_code: 'USD' }, attributes: { [giftKey]: 'Old mug', 'Free gift at $500': 'Club socks, One size', 'Gift wrap': 'Yes' } };
     const shop = { currency: 'USD', metaobjects: { cart_gift: { values: gifts } } };
-    const settings = { cart_gift_tier_1: 600, cart_gift_tier_2: 900 };
-    document.body.innerHTML = await engine.renderFile('cart-gifts', { context: 'page' }, { globals: { cart, shop, settings } });
+    document.body.innerHTML = await engine.renderFile('cart-gifts', { context: 'page' }, { globals: { cart, shop } });
     expect(document.querySelectorAll('.fc-gift-choice').length).toBe(1);
     expect(document.querySelector('.fc-gift__input:checked')).toBeNull();
     expect(JSON.parse(document.querySelector('cart-gift-sync').dataset.clear)).toEqual([giftKey, 'Free gift at $500']);
   });
 
-  it('takes the tiers from the theme settings, in the store currency only', async () => {
-    const tiers = async (settings, currency = 'USD') => (await engine.renderFile('cart-gift-tiers', {}, { globals: { cart: { currency: { iso_code: currency } }, shop: { currency: 'USD' }, settings } })).trim();
-    expect(await tiers({ cart_gift_tier_1: 600, cart_gift_tier_2: 900 })).toBe('60000,90000');
-    expect(await tiers({ cart_gift_tier_1: 600, cart_gift_tier_2: 500 })).toBe('60000');
-    expect(await tiers({ cart_gift_tier_2: 900 })).toBe('90000');
-    expect(await tiers({})).toBe('');
-    expect(await tiers({ cart_gift_tier_1: 600 }, 'CAD')).toBe('');
+  it('takes the tiers from the minimums of available gifts, lowest first, in the store currency only', async () => {
+    const entry = (minimum, available = true) => ({ minimum_total: { value: minimum }, available: { value: available } });
+    const tiers = async (values, currency = 'USD') => {
+      const globals = { cart: { currency: { iso_code: currency } }, shop: { currency: 'USD', metaobjects: { cart_gift: { values } } } };
+      return (await engine.renderFile('cart-gift-tiers', {}, { globals })).trim();
+    };
+    expect(await tiers([entry(1000), entry(175), entry(375), entry(175)])).toBe('17500,37500,100000');
+    expect(await tiers([entry(175), entry(375, false), entry(null), entry(250, null)])).toBe('17500,25000');
+    expect(await tiers([])).toBe('');
+    expect(await tiers([entry(175)], 'CAD')).toBe('');
   });
 });
 

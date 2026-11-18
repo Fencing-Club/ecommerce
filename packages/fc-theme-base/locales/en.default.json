@@ -427,6 +427,7 @@
       "gift_change_error": "We couldn't switch to [gift].",
       "gift_removed": "Free gift removed",
       "gift_removed_body": "Your cart is under {{ amount }} now, so {{ gift }} came out. Add {{ remaining }} to choose a free gift again.",
+      "gift_removed_body_single": "Your cart is under {{ amount }} now, so {{ gift }} came out. Add {{ remaining }} to get your free gift back.",
       "suggestions_title": "Complete your order",
       "add_suggestion": "Add {{ title }}",
       "choose_suggestion": "Choose options for {{ title }}"

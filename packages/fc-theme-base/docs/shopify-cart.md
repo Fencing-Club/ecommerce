@@ -68,17 +68,18 @@ Dawn cart stylesheets are gone.
 
 - Gifts aren't products. Each gift is a Cart gift metaobject entry, so it never shows in the catalog, search or
   collections, and has no inventory.
-- The First gift minimum and Second gift minimum theme settings (Cart, Rewards) set the tiers. The second only counts
-  when it's above the first. Leaving both blank turns gifts off.
-- A tier offers every gift whose minimum total is at or below the tier. When the cart reaches a tier, a panel above
-  the lines offers that tier's gifts. A pick saves right away as a cart attribute named for the tier, such as
-  `Free gift at $600`, with the gift's name and details as the value. The gift then shows as a free line after the
-  products, with Change gift.
+- Each gift's minimum total is its tier, and gifts with the same minimum share a tier. A tier needs at least one
+  available gift, so switching off every gift at an amount removes that tier. With no entries, gifts are off.
+- A tier with one gift needs no choice: when the cart reaches it, the gift shows as a free line after the products
+  and the theme saves it as a cart attribute named for the tier, such as `Free gift at $175`, with the gift's name
+  and details as the value.
+- A tier with two or more gifts shows a panel above the lines with that tier's gifts, unavailable ones included. A
+  pick saves right away as the tier's cart attribute, and the gift then shows as a free line with Change gift.
 - When the cart drops under a chosen tier, the theme clears that tier's attribute and says the gift came out. It also
   clears a choice that no longer matches an available gift, such as after a gift is renamed or switched off, so the
   shopper chooses again.
-- The order shows the choice under Additional details, for example `Free gift at $600: Club socks, One size`. Whoever
-  packs the order adds the gift.
+- The order shows the gift under Additional details, for example `Free gift at $175: Harut point protectors, Set of 3`.
+  Whoever packs the order adds the gift.
 - Nothing at checkout enforces a gift. A shopper can check out without choosing one, and the gift doesn't show in
   Shopify's checkout summary. The theme clears a choice only when a cart view renders, so check the order total
   before packing a gift.
@@ -96,14 +97,12 @@ The merchant sets this up in Shopify admin; the theme creates nothing on the sto
    | `image`         | File, images only       | The photo in the choices and on the gift line.                      |
    | `details`       | Single line text        | A size, color or similar, shown under the name.                     |
    | `value`         | Money                   | Shown struck through beside Free.                                   |
-   | `minimum_total` | Decimal                 | The lowest cart total, in the store currency, that offers the gift. |
+   | `minimum_total` | Decimal                 | The cart total, in the store currency, that earns it. Required.     |
    | `available`     | True or false           | False shows the gift as Unavailable. Blank counts as available.     |
 
    Turn on Storefronts access, since the theme reads the entries in Liquid (`shop.metaobjects.cart_gift`).
-2. Content, Metaobjects, Cart gift: add one entry per gift.
-3. Online Store, Themes, Customize, Theme settings, Cart: set the First gift minimum and, for a second tier, the
-   Second gift minimum. A gift's minimum total decides the lowest tier that offers it, so set each gift's minimum to
-   one of the tier amounts.
+2. Content, Metaobjects, Cart gift: add one entry per gift. Give gifts that should be a choice the same minimum
+   total.
 
 ## Boundaries
 

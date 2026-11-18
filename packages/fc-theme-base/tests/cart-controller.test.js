@@ -353,6 +353,20 @@ describe('free gifts', () => {
     expect(posts.length).toBe(1);
     expect(document.querySelector('.fc-gift-notice')).not.toBeNull();
   });
+
+  it('saves the gift of a tier with only one gift without rendering again', async () => {
+    const refresh = vi.spyOn(customElements.get('cart-drawer-items').prototype, 'onCartUpdate').mockResolvedValue();
+    const posts = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url, options) => {
+      posts.push(JSON.parse(options.body));
+      return json({});
+    }));
+    mount('flyout', 'gift-added');
+    const attributes = { 'Free gift at $175': 'Harut point protectors, Set of 3', 'Free gift at $375': 'The Fencing Journal' };
+    await vi.waitFor(() => expect(posts).toEqual([{ attributes }]));
+    expect(refresh).not.toHaveBeenCalled();
+    expect(document.querySelectorAll('[data-gift-line]').length).toBe(2);
+  });
 });
 
 describe('phone checkout bar', () => {

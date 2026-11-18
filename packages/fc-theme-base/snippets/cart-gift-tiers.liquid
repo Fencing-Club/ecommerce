@@ -1,21 +1,31 @@
 {% doc %}
   Prints the gift tier minimums in cents, lowest first and comma separated, or nothing when gifts are off.
-  The amounts come from the First and Second gift minimum theme settings, in the store currency, so carts in another
-  currency get no gifts. A second minimum only counts when it's above the first.
+  Each Cart gift entry's minimum total is its tier, and gifts with the same minimum share one tier. Only available
+  gifts make a tier, so a tier whose gifts are all switched off disappears. Minimums are in the store currency, so
+  carts in another currency get no gifts.
 {% enddoc %}
 {%- liquid
   assign tiers = ''
   if cart.currency.iso_code == shop.currency
-    assign first = settings.cart_gift_tier_1 | times: 100 | round
-    assign second = settings.cart_gift_tier_2 | times: 100 | round
-    if first > 0
-      assign tiers = first | append: ''
-      if second > first
-        assign tiers = tiers | append: ',' | append: second
+    assign padded = ''
+    for gift in shop.metaobjects.cart_gift.values
+      assign minimum = gift.minimum_total.value | times: 100 | round
+      if minimum > 0 and gift.available.value != false
+        comment
+          Padding every amount to the same length lets a text sort put them in number order.
+        endcomment
+        assign padded_amount = minimum | plus: 1000000000
+        assign padded = padded | append: ',' | append: padded_amount
       endif
-    elsif second > 0
-      assign tiers = second | append: ''
-    endif
+    endfor
+    assign sorted = padded | remove_first: ',' | split: ',' | sort | uniq
+    for amount in sorted
+      if amount != blank
+        assign tier = amount | minus: 1000000000
+        assign tiers = tiers | append: ',' | append: tier
+      endif
+    endfor
+    assign tiers = tiers | remove_first: ','
   endif
   echo tiers
 -%}
