@@ -1,0 +1,40 @@
+{% doc %}
+  Reward progress above the cart lines, from the Reward progress states in the Pen. Free shipping is the only reward
+  so far; gift tiers join the same track once they're built. Renders nothing when free shipping is off.
+{% enddoc %}
+{%- liquid
+  capture threshold_cents
+    render 'cart-free-shipping'
+  endcapture
+  assign threshold = threshold_cents | plus: 0
+-%}
+{%- if threshold > 0 and cart != empty -%}
+  {%- liquid
+    assign remaining = threshold | minus: cart.total_price
+    assign remaining_money = remaining | money
+    assign fill = cart.total_price | times: 100.0 | divided_by: threshold
+    if fill > 100
+      assign fill = 100
+    endif
+    assign reached = false
+    if remaining <= 0
+      assign reached = true
+    endif
+  -%}
+  <div class="fc-progress">
+    <p class="fc-progress__message">
+      {%- if reached -%}
+        {% render 'fc-icon', icon: 'gift', size: 16 %}<strong>{{ 'sections.cart.rewards_unlocked' | t }}</strong>
+      {%- else -%}
+        {% render 'fc-icon', icon: 'truck', size: 16 %}<span>{{ 'sections.cart.free_shipping_remaining_html' | t: amount: remaining_money }}</span>
+      {%- endif -%}
+    </p>
+    <div class="fc-progress__track" aria-hidden="true">
+      <span class="fc-progress__fill" style="width: {{ fill | round: 2 }}%"></span>
+      <span class="fc-progress__stop" style="--at: 100%"{% if reached %} data-reached{% endif %}>
+        <span class="fc-progress__marker">{% render 'fc-icon', icon: 'truck', size: 12 %}</span>
+        <span class="fc-progress__label">{{ threshold | money_without_trailing_zeros }}</span>
+      </span>
+    </div>
+  </div>
+{%- endif -%}

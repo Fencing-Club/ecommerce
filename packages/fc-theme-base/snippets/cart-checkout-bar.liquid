@@ -22,7 +22,14 @@
     assign checkout_reason = 'sections.cart.blocked_unavailable' | t: count: unavailable_count
     assign state = 'blocked'
   endif
+  capture free_shipping
+    render 'cart-free-shipping'
+  endcapture
+  assign free_shipping = free_shipping | plus: 0
   assign shipping_free = false
+  if free_shipping > 0 and cart.total_price >= free_shipping
+    assign shipping_free = true
+  endif
   assign bar_context = context | append: '-bar'
 -%}
 <cart-checkout-bar class="fc-bar" data-cart-bar data-checkout-state="{{ state }}">

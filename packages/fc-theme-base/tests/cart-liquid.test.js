@@ -37,8 +37,7 @@ describe('cart rows', () => {
     const contents = row.querySelector('details');
     expect(contents.id).toBe('CartContents-drawer-8021-kit');
     expect(text(contents.querySelector('summary'))).toBe('4 included items');
-    expect(text(contents.querySelector('li:last-child'))).toContain('2 × Fencing socks');
-    expect(contents.querySelector('input, button, cart-remove-button')).toBeNull();
+    expect(text(contents.querySelector('li:last-child'))).toContain('2 × Fencing socks');    expect(contents.querySelector('input, button, cart-remove-button')).toBeNull();
     expect(row.querySelector('a[aria-label^="Edit"]')).toBeNull();
   });
 
@@ -84,7 +83,7 @@ describe('order summary', () => {
   });
 
   it('never invents a shipping price', () => {
-    const row = render('page', 'ready').querySelector('[data-shipping-row]');
+    const row = render('page', 'below-free-shipping').querySelector('[data-shipping-row]');
     expect(row.hasAttribute('data-free')).toBe(false);
     expect(text(row.querySelector('[data-shipping-value="checkout"]'))).toBe('At checkout');
     expect(row.querySelector('[data-shipping-codes]')).not.toBeNull();
@@ -107,6 +106,41 @@ describe('order summary', () => {
     document.body.innerHTML = await engine.renderFile('cart-note-editor', { context: 'drawer', form_id: 'CartDrawer-Form' }, { globals: { cart } });
     expect(document.querySelector('script')).toBeNull();
     expect(document.querySelector('textarea').value).toBe(cart.note);
+  });
+});
+
+describe('free shipping', () => {
+  it('shows how far the cart total is from free shipping and keeps shipping for checkout', () => {
+    for (const view of ['flyout', 'page']) {
+      const page = render(view, 'below-free-shipping');
+      const progress = page.querySelector('[data-cart-region="progress"] .fc-progress');
+      expect(text(progress.querySelector('.fc-progress__message'))).toBe('$180.10 away from free shipping');
+      expect(progress.querySelector('.fc-progress__fill').getAttribute('style')).toBe('width: 27.96%');
+      expect(progress.querySelector('.fc-progress__stop').hasAttribute('data-reached')).toBe(false);
+      expect(text(progress.querySelector('.fc-progress__label'))).toBe('$250');
+      for (const row of page.querySelectorAll('[data-shipping-row]')) expect(row.hasAttribute('data-free')).toBe(false);
+    }
+  });
+
+  it('marks free shipping reached and reads Free on every shipping row once the total gets there', () => {
+    const page = render('flyout', 'ready');
+    const progress = page.querySelector('.fc-progress');
+    expect(text(progress.querySelector('.fc-progress__message'))).toBe('Every reward unlocked');
+    expect(progress.querySelector('.fc-progress__stop').hasAttribute('data-reached')).toBe(true);
+    const rows = page.querySelectorAll('[data-shipping-row]');
+    expect(rows.length).toBe(2);
+    for (const row of rows) expect(row.hasAttribute('data-free')).toBe(true);
+    expect(text(render('page', 'empty').querySelector('[data-cart-message="empty"] p'))).toContain('Orders over $250 ship free.');
+  });
+
+  it('shows no progress when the minimum is blank or the cart is in another currency', async () => {
+    engine.registerFilter('money', amount => `$${(amount / 100).toFixed(2)}`);
+    engine.registerFilter('money_without_trailing_zeros', amount => `$${amount / 100}`);
+    const cart = { items: [{}], total_price: 5000, currency: { iso_code: 'USD' } };
+    const shop = { currency: 'USD' };
+    expect((await engine.renderFile('cart-reward-progress', {}, { globals: { cart, shop, settings: {} } })).trim()).toBe('');
+    expect((await engine.renderFile('cart-reward-progress', {}, { globals: { cart: { ...cart, currency: { iso_code: 'CAD' } }, shop, settings: { cart_free_shipping_threshold: 250 } } })).trim()).toBe('');
+    expect(await engine.renderFile('cart-reward-progress', {}, { globals: { cart, shop, settings: { cart_free_shipping_threshold: 250 } } })).toContain('sections.cart.free_shipping_remaining_html');
   });
 });
 

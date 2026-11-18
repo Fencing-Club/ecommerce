@@ -1,0 +1,12 @@
+{% doc %}
+  Prints the free shipping minimum in cents, or 0 when it's off. Progress counts the cart total after discounts.
+  The setting only works with a matching free shipping automatic discount in Shopify admin (docs/shopify-cart.md).
+  The amount is in the store currency and isn't converted, so other currencies show no free shipping.
+{% enddoc %}
+{%- liquid
+  assign threshold = 0
+  if settings.cart_free_shipping_threshold > 0 and cart.currency.iso_code == shop.currency
+    assign threshold = settings.cart_free_shipping_threshold | times: 100 | round
+  endif
+  echo threshold
+-%}

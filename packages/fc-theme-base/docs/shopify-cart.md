@@ -10,6 +10,8 @@ Dawn cart stylesheets are gone.
 
 - `cart-lines` and `cart-line-item`: product rows with price, savings badge, kit contents (`item_components`),
   quantity stepper, edit and remove. A row's message line shows stock limits and failed changes for that row only.
+- `cart-reward-progress`: free shipping progress above the lines. `cart-free-shipping` prints the minimum that the
+  progress, the Shipping row and the empty message share.
 - `cart-summary`: discount code and order note (`cart-extras`), summary rows (`cart-breakdown`), total, savings,
   checkout (`cart-checkout`) and the reassurance row. `cart-checkout-bar` is the phone version.
 - `cart-message`: the empty cart and the load failed message. `cart-popular` shows collections chosen in the theme's
@@ -39,11 +41,24 @@ Dawn cart stylesheets are gone.
   repeat what is already visible.
 - The flyout refreshes when it opens after a failure or after the shopper returns with the back button.
 
+## Rewards
+
+- Free shipping is the only reward built so far. The Free shipping minimum theme setting (Cart, Rewards) turns on
+  the reward progress above the lines, the Free reading on the Shipping row and the free shipping sentence in the
+  empty message. Leaving it blank turns all three off.
+- Progress counts the cart total after discounts, as the Reward progress states in the Pen say. The amount is in the
+  store currency and isn't converted, so a cart in another currency shows no free shipping.
+- The theme only shows free shipping. Shopify gives it at checkout through an automatic discount the merchant
+  creates in Shopify admin, under Discounts:
+  - Type: Free shipping. Method: Automatic.
+  - Minimum purchase requirement: a minimum purchase amount equal to the theme setting.
+  - Countries: the countries that ship free.
+  - Combinations: product discounts and order discounts, so a code like WELCOME10 keeps free shipping.
+  - Nothing links the discount to the theme setting. Change both together.
+- Gift tiers aren't built. They wait on how gifts are stored, since the gifts aren't sold as products.
+
 ## Boundaries
 
-- Free shipping and gift rewards are not built yet. The progress region (`data-cart-region="progress"`) is empty,
-  Shipping reads Free only for a shipping code, and the empty message adds the free shipping amount only when
-  `cart-message` gets a `free_shipping_threshold`.
 - Shipping prices and taxes are confirmed at checkout. The cart never invents a shipping price.
 - There is no weapon builder contract, so a custom weapon's line properties show as plain detail lines rather than
   a build sheet.

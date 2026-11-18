@@ -1495,6 +1495,8 @@
         "label": "t:sections.all.colors.label",
         "default": "scheme-1"
       },
+      { "type": "header", "content": "t:settings_schema.cart.settings.cart_rewards.header" },
+      { "type": "number", "id": "cart_free_shipping_threshold", "label": "t:settings_schema.cart.settings.cart_rewards.free_shipping.label", "info": "t:settings_schema.cart.settings.cart_rewards.free_shipping.info" },
       { "type": "header", "content": "t:settings_schema.cart.settings.cart_trust.header" },
       { "type": "text", "id": "cart_trust_dispatch", "label": "t:settings_schema.cart.settings.cart_trust.dispatch.label", "default": "Ships in 1 business day" },
       { "type": "text", "id": "cart_trust_returns", "label": "t:settings_schema.cart.settings.cart_trust.returns.label", "default": "Free 30-day returns" },

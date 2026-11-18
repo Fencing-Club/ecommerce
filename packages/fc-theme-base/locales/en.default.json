@@ -408,6 +408,8 @@
       "try_again": "Try again",
       "open_cart_page": "Open cart page",
       "loading": "Loading your cart",
+      "free_shipping_remaining_html": "<strong>{{ amount }}</strong> away from free shipping",
+      "rewards_unlocked": "Every reward unlocked",
       "suggestions_title": "Complete your order",
       "add_suggestion": "Add {{ title }}",
       "choose_suggestion": "Choose options for {{ title }}"

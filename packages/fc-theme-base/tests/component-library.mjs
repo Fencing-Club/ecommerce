@@ -132,7 +132,7 @@ export function renderCartFrame(parameters) {
   const settings = { ...labSettings(), ...cartSettings, cart_type: view === 'page' ? 'page' : 'drawer' };
   const section = { id: 'lab-cart', blocks: [], settings: {} };
   const cartJson = JSON.stringify(json).replaceAll('</', `<${String.fromCharCode(92)}/`);
-  return engine.renderFileSync('cart-frame', { view, state, section, cart_json: cartJson }, { globals: { settings, cart: liquid, routes: cartRoutes } });
+  return engine.renderFileSync('cart-frame', { view, state, section, cart_json: cartJson }, { globals: { settings, cart: liquid, routes: cartRoutes, shop: { currency: 'USD' } } });
 }
 
 export function renderCartRecommendations() {

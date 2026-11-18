@@ -63,6 +63,7 @@ const standard = () => cart([jacket(0), kit(1), glove(2)]);
 // Each state names the cart it starts from. `client` states are finished by cart-states.js in the browser.
 export const cartStates = [
   { id: 'ready', group: 'Flyout and cart page', label: 'Items', cart: standard },
+  { id: 'below-free-shipping', group: 'Reward progress', label: 'Below free shipping', cart: () => cart([glove(0)]) },
   { id: 'just-added', group: 'Line item', label: 'Just added', cart: standard, client: true },
   { id: 'updating', group: 'Line item', label: 'Updating quantity', cart: standard, client: true },
   { id: 'stock-limit', group: 'Line item', label: 'Stock limit', cart: () => cart([jacket(0), kit(1), glove(2, 2)]) },
@@ -92,7 +93,7 @@ export const cartStates = [
   { id: 'load-failed', group: 'Cart message', label: 'Load failed', cart: standard, client: true },
 ];
 
-export const cartPageStates = ['ready', 'empty', 'loading', 'load-failed'];
+export const cartPageStates = ['ready', 'below-free-shipping', 'empty', 'loading', 'load-failed'];
 
 export function cartState(id) {
   return cartStates.find(state => state.id === id) || cartStates[0];
@@ -105,6 +106,7 @@ export const cartSettings = {
   cart_popular_collection_2: collection('Uniforms', 'collection-fie-800n-jacket.jpg'),
   cart_popular_collection_3: collection('Weapons', 'mega-club-reels.jpg'),
   cart_empty_link: '#collection',
+  cart_free_shipping_threshold: 250,
 };
 
 const suggestion = (id, title, picture, price, single) => ({

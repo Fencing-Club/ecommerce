@@ -7,6 +7,10 @@
   if cart == empty
     assign cart_state = 'empty'
   endif
+  capture free_shipping
+    render 'cart-free-shipping'
+  endcapture
+  assign free_shipping = free_shipping | plus: 0
 -%}
 {{ 'cart-experience.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'cart.js' | asset_url }}" defer="defer"></script>
@@ -25,7 +29,7 @@
       <p class="fc-toast" data-cart-toast role="status" hidden>{% render 'fc-icon', icon: 'check', size: 16 %}<span data-cart-toast-text></span></p>
       <cart-drawer-items class="fc-flyout__content" view-event-payload="{{ cart | standard_event_data: 'view', context: 'dialog' | escape }}" view-event-trigger="manual">
         <form action="{{ routes.cart_url }}" id="CartDrawer-Form" class="fc-flyout__form" method="post" novalidate>
-          <div class="fc-flyout__progress" data-cart-region="progress"></div>
+          <div class="fc-flyout__progress" data-cart-region="progress">{% render 'cart-reward-progress' %}</div>
           <div class="fc-flyout__scroll" id="CartDrawer-CartItems">
             <div data-cart-region="lines">{% render 'cart-lines', context: 'drawer' %}</div>
             <div class="fc-suggestions-slot" data-cart-suggestions data-product-id="{{ cart.items.first.product_id }}"></div>
@@ -35,7 +39,7 @@
           {% render 'cart-checkout-bar', context: 'drawer', form_id: 'CartDrawer-Form' %}
         </form>
         <div class="fc-flyout__empty">
-          {% render 'cart-message', kind: 'empty', context: 'drawer' %}
+          {% render 'cart-message', kind: 'empty', context: 'drawer', free_shipping_threshold: free_shipping %}
           {% render 'cart-popular' %}
         </div>
         <div class="fc-flyout__failed">{% render 'cart-message', kind: 'failed', context: 'drawer' %}</div>

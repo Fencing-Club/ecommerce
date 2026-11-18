@@ -25,7 +25,14 @@
     assign state = 'blocked'
   endif
 
+  capture free_shipping
+    render 'cart-free-shipping'
+  endcapture
+  assign free_shipping = free_shipping | plus: 0
   assign shipping_free = false
+  if free_shipping > 0 and cart.total_price >= free_shipping
+    assign shipping_free = true
+  endif
 -%}
 <div class="fc-summary" data-cart-summary data-checkout-state="{{ state }}">
   {% render 'cart-extras', context: context, form_id: form_id %}
