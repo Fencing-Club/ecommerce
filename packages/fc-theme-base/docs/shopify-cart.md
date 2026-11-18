@@ -11,7 +11,7 @@ Dawn cart stylesheets are gone.
 - `cart-lines` and `cart-line-item`: product rows with price, savings badge, kit contents (`item_components`),
   quantity stepper, edit and remove. A row's message line shows stock limits and failed changes for that row only.
 - `cart-reward-progress`: free shipping and gift tier progress above the lines. `cart-free-shipping` prints the
-  minimum that the progress, the Shipping row and the empty message share; `cart-gift-tiers` prints the gift tiers.
+  minimum that the progress and the Shipping row share; `cart-gift-tiers` prints the gift tiers.
 - `cart-gifts`: a gift choice panel for each reached tier without a choice, and the gift removed notice.
   `cart-gift-options` draws one tier's gift radios; `cart-gift-lines` draws chosen gifts as free lines after the
   products, with Change gift.
@@ -56,8 +56,10 @@ Dawn cart stylesheets are gone.
 
 ### Free shipping
 
-- The Free shipping minimum theme setting (Cart, Rewards) turns on the free shipping marker, the Free reading on the
-  Shipping row and the free shipping sentence in the empty message. Leaving it blank turns all three off.
+- The Free shipping minimum theme setting (Cart, Rewards) turns on the free shipping marker and the Free reading on
+  the Shipping row. Leaving it blank turns both off.
+- Reward amounts only appear where the theme reads them from the settings and gift entries: the progress, the gift
+  panels and notices, and the Shipping row. Fixed copy, such as the empty message, never names an amount.
 - The theme only shows free shipping. Shopify gives it at checkout through an automatic discount the merchant
   creates in Shopify admin, under Discounts:
   - Type: Free shipping. Method: Automatic.

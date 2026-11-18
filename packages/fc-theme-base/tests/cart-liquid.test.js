@@ -137,7 +137,6 @@ describe('free shipping', () => {
     const rows = page.querySelectorAll('[data-shipping-row]');
     expect(rows.length).toBe(2);
     for (const row of rows) expect(row.hasAttribute('data-free')).toBe(true);
-    expect(text(render('page', 'empty').querySelector('[data-cart-message="empty"] p'))).toContain('Orders over $250 ship free.');
   });
 
   it('shows no progress when the minimum is blank or the cart is in another currency', async () => {
@@ -288,12 +287,11 @@ describe('whole-cart messages', () => {
     expect([...page.querySelectorAll('.fc-popular__name')].map(text)).toEqual(['Starter kits', 'Uniforms', 'Weapons']);
   });
 
-  it('adds the free shipping amount to the empty message only when there is one', async () => {
-    const settings = { cart_empty_link: '', cart_empty_link_label: '' };
-    const without = await engine.renderFile('cart-message', { kind: 'empty', context: 'page' }, { globals: { settings } });
-    expect(without).not.toContain('sections.cart.empty_free_shipping');
-    const withThreshold = await engine.renderFile('cart-message', { kind: 'empty', context: 'page', free_shipping_threshold: 25000 }, { globals: { settings } });
-    expect(withThreshold).toContain('sections.cart.empty_free_shipping');
+  it('keeps reward amounts out of the empty message', () => {
+    for (const view of ['flyout', 'page']) {
+      const body = text(render(view, 'empty').querySelector('[data-cart-message="empty"] .fc-message__body'));
+      expect(body).toBe('Find everything you need for your next bout, from a first kit to competition gear.');
+    }
   });
 });
 

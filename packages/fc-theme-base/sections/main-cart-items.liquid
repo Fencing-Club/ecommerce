@@ -6,10 +6,6 @@
   if cart == empty
     assign cart_state = 'empty'
   endif
-  capture free_shipping
-    render 'cart-free-shipping'
-  endcapture
-  assign free_shipping = free_shipping | plus: 0
 -%}
 <cart-items class="fc-cart-page" id="main-cart" data-id="{{ section.id }}" data-cart-state="{{ cart_state }}" view-event-payload="{{ cart | standard_event_data: 'view', context: 'page' | escape }}">
   <header class="fc-cart-page__heading">
@@ -35,7 +31,7 @@
     <noscript><button type="submit" name="update" class="fc-button fc-button--outline" form="cart">{{ 'sections.cart.update' | t }}</button></noscript>
   </div>
   <div class="fc-cart-page__empty">
-    {% render 'cart-message', kind: 'empty', context: 'page', free_shipping_threshold: free_shipping %}
+    {% render 'cart-message', kind: 'empty', context: 'page' %}
     {% render 'cart-popular' %}
   </div>
   <div class="fc-cart-page__failed">{% render 'cart-message', kind: 'failed', context: 'page' %}</div>

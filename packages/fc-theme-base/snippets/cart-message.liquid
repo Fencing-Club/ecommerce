@@ -2,7 +2,6 @@
   Whole-cart message: empty, or the cart could not load. A load failure is never shown as an empty cart.
   @param {string} kind - empty or failed.
   @param {string} context - page or drawer.
-  @param {number} [free_shipping_threshold] - Order amount in cents that ships free. Adds a sentence to the empty message.
 {% enddoc %}
 <div class="fc-message" data-cart-message="{{ kind }}">
   <span class="fc-message__icon">
@@ -21,12 +20,7 @@
     </div>
   {%- else -%}
     <h2 class="fc-message__title">{{ 'sections.cart.empty' | t }}</h2>
-    <p class="fc-message__body">
-      {{- 'sections.cart.empty_body' | t -}}
-      {%- if free_shipping_threshold > 0 -%}
-        {%- assign threshold_money = free_shipping_threshold | money_without_trailing_zeros %} {{ 'sections.cart.empty_free_shipping' | t: amount: threshold_money -}}
-      {%- endif -%}
-    </p>
+    <p class="fc-message__body">{{ 'sections.cart.empty_body' | t }}</p>
     <div class="fc-message__actions">
       {%- if settings.cart_empty_link != blank and settings.cart_empty_link_label != blank -%}
         <a class="fc-button fc-button--primary fc-button--large" href="{{ settings.cart_empty_link }}">{{ settings.cart_empty_link_label | escape }}{% render 'fc-icon', icon: 'arrow-right', size: 16 %}</a>

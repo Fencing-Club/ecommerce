@@ -203,6 +203,10 @@
       "cart_drawer_collection": "",
       "cart_color_scheme": "scheme-1",
       "cart_free_shipping_threshold": 250,
+      "cart_empty_link": "shopify://collections/starter-kits",
+      "cart_popular_collection_1": "starter-kits",
+      "cart_popular_collection_2": "clothing",
+      "cart_popular_collection_3": "weapons",
       "sections": {
         "main-password-header": {
           "type": "main-password-header",

@@ -7,10 +7,6 @@
   if cart == empty
     assign cart_state = 'empty'
   endif
-  capture free_shipping
-    render 'cart-free-shipping'
-  endcapture
-  assign free_shipping = free_shipping | plus: 0
 -%}
 {{ 'cart-experience.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'cart.js' | asset_url }}" defer="defer"></script>
@@ -40,7 +36,7 @@
           {% render 'cart-checkout-bar', context: 'drawer', form_id: 'CartDrawer-Form' %}
         </form>
         <div class="fc-flyout__empty">
-          {% render 'cart-message', kind: 'empty', context: 'drawer', free_shipping_threshold: free_shipping %}
+          {% render 'cart-message', kind: 'empty', context: 'drawer' %}
           {% render 'cart-popular' %}
         </div>
         <div class="fc-flyout__failed">{% render 'cart-message', kind: 'failed', context: 'drawer' %}</div>
