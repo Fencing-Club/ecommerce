@@ -20,7 +20,7 @@ The component lab renders the approved production appearance directly. No compar
 | Localization | `country-localization`, `language-localization`, `localization-form.js`, flag sprite | Country or region with currency code/symbol, language, selected item, keyboard arrows, Escape/focus return; no actual market or locale change |
 | Contact fields | `ui-text-field`, `ui-select`, `ui-select.js`, `contact-form` | Shared dropdown popup, empty/filled/required/invalid, textarea, disabled, readonly, optional checkbox, busy, success/failure with retained input |
 | Product pricing | `price`, `unit-price` when configured | Regular, comparison/sale, sold-out price and badges; fixture amounts, not offers |
-| Cart details | `cart-item-contents`, `cart-note-editor`, `cart-discount` | Native bundle disclosure, note entry/save feedback, discount input/pending/invalid feedback; no cart mutation |
+| Cart (`/lab/cart`) | `cart-drawer`, `main-cart-items`, the `cart-` snippets, `cart.js`, `cart-drawer.js`, `cart-controls.js` | Every flyout and cart page state at tablet, phone and desktop widths with the production controllers; cart reads come from a fixture and every cart change fails ([shopify-cart.md](shopify-cart.md)) |
 | Images and zoom | `product-media-gallery`, `product-thumbnail`, `product-media`, `product-media-modal`, `media-gallery.js`, `product-modal.js` | Image selection, thumbnails, modal zoom, dismissal/focus return; real local image assets |
 | Sizing | `size-chart-content`, `size-chart-validity`, `measuring-tape-downloads`, `size-chart.js` | Actual approved chart data/illustration, cm/in, compared sizes, empty selection, measurement help, PDF links |
 | Reading | `main-policy`, `policy-page.js` | Contents links, mobile contents disclosure, responsive semantic table, back to top; sample text is not a legal policy |
@@ -36,7 +36,7 @@ These files were included in the audit rather than silently omitted or represent
 
 | Sources | Disposition |
 | --- | --- |
-| `cart-lines`, `cart-subtotal`, `cart-checkout`, `cart-drawer`, `cart.js`, `cart-controls.js`, `cart-drawer.js` | Existing full cart implementation and separate regression tests. A component lab must not impersonate authoritative stock, totals, eligibility or checkout. Detail specimens are local; full cart acceptance stays on the development store. |
+| Live cart requests | The cart lab never changes a cart and does not stand in for stock, totals, discount eligibility or checkout. Those stay with development store acceptance. |
 | `buy-buttons`, `gift-card-recipient-form`, pickup availability section/controller | Depend on native product form, Shopify endpoints and merchant configuration. Button/field states are represented, but purchase, gift-card delivery and pickup promises are not simulated as verified. |
 | `quick-order-list`, `quick-order-list-row`, `quick-order-product-row`, `quick-order-list`/`bulk-quick-order-list` sections, quick-add/volume-pricing controllers | Optional bulk commerce surfaces. Reuse quantity, price, field and status contracts; require real variant/quantity-rule fixtures and a dedicated commerce harness before claiming working bulk orders. |
 | `card-product`, `card-collection`, `article-card`, `pagination`, `facets` | Inherited Dawn alternatives used by configurable base sections. Custom Fencing Club equivalents are the review targets; do not create another competing component system. Native facet AJAX and show-more behavior are not covered by the local catalog adapter. |

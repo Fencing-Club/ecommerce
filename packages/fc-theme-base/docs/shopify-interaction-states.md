@@ -204,7 +204,7 @@ fixture categories, not measured popularity rankings or changes to the store's c
 Catalog filtering uses a deterministic local response adapter, not Shopify's facet request lifecycle. Predictive
 search retains the production presentation and keyboard controller with a local transport/recent-history adapter.
 Localization uses production dropdown behavior but replaces each fixture form's submission with local selection.
-Cart details and contact submissions simulate feedback only; no real discount is accepted and no message is sent.
+Cart lab changes always fail and contact submissions simulate feedback only; no cart changes and no message is sent.
 Full cart/checkout integration, pickup, gift-card recipients, quick-order commerce, video/3D, and app blocks still
 require store-specific acceptance. The inventory does not claim those integrations are verified.
 Automated accessibility scans are paired with keyboard, motion, and mobile checks; they do not establish complete

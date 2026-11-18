@@ -15,7 +15,7 @@
       "entry": [
         "assets/*.js",
         "content/capture-migration.mjs",
-        "tests/component-library/{library,privacy-fixture,workflows}.js",
+        "tests/component-library/{cart-shim,cart-states,library,privacy-fixture,workflows}.js",
         "tests/preview-size-charts.mjs"
       ]
     },

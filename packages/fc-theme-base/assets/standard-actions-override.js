@@ -27,7 +27,7 @@ const DAWN_CART_TAGS = ['cart-drawer', 'cart-items', 'cart-drawer-items', 'cart-
 const DAWN_PUBSUB_REFRESHED_SECTIONS = new Set([
   'cart-drawer:cart-drawer',
   'cart-drawer-items:CartDrawer',
-  'cart-items:main-cart-items',
+  'cart-items:main-cart',
 ]);
 
 // Walk every mounted Dawn cart custom element, collect the sections it

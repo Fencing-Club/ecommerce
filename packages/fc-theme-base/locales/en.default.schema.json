@@ -347,6 +347,30 @@
             "label": "Collection",
             "info": "Shown when cart drawer is empty"
           }
+        },
+        "cart_rewards": {
+          "header": "Rewards",
+          "free_shipping": {
+            "label": "Free shipping minimum",
+            "info": "Cart total after discounts, in the store currency. Needs a matching free shipping automatic discount in Shopify admin. Leave blank to turn free shipping off."
+          },
+          "gifts": {
+            "content": "Free gifts are Cart gift entries in Shopify admin, under Content, Metaobjects. Each gift's minimum total sets the cart total that earns it, and gifts with the same minimum are offered as a choice."
+          }
+        },
+        "cart_trust": {
+          "header": "Cart reassurance",
+          "dispatch": { "label": "Dispatch note" },
+          "returns": { "label": "Returns note" }
+        },
+        "cart_empty": {
+          "header": "Empty cart",
+          "link_label": { "label": "Primary link label" },
+          "link": { "label": "Primary link" },
+          "popular_heading": { "label": "Collections heading" },
+          "popular_collection_1": { "label": "Collection 1" },
+          "popular_collection_2": { "label": "Collection 2" },
+          "popular_collection_3": { "label": "Collection 3" }
         }
       }
     },
@@ -1747,7 +1771,7 @@
       }
     },
     "main-cart-items": {
-      "name": "Items"
+      "name": "Cart"
     },
     "main-collection-banner": {
       "name": "Collection banner",

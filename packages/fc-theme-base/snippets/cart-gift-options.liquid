@@ -1,0 +1,64 @@
+{% doc %}
+  The gift radios for one tier: every Cart gift entry whose minimum total is the tier. A choice applies
+  right away (cart-controls.js) and is saved as a cart attribute named by `key`, so it shows on the order.
+  @param {number} tier - Tier minimum in cents.
+  @param {string} key - Cart attribute that holds the choice.
+  @param {string} context - Unique cart view name.
+  @param {string} labelled_by - Id of the element that names the group.
+  @param {string} [layout] - grid (choice panel, default) or list (Change gift under the gift line).
+{% enddoc %}
+{%- liquid
+  assign chosen = cart.attributes[key]
+  assign tier_key = tier | append: ''
+  assign group_name = 'CartGift-' | append: context | append: '-' | append: tier_key
+  assign feedback_id = 'CartGiftStatus-' | append: context | append: '-' | append: tier_key
+  assign layout_class = 'fc-gifts--grid'
+  if layout == 'list'
+    assign layout_class = 'fc-gifts--list'
+  endif
+-%}
+<cart-gift-options
+  data-gift-key="{{ key | escape }}"
+  data-add-error="{{ 'sections.cart.gift_add_error' | t }}"
+  data-change-error="{{ 'sections.cart.gift_change_error' | t }}"
+>
+  <fieldset class="fc-gifts {{ layout_class }}" aria-labelledby="{{ labelled_by }}" aria-describedby="{{ feedback_id }}">
+    {%- for gift in shop.metaobjects.cart_gift.values -%}
+      {%- assign minimum = gift.minimum_total.value | times: 100 | round -%}
+      {%- if minimum == tier -%}
+      {%- liquid
+        assign gift_name = gift.name.value | default: ''
+        assign gift_label = gift_name
+        if gift.details.value != blank
+          assign gift_label = gift_label | append: ', ' | append: gift.details.value
+        endif
+        assign available = true
+        if gift.available.value == false
+          assign available = false
+        endif
+      -%}
+      <label class="fc-gift"{% unless available %} data-unavailable{% endunless %}>
+        <input class="fc-gift__input" type="radio" name="{{ group_name }}" value="{{ gift_label | escape }}" data-gift-name="{{ gift_name | escape }}"{% if chosen == gift_label %} checked{% endif %}{% unless available %} disabled{% endunless %}>
+        <span class="fc-gift__photo">
+          {%- if gift.image.value -%}{{ gift.image.value | image_url: width: 112 | image_tag: loading: 'lazy', widths: '56, 112', sizes: '56px', alt: '' }}{%- endif -%}
+        </span>
+        <span class="fc-gift__details">
+          <span class="fc-gift__name">{{ gift_name | escape }}</span>
+          {%- if gift.details.value != blank -%}<span class="fc-gift__variant">{{ gift.details.value | escape }}</span>{%- endif -%}
+          {%- if gift.description.value != blank -%}<span class="fc-gift__description">{{ gift.description.value | escape }}</span>{%- endif -%}
+          <span class="fc-gift__price">
+            {%- if available -%}
+              <span class="fc-gift__free">{{ 'sections.cart.free' | t }}</span>
+              {%- if gift.value.value -%}<s>{{ gift.value.value | money }}</s>{%- endif -%}
+            {%- else -%}
+              {{ 'sections.cart.gift_unavailable' | t }}
+            {%- endif -%}
+          </span>
+        </span>
+        <span class="fc-gift__radio" aria-hidden="true"></span>
+      </label>
+      {%- endif -%}
+    {%- endfor -%}
+  </fieldset>
+  {%- render 'cart-feedback', id: feedback_id -%}
+</cart-gift-options>

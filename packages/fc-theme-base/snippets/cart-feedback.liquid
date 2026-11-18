@@ -1,0 +1,11 @@
+{% doc %}
+  One-line cart feedback shown under the control it belongs to. Scripts set data-tone and the text.
+  @param {string} id - Element id.
+  @param {string} [text] - Message. The line is hidden when blank.
+  @param {string} [tone] - error (default) or info.
+{% enddoc %}
+<p class="fc-feedback" id="{{ id }}" data-tone="{{ tone | default: 'error' }}" role="status" {% if text == blank %}hidden{% endif %}>
+  <span class="fc-feedback__icon" data-icon="error">{% render 'fc-icon', icon: 'circle-alert', size: 16 %}</span>
+  <span class="fc-feedback__icon" data-icon="info">{% render 'fc-icon', icon: 'info', size: 16 %}</span>
+  <span class="fc-feedback__text">{{ text }}</span>
+</p>

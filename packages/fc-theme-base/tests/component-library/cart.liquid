@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Fencing Club cart states</title>
+  <link rel="stylesheet" href="/lab/library.css">
+  <link rel="stylesheet" href="/lab/cart-lab.css">
+</head>
+<body class="lab-cart-index">
+  <header class="lab-header">
+    <img src="/assets/fencing-club-logo.png" alt="Fencing Club" width="40" height="48">
+    <div><h1>Cart states</h1><span>Production flyout and cart page with local fixtures. Cart changes always fail here.</span></div>
+    <a class="lab-cart-back" href="/">Component lab</a>
+  </header>
+  <nav class="lab-nav" aria-label="Cart state groups">
+    {%- for group in groups -%}<a href="#{{ group.id }}">{{ group.name }}</a>{%- endfor -%}
+    <a href="#cart-page">Cart page</a>
+  </nav>
+  <main id="lab-main">
+    {%- for group in groups -%}
+      <section class="lab-section" id="{{ group.id }}"><h2>{{ group.name }} <code>flyout at tablet and phone</code></h2>
+        {%- for state in group.states -%}
+          <article class="lab-cart-state" id="flyout-{{ state.id }}">
+            <h3>{{ state.label }} <a href="/lab/cart/frame?view=flyout&amp;state={{ state.id }}">Open</a></h3>
+            <div class="lab-cart-frames">
+              <div class="lab-cart-frame-box" style="--frame-w: 768; --frame-h: 900; --scale: 0.62"><iframe title="{{ state.label }}, flyout at tablet width" src="/lab/cart/frame?view=flyout&amp;state={{ state.id }}" loading="lazy"></iframe></div>
+              <div class="lab-cart-frame-box" style="--frame-w: 390; --frame-h: 844; --scale: 0.66"><iframe title="{{ state.label }}, flyout at phone width" src="/lab/cart/frame?view=flyout&amp;state={{ state.id }}" loading="lazy"></iframe></div>
+            </div>
+          </article>
+        {%- endfor -%}
+      </section>
+    {%- endfor -%}
+    <section class="lab-section" id="cart-page"><h2>Cart page <code>desktop, tablet and phone</code></h2>
+      {%- for state in page_states -%}
+        <article class="lab-cart-state" id="page-{{ state.id }}">
+          <h3>{{ state.label }} <a href="/lab/cart/frame?view=page&amp;state={{ state.id }}">Open</a></h3>
+          <div class="lab-cart-frames">
+            <div class="lab-cart-frame-box" style="--frame-w: 1440; --frame-h: 1000; --scale: 0.4"><iframe title="{{ state.label }}, cart page at desktop width" src="/lab/cart/frame?view=page&amp;state={{ state.id }}" loading="lazy"></iframe></div>
+            <div class="lab-cart-frame-box" style="--frame-w: 768; --frame-h: 1000; --scale: 0.4"><iframe title="{{ state.label }}, cart page at tablet width" src="/lab/cart/frame?view=page&amp;state={{ state.id }}" loading="lazy"></iframe></div>
+            <div class="lab-cart-frame-box" style="--frame-w: 390; --frame-h: 844; --scale: 0.48"><iframe title="{{ state.label }}, cart page at phone width" src="/lab/cart/frame?view=page&amp;state={{ state.id }}" loading="lazy"></iframe></div>
+          </div>
+        </article>
+      {%- endfor -%}
+      <p class="lab-cart-note">Every flyout state also opens as a cart page: change <code>view=flyout</code> to <code>view=page</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

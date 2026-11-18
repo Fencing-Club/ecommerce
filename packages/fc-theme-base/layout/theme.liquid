@@ -177,11 +177,7 @@
     <link rel="stylesheet" href="{{ 'component-cart-items.css' | asset_url }}" media="print" onload="this.media='all'">
 
     {%- if settings.cart_type == 'drawer' -%}
-      {{ 'component-cart-drawer.css' | asset_url | stylesheet_tag }}
-      {{ 'component-cart.css' | asset_url | stylesheet_tag }}
-      {{ 'component-totals.css' | asset_url | stylesheet_tag }}
       {{ 'component-price.css' | asset_url | stylesheet_tag }}
-      {{ 'component-discounts.css' | asset_url | stylesheet_tag }}
     {%- endif -%}
 
     {%- unless settings.type_body_font.system? -%}
@@ -257,11 +253,22 @@
         cart_url: '{{ routes.cart_url }}',
         predictive_search_url: '{{ routes.predictive_search_url }}',
         search_url: '{{ routes.search_url }}',
+        product_recommendations_url: '{{ routes.product_recommendations_url }}',
       };
 
       window.cartStrings = {
         error: `{{ 'sections.cart.cart_error' | t }}`,
         quantityError: `{{ 'sections.cart.cart_quantity_error_html' | t: quantity: '[quantity]' }}`,
+        quantityChangeError: `{{ 'sections.cart.quantity_error' | t }}`,
+        removeError: `{{ 'sections.cart.remove_error' | t }}`,
+        stockLimit: `{{ 'sections.cart.stock_limit' | t: count: '[count]' }}`,
+        removed: `{{ 'sections.cart.removed' | t: title: '[title]' }}`,
+        undoError: `{{ 'sections.cart.undo_error' | t: title: '[title]' }}`,
+        itemAdded: `{{ 'sections.cart.item_added' | t: title: '[title]' }}`,
+        blockedNote: `{{ 'sections.cart.blocked_note' | t }}`,
+        blockedUnavailableOne: `{{ 'sections.cart.blocked_unavailable.one' | t: count: '[count]' }}`,
+        blockedUnavailableOther: `{{ 'sections.cart.blocked_unavailable.other' | t: count: '[count]' }}`,
+        checkoutFailed: `{{ 'sections.cart.checkout_failed' | t }}`,
       };
 
       window.variantStrings = {

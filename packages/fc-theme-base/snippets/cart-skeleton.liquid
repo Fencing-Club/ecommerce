@@ -1,0 +1,49 @@
+{% doc %}
+  Loading placeholders that match the cart layout.
+  @param {string} part - lines, progress, summary or bar.
+  @param {number} [count] - Number of line placeholders. Default 3.
+{% enddoc %}
+{%- assign line_count = count | default: 3 -%}
+{%- case part -%}
+  {%- when 'lines' -%}
+    <ul class="fc-skeleton-lines" role="list" aria-hidden="true">
+      {%- for index in (1..line_count) -%}
+        <li class="fc-skeleton-line">
+          <span class="fc-bone fc-bone--photo"></span>
+          <span class="fc-skeleton-line__details">
+            <span class="fc-skeleton-row"><span class="fc-bone" style="--w: 180px"></span><span class="fc-bone" style="--w: 56px"></span></span>
+            <span class="fc-bone" style="--w: 108px; --h: 12px"></span>
+            <span class="fc-bone fc-bone--pill" style="--w: 84px; --h: 20px"></span>
+            <span class="fc-skeleton-row fc-skeleton-row--controls"><span class="fc-bone fc-bone--control" style="--w: 112px"></span><span class="fc-bone fc-bone--control" style="--w: 40px"></span></span>
+          </span>
+        </li>
+      {%- endfor -%}
+    </ul>
+  {%- when 'progress' -%}
+    <div class="fc-skeleton-progress" aria-hidden="true">
+      <span class="fc-skeleton-row"><span class="fc-bone" style="--w: 200px"></span><span class="fc-bone" style="--w: 110px; --h: 12px"></span></span>
+      <span class="fc-bone fc-bone--track"></span>
+      <span class="fc-skeleton-row"><span class="fc-bone" style="--w: 36px; --h: 10px"></span><span class="fc-bone" style="--w: 36px; --h: 10px"></span><span class="fc-bone" style="--w: 36px; --h: 10px"></span></span>
+    </div>
+  {%- when 'summary' -%}
+    <div class="fc-skeleton-summary" aria-hidden="true">
+      <span class="fc-skeleton-row fc-skeleton-row--extras"><span class="fc-bone fc-bone--control"></span><span class="fc-bone fc-bone--control"></span></span>
+      <span class="fc-skeleton-rows">
+        <span class="fc-skeleton-row"><span class="fc-bone" style="--w: 100px; --h: 12px"></span><span class="fc-bone" style="--w: 64px; --h: 12px"></span></span>
+        <span class="fc-skeleton-row"><span class="fc-bone" style="--w: 80px; --h: 12px"></span><span class="fc-bone" style="--w: 56px; --h: 12px"></span></span>
+        <span class="fc-skeleton-row"><span class="fc-bone" style="--w: 70px; --h: 12px"></span><span class="fc-bone" style="--w: 40px; --h: 12px"></span></span>
+      </span>
+      <span class="fc-skeleton-total">
+        <span class="fc-skeleton-row fc-skeleton-row--end"><span class="fc-skeleton-stack"><span class="fc-bone" style="--w: 60px; --h: 18px"></span><span class="fc-bone" style="--w: 150px; --h: 12px"></span></span><span class="fc-bone" style="--w: 130px; --h: 30px"></span></span>
+        <span class="fc-bone fc-bone--banner"></span>
+      </span>
+      <span class="fc-skeleton-checkout">{% render 'fc-icon', icon: 'lock', size: 16 %}{{ 'sections.cart.checkout' | t }}</span>
+      <span class="fc-skeleton-row fc-skeleton-row--center"><span class="fc-bone" style="--w: 240px; --h: 12px"></span></span>
+    </div>
+  {%- when 'bar' -%}
+    <div class="fc-skeleton-bar" aria-hidden="true">
+      <span class="fc-skeleton-row fc-skeleton-row--end"><span class="fc-skeleton-stack"><span class="fc-bone" style="--w: 40px; --h: 12px"></span><span class="fc-bone" style="--w: 120px; --h: 28px"></span></span><span class="fc-bone fc-bone--pill" style="--w: 132px; --h: 30px"></span></span>
+      <span class="fc-skeleton-checkout">{% render 'fc-icon', icon: 'lock', size: 16 %}{{ 'sections.cart.checkout' | t }}</span>
+      <span class="fc-skeleton-row fc-skeleton-row--center"><span class="fc-bone" style="--w: 170px; --h: 12px"></span></span>
+    </div>
+{%- endcase -%}

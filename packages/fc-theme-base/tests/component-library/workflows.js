@@ -213,33 +213,6 @@ document.querySelector('#product-details').addEventListener('change', () => {
   const color = document.querySelector('[name="lab-color"]:checked').value;
   document.querySelector('#product-details-status').textContent = `${color}, size ${document.querySelector('#LabVariantDropdown').value}`;
 });
-document.querySelector('#cart-components [data-save-note]').addEventListener('click', async event => {
-  const button = event.currentTarget;
-  const status = document.querySelector('#cart-components [data-note-status]');
-  button.disabled = true;
-  status.textContent = 'Saving';
-  await delay(500);
-  status.textContent = document.querySelector('#cart-detail-fail').checked ? 'Unable to save. Try again.' : 'Note saved in this example';
-  button.disabled = false;
-});
-async function applyDiscount() {
-  const button = document.querySelector('#cart-components [data-apply-discount]');
-  if (button.disabled) return;
-  const input = document.querySelector('#CartDiscount-lab');
-  const status = document.querySelector('#cart-components [data-discount-status]');
-  if (!input.value.trim()) { input.focus(); return; }
-  button.disabled = true;
-  status.textContent = 'Checking code';
-  await delay(500);
-  status.textContent = 'This example does not apply discounts.';
-  input.setAttribute('aria-invalid', 'true');
-  button.disabled = false;
-  input.focus();
-}
-document.querySelector('#cart-components [data-apply-discount]').addEventListener('click', applyDiscount);
-document.querySelector('#CartDiscount-lab').addEventListener('keydown', event => {
-  if (event.key === 'Enter') { event.preventDefault(); applyDiscount(); }
-});
 document.querySelectorAll('#announcements a').forEach(link => link.addEventListener('click', event => event.preventDefault()));
 document.querySelector('#mobile-navigation').addEventListener('click', event => {
   const link = event.target.closest('a');
