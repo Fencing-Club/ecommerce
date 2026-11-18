@@ -35,6 +35,8 @@ Dawn cart stylesheets are gone.
   message; other failures say the change failed and put the quantity back.
 - Removing a line leaves a row with Undo until the next cart change. Undo adds the same variant, quantity, properties
   and selling plan back.
+- Edit and remove stay usable while a row saves; only the price shows a placeholder. Remove sends a quantity change
+  still waiting on the debounce first, and Edit waits for pending changes before it leaves the cart.
 - The order note saves only with Save note. The editor stays open until the note is saved or the shopper closes it,
   which puts back the saved note. An unsaved note blocks checkout. There is no saved indicator. A saved note shows
   as a card with an edit button.
