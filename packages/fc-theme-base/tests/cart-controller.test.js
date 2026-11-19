@@ -164,20 +164,21 @@ describe('line changes', () => {
     expect(bodies.length).toBe(2);
   });
 
-  it('waits for pending changes before Edit leaves for the product page', async () => {
-    const view = mount('page');
-    const leave = vi.spyOn(view, 'leaveTo').mockImplementation(() => {});
-    let finish;
-    const pending = controller().mutate(() => new Promise(resolve => { finish = resolve; }));
-    const edit = view.querySelector('[data-cart-edit]');
-    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
-    edit.dispatchEvent(click);
-    expect(click.defaultPrevented).toBe(true);
-    await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
-    expect(leave).not.toHaveBeenCalled();
-    finish();
-    await pending;
-    await vi.waitFor(() => expect(leave).toHaveBeenCalledWith(edit.href));
+  it('starts a new reward fill at the old width so it moves to the new one', () => {
+    const view = mount('flyout');
+    const region = view.viewRoot.querySelector('[data-cart-region="progress"]');
+    region.querySelector('.fc-progress__fill').style.width = '10%';
+    const html = new DOMParser().parseFromString(view.viewRoot.outerHTML, 'text/html');
+    html.querySelector('[data-cart-region="progress"] .fc-progress__fill').style.width = '60%';
+    const widths = [];
+    const measure = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      widths.push(this.style.width);
+      return new DOMRect();
+    });
+    CartItems.applyRegions(view.viewRoot, html);
+    measure.mockRestore();
+    expect(widths).toEqual(['10%']);
+    expect(region.querySelector('.fc-progress__fill').style.width).toBe('60%');
   });
 
   it('highlights a just added row with a toast until the next change', () => {
@@ -349,9 +350,9 @@ describe('free gifts', () => {
       return json({ attributes: body.attributes });
     }));
     const options = document.querySelector('cart-gift-options');
-    pick(options, 'Club socks, One size');
+    pick(options, 'Club socks');
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
-    expect(posts).toEqual([['/cart/update.js', { attributes: { [giftKey]: 'Club socks, One size' } }]]);
+    expect(posts).toEqual([['/cart/update.js', { attributes: { [giftKey]: 'Club socks' } }]]);
     expect(options.feedback.hidden).toBe(true);
   });
 
@@ -359,7 +360,7 @@ describe('free gifts', () => {
     mount('flyout', 'gift-unavailable');
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Offline'); }));
     const options = document.querySelector('cart-gift-options');
-    pick(options, 'Club socks, One size');
+    pick(options, 'Club socks');
     await vi.waitFor(() => expect(options.feedback.hidden).toBe(false));
     expect(options.feedback.textContent).toContain("We couldn't add Club socks.");
     expect(options.querySelector('.fc-gift__input:checked')).toBeNull();
@@ -370,12 +371,12 @@ describe('free gifts', () => {
 
   it('keeps the chosen gift when Shopify does not save the change', async () => {
     mount('page', 'gift-chosen');
-    vi.stubGlobal('fetch', vi.fn(async () => json({ attributes: { [giftKey]: 'Club socks, One size' } })));
+    vi.stubGlobal('fetch', vi.fn(async () => json({ attributes: { [giftKey]: 'Club socks' } })));
     const options = document.querySelector('.fc-gift-change cart-gift-options');
-    pick(options, 'Training towel, Charcoal');
+    pick(options, 'Training towel');
     await vi.waitFor(() => expect(options.feedback.hidden).toBe(false));
     expect(options.feedback.textContent).toContain("We couldn't switch to Training towel.");
-    expect(options.querySelector('.fc-gift__input:checked').value).toBe('Club socks, One size');
+    expect(options.querySelector('.fc-gift__input:checked').value).toBe('Club socks');
   });
 
   it('clears a gift the cart no longer reaches with one request, however many views ask', async () => {
@@ -400,7 +401,7 @@ describe('free gifts', () => {
       return json({});
     }));
     mount('flyout', 'gift-added');
-    const attributes = { 'Free gift at $175': 'Harut point protectors, Set of 3', 'Free gift at $375': 'The Fencing Journal' };
+    const attributes = { 'Free gift at $175': 'Harut point protectors', 'Free gift at $375': 'The Fencing Journal' };
     await vi.waitFor(() => expect(posts).toEqual([{ attributes }]));
     expect(refresh).not.toHaveBeenCalled();
     expect(document.querySelectorAll('[data-gift-line]').length).toBe(2);

@@ -100,9 +100,6 @@ describe('local component library', () => {
       expect(html).not.toMatch(/(sections|general|products)\.[a-z_]+\.[a-z_]+/);
       expect(html).not.toContain('action="/cart');
     }
-    const suggestions = await (await fetch(`${base}/lab/cart/recommendations`)).text();
-    expect(suggestions).toContain('data-cart-suggestions-content');
-    expect(suggestions).not.toContain('Competition jacket 350N');
     const shim = await (await fetch(`${base}/lab/cart-shim.js`)).text();
     expect(shim).toContain("startsWith('/lab/cart-store')");
   });

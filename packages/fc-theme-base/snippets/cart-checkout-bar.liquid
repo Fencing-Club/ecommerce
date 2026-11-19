@@ -22,14 +22,6 @@
     assign checkout_reason = 'sections.cart.blocked_unavailable' | t: count: unavailable_count
     assign state = 'blocked'
   endif
-  capture free_shipping
-    render 'cart-free-shipping'
-  endcapture
-  assign free_shipping = free_shipping | plus: 0
-  assign shipping_free = false
-  if free_shipping > 0 and cart.total_price >= free_shipping
-    assign shipping_free = true
-  endif
   assign bar_context = context | append: '-bar'
 -%}
 <cart-checkout-bar class="fc-bar" data-cart-bar data-checkout-state="{{ state }}">
@@ -38,7 +30,7 @@
       <p class="fc-bar__breakdown-title" id="CartBreakdownTitle-{{ context }}">{{ 'sections.cart.order_summary' | t }}</p>
       <button type="button" class="fc-icon-button fc-icon-button--small" data-close-breakdown aria-label="{{ 'sections.cart.close_summary' | t }}">{% render 'fc-icon', icon: 'x', size: 16 %}</button>
     </div>
-    <div data-cart-region="bar-breakdown">{% render 'cart-breakdown', variant: 'plain', shipping_free: shipping_free %}</div>
+    <div data-cart-region="bar-breakdown">{% render 'cart-breakdown', variant: 'plain' %}</div>
   </div>
   <div class="fc-bar__row" data-cart-region="bar-total">
     <div class="fc-bar__total">
@@ -50,5 +42,5 @@
     {%- endif -%}
   </div>
   <div data-cart-region="bar-checkout">{% render 'cart-checkout', form_id: form_id, context: bar_context, reason: checkout_reason %}</div>
-  <p class="fc-bar__note">{% if cart.taxes_included %}{{ 'sections.cart.taxes_included' | t }}{% else %}{{ 'sections.cart.taxes_at_checkout' | t }}{% endif %}</p>
+  <p class="fc-bar__note">{% if cart.taxes_included %}{{ 'sections.cart.taxes_included_shipping_at_checkout' | t }}{% else %}{{ 'sections.cart.shipping_and_taxes_at_checkout' | t }}{% endif %}</p>
 </cart-checkout-bar>

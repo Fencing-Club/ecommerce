@@ -29,7 +29,6 @@
           <div class="fc-flyout__scroll" id="CartDrawer-CartItems">
             <div class="fc-flyout__gifts" data-cart-region="gifts">{% render 'cart-gifts', context: 'drawer' %}</div>
             <div data-cart-region="lines">{% render 'cart-lines', context: 'drawer' %}</div>
-            <div class="fc-suggestions-slot" data-cart-suggestions data-product-id="{{ cart.items.first.product_id }}"></div>
             <div class="fc-flyout__summary">{% render 'cart-summary', context: 'drawer', form_id: 'CartDrawer-Form' %}</div>
             <p id="CartDrawer-LiveRegionText" class="visually-hidden" role="status"></p>
           </div>

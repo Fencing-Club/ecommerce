@@ -88,7 +88,7 @@
           endif
         -%}
         <span class="fc-progress__stop" style="--at: {{ at }}%"{% if total >= amount %} data-reached{% endif %}>
-          <span class="fc-progress__marker">{% render 'fc-icon', icon: icon, size: 12 %}</span>
+          <span class="fc-progress__marker">{% render 'fc-icon', icon: icon, size: 16 %}</span>
           <span class="fc-progress__label">{{ amount | money_without_trailing_zeros }}</span>
         </span>
       {%- endfor -%}

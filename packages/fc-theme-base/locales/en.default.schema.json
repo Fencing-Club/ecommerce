@@ -360,7 +360,6 @@
         },
         "cart_trust": {
           "header": "Cart reassurance",
-          "dispatch": { "label": "Dispatch note" },
           "returns": { "label": "Returns note" }
         },
         "cart_empty": {

@@ -1,13 +1,15 @@
 {% doc %}
   Order summary rows. Codes show as removable chips in the summary card and as plain labels in the mobile breakdown.
-  Shipping reads Free when the cart earns it (data-free) or a shipping code is applied (scripts add data-code-free).
+  Subtotal shows only when it differs from the total. The Shipping row shows only while a shipping code is applied
+  (scripts add data-code-free), so the code can be removed; otherwise shipping is left to checkout.
   @param {string} [variant] - chips (default) or plain.
-  @param {boolean} [shipping_free] - Shipping is free for this cart.
 {% enddoc %}
 {%- assign plain = false -%}
 {%- if variant == 'plain' -%}{%- assign plain = true -%}{%- endif -%}
 <dl class="fc-breakdown" data-cart-breakdown>
-  <div class="fc-breakdown__row"><dt>{{ 'sections.cart.items_subtotal' | t }}</dt><dd>{{ cart.items_subtotal_price | money }}</dd></div>
+  {%- if cart.items_subtotal_price != cart.total_price -%}
+    <div class="fc-breakdown__row"><dt>{{ 'sections.cart.items_subtotal' | t }}</dt><dd>{{ cart.items_subtotal_price | money }}</dd></div>
+  {%- endif -%}
   {%- for application in cart.cart_level_discount_applications -%}
     <div class="fc-breakdown__row">
       <dt>
@@ -33,13 +35,9 @@
     {%- endif -%}
   {%- endfor -%}
   {%- if cart.requires_shipping -%}
-    <div class="fc-breakdown__row" data-shipping-row {% if shipping_free %}data-free{% endif %}>
+    <div class="fc-breakdown__row" data-shipping-row>
       <dt>{{ 'sections.cart.shipping' | t }}{% unless plain %}<span class="fc-chips" data-shipping-codes></span>{% endunless %}</dt>
-      <dd class="fc-benefit" data-shipping-value="free">{{ 'sections.cart.free' | t }}</dd>
-      <dd data-shipping-value="checkout">{{ 'sections.cart.at_checkout' | t }}</dd>
+      <dd class="fc-benefit">{{ 'sections.cart.free' | t }}</dd>
     </div>
-  {%- endif -%}
-  {%- if plain -%}
-    <div class="fc-breakdown__row"><dt>{{ 'sections.cart.estimated_taxes' | t }}</dt><dd>{{ 'sections.cart.at_checkout' | t }}</dd></div>
   {%- endif -%}
 </dl>

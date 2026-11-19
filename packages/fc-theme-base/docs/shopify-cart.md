@@ -8,19 +8,19 @@ Dawn cart stylesheets are gone.
 
 ## Parts
 
-- `cart-lines` and `cart-line-item`: product rows with price, savings badge, kit contents (`item_components`),
-  quantity stepper, edit and remove. A row's message line shows stock limits and failed changes for that row only.
+- `cart-lines` and `cart-line-item`: product rows with price, kit contents (`item_components`), quantity stepper
+  and remove. A row's message line shows stock limits and failed changes for that row only.
 - `cart-reward-progress`: free shipping and gift tier progress above the lines. `cart-free-shipping` prints the
-  minimum that the progress and the Shipping row share; `cart-gift-tiers` prints the gift tiers.
+  minimum the progress uses; `cart-gift-tiers` prints the gift tiers.
 - `cart-gifts`: a gift choice panel for each reached tier without a choice, and the gift removed notice.
   `cart-gift-options` draws one tier's gift radios; `cart-gift-lines` draws chosen gifts as free lines after the
   products, with Change gift.
-- `cart-summary`: discount code and order note (`cart-extras`), summary rows (`cart-breakdown`), total, savings,
-  checkout (`cart-checkout`) and the reassurance row. `cart-checkout-bar` is the phone version.
+- `cart-summary`: discount code and order note (`cart-extras`), summary rows (`cart-breakdown`), the total with a
+  savings chip, checkout (`cart-checkout`) and the returns note from the theme's cart settings. The items subtotal
+  shows only when it differs from the total. The note under the total says shipping and taxes are calculated at
+  checkout. `cart-checkout-bar` is the phone version.
 - `cart-message`: the empty cart and the load failed message. `cart-popular` shows collections chosen in the theme's
   cart settings under the empty message. `cart-skeleton` draws the loading state.
-- `sections/cart-suggestions.liquid`: "Complete your order", rendered through Shopify's complementary product
-  recommendations for the newest line. It shows nothing when there are none or the request fails.
 
 ## Behavior
 
@@ -35,14 +35,14 @@ Dawn cart stylesheets are gone.
   message; other failures say the change failed and put the quantity back.
 - Removing a line leaves a row with Undo until the next cart change. Undo adds the same variant, quantity, properties
   and selling plan back.
-- Edit and remove stay usable while a row saves; only the price shows a placeholder. Remove sends a quantity change
-  still waiting on the debounce first, and Edit waits for pending changes before it leaves the cart.
+- Remove stays usable while a row saves; only the price shows a placeholder. It sends a quantity change still waiting
+  on the debounce first.
 - The order note saves only with Save note. The editor stays open until the note is saved or the shopper closes it,
   which puts back the saved note. An unsaved note blocks checkout. There is no saved indicator. A saved note shows
   as a card with an edit button.
 - Discount codes keep the other applied codes. A code Shopify does not accept is named in the message and stays in
   the field. Applied codes show as removable chips; codes with no amount in the cart, such as shipping codes, show on
-  the Shipping row, which then reads Free. Automatic discounts show without a remove button.
+  a Shipping row reading Free, which appears only while such a code is applied. Automatic discounts show without a remove button.
 - A failed refresh shows the load failed message, never an empty cart. Try again is the retry; the message does not
   repeat what is already visible.
 - The flyout refreshes when it opens after a failure or after the shopper returns with the back button.
@@ -50,16 +50,17 @@ Dawn cart stylesheets are gone.
 ## Rewards
 
 - The reward progress shows free shipping and the gift tiers on one track, each marker at its share of the highest
-  amount. The message names the next reward and the note names the last one reached.
+  amount. The message names the next reward and the note names the last one reached. The fill moves to its new width
+  after each cart change.
 - Progress counts the cart total after discounts, as the Reward progress states in the Pen say. Amounts are in the
   store currency and aren't converted, so a cart in another currency shows no rewards.
 
 ### Free shipping
 
-- The Free shipping minimum theme setting (Cart, Rewards) turns on the free shipping marker and the Free reading on
-  the Shipping row. Leaving it blank turns both off.
-- Reward amounts only appear where the theme reads them from the settings and gift entries: the progress, the gift
-  panels and notices, and the Shipping row. Fixed copy, such as the empty message, never names an amount.
+- The Free shipping minimum theme setting (Cart, Rewards) turns on the free shipping marker. Leaving it blank turns
+  it off.
+- Reward amounts only appear where the theme reads them from the settings and gift entries: the progress and the gift
+  panels and notices. Fixed copy, such as the empty message, never names an amount.
 - The theme only shows free shipping. Shopify gives it at checkout through an automatic discount the merchant
   creates in Shopify admin, under Discounts:
   - Type: Free shipping. Method: Automatic.
@@ -75,14 +76,14 @@ Dawn cart stylesheets are gone.
 - Each gift's minimum total is its tier, and gifts with the same minimum share a tier. A tier needs at least one
   available gift, so switching off every gift at an amount removes that tier. With no entries, gifts are off.
 - A tier with one gift needs no choice: when the cart reaches it, the gift shows as a free line after the products
-  and the theme saves it as a cart attribute named for the tier, such as `Free gift at $175`, with the gift's name
-  and details as the value.
+  and the theme saves it as a cart attribute named for the tier, such as `Free gift at $175`, with the gift's name as
+  the value.
 - A tier with two or more gifts shows a panel above the lines with that tier's gifts, unavailable ones included. A
   pick saves right away as the tier's cart attribute, and the gift then shows as a free line with Change gift.
 - When the cart drops under a chosen tier, the theme clears that tier's attribute and says the gift came out. It also
   clears a choice that no longer matches an available gift, such as after a gift is renamed or switched off, so the
   shopper chooses again.
-- The order shows the gift under Additional details, for example `Free gift at $175: Harut point protectors, Set of 3`.
+- The order shows the gift under Additional details, for example `Free gift at $175: Harut point protectors`.
   Whoever packs the order adds the gift.
 - Nothing at checkout enforces a gift. A shopper can check out without choosing one, and the gift doesn't show in
   Shopify's checkout summary. The theme clears a choice only when a cart view renders, so check the order total
@@ -99,8 +100,7 @@ The merchant sets this up in Shopify admin; the theme creates nothing on the sto
    | --------------- | ----------------------- | ------------------------------------------------------------------- |
    | `name`          | Single line text        | The gift's name. Make it required.                                  |
    | `image`         | File, images only       | The photo in the choices and on the gift line.                      |
-   | `details`       | Single line text        | A size, color or similar, shown under the name.                     |
-   | `description`   | Single line text        | A short line on what the gift is, shown under the details.          |
+   | `description`   | Single line text        | A short line on what the gift is, such as what's in a set.          |
    | `value`         | Money                   | Shown struck through beside Free.                                   |
    | `minimum_total` | Decimal                 | The cart total, in the store currency, that earns it. Required.     |
    | `available`     | True or false           | False shows the gift as Unavailable. Blank counts as available.     |

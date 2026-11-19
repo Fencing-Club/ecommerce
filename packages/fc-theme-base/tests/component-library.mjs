@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { Liquid } from 'liquidjs';
 import { products, articles, sections, blogs, localization, announcements, catalogProducts, catalogFixture, commerce, gallery, policy } from './component-library/fixtures.mjs';
 import { chartFixtures } from './helpers/sizing-liquid.mjs';
-import { cartGifts, cartPageStates, cartSettings, cartState, cartStates, recommendations } from './component-library/cart-states.mjs';
+import { cartGifts, cartPageStates, cartSettings, cartState, cartStates } from './component-library/cart-states.mjs';
 
 const directory = dirname(fileURLToPath(import.meta.url));
 const themeRoot = resolve(directory, '..');
@@ -135,11 +135,6 @@ export function renderCartFrame(parameters) {
   return engine.renderFileSync('cart-frame', { view, state, section, cart_json: cartJson }, { globals: { settings, cart: liquid, routes: cartRoutes, shop: { currency: 'USD', metaobjects: { cart_gift: { values: state.gifts?.() || cartGifts() } } } } });
 }
 
-export function renderCartRecommendations() {
-  const { liquid } = cartState('ready').cart();
-  return `<div id="shopify-section-cart-suggestions">${engine.renderFileSync('cart-suggestions', { recommendations }, { globals: { cart: liquid, routes: cartRoutes } })}</div>`;
-}
-
 export function renderCatalog(parameters) {
   return engine.renderFileSync('catalog', { catalog: catalogFixture(parameters) }, { globals: { cart: { currency: { symbol: '$' } } } });
 }
@@ -170,7 +165,6 @@ export function createLibraryServer() {
       else if (pathname === '/lab/search') body = renderSearch(url.searchParams);
       else if (pathname === '/lab/cart') body = renderCartIndex();
       else if (pathname === '/lab/cart/frame') body = renderCartFrame(url.searchParams);
-      else if (pathname === '/lab/cart/recommendations') body = renderCartRecommendations();
       else if (pathname === '/lab/country-flags.css') {
         type = 'text/css';
         body = engine.parseAndRenderSync(readFileSync(resolve(themeRoot, 'assets/country-flags.css.liquid'), 'utf8'));

@@ -31,9 +31,6 @@
       assign minimum = gift.minimum_total.value | times: 100 | round
       if minimum == tier
         assign label = gift.name.value | default: ''
-        if gift.details.value != blank
-          assign label = label | append: ', ' | append: gift.details.value
-        endif
         assign option_count = option_count | plus: 1
         assign only_label = label
         if chosen == label and gift.available.value != false
@@ -85,9 +82,6 @@
       for gift in shop.metaobjects.cart_gift.values
         assign minimum = gift.minimum_total.value | times: 100 | round
         assign label = gift.name.value | default: ''
-        if gift.details.value != blank
-          assign label = label | append: ', ' | append: gift.details.value
-        endif
         if chosen == label
           assign gift_name = gift.name.value
         endif

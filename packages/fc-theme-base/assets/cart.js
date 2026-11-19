@@ -50,12 +50,8 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     this.addEventListener('click', event => {
       const retry = event.target.closest('[data-cart-retry]');
       const undo = event.target.closest('[data-undo-remove]');
-      const suggestion = event.target.closest('[data-add-suggestion]');
-      const edit = event.target.closest('[data-cart-edit]');
-      if (edit) this.openEdit(edit, event);
-      else if (retry) this.refresh({ visible: true });
+      if (retry) this.refresh({ visible: true });
       else if (undo) this.undoRemove(undo.closest('.fc-line--removed'));
-      else if (suggestion) this.addSuggestion(suggestion);
     });
   }
 
@@ -72,7 +68,6 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
       if (event.source === 'cart-items') return;
       return this.onCartUpdate();
     });
-    this.loadSuggestions();
   }
 
   /** Sends the quantity change waiting on the debounce now. */
@@ -83,19 +78,6 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     CartItems.pendingQuantities.delete(this);
     if (event) this.onChange(event);
     CartItems.updateCheckoutState();
-  }
-
-  /** Edit leaves the cart, so it waits for pending changes first; leaving earlier would drop them. */
-  openEdit(link, event) {
-    const waiting = CartItems.mutationCount > 0 || CartItems.pendingQuantities.size > 0;
-    if (!waiting || event.defaultPrevented || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    event.preventDefault();
-    CartItems.pendingQuantities.forEach(view => view.flushQuantity());
-    CartItems.mutationQueue.then(() => this.leaveTo(link.href));
-  }
-
-  leaveTo(url) {
-    window.location.assign(url);
   }
 
   disconnectedCallback() {
@@ -174,6 +156,15 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     });
   }
 
+  /** Starts a new reward fill at the old width so it grows or shrinks to the new one; CSS sets the transition. */
+  static animateFill(fill, from) {
+    const to = fill?.style.width;
+    if (!from || !to || from === to) return;
+    fill.style.width = from;
+    fill.getBoundingClientRect();
+    fill.style.width = to;
+  }
+
   /** Swaps every region in the view for the matching region in the rendered section. */
   static applyRegions(root, html) {
     const sourceRoot = html.querySelector('[data-cart-state]');
@@ -181,12 +172,11 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
       const source = html.querySelector(`[data-cart-region="${region.dataset.cartRegion}"]`);
       if (!source) return;
       CartItems.preserveControls(region, source);
+      const fillFrom = region.querySelector('.fc-progress__fill')?.style.width;
       region.replaceChildren(...source.childNodes);
+      CartItems.animateFill(region.querySelector('.fc-progress__fill'), fillFrom);
     });
     if (sourceRoot) root.dataset.cartState = sourceRoot.dataset.cartState;
-    const slot = root.querySelector('[data-cart-suggestions]');
-    const sourceSlot = html.querySelector('[data-cart-suggestions]');
-    if (slot && sourceSlot) slot.dataset.productId = sourceSlot.dataset.productId;
     root.dispatchEvent(new CustomEvent('cart:regions-updated', { bubbles: true }));
   }
 
@@ -215,7 +205,6 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     });
     delete this.viewRoot.dataset.loadState;
     CartItems.updateCheckoutState();
-    this.loadSuggestions();
     customElements.get('cart-discount')?.syncShippingCodes?.();
   }
 
@@ -411,16 +400,8 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     });
   }
 
-  addSuggestion(button) {
-    if (button.disabled) return;
-    button.disabled = true;
-    return this.addItems([{ id: Number(button.dataset.addSuggestion), quantity: 1 }], () => {
-      button.disabled = false;
-    }, { highlight: true });
-  }
-
   /** Adds items through the queue and renders the result. onError runs when the request fails. */
-  addItems(items, onError, { highlight = false } = {}) {
+  addItems(items, onError) {
     const entries = this.getSectionsToRender();
     this.clearJustAdded();
     return CartItems.mutate(async () => {
@@ -438,10 +419,7 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
       this.announce();
       const added = state.items?.[0];
       const row = added && this.lineByKey(added.key);
-      if (row) {
-        if (highlight) this.markJustAdded(added);
-        this.focusInView(row.querySelector('.fc-line__name'));
-      }
+      if (row) this.focusInView(row.querySelector('.fc-line__name'));
       publish(PUB_SUB_EVENTS.cartUpdate, { source: 'cart-items', cartData: state });
       await Promise.all([...document.querySelectorAll('cart-items, cart-drawer-items')].filter(view => view !== this).map(view => view.onCartUpdate()));
     });
@@ -467,29 +445,6 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     const status = this.querySelector('#cart-live-region-text, #CartDrawer-LiveRegionText');
     const source = document.getElementById('cart-live-region-text');
     if (status && source && status !== source) status.textContent = source.textContent;
-  }
-
-  /** Loads complementary products for the newest line. Shows nothing when there are none or the request fails. */
-  loadSuggestions() {
-    const slot = this.viewRoot.querySelector('[data-cart-suggestions]');
-    const productId = slot?.dataset.productId;
-    if (!slot || !routes.product_recommendations_url) return;
-    if (!productId || this.viewRoot.dataset.cartState === 'empty') {
-      slot.replaceChildren();
-      return;
-    }
-    const request = (this.suggestionRequest = Symbol('suggestions'));
-    fetch(`${routes.product_recommendations_url}?product_id=${encodeURIComponent(productId)}&limit=6&intent=complementary&section_id=cart-suggestions`)
-      .then(response => (response.ok ? response.text() : ''))
-      .then(markup => {
-        if (request !== this.suggestionRequest) return;
-        const content = new DOMParser().parseFromString(markup, 'text/html').querySelector('[data-cart-suggestions-content]');
-        if (content?.children.length) slot.replaceChildren(content);
-        else slot.replaceChildren();
-      })
-      .catch(() => {
-        if (request === this.suggestionRequest) slot.replaceChildren();
-      });
   }
 
   createCartLinesUpdateEvent(action, variantId, quantity, lineKey) {

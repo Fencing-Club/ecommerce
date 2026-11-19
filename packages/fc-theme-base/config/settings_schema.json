@@ -1499,7 +1499,6 @@
       { "type": "number", "id": "cart_free_shipping_threshold", "label": "t:settings_schema.cart.settings.cart_rewards.free_shipping.label", "info": "t:settings_schema.cart.settings.cart_rewards.free_shipping.info" },
       { "type": "paragraph", "content": "t:settings_schema.cart.settings.cart_rewards.gifts.content" },
       { "type": "header", "content": "t:settings_schema.cart.settings.cart_trust.header" },
-      { "type": "text", "id": "cart_trust_dispatch", "label": "t:settings_schema.cart.settings.cart_trust.dispatch.label", "default": "Ships in 1 business day" },
       { "type": "text", "id": "cart_trust_returns", "label": "t:settings_schema.cart.settings.cart_trust.returns.label", "default": "Free 30-day returns" },
       { "type": "header", "content": "t:settings_schema.cart.settings.cart_empty.header" },
       { "type": "text", "id": "cart_empty_link_label", "label": "t:settings_schema.cart.settings.cart_empty.link_label.label", "default": "Shop starter kits" },
