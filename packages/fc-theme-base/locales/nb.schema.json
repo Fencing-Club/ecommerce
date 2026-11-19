@@ -367,9 +367,6 @@
       "settings": {
         "paragraph": {
           "content": "[Administrer synlighet](/admin/settings/customer_accounts) i innstillinger for kundekonto."
-        },
-        "customer_account_menu": {
-          "label": "Meny"
         }
       }
     }

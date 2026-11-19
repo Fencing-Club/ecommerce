@@ -27,9 +27,6 @@
           assign option_count = option_count | plus: 1
           assign only_gift = gift
           assign label = gift.name.value | default: ''
-          if gift.details.value != blank
-            assign label = label | append: ', ' | append: gift.details.value
-          endif
           if chosen != blank and chosen == label and gift.available.value != false
             assign match = gift
           endif
@@ -56,9 +53,7 @@
               <span class="fc-line__free">{{ 'sections.cart.free' | t }}</span>
             </p>
           </div>
-          {%- if match.details.value != blank -%}<p class="fc-line__variant">{{ match.details.value | escape }}</p>{%- endif -%}
           {%- if match.description.value != blank -%}<p class="fc-line__description">{{ match.description.value | escape }}</p>{%- endif -%}
-          <div class="fc-line__badges"><span class="fc-badge">{{ 'sections.cart.gift_badge' | t }}</span></div>
           {%- if option_count > 1 -%}
             <details class="fc-line__contents fc-gift-change" id="{{ change_id }}">
               <summary id="{{ change_id }}-label">{{ 'sections.cart.gift_change' | t }}{% render 'fc-icon', icon: 'chevron-down', size: 16 %}</summary>

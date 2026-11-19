@@ -1,6 +1,6 @@
 {% doc %}
   One product row shared by the cart flyout and the cart page.
-  Scripts set data-state="updating" and data-just-added on the row and write to its message line.
+  Scripts set data-state="updating" on the row and write to its message line.
   @param {line_item} item - Cart line item.
   @param {string} context - page or drawer.
 {% enddoc %}
@@ -27,7 +27,6 @@
     assign compare_total = item.variant.compare_at_price | times: item.quantity
   endif
   assign savings = compare_total | minus: item.final_line_price
-  assign savings_money = savings | money
 
   assign stock_limit = nil
   if item.variant.inventory_management == 'shopify' and item.variant.inventory_policy == 'deny'
@@ -44,11 +43,6 @@
   unless item.product.has_only_default_variant
     assign variant_text = item.options_with_values | map: 'value' | join: ', '
   endunless
-
-  assign editable = false
-  if can_update and item.product.has_only_default_variant == false and item.item_components.size == 0
-    assign editable = true
-  endif
 
   assign message_text = ''
   assign tone = 'error'
@@ -96,14 +90,9 @@
     {%- endfor -%}
     {%- if item.selling_plan_allocation -%}<p class="fc-line__variant">{{ item.selling_plan_allocation.selling_plan.name | escape }}</p>{%- endif -%}
     {%- if item.unit_price_measurement -%}{% render 'unit-price', price: item.unit_price, measurement: item.unit_price_measurement %}{%- endif -%}
-    <div class="fc-line__badges">
-      {%- if unavailable -%}
-        <span class="fc-badge fc-badge--alert">{{ 'sections.cart.unavailable' | t }}</span>
-      {%- else -%}
-        <span class="fc-badge fc-badge--added">{{ 'sections.cart.just_added' | t }}</span>
-        {%- if savings > 0 -%}<span class="fc-badge">{{ 'sections.cart.save_amount' | t: amount: savings_money }}</span>{%- endif -%}
-      {%- endif -%}
-    </div>
+    {%- if unavailable -%}
+      <div class="fc-line__badges"><span class="fc-badge fc-badge--alert">{{ 'sections.cart.unavailable' | t }}</span></div>
+    {%- endif -%}
     {% render 'cart-item-contents', item: item, context: context %}
     <div class="fc-line__controls">
       {%- if unavailable -%}
@@ -118,9 +107,6 @@
           <button class="quantity__button" type="button" name="plus" aria-label="{{ 'products.product.quantity.increase' | t: product: item.product.title | escape }}" {% unless can_update %}disabled{% endunless %}>{% render 'fc-icon', icon: 'plus', size: 16 %}</button>
         </quantity-input>
         <div class="fc-line__actions">
-          {%- if editable -%}
-            <a class="fc-icon-button" href="{{ item.url }}" data-cart-edit aria-label="{{ 'sections.cart.edit_title' | t: title: item.product.title | escape }}" title="{{ 'sections.cart.edit_title' | t: title: item.product.title | escape }}">{% render 'fc-icon', icon: 'pencil', size: 18 %}</a>
-          {%- endif -%}
           {%- if can_remove -%}
             <cart-remove-button data-index="{{ line }}"><a href="{{ item.url_to_remove }}" class="fc-icon-button" aria-label="{{ 'sections.cart.remove_title' | t: title: item.product.title | escape }}" title="{{ 'sections.cart.remove_title' | t: title: item.product.title | escape }}">{% render 'fc-icon', icon: 'trash-2', size: 18 %}</a></cart-remove-button>
           {%- endif -%}

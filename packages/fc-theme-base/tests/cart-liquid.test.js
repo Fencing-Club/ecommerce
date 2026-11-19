@@ -30,18 +30,17 @@ describe('cart rows', () => {
       expect(row.querySelector('input').id).toBe(inputId);
       expect(text(row.querySelector('.fc-line__price s'))).toBe('$219.95');
       expect(text(row.querySelector('.fc-line__variant'))).toBe('Mens, 44');
-      expect(text(row.querySelector('.fc-badge:not(.fc-badge--added)'))).toBe('Save $30.00');
-      expect(row.querySelector('a[aria-label^="Edit"]')).not.toBeNull();
+      expect(row.querySelector('.fc-badge, a[aria-label^="Edit"]')).toBeNull();
     }
   });
 
-  it('shows kit contents without controls of their own and no edit link', () => {
+  it('shows kit contents without controls of their own', () => {
     const row = render('flyout', 'ready').getElementById('CartDrawer-Item-2');
     const contents = row.querySelector('details');
     expect(contents.id).toBe('CartContents-drawer-8021-kit');
     expect(text(contents.querySelector('summary'))).toBe('4 included items');
-    expect(text(contents.querySelector('li:last-child'))).toContain('2 × Fencing socks');    expect(contents.querySelector('input, button, cart-remove-button')).toBeNull();
-    expect(row.querySelector('a[aria-label^="Edit"]')).toBeNull();
+    expect(text(contents.querySelector('li:last-child'))).toContain('2 × Fencing socks');
+    expect(contents.querySelector('input, button, cart-remove-button')).toBeNull();
   });
 
   it('caps the quantity at the stock and says so under the row', () => {
@@ -70,26 +69,40 @@ describe('cart rows', () => {
 });
 
 describe('order summary', () => {
-  it('shows codes as removable chips in the summary and as plain labels in the phone breakdown', () => {
+  it('shows codes as removable chips in the one summary footer', () => {
     const page = render('flyout', 'discounts-applied');
     const summary = page.querySelector('[data-cart-summary] [data-cart-breakdown]');
     const chip = summary.querySelector('[data-discount-chip="WELCOME10"]');
     expect(chip.querySelector('[data-remove-code="WELCOME10"]').getAttribute('aria-label')).toBe('Remove WELCOME10');
     expect(text(chip.closest('.fc-breakdown__row').querySelector('dd'))).toBe('-$58.89');
-    const phone = page.querySelector('.fc-bar [data-cart-breakdown]');
-    expect(phone.querySelector('[data-discount-chip]')).toBeNull();
-    expect(text(phone)).toContain('Discount WELCOME10');
-    expect(text(phone)).toContain('Estimated taxes');
+    expect(page.querySelectorAll('[data-cart-breakdown]').length).toBe(1);
+    expect(page.querySelector('.fc-bar')).toBeNull();
     expect(text(page.querySelector('.fc-total__value'))).toBe('$529.96');
     expect(text(page.querySelector('.fc-savings'))).toBe('You save $88.89');
-    expect(text(page.querySelector('.fc-bar__value'))).toBe('$529.96');
   });
 
-  it('never invents a shipping price', () => {
-    const row = render('page', 'below-free-shipping').querySelector('[data-shipping-row]');
-    expect(row.hasAttribute('data-free')).toBe(false);
-    expect(text(row.querySelector('[data-shipping-value="checkout"]'))).toBe('At checkout');
+  it('never invents a shipping price and leaves shipping to checkout until it is free', () => {
+    const page = render('page', 'below-free-shipping');
+    const row = page.querySelector('[data-cart-summary] [data-shipping-row]');
+    expect(text(row.querySelector('dd'))).toBe('Free');
     expect(row.querySelector('[data-shipping-codes]')).not.toBeNull();
+    expect(row.hasAttribute('data-free')).toBe(false);
+    expect(row.hasAttribute('data-code-free')).toBe(false);
+    expect([...page.querySelectorAll('.fc-trust li')].map(text)).toEqual(['Free 30-day returns', 'Secure checkout']);
+    const note = page.querySelector('.fc-total__note');
+    expect(text(note.querySelector('[data-shipping-note="paid"]'))).toBe('Shipping and taxes calculated at checkout');
+    expect(text(note.querySelector('[data-shipping-note="free"]'))).toBe('Taxes calculated at checkout');
+  });
+
+  it('lists free shipping once the cart earns it', () => {
+    const row = render('page', 'ready').querySelector('[data-cart-summary] [data-shipping-row]');
+    expect(row.hasAttribute('data-free')).toBe(true);
+    expect(text(row.querySelector('dd'))).toBe('Free');
+  });
+
+  it('shows the items subtotal only when it differs from the total', () => {
+    expect(render('page', 'ready').querySelector('[data-cart-summary] [data-cart-breakdown]').textContent).not.toContain('Items subtotal');
+    expect(text(render('page', 'discounts-applied').querySelector('[data-cart-summary] [data-cart-breakdown]'))).toContain('Items subtotal');
   });
 
   it('keeps a saved note in a card with an edit button and shows no saved indicator', async () => {
@@ -117,34 +130,33 @@ describe('free shipping', () => {
     for (const view of ['flyout', 'page']) {
       const page = render(view, 'below-free-shipping');
       const progress = page.querySelector('[data-cart-region="progress"] .fc-progress');
-      expect(text(progress.querySelector('.fc-progress__message'))).toBe('$180.10 away from free shipping');
+      expect(text(progress.querySelector('.fc-progress__message'))).toBe('$180.10 away from free US shipping');
       // The track runs to the highest reward, the $900 gift.
       expect(progress.querySelector('.fc-progress__fill').getAttribute('style')).toBe('width: 7.77%');
       expect(progress.querySelector('.fc-progress__stop').hasAttribute('data-reached')).toBe(false);
       expect([...progress.querySelectorAll('.fc-progress__label')].map(text)).toEqual(['$250', '$600', '$900']);
       expect(progress.querySelector('.fc-progress__note')).toBeNull();
-      for (const row of page.querySelectorAll('[data-shipping-row]')) expect(row.hasAttribute('data-free')).toBe(false);
     }
   });
 
-  it('marks free shipping reached and reads Free on every shipping row once the total gets there', () => {
+  it('marks free shipping reached once the total gets there', () => {
     const page = render('flyout', 'ready');
     const progress = page.querySelector('.fc-progress');
     expect(text(progress.querySelector('.fc-progress__message'))).toBe('$11.15 away from a free gift');
-    expect(text(progress.querySelector('.fc-progress__note-long'))).toBe('Free shipping unlocked');
-    expect(text(progress.querySelector('.fc-progress__note-short'))).toBe('Free shipping');
+    expect(text(progress.querySelector('.fc-progress__note-long'))).toBe('Free US shipping unlocked');
+    expect(text(progress.querySelector('.fc-progress__note-short'))).toBe('Free US shipping');
     expect([...progress.querySelectorAll('.fc-progress__stop')].map(stop => stop.hasAttribute('data-reached'))).toEqual([true, false, false]);
-    const rows = page.querySelectorAll('[data-shipping-row]');
-    expect(rows.length).toBe(2);
-    for (const row of rows) expect(row.hasAttribute('data-free')).toBe(true);
   });
 
-  it('shows no progress when the minimum is blank or the cart is in another currency', async () => {
+  it('shows no progress when the minimum is blank, the cart is in another currency or the shopper is outside the US', async () => {
     const cart = { items: [{}], total_price: 5000, currency: { iso_code: 'USD' } };
     const shop = { currency: 'USD' };
-    expect((await engine.renderFile('cart-reward-progress', {}, { globals: { cart, shop, settings: {} } })).trim()).toBe('');
-    expect((await engine.renderFile('cart-reward-progress', {}, { globals: { cart: { ...cart, currency: { iso_code: 'CAD' } }, shop, settings: { cart_free_shipping_threshold: 250 } } })).trim()).toBe('');
-    expect(await engine.renderFile('cart-reward-progress', {}, { globals: { cart, shop, settings: { cart_free_shipping_threshold: 250 } } })).toContain('sections.cart.free_shipping_remaining_html');
+    const us = { country: { iso_code: 'US' } };
+    const settings = { cart_free_shipping_threshold: 250 };
+    expect((await engine.renderFile('cart-reward-progress', {}, { globals: { cart, shop, localization: us, settings: {} } })).trim()).toBe('');
+    expect((await engine.renderFile('cart-reward-progress', {}, { globals: { cart: { ...cart, currency: { iso_code: 'CAD' } }, shop, localization: us, settings } })).trim()).toBe('');
+    expect((await engine.renderFile('cart-reward-progress', {}, { globals: { cart, shop, localization: { country: { iso_code: 'CA' } }, settings } })).trim()).toBe('');
+    expect(await engine.renderFile('cart-reward-progress', {}, { globals: { cart, shop, localization: us, settings } })).toContain('sections.cart.free_shipping_remaining_html');
   });
 });
 
@@ -162,7 +174,7 @@ describe('free gifts', () => {
       const options = panel.querySelector('cart-gift-options');
       expect(options.dataset.giftKey).toBe(giftKey);
       expect(options.querySelector('fieldset').getAttribute('aria-labelledby')).toBe(title.id);
-      expect(values(options)).toEqual(['Club socks, One size', 'Training towel, Charcoal']);
+      expect(values(options)).toEqual(['Club socks', 'Training towel']);
       expect(options.querySelector('.fc-gift__input').name).toBe(`CartGift-${context}-60000`);
       expect(options.querySelector('.fc-gift__input:checked')).toBeNull();
       expect(text(options.querySelector('.fc-gift__price'))).toBe('Free$18.00');
@@ -177,7 +189,7 @@ describe('free gifts', () => {
     const page = render('flyout', 'gift-two-ready');
     const panels = [...page.querySelectorAll('.fc-gift-choice')];
     expect(panels.map(panel => text(panel.querySelector('h3')))).toEqual(['Your $600 gift is ready', 'Your $900 gift is ready']);
-    expect(values(panels[1])).toEqual(['Mask bag, Black', 'Repair kit, Foil and epee']);
+    expect(values(panels[1])).toEqual(['Mask bag', 'Repair kit']);
     expect(page.querySelector('.fc-gift-choice__next')).toBeNull();
     expect(text(page.querySelector('.fc-progress__message'))).toBe('Every reward unlocked');
     expect([...page.querySelectorAll('.fc-progress__stop')].every(stop => stop.hasAttribute('data-reached'))).toBe(true);
@@ -192,14 +204,14 @@ describe('free gifts', () => {
     expect(text(line.querySelector('.fc-line__name'))).toBe('Club socks');
     expect(text(line.querySelector('.fc-line__price s'))).toBe('$18.00');
     expect(text(line.querySelector('.fc-line__free'))).toBe('Free');
-    expect(text(line.querySelector('.fc-line__variant'))).toBe('One size');
-    expect(text(line.querySelector('.fc-badge'))).toBe('Free gift');
+    expect(text(line.querySelector('.fc-line__description'))).toBe('Cushioned for long training days.');
+    expect(line.querySelector('.fc-line__variant, .fc-badge')).toBeNull();
     expect(line.querySelector('quantity-input, cart-remove-button')).toBeNull();
     const change = line.querySelector('details.fc-gift-change');
     expect(change.id).toBe('CartGiftChange-page-60000');
     expect(text(change.querySelector('summary'))).toBe('Change gift');
     expect(change.querySelector('fieldset').classList.contains('fc-gifts--list')).toBe(true);
-    expect(change.querySelector('.fc-gift__input:checked').value).toBe('Club socks, One size');
+    expect(change.querySelector('.fc-gift__input:checked').value).toBe('Club socks');
     expect(text(page.querySelector('.fc-total__value'))).toBe('$643.80');
   });
 
@@ -210,12 +222,9 @@ describe('free gifts', () => {
     expect(text(towel.querySelector('.fc-gift__price'))).toBe('Unavailable');
   });
 
-  it('says when the cart drops under a chosen gift and clears the choice', () => {
+  it('clears a chosen gift without a notice when the cart drops under its tier', () => {
     const page = render('flyout', 'gift-removed');
-    const notice = page.querySelector('.fc-gift-notice');
-    expect(notice.getAttribute('role')).toBe('status');
-    expect(text(notice.querySelector('.fc-gift-notice__title'))).toBe('Free gift removed');
-    expect(text(notice.querySelector('.fc-gift-notice__body'))).toBe('Your cart is under $600 now, so Club socks came out. Add $11.15 to choose a free gift again.');
+    expect(page.querySelector('.fc-gift-notice')).toBeNull();
     expect(JSON.parse(page.querySelector('cart-gift-sync').dataset.clear)).toEqual([giftKey]);
     expect(page.querySelector('[data-gift-line], .fc-gift-choice')).toBeNull();
   });
@@ -223,31 +232,30 @@ describe('free gifts', () => {
   it('adds the gift of a tier that has only one, with no choice to make', () => {
     for (const view of ['flyout', 'page']) {
       const page = render(view, 'gift-added');
-      expect(page.querySelector('.fc-gift-choice, .fc-gift-change, .fc-gift-notice')).toBeNull();
+      expect(page.querySelector('.fc-gift-choice, .fc-gift-change')).toBeNull();
       const lines = [...page.querySelectorAll('.fc-lines--gifts > [data-gift-line]')];
       expect(lines.map(line => line.dataset.giftKey)).toEqual(['Free gift at $175', 'Free gift at $375']);
       expect(lines.map(line => text(line.querySelector('.fc-line__name')))).toEqual(['Harut point protectors', 'The Fencing Journal']);
       expect(lines.map(line => line.querySelector('.fc-line__name').tagName)).toEqual(['P', 'P']);
-      expect(lines.map(line => text(line.querySelector('.fc-line__description')))).toEqual(['Keeps your point safe in your bag.', 'Log bouts, drills and goals in one place.']);
+      expect(lines.map(line => text(line.querySelector('.fc-line__description')))).toEqual(['A set of 3 to keep your point safe in your bag.', 'Log bouts, drills and goals in one place.']);
       expect(text(lines[0].querySelector('.fc-line__price'))).toBe('Free');
       const sync = page.querySelector('cart-gift-sync');
-      expect(JSON.parse(sync.dataset.set)).toEqual([['Free gift at $175', 'Harut point protectors, Set of 3'], ['Free gift at $375', 'The Fencing Journal']]);
+      expect(JSON.parse(sync.dataset.set)).toEqual([['Free gift at $175', 'Harut point protectors'], ['Free gift at $375', 'The Fencing Journal']]);
       expect(sync.hasAttribute('data-clear')).toBe(false);
       expect([...page.querySelectorAll('.fc-progress__label')].map(text)).toEqual(['$175', '$250', '$375']);
       expect(text(page.querySelector('.fc-progress__message'))).toBe('Every reward unlocked');
     }
   });
 
-  it('says a single gift came out and clears it when the cart drops under its tier', () => {
+  it('clears a single gift when the cart drops under its tier', () => {
     const page = render('flyout', 'gift-added-removed');
-    expect(text(page.querySelector('.fc-gift-notice__body'))).toBe('Your cart is under $175 now, so Harut point protectors came out. Add $105.10 to get your free gift back.');
     expect(JSON.parse(page.querySelector('cart-gift-sync').dataset.clear)).toEqual(['Free gift at $175']);
     expect(page.querySelector('[data-gift-line]')).toBeNull();
   });
 
   it('clears choices that match no gift and attributes left from removed tiers', async () => {
     const gifts = cartGifts().map(gift => ({ ...gift, image: { value: null } }));
-    const cart = { total_price: 64380, currency: { iso_code: 'USD' }, attributes: { [giftKey]: 'Old mug', 'Free gift at $500': 'Club socks, One size', 'Gift wrap': 'Yes' } };
+    const cart = { total_price: 64380, currency: { iso_code: 'USD' }, attributes: { [giftKey]: 'Old mug', 'Free gift at $500': 'Club socks', 'Gift wrap': 'Yes' } };
     const shop = { currency: 'USD', metaobjects: { cart_gift: { values: gifts } } };
     document.body.innerHTML = await engine.renderFile('cart-gifts', { context: 'page' }, { globals: { cart, shop } });
     expect(document.querySelectorAll('.fc-gift-choice').length).toBe(1);
@@ -300,13 +308,13 @@ describe('cart sources', () => {
     const drawer = await readFile(resolve('snippets/cart-drawer.liquid'), 'utf8');
     const page = await readFile(resolve('sections/main-cart-items.liquid'), 'utf8');
     for (const source of [drawer, page]) {
-      for (const part of ["render 'cart-lines'", "render 'cart-summary'", "render 'cart-checkout-bar'", "render 'cart-message', kind: 'empty'", "render 'cart-message', kind: 'failed'", "render 'cart-skeleton'"]) expect(source).toContain(part);
+      for (const part of ["render 'cart-lines'", "render 'cart-summary'", "render 'cart-message', kind: 'empty'", "render 'cart-message', kind: 'failed'", "render 'cart-skeleton'"]) expect(source).toContain(part);
     }
   });
 
   it('uses no dot glyphs as separators and no apostrophes in Mens or Womens', async () => {
     const files = (await readdir(resolve('snippets'))).filter(name => name.startsWith('cart-')).map(name => resolve('snippets', name));
-    files.push(resolve('sections/main-cart-items.liquid'), resolve('sections/cart-suggestions.liquid'), resolve('assets/cart-experience.css'));
+    files.push(resolve('sections/main-cart-items.liquid'), resolve('assets/cart-experience.css'));
     const locale = JSON.parse(await readFile(resolve('locales/en.default.json'), 'utf8'));
     const sources = [...(await Promise.all(files.map(file => readFile(file, 'utf8')))), JSON.stringify(locale.sections.cart)];
     for (const source of sources) {

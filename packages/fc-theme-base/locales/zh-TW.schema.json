@@ -367,9 +367,6 @@
       "settings": {
         "paragraph": {
           "content": "在顧客帳號設定中[管理顯示狀態](/admin/settings/customer_accounts)。"
-        },
-        "customer_account_menu": {
-          "label": "選單"
         }
       }
     }

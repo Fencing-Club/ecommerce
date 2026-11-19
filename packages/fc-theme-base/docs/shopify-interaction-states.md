@@ -144,6 +144,12 @@ template-owned hooks, never customer-supplied HTML. Callers must provide unique 
 - Production `--ui-motion-fast`, `--ui-motion-enter` and `--ui-motion-ease` tokens provide 120ms feedback,
   220ms entrance and `cubic-bezier(0.2, 0, 0, 1)` easing. Buttons press by 1px; link arrows move 2px while preserving
   their direction. FAQ answers enter with a 6px fade/slide. Localization and pagination targets are at least 44px high.
+- Row motion lives in `assets/motion.js`, loaded on every page as `window.RowMotion`. Rows open from no height as they
+  appear and close to none as they go, with a fade, on the 220ms entrance timing; reduced motion skips it, and a
+  hidden tab never holds it up. `openRow` and `closeRow` animate one element. After re-rendering a list, call
+  `animateListChanges(container, rowsBefore, { rows, key, listFor })` with the rows from `currentRows` taken just
+  before: rows with new keys open, and a removed row returns in its old place, inert, just long enough to close. The
+  cart's product and gift lines use it.
 - The mega menu retains its 220ms pointer-close delay and diagonal-travel tolerance. It now has 220ms entry and
   160ms exit motion, with a 140ms cross-fade when switching siblings rather than repeating the slide-in. Outgoing
   content is inert during the cross-fade. Escape and interrupted closes preserve focus and state. Reduced motion

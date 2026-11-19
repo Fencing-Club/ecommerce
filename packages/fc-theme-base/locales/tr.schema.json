@@ -367,9 +367,6 @@
       "settings": {
         "paragraph": {
           "content": "Müşteri hesabı ayarlarından [görünürlüğü yönetin](/admin/settings/customer_accounts)."
-        },
-        "customer_account_menu": {
-          "label": "Menü"
         }
       }
     }

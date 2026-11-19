@@ -22,10 +22,11 @@ beforeAll(async () => {
   vi.stubGlobal('routes', { cart_url: '/cart', cart_add_url: '/cart/add.js', cart_change_url: '/cart/change.js', cart_update_url: '/cart/update.js' });
   window.cartStrings = {
     quantityChangeError: "We couldn't change the quantity.", removeError: "We couldn't remove this item.", stockLimit: 'Only [count] in stock.',
-    removed: '[title] removed', undoError: "We couldn't add [title] back.", itemAdded: '[title] added to your cart',
+    removed: '[title] removed',
     blockedNote: 'Save or clear your note to check out', blockedUnavailableOne: 'Remove [count] unavailable item to check out',
     blockedUnavailableOther: 'Remove [count] unavailable items to check out', checkoutFailed: "Checkout didn't open.",
   };
+  await import('../assets/motion.js');
   await import('../assets/cart.js');
   // Theme scripts share top-level classes the way browser scripts do.
   vi.stubGlobal('CartItems', customElements.get('cart-items'));
@@ -122,24 +123,54 @@ describe('line changes', () => {
     expect(row.querySelector('.fc-feedback__text').textContent).toBe("We couldn't remove this item.");
   });
 
-  it('leaves an undo row after a removal that adds the same line back', async () => {
+  it('opens added rows and closes removed ones in place when regions swap', async () => {
     const view = mount('flyout');
-    vi.spyOn(view, 'renderSections').mockImplementation(() => {});
-    const requests = [];
-    vi.stubGlobal('fetch', vi.fn(async (url, options) => {
-      requests.push([url, JSON.parse(options.body)]);
-      return url === '/cart/change.js' ? json({ items: [], sections: {} }) : json({ status: 500 }, 500);
-    }));
-    // Shopify's Liquid serializes empty line properties as [].
-    view.querySelector('.fc-line[data-line="3"]').dataset.properties = '[]';
-    await view.updateQuantity('3', 0);
-    const removed = view.querySelector('.fc-line--removed');
-    expect(removed.querySelector('[data-removed-text]').textContent).toBe('Grip fencing glove removed');
-    expect([...view.querySelectorAll('[data-cart-lines] > li')].indexOf(removed)).toBe(2);
-    await view.undoRemove(removed);
-    expect(requests[1]).toEqual(['/cart/add.js', expect.objectContaining({ items: [{ id: 8031, quantity: 2 }] })]);
-    expect(removed.querySelector('.fc-feedback__text').textContent).toBe("We couldn't add Grip fencing glove back.");
-    expect(removed.querySelector('[data-undo-remove]').disabled).toBe(false);
+    const animate = vi.fn(() => ({ finished: Promise.resolve() }));
+    HTMLElement.prototype.animate = animate;
+    try {
+      const region = view.querySelector('[data-cart-region="lines"]');
+      const html = new DOMParser().parseFromString(`<div data-cart-region="lines">${region.innerHTML}</div>`, 'text/html');
+      const lines = html.querySelector('[data-cart-lines]');
+      const leaving = lines.querySelector('.fc-line[data-line="2"]');
+      const added = leaving.cloneNode(true);
+      added.dataset.lineKey = 'new-key';
+      leaving.remove();
+      lines.append(added);
+      CartItems.applyRegions(view.viewRoot, html);
+      const ghost = region.querySelector('[data-leaving]');
+      expect(ghost.dataset.line).toBe('2');
+      expect(ghost.inert).toBe(true);
+      expect(ghost.nextElementSibling.dataset.line).toBe('3');
+      expect(animate.mock.calls.map(([frames]) => frames[0].opacity)).toEqual([0, 1]);
+      await new Promise(resolve => setTimeout(resolve));
+      expect(region.querySelector('[data-leaving]')).toBeNull();
+    } finally {
+      delete HTMLElement.prototype.animate;
+    }
+  });
+
+  it('says what was removed and moves focus to the next row', async () => {
+    const view = mount('flyout');
+    vi.spyOn(view, 'renderSections').mockImplementation(() => view.querySelector('.fc-line[data-line="2"]').remove());
+    vi.stubGlobal('fetch', vi.fn(async () => json({ items: [], sections: {} })));
+    const removed = view.querySelector('.fc-line[data-line="2"]');
+    await view.updateQuantity('2', 0);
+    expect(view.querySelector('.fc-line--removed, [data-undo-remove]')).toBeNull();
+    expect(view.querySelector('#CartDrawer-LiveRegionText').textContent).toBe(`${removed.dataset.title} removed`);
+    expect(document.activeElement).toBe(view.querySelector('.fc-line[data-line="3"] .fc-line__name'));
+  });
+
+  it('hides a stale price from the first click while the quantity debounce waits', () => {
+    const view = mount('flyout');
+    vi.spyOn(view, 'updateQuantity').mockImplementation(() => {});
+    const row = view.querySelector('.fc-line[data-line="1"]');
+    const input = row.querySelector('input[data-index]');
+    input.value = '2';
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(row.hasAttribute('data-pending')).toBe(true);
+    view.flushQuantity();
+    expect(row.hasAttribute('data-pending')).toBe(false);
+    expect(view.updateQuantity).toHaveBeenCalled();
   });
 
   it('keeps edit and remove usable while a row updates, sending a waiting quantity change before the removal', async () => {
@@ -164,32 +195,23 @@ describe('line changes', () => {
     expect(bodies.length).toBe(2);
   });
 
-  it('waits for pending changes before Edit leaves for the product page', async () => {
-    const view = mount('page');
-    const leave = vi.spyOn(view, 'leaveTo').mockImplementation(() => {});
-    let finish;
-    const pending = controller().mutate(() => new Promise(resolve => { finish = resolve; }));
-    const edit = view.querySelector('[data-cart-edit]');
-    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
-    edit.dispatchEvent(click);
-    expect(click.defaultPrevented).toBe(true);
-    await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
-    expect(leave).not.toHaveBeenCalled();
-    finish();
-    await pending;
-    await vi.waitFor(() => expect(leave).toHaveBeenCalledWith(edit.href));
+  it('starts a new reward fill at the old width so it moves to the new one', () => {
+    const view = mount('flyout');
+    const region = view.viewRoot.querySelector('[data-cart-region="progress"]');
+    region.querySelector('.fc-progress__fill').style.width = '10%';
+    const html = new DOMParser().parseFromString(view.viewRoot.outerHTML, 'text/html');
+    html.querySelector('[data-cart-region="progress"] .fc-progress__fill').style.width = '60%';
+    const widths = [];
+    const measure = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      widths.push(this.style.width);
+      return new DOMRect();
+    });
+    CartItems.applyRegions(view.viewRoot, html);
+    measure.mockRestore();
+    expect(widths).toEqual(['10%']);
+    expect(region.querySelector('.fc-progress__fill').style.width).toBe('60%');
   });
 
-  it('highlights a just added row with a toast until the next change', () => {
-    const view = mount('flyout');
-    view.markJustAdded({ key: '8021:kit', product_title: 'Club starter kit' });
-    expect(view.querySelector('.fc-line[data-line-key="8021:kit"]').hasAttribute('data-just-added')).toBe(true);
-    expect(document.querySelector('[data-cart-toast]').hidden).toBe(false);
-    expect(document.querySelector('[data-cart-toast-text]').textContent).toBe('Club starter kit added to your cart');
-    view.clearJustAdded();
-    expect(document.querySelector('.fc-line[data-just-added]')).toBeNull();
-    expect(document.querySelector('[data-cart-toast]').hidden).toBe(true);
-  });
 });
 
 describe('refreshing', () => {
@@ -349,9 +371,9 @@ describe('free gifts', () => {
       return json({ attributes: body.attributes });
     }));
     const options = document.querySelector('cart-gift-options');
-    pick(options, 'Club socks, One size');
+    pick(options, 'Club socks');
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
-    expect(posts).toEqual([['/cart/update.js', { attributes: { [giftKey]: 'Club socks, One size' } }]]);
+    expect(posts).toEqual([['/cart/update.js', { attributes: { [giftKey]: 'Club socks' } }]]);
     expect(options.feedback.hidden).toBe(true);
   });
 
@@ -359,7 +381,7 @@ describe('free gifts', () => {
     mount('flyout', 'gift-unavailable');
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Offline'); }));
     const options = document.querySelector('cart-gift-options');
-    pick(options, 'Club socks, One size');
+    pick(options, 'Club socks');
     await vi.waitFor(() => expect(options.feedback.hidden).toBe(false));
     expect(options.feedback.textContent).toContain("We couldn't add Club socks.");
     expect(options.querySelector('.fc-gift__input:checked')).toBeNull();
@@ -370,12 +392,12 @@ describe('free gifts', () => {
 
   it('keeps the chosen gift when Shopify does not save the change', async () => {
     mount('page', 'gift-chosen');
-    vi.stubGlobal('fetch', vi.fn(async () => json({ attributes: { [giftKey]: 'Club socks, One size' } })));
+    vi.stubGlobal('fetch', vi.fn(async () => json({ attributes: { [giftKey]: 'Club socks' } })));
     const options = document.querySelector('.fc-gift-change cart-gift-options');
-    pick(options, 'Training towel, Charcoal');
+    pick(options, 'Training towel');
     await vi.waitFor(() => expect(options.feedback.hidden).toBe(false));
     expect(options.feedback.textContent).toContain("We couldn't switch to Training towel.");
-    expect(options.querySelector('.fc-gift__input:checked').value).toBe('Club socks, One size');
+    expect(options.querySelector('.fc-gift__input:checked').value).toBe('Club socks');
   });
 
   it('clears a gift the cart no longer reaches with one request, however many views ask', async () => {
@@ -389,7 +411,6 @@ describe('free gifts', () => {
     await vi.waitFor(() => expect(posts).toEqual([{ attributes: { [giftKey]: '' } }]));
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(posts.length).toBe(1);
-    expect(document.querySelector('.fc-gift-notice')).not.toBeNull();
   });
 
   it('saves the gift of a tier with only one gift without rendering again', async () => {
@@ -400,27 +421,10 @@ describe('free gifts', () => {
       return json({});
     }));
     mount('flyout', 'gift-added');
-    const attributes = { 'Free gift at $175': 'Harut point protectors, Set of 3', 'Free gift at $375': 'The Fencing Journal' };
+    const attributes = { 'Free gift at $175': 'Harut point protectors', 'Free gift at $375': 'The Fencing Journal' };
     await vi.waitFor(() => expect(posts).toEqual([{ attributes }]));
     expect(refresh).not.toHaveBeenCalled();
     expect(document.querySelectorAll('[data-gift-line]').length).toBe(2);
   });
 });
 
-describe('phone checkout bar', () => {
-  it('opens the breakdown from Total and closes it on Escape or a tap behind it', () => {
-    mount('flyout');
-    const bar = document.querySelector('cart-checkout-bar');
-    const toggle = bar.querySelector('[data-toggle-breakdown]');
-    toggle.click();
-    expect(bar.hasAttribute('data-open')).toBe(true);
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(bar.querySelector('.fc-bar__breakdown').hidden).toBe(false);
-    bar.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', bubbles: true }));
-    expect(bar.hasAttribute('data-open')).toBe(false);
-    toggle.click();
-    document.querySelector('.fc-line__name').closest('.fc-line').click();
-    expect(bar.hasAttribute('data-open')).toBe(false);
-    expect(bar.querySelector('.fc-bar__breakdown').hidden).toBe(true);
-  });
-});

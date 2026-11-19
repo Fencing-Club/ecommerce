@@ -23,7 +23,7 @@ describe('local component library', () => {
     expect(html).not.toContain('name="appearance"');
     expect(html).toContain('id="reduce-motion"');
     expect(html).toContain('id="reset-lab"');
-    for (const token of ['ui-button--primary', 'ui-checkbox-field', 'ui-faq-item', '<ui-drawer', '<header-menu>', '<quantity-input', 'fc-mega__cards', 'fc-mega__columns', 'fc-mega-tool', 'fc-mega__body--panels']) {
+    for (const token of ['ui-button--primary', 'ui-checkbox-field', 'ui-faq-item', '<ui-drawer', '<header-menu>', '<quantity-input', 'fc-mega__cards', 'fc-mega__columns', 'fc-mega-tool', 'fc-mega__body--panels', '<account-menu', 'data-account-example="signed-in"']) {
       expect(html).toContain(token);
     }
     expect(html).toContain('value="XL"');
@@ -92,7 +92,7 @@ describe('local component library', () => {
     for (const state of cartStates) expect(index).toContain(`/lab/cart/frame?view=flyout&amp;state=${state.id}`);
     for (const state of cartPageStates) expect(index).toContain(`/lab/cart/frame?view=page&amp;state=${state}`);
     const flyout = await (await fetch(`${base}/lab/cart/frame?view=flyout&state=ready`)).text();
-    for (const token of ['<cart-drawer', '<cart-drawer-items', '<cart-extras', '<cart-note', '<cart-discount', '<cart-checkout-bar', '/assets/cart-drawer.js', '/lab/cart-shim.js', '/lab/cart-states.js']) expect(flyout).toContain(token);
+    for (const token of ['<cart-drawer', '<cart-drawer-items', '<cart-extras', '<cart-note', '<cart-discount', '/assets/cart-drawer.js', '/lab/cart-shim.js', '/lab/cart-states.js']) expect(flyout).toContain(token);
     const page = await (await fetch(`${base}/lab/cart/frame?view=page&state=empty`)).text();
     expect(page).toContain('data-cart-state="empty"');
     expect(page).toContain('/assets/cart.js');
@@ -100,9 +100,6 @@ describe('local component library', () => {
       expect(html).not.toMatch(/(sections|general|products)\.[a-z_]+\.[a-z_]+/);
       expect(html).not.toContain('action="/cart');
     }
-    const suggestions = await (await fetch(`${base}/lab/cart/recommendations`)).text();
-    expect(suggestions).toContain('data-cart-suggestions-content');
-    expect(suggestions).not.toContain('Competition jacket 350N');
     const shim = await (await fetch(`${base}/lab/cart-shim.js`)).text();
     expect(shim).toContain("startsWith('/lab/cart-store')");
   });

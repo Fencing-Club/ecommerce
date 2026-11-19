@@ -9,7 +9,6 @@
   const extras = root.querySelector('cart-extras');
   const discount = root.querySelector('cart-discount');
   const note = root.querySelector('cart-note');
-  const bar = root.querySelector('cart-checkout-bar');
   const rows = () => [...root.querySelectorAll('[data-cart-lines] > .fc-line')];
   const decode = value => new DOMParser().parseFromString(value, 'text/html').documentElement.textContent;
   const text = (key, replacements = {}) => Object.entries(replacements).reduce((value, [name, replacement]) => value.replace(`[${name}]`, replacement), decode(window.cartStrings[key]));
@@ -27,10 +26,6 @@
     note.textarea.value = 'Please ship the foil and mask together.';
     note.updateCount();
   };
-  const removed = () => {
-    view.showRemoved(1, { variantId: '8031', quantity: 2, title: 'Grip fencing glove', properties: {}, sellingPlan: null });
-    return root.querySelector('.fc-line--removed');
-  };
 
   if (drawer) {
     drawer.classList.add('animate', 'active');
@@ -38,15 +33,12 @@
   }
 
   const states = {
-    'just-added': () => view.markJustAdded({ key: rows()[0].dataset.lineKey, product_title: rows()[0].dataset.title }),
     updating: () => {
       rows()[2].dataset.state = 'updating';
       controller.mutationCount = 1;
     },
     'quantity-error': () => view.setLineFeedback(rows()[2], text('quantityChangeError')),
     'remove-error': () => view.setLineFeedback(rows()[2], text('removeError')),
-    removed,
-    'undo-error': () => view.setLineFeedback(removed(), text('undoError', { title: 'Grip fencing glove' })),
     'kit-open': () => root.querySelector('.fc-line__contents')?.setAttribute('open', ''),
     'discount-open': () => openEditor('discount'),
     'discount-applying': () => {
@@ -86,10 +78,6 @@
     },
     'checkout-opening': () => root.querySelectorAll('[data-checkout-state]').forEach(holder => holder.setAttribute('data-opening', '')),
     'checkout-failed': () => root.querySelectorAll('[data-checkout-state]').forEach(holder => holder.setAttribute('data-failed', '')),
-    'breakdown-open': () => {
-      bar.setAttribute('data-open', '');
-      bar.sync();
-    },
     'gift-changing': () => root.querySelector('.fc-gift-change')?.setAttribute('open', ''),
     'gift-change-error': () => {
       const change = root.querySelector('.fc-gift-change');

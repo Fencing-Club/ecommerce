@@ -28,23 +28,18 @@
       {%- if minimum == tier -%}
       {%- liquid
         assign gift_name = gift.name.value | default: ''
-        assign gift_label = gift_name
-        if gift.details.value != blank
-          assign gift_label = gift_label | append: ', ' | append: gift.details.value
-        endif
         assign available = true
         if gift.available.value == false
           assign available = false
         endif
       -%}
       <label class="fc-gift"{% unless available %} data-unavailable{% endunless %}>
-        <input class="fc-gift__input" type="radio" name="{{ group_name }}" value="{{ gift_label | escape }}" data-gift-name="{{ gift_name | escape }}"{% if chosen == gift_label %} checked{% endif %}{% unless available %} disabled{% endunless %}>
+        <input class="fc-gift__input" type="radio" name="{{ group_name }}" value="{{ gift_name | escape }}" data-gift-name="{{ gift_name | escape }}"{% if chosen == gift_name %} checked{% endif %}{% unless available %} disabled{% endunless %}>
         <span class="fc-gift__photo">
           {%- if gift.image.value -%}{{ gift.image.value | image_url: width: 112 | image_tag: loading: 'lazy', widths: '56, 112', sizes: '56px', alt: '' }}{%- endif -%}
         </span>
         <span class="fc-gift__details">
           <span class="fc-gift__name">{{ gift_name | escape }}</span>
-          {%- if gift.details.value != blank -%}<span class="fc-gift__variant">{{ gift.details.value | escape }}</span>{%- endif -%}
           {%- if gift.description.value != blank -%}<span class="fc-gift__description">{{ gift.description.value | escape }}</span>{%- endif -%}
           <span class="fc-gift__price">
             {%- if available -%}

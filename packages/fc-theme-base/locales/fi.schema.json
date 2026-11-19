@@ -367,9 +367,6 @@
       "settings": {
         "paragraph": {
           "content": "[Hallitse näkyvyyttä](/admin/settings/customer_accounts) asiakastilien asetuksista."
-        },
-        "customer_account_menu": {
-          "label": "Valikko"
         }
       }
     }
