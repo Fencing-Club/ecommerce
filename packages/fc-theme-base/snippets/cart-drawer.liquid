@@ -16,24 +16,21 @@
     <div id="CartDrawer-Overlay" class="fc-flyout__overlay"></div>
     <div class="drawer__inner fc-flyout" role="dialog" aria-modal="true" aria-labelledby="CartDrawer-Title" tabindex="-1">
       <header class="fc-flyout__header">
-        <h2 class="fc-flyout__title" id="CartDrawer-Title">{{ 'sections.cart.title' | t }}<span class="fc-flyout__count" data-cart-region="count">{{ 'sections.header.cart_count' | t: count: cart.item_count }}</span></h2>
+        {%- assign cart_title = 'sections.cart.title' | t -%}
+        <h2 class="fc-flyout__title" id="CartDrawer-Title">{%- render 'ui-link', label: cart_title, url: routes.cart_url, class: 'fc-flyout__title-link' -%}<span class="fc-flyout__count" data-cart-region="count">{{ 'sections.header.cart_count' | t: count: cart.item_count }}</span></h2>
         <div class="fc-flyout__actions">
-          <a class="fc-flyout__view" href="{{ routes.cart_url }}">{{ 'sections.cart.view_cart' | t }}</a>
           <button class="drawer__close fc-icon-button" type="button" aria-label="{{ 'sections.cart.close' | t }}">{% render 'fc-icon', icon: 'x', size: 20 %}</button>
         </div>
       </header>
-      <p class="fc-toast" data-cart-toast role="status" hidden>{% render 'fc-icon', icon: 'check', size: 16 %}<span data-cart-toast-text></span></p>
       <cart-drawer-items class="fc-flyout__content" view-event-payload="{{ cart | standard_event_data: 'view', context: 'dialog' | escape }}" view-event-trigger="manual">
         <form action="{{ routes.cart_url }}" id="CartDrawer-Form" class="fc-flyout__form" method="post" novalidate>
           <div class="fc-flyout__progress" data-cart-region="progress">{% render 'cart-reward-progress' %}</div>
           <div class="fc-flyout__scroll" id="CartDrawer-CartItems">
             <div class="fc-flyout__gifts" data-cart-region="gifts">{% render 'cart-gifts', context: 'drawer' %}</div>
             <div data-cart-region="lines">{% render 'cart-lines', context: 'drawer' %}</div>
-            <div class="fc-suggestions-slot" data-cart-suggestions data-product-id="{{ cart.items.first.product_id }}"></div>
-            <div class="fc-flyout__summary">{% render 'cart-summary', context: 'drawer', form_id: 'CartDrawer-Form' %}</div>
             <p id="CartDrawer-LiveRegionText" class="visually-hidden" role="status"></p>
           </div>
-          {% render 'cart-checkout-bar', context: 'drawer', form_id: 'CartDrawer-Form' %}
+          <div class="fc-flyout__summary">{% render 'cart-summary', context: 'drawer', form_id: 'CartDrawer-Form' %}</div>
         </form>
         <div class="fc-flyout__empty">
           {% render 'cart-message', kind: 'empty', context: 'drawer' %}
@@ -45,7 +42,6 @@
           {% render 'cart-skeleton', part: 'progress' %}
           {% render 'cart-skeleton', part: 'lines' %}
           <div class="fc-flyout__loading-summary">{% render 'cart-skeleton', part: 'summary' %}</div>
-          {% render 'cart-skeleton', part: 'bar' %}
         </div>
       </cart-drawer-items>
     </div>

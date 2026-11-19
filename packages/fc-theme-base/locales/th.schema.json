@@ -367,9 +367,6 @@
       "settings": {
         "paragraph": {
           "content": "[จัดการการมองเห็น](/admin/settings/customer_accounts)ในการตั้งค่าบัญชีผู้ใช้ของลูกค้า"
-        },
-        "customer_account_menu": {
-          "label": "เมนู"
         }
       }
     }

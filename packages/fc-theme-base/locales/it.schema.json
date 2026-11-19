@@ -367,9 +367,6 @@
       "settings": {
         "paragraph": {
           "content": "[Gestisci la visibilità](/admin/settings/customer_accounts) nelle impostazioni degli account cliente."
-        },
-        "customer_account_menu": {
-          "label": "Menu"
         }
       }
     }

@@ -367,9 +367,6 @@
       "settings": {
         "paragraph": {
           "content": "お客様アカウント設定で[表示を管理](/admin/settings/customer_accounts)します。"
-        },
-        "customer_account_menu": {
-          "label": "メニュー"
         }
       }
     }

@@ -62,6 +62,7 @@
     <script src="{{ 'constants.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'pubsub.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'global.js' | asset_url }}" defer="defer"></script>
+    <script src="{{ 'motion.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'cart-disclosure-modal.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'cart-disclosure-tooltip.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'details-disclosure.js' | asset_url }}" defer="defer"></script>
@@ -263,8 +264,6 @@
         removeError: `{{ 'sections.cart.remove_error' | t }}`,
         stockLimit: `{{ 'sections.cart.stock_limit' | t: count: '[count]' }}`,
         removed: `{{ 'sections.cart.removed' | t: title: '[title]' }}`,
-        undoError: `{{ 'sections.cart.undo_error' | t: title: '[title]' }}`,
-        itemAdded: `{{ 'sections.cart.item_added' | t: title: '[title]' }}`,
         blockedNote: `{{ 'sections.cart.blocked_note' | t }}`,
         blockedUnavailableOne: `{{ 'sections.cart.blocked_unavailable.one' | t: count: '[count]' }}`,
         blockedUnavailableOther: `{{ 'sections.cart.blocked_unavailable.other' | t: count: '[count]' }}`,

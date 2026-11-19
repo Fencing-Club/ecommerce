@@ -52,7 +52,7 @@
     <label class="lab-motion"><input type="checkbox" id="reduce-motion"> Reduce motion</label>
     <button type="button" id="reset-lab" title="Reset examples" aria-label="Reset examples">{% render 'fc-icon', icon: 'rotate-ccw', size: 20 %}</button>
   </header>
-  <nav class="lab-nav" aria-label="Component sections"><a href="#commands">Commands</a><a href="#selection">Selection</a><a href="#navigation">Navigation</a><a href="#browsing">Filters and sorting</a><a href="#search-components">Search</a><a href="#announcements">Announcements</a><a href="#localization">Language and currency</a><a href="#forms">Forms</a><a href="#product-details">Product details</a><a href="/lab/cart">Cart</a><a href="#disclosures">Disclosures</a><a href="#menu">Mega menu</a><a href="#cards">Cards</a><a href="#sections">Sections</a><a href="#privacy">Privacy</a><a href="#coverage">Coverage</a></nav>
+  <nav class="lab-nav" aria-label="Component sections"><a href="#commands">Commands</a><a href="#selection">Selection</a><a href="#navigation">Navigation</a><a href="#browsing">Filters and sorting</a><a href="#search-components">Search</a><a href="#announcements">Announcements</a><a href="#localization">Language and currency</a><a href="#forms">Forms</a><a href="#product-details">Product details</a><a href="/lab/cart">Cart</a><a href="#disclosures">Disclosures</a><a href="#menu">Mega menu</a><a href="#account">Account menu</a><a href="#cards">Cards</a><a href="#sections">Sections</a><a href="#privacy">Privacy</a><a href="#coverage">Coverage</a></nav>
   <main id="lab-main" tabindex="-1">
     <section id="commands" class="lab-section"><h2>Commands <code>ui-button / ui-link</code></h2>
       <div class="specimen lab-row">
@@ -95,6 +95,12 @@
       <h3>Transparent</h3>
       <div class="specimen header-wrapper header-wrapper--translucent lab-menu" data-header-example="transparent">{% render 'header-mega-menu', id_prefix: 'transparent-' %}</div>
       <output id="menu-status" role="status">No destination selected</output>
+    </section>
+    <section id="account" class="lab-section"><h2>Account menu <code>account-menu</code></h2>
+      <h3>Signed out</h3>
+      <div class="specimen header__icons lab-account" data-account-example="signed-out">{% render 'account-menu', id: 'LabAccountSignedOut' %}</div>
+      <h3>Signed in</h3>
+      <div class="specimen header__icons lab-account" data-account-example="signed-in">{% render 'account-menu', id: 'LabAccountSignedIn', customer: account_customer %}</div>
     </section>
     {% render 'workflows', catalog: catalog, commerce: commerce, option: option, dropdown_section: dropdown_section, localization: localization, announcements: announcements %}
     {% render 'page-controls', gallery: gallery, policy: policy, chart: chart, share_block: share_block %}

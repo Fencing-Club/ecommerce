@@ -1,0 +1,95 @@
+{% doc %}
+  Header account menu: a popover under the account icon on wider screens and a bottom sheet on phones. Signed out, it
+  sends shoppers to Shopify's sign-in page; signed in, it shows who is signed in and the account pages. It replaces
+  Shopify's account component so the header shows no Shop sign-in.
+  @param {string} [id] - Unique dialog ID. Default: AccountMenu.
+{% enddoc %}
+{%- liquid
+  assign menu_id = id | default: 'AccountMenu'
+  if customer
+    assign trigger_url = routes.account_url
+  else
+    assign trigger_url = routes.account_login_url
+  endif
+  assign close_label = 'customer.account_menu.close' | t
+-%}
+{{ 'component-account-menu.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'account-menu.js' | asset_url }}" defer="defer"></script>
+<account-menu>
+  <a
+    href="{{ trigger_url }}"
+    class="header__icon header__icon--account link focus-inset"
+    data-account-open
+    aria-haspopup="dialog"
+    aria-expanded="false"
+    aria-controls="{{ menu_id | escape }}"
+    aria-label="{{ 'customer.account_menu.label' | t }}"
+  >
+    <span class="svg-wrapper">{% render 'fc-icon', icon: 'user', size: 22 %}</span>
+  </a>
+  <dialog id="{{ menu_id | escape }}" class="account-menu" aria-labelledby="{{ menu_id | escape }}-Title">
+    <div class="account-menu__backdrop" data-account-backdrop aria-hidden="true"></div>
+    <div class="account-menu__panel" data-account-panel>
+      {%- if customer -%}
+        {%- liquid
+          assign display_name = customer.name | strip
+          assign initial = customer.first_name | default: display_name | default: customer.email | slice: 0 | upcase
+        -%}
+        <div class="account-menu__content account-menu__content--signed-in">
+          <div class="account-menu__header account-menu__header--signed-in">
+            <span class="account-menu__avatar" aria-hidden="true">{{ initial | escape }}</span>
+            <div class="account-menu__who">
+              <h2 class="account-menu__name" id="{{ menu_id | escape }}-Title">
+                {{- display_name | default: customer.email | escape -}}
+              </h2>
+              {%- if display_name != blank -%}
+                <p class="account-menu__email">{{ customer.email | escape }}</p>
+              {%- endif -%}
+            </div>
+            <button class="account-menu__close" type="button" data-account-close aria-label="{{ close_label }}">
+              {%- render 'fc-icon', icon: 'x', size: 20 -%}
+            </button>
+          </div>
+          <ul class="account-menu__links" role="list">
+            <li>
+              <a class="account-menu__link" href="{{ routes.account_url }}">
+                {%- render 'fc-icon', icon: 'package', size: 18 -%}
+                {{- 'customer.account_menu.orders' | t -}}
+              </a>
+            </li>
+            <li>
+              <a class="account-menu__link" href="{{ routes.account_profile_url }}">
+                {%- render 'fc-icon', icon: 'user-round', size: 18 -%}
+                {{- 'customer.account_menu.profile' | t -}}
+              </a>
+            </li>
+          </ul>
+          <a class="account-menu__link account-menu__sign-out" href="{{ routes.account_logout_url }}">
+            {%- render 'fc-icon', icon: 'log-out', size: 18 -%}
+            {{- 'customer.account_menu.sign_out' | t -}}
+          </a>
+        </div>
+      {%- else -%}
+        <div class="account-menu__content account-menu__content--signed-out">
+          <div class="account-menu__header">
+            <h2 class="account-menu__title" id="{{ menu_id | escape }}-Title">{{ 'customer.account_menu.title' | t }}</h2>
+            <button class="account-menu__close" type="button" data-account-close aria-label="{{ close_label }}">
+              {%- render 'fc-icon', icon: 'x', size: 20 -%}
+            </button>
+          </div>
+          <div class="account-menu__body">
+            <p class="account-menu__text">{{ 'customer.account_menu.benefit' | t }}</p>
+            {%- assign sign_in_label = 'customer.account_menu.sign_in' | t -%}
+            {%- render 'ui-button',
+              label: sign_in_label,
+              url: routes.account_login_url,
+              variant: 'primary',
+              full_width: true,
+              class: 'account-menu__sign-in'
+            -%}
+          </div>
+        </div>
+      {%- endif -%}
+    </div>
+  </dialog>
+</account-menu>

@@ -329,48 +329,6 @@ if (!customElements.get('cart-discount')) {
   document.addEventListener('DOMContentLoaded', () => CartDiscount.syncShippingCodes());
 }
 
-if (!customElements.get('cart-checkout-bar')) {
-  customElements.define(
-    'cart-checkout-bar',
-    class CartCheckoutBar extends HTMLElement {
-      connectedCallback() {
-        if (this.initialized) return;
-        this.initialized = true;
-        this.addEventListener('click', event => {
-          if (event.target.closest('[data-toggle-breakdown]')) this.toggle(!this.hasAttribute('data-open'));
-          else if (event.target.closest('[data-close-breakdown]')) this.toggle(false);
-        });
-        this.addEventListener('keyup', event => {
-          if (event.key === 'Escape' && this.hasAttribute('data-open')) {
-            event.preventDefault();
-            event.stopPropagation();
-            this.toggle(false);
-          }
-        });
-        const view = this.closest('cart-drawer, cart-items');
-        view?.addEventListener('cart:regions-updated', () => this.sync());
-        // A tap on the dimmed cart behind the open breakdown closes it.
-        view?.addEventListener('click', event => {
-          if (this.hasAttribute('data-open') && !this.contains(event.target) && !event.target.closest('.fc-flyout__header')) this.toggle(false);
-        });
-      }
-
-      toggle(open) {
-        this.toggleAttribute('data-open', open);
-        this.sync();
-        if (open) this.querySelector('[data-close-breakdown]')?.focus();
-        else this.querySelector('[data-toggle-breakdown]')?.focus();
-      }
-
-      sync() {
-        const open = this.hasAttribute('data-open');
-        this.querySelector('.fc-bar__breakdown').hidden = !open;
-        this.querySelector('[data-toggle-breakdown]')?.setAttribute('aria-expanded', String(open));
-      }
-    }
-  );
-}
-
 if (!customElements.get('cart-gift-options')) {
   customElements.define(
     'cart-gift-options',
