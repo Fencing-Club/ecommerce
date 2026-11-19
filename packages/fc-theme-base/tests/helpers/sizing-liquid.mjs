@@ -1,12 +1,13 @@
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { Liquid } from 'liquidjs';
+import { registerShopifyLiquid } from './shopify-liquid.mjs';
 
 export const themeRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export const source = JSON.parse(await readFile(resolve(themeRoot, 'content/sizing-source.json'), 'utf8'));
 const manifest = JSON.parse(await readFile(resolve(themeRoot, 'content/manifest.json'), 'utf8'));
-const escape = (text) => String(text).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
 export function chartFixtures() {
   const records = new Map();
@@ -34,27 +35,7 @@ export function chartFixtures() {
 
 export function createSizingLiquid({ cache = false, fs } = {}) {
   const engine = new Liquid({ root: [`${themeRoot}/snippets`, `${themeRoot}/sections`], extname: '.liquid', cache, ...(fs ? { fs } : {}) });
-  for (const name of ['doc', 'schema', 'stylesheet', 'javascript']) {
-    engine.registerTag(name, {
-      parse(_token, tokens) {
-        this.content = '';
-        const stream = this.liquid.parser.parseStream(tokens);
-        stream.on('token', (token) => {
-          if (token.name === `end${name}`) stream.stop();
-          else this.content += token.getText();
-        });
-        stream.start();
-      },
-      render() { return name === 'stylesheet' ? `<style>${this.content}</style>` : ''; },
-    });
-  }
-  engine.registerFilter('asset_url', (name) => `/assets/${name}`);
-  engine.registerFilter('stylesheet_tag', (url) => `<link rel="stylesheet" href="${escape(url)}">`);
-  engine.registerFilter('image_url', (image) => image.src);
-  engine.registerFilter('image_tag', (url, ...attributes) => {
-    const options = Object.fromEntries(attributes);
-    return `<img src="${escape(url)}" alt="${escape(options.alt ?? '')}" class="${escape(options.class ?? '')}" loading="${options.loading ?? 'lazy'}">`;
-  });
+  registerShopifyLiquid(engine, { readAsset: (name) => readFileSync(resolve(themeRoot, 'assets', name), 'utf8') });
   return {
     async renderTemplate(name, context) {
       const template = JSON.parse(await readFile(resolve(themeRoot, 'templates', `${name}.json`), 'utf8'));

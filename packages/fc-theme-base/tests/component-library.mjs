@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { Liquid } from 'liquidjs';
 import { products, articles, sections, blogs, localization, announcements, catalogProducts, catalogFixture, commerce, gallery, policy } from './component-library/fixtures.mjs';
 import { chartFixtures } from './helpers/sizing-liquid.mjs';
+import { registerShopifyLiquid, themeSettings } from './helpers/shopify-liquid.mjs';
 import { cartGifts, cartPageStates, cartSettings, cartState, cartStates } from './component-library/cart-states.mjs';
 
 const directory = dirname(fileURLToPath(import.meta.url));
@@ -16,71 +17,8 @@ const navigation = JSON.parse(readFileSync(resolve(themeRoot, 'content/navigatio
 const popularCategoriesMenu = 'component-lab-categories';
 const linklists = { [popularCategoriesMenu]: { links: navigation.menus[0].items.slice(0, 5).map(item => ({ title: item.title, url: '#browsing' })) } };
 const engine = new Liquid({ root: [fixtures, resolve(themeRoot, 'snippets'), resolve(themeRoot, 'sections')], extname: '.liquid', cache: process.env.NODE_ENV === 'test' });
-engine.registerTag('doc', {
-  parse(_token, tokens) {
-    const stream = this.liquid.parser.parseStream(tokens);
-    stream.on('token', token => { if (token.name === 'enddoc') stream.stop(); });
-    stream.start();
-  },
-  render() { return ''; },
-});
-engine.registerTag('stylesheet', {
-  parse(_token, tokens) {
-    this.content = '';
-    const stream = this.liquid.parser.parseStream(tokens);
-    stream.on('token', token => {
-      if (token.name === 'endstylesheet') stream.stop();
-      else this.content += token.getText();
-    });
-    stream.start();
-  },
-  render() { return `<style>${this.content}</style>`; },
-});
-engine.registerFilter('asset_url', name => `/assets/${name}`);
-engine.registerFilter('stylesheet_tag', url => `<link rel="stylesheet" href="${url}">`);
-engine.registerFilter('inline_asset_content', name => {
-  if (!/^[a-z0-9-]+\.svg$/.test(name)) throw new Error('Invalid icon');
-  return readFileSync(resolve(themeRoot, 'assets', name), 'utf8');
-});
-engine.registerFilter('t', (key, ...options) => {
-  let value = key.split('.').reduce((current, part) => current?.[part], locale);
-  if (value && typeof value === 'object') value = Object.fromEntries(options).count === 1 ? value.one : value.other;
-  if (typeof value !== 'string') return key;
-  for (const [name, replacement] of options) value = value.replaceAll(`{{ ${name} }}`, String(replacement));
-  // Shopify escapes translations unless the key ends in _html.
-  return key.endsWith('_html') ? value : escapeAttribute(value).replaceAll("'", '&#39;');
-});
-engine.registerFilter('item_count_for_variant', () => 1);
-engine.registerFilter('json', JSON.stringify);
-engine.registerFilter('image_url', image => image.src);
 const escapeAttribute = value => String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-engine.registerFilter('image_tag', (url, ...attributes) => {
-  const options = Object.fromEntries(attributes);
-  const id = options.id ? ` id="${escapeAttribute(options.id)}"` : '';
-  return `<img${id} src="${escapeAttribute(url)}" alt="${escapeAttribute(options.alt ?? '')}" class="${escapeAttribute(options.class ?? '')}" loading="${options.loading ?? 'lazy'}">`;
-});
-engine.registerFilter('money', amount => `$${(amount / 100).toFixed(2)}`);
-engine.registerFilter('money_without_currency', amount => (amount / 100).toFixed(2));
-engine.registerFilter('money_with_currency', amount => `$${(amount / 100).toFixed(2)} USD`);
-engine.registerFilter('standard_event_data', () => '{}');
-engine.registerFilter('money_without_trailing_zeros', amount => `$${(amount / 100).toFixed(2).replace(/\.00$/, '')}`);
-engine.registerFilter('time_tag', value => {
-  const label = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(value));
-  return `<time datetime="${escapeAttribute(value)}">${escapeAttribute(label)}</time>`;
-});
-engine.registerFilter('handle', value => String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-engine.registerFilter('pluralize', (count, singular, plural) => count === 1 ? singular : plural);
-engine.registerFilter('placeholder_svg_tag', () => '');
-for (const name of ['schema', 'form']) {
-  engine.registerTag(name, {
-    parse(_token, tokens) {
-      const stream = this.liquid.parser.parseStream(tokens);
-      stream.on('token', token => { if (token.name === `end${name}`) stream.stop(); });
-      stream.start();
-    },
-    render() { return ''; },
-  });
-}
+registerShopifyLiquid(engine, { locale, readAsset: name => readFileSync(resolve(themeRoot, 'assets', name), 'utf8') });
 
 function menuLink(item) {
   return {
@@ -91,11 +29,9 @@ function menuLink(item) {
 }
 
 function labSettings() {
-  const configuration = JSON.parse(readFileSync(resolve(themeRoot, 'config/settings_data.json'), 'utf8'));
+  const data = JSON.parse(readFileSync(resolve(themeRoot, 'config/settings_data.json'), 'utf8'));
   const schema = JSON.parse(readFileSync(resolve(themeRoot, 'config/settings_schema.json'), 'utf8'));
-  const defaults = Object.fromEntries(schema.flatMap(group => (group.settings || []).filter(setting => setting.id && setting.default !== undefined).map(setting => [setting.id, setting.default])));
-  const current = typeof configuration.current === 'string' ? configuration.presets[configuration.current] : configuration.current;
-  return { ...defaults, ...current, popular_categories_menu: popularCategoriesMenu, social_instagram_link: '#utilities', social_facebook_link: '#utilities', predictive_search_enabled: true, predictive_search_show_price: true, size_chart_index_page: { url: '#disclosures' }, type_body_font: { family: 'Inter', fallback_families: 'sans-serif', style: 'normal', weight: 400 }, type_header_font: { family: 'Archivo', fallback_families: 'sans-serif', style: 'normal', weight: 400 } };
+  return { ...themeSettings({ schema, data }), popular_categories_menu: popularCategoriesMenu, social_instagram_link: '#utilities', social_facebook_link: '#utilities', predictive_search_enabled: true, predictive_search_show_price: true, size_chart_index_page: { url: '#disclosures' }, type_body_font: { family: 'Inter', fallback_families: 'sans-serif', style: 'normal', weight: 400 }, type_header_font: { family: 'Archivo', fallback_families: 'sans-serif', style: 'normal', weight: 400 } };
 }
 
 // Account links stay on the lab page; the account menu reads them from the routes global.
