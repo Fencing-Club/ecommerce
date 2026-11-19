@@ -24,5 +24,5 @@ package's own `docs/` folder, next to its code: its product rules, pages, APIs, 
 - [Video: the Copacker ad in Remotion](../apps/video/docs/README.md)
 - [Turbo remote cache on Cloudflare](../apps/turbo-cache/docs/README.md)
 - [Fencing Club email and print templates](../packages/fc-templates/README.md)
-- [Fencing Club Shopify theme](../packages/fc-theme/README.md), and its [base theme's docs](../packages/fc-theme-base/docs/)
+- [Fencing Club Shopify theme](../packages/fc-theme/README.md), and its [base theme's docs](../packages/fc-theme-base/docs/README.md)
 - [Shopify emails](../packages/shopify-emails/README.md)

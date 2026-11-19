@@ -3,12 +3,13 @@
 // lockfile, the root configs). Docs, Markdown and design files never affect one.
 //
 // node .github/scripts/affected.mjs <base commit> [head commit]
-// prints, and appends to $GITHUB_OUTPUT, one `<app>=true|false` line per app.
+// prints, and appends to $GITHUB_OUTPUT, one `<output>=true|false` line per app.
 import { execFileSync } from "node:child_process"
 import { appendFileSync, readdirSync, readFileSync, existsSync } from "node:fs"
 import path from "node:path"
 
-const apps = ["copacker"]
+// Each CI output and the workspace package it reports on.
+const apps = { copacker: "copacker", "fc-theme": "@repo/fc-theme-base" }
 
 // Files every app builds, tests or deploys with.
 const shared = [
@@ -77,9 +78,9 @@ try {
 const code = changed?.filter((file) => !notCode.some((pattern) => pattern.test(file)))
 const everything = !code || code.some((file) => shared.some((pattern) => pattern.test(file)))
 const packages = workspace()
-const lines = apps.map((app) => {
+const lines = Object.entries(apps).map(([output, app]) => {
   const affected = everything || code.some((file) => folders(app, packages).some((folder) => file.startsWith(folder)))
-  return `${app}=${affected}`
+  return `${output}=${affected}`
 })
 console.log(
   changed

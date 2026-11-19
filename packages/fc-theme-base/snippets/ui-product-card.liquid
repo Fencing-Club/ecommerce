@@ -48,7 +48,7 @@
   <a
     class="ui-product-card__media"
     href="{{ card_url }}"
-    aria-label="{{ card_title | escape }}"
+    aria-label="{{ card_title | escape }}{% if badge_label != blank %}, {{ badge_label | escape }}{% endif %}"
     {% if tabindex != blank %}
       tabindex="{{ tabindex }}"
     {% endif %}
