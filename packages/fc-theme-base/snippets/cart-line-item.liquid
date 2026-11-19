@@ -1,6 +1,6 @@
 {% doc %}
   One product row shared by the cart flyout and the cart page.
-  Scripts set data-state="updating" and data-just-added on the row and write to its message line.
+  Scripts set data-state="updating" on the row and write to its message line.
   @param {line_item} item - Cart line item.
   @param {string} context - page or drawer.
 {% enddoc %}
@@ -90,13 +90,9 @@
     {%- endfor -%}
     {%- if item.selling_plan_allocation -%}<p class="fc-line__variant">{{ item.selling_plan_allocation.selling_plan.name | escape }}</p>{%- endif -%}
     {%- if item.unit_price_measurement -%}{% render 'unit-price', price: item.unit_price, measurement: item.unit_price_measurement %}{%- endif -%}
-    <div class="fc-line__badges">
-      {%- if unavailable -%}
-        <span class="fc-badge fc-badge--alert">{{ 'sections.cart.unavailable' | t }}</span>
-      {%- else -%}
-        <span class="fc-badge fc-badge--added">{{ 'sections.cart.just_added' | t }}</span>
-      {%- endif -%}
-    </div>
+    {%- if unavailable -%}
+      <div class="fc-line__badges"><span class="fc-badge fc-badge--alert">{{ 'sections.cart.unavailable' | t }}</span></div>
+    {%- endif -%}
     {% render 'cart-item-contents', item: item, context: context %}
     <div class="fc-line__controls">
       {%- if unavailable -%}

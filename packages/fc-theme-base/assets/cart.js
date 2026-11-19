@@ -314,7 +314,7 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
 
     this.setLineFeedback(row, '');
     row.dataset.state = 'updating';
-    this.clearJustAdded();
+    this.hideAddedToast();
 
     return CartItems.mutate(async () => {
       let state;
@@ -403,7 +403,7 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
   /** Adds items through the queue and renders the result. onError runs when the request fails. */
   addItems(items, onError) {
     const entries = this.getSectionsToRender();
-    this.clearJustAdded();
+    this.hideAddedToast();
     return CartItems.mutate(async () => {
       let state;
       try {
@@ -425,9 +425,8 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     });
   }
 
-  markJustAdded(item) {
-    const row = this.lineByKey(item.key);
-    if (row) row.dataset.justAdded = '';
+  /** Shows the added toast until the next cart change. */
+  showAddedToast(item) {
     const toast = this.viewRoot.querySelector('[data-cart-toast]');
     if (toast && item.product_title) {
       toast.querySelector('[data-cart-toast-text]').textContent = cartText('itemAdded', { title: item.product_title });
@@ -435,8 +434,7 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     }
   }
 
-  clearJustAdded() {
-    this.viewRoot.querySelectorAll('.fc-line[data-just-added]').forEach(row => row.removeAttribute('data-just-added'));
+  hideAddedToast() {
     const toast = this.viewRoot.querySelector('[data-cart-toast]');
     if (toast) toast.hidden = true;
   }

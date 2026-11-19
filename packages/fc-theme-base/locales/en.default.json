@@ -364,7 +364,6 @@
       "view_cart": "View cart",
       "close": "Close cart",
       "item_added": "{{ title }} added to your cart",
-      "just_added": "Just added",
       "unavailable": "No longer available",
       "unavailable_hint": "Remove it to check out.",
       "remove": "Remove",

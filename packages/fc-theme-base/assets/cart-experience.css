@@ -61,11 +61,8 @@
 .fc-line__description { color: var(--cart-ink-soft); font: 13px/1.4 var(--cart-body); overflow-wrap: anywhere; }
 .fc-line .unit-price { color: var(--cart-ink-soft); font-size: 12px; }
 .fc-line__badges { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 2px; }
-.fc-line:not([data-just-added]) .fc-line__badges:not(:has(> :not(.fc-badge--added))) { display: none; }
 .fc-badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; background: var(--cart-benefit-surface); color: var(--cart-benefit); font: 500 12px/1.3 var(--cart-body); }
 .fc-badge--alert { background: var(--cart-alert-soft); color: var(--cart-alert); }
-.fc-badge--added { display: none; }
-.fc-line[data-just-added] .fc-badge--added { display: inline-flex; }
 .fc-line__contents > summary { display: inline-flex; align-items: center; gap: 4px; padding: 2px 0; font: 500 13px/1.4 var(--cart-body); list-style: none; cursor: pointer; }
 .fc-line__contents > summary::-webkit-details-marker { display: none; }
 .fc-line__contents[open] > summary svg { transform: rotate(180deg); }

@@ -30,7 +30,7 @@ describe('cart rows', () => {
       expect(row.querySelector('input').id).toBe(inputId);
       expect(text(row.querySelector('.fc-line__price s'))).toBe('$219.95');
       expect(text(row.querySelector('.fc-line__variant'))).toBe('Mens, 44');
-      expect(row.querySelector('.fc-badge:not(.fc-badge--added), a[aria-label^="Edit"]')).toBeNull();
+      expect(row.querySelector('.fc-badge, a[aria-label^="Edit"]')).toBeNull();
     }
   });
 

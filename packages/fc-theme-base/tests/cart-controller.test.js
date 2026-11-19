@@ -181,14 +181,12 @@ describe('line changes', () => {
     expect(region.querySelector('.fc-progress__fill').style.width).toBe('60%');
   });
 
-  it('highlights a just added row with a toast until the next change', () => {
+  it('shows an added toast until the next change', () => {
     const view = mount('flyout');
-    view.markJustAdded({ key: '8021:kit', product_title: 'Club starter kit' });
-    expect(view.querySelector('.fc-line[data-line-key="8021:kit"]').hasAttribute('data-just-added')).toBe(true);
+    view.showAddedToast({ key: '8021:kit', product_title: 'Club starter kit' });
     expect(document.querySelector('[data-cart-toast]').hidden).toBe(false);
     expect(document.querySelector('[data-cart-toast-text]').textContent).toBe('Club starter kit added to your cart');
-    view.clearJustAdded();
-    expect(document.querySelector('.fc-line[data-just-added]')).toBeNull();
+    view.hideAddedToast();
     expect(document.querySelector('[data-cart-toast]').hidden).toBe(true);
   });
 });

@@ -51,7 +51,7 @@ class CartDrawer extends HTMLElement {
   close() {
     cancelAnimationFrame(this.focusFrame);
     this.classList.remove('active');
-    this.items?.clearJustAdded?.();
+    this.items?.hideAddedToast?.();
     document.querySelector('#cart-icon-bubble')?.setAttribute('aria-expanded', 'false');
     removeTrapFocus(this.activeElement);
     document.body.classList.remove('overflow-hidden');
@@ -68,7 +68,7 @@ class CartDrawer extends HTMLElement {
     }
     items.renderSections(parsedState.sections, items.getSectionsToRender());
     const added = parsedState.items ? parsedState.items[0] : parsedState;
-    if (added?.key) items.markJustAdded(added);
+    if (added?.key) items.showAddedToast(added);
     this.open();
   }
 

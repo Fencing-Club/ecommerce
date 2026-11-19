@@ -37,7 +37,7 @@
   }
 
   const states = {
-    'just-added': () => view.markJustAdded({ key: rows()[0].dataset.lineKey, product_title: rows()[0].dataset.title }),
+    'just-added': () => view.showAddedToast({ key: rows()[0].dataset.lineKey, product_title: rows()[0].dataset.title }),
     updating: () => {
       rows()[2].dataset.state = 'updating';
       controller.mutationCount = 1;
