@@ -37,6 +37,7 @@ and [the engineering docs](README.md) index them.
 
 ## How a package is set up
 
-Each one has `src/`, `tests/` and `docs/README.md`, and the same small configs: an `.oxlintrc.json` extending the shared
-base, a `tsconfig.json` from `@repo/typescript-config`, and a `vitest.config.ts` whose coverage thresholds sit about a
-point below the package's coverage. CI measures coverage on Linux. It exports subpaths from `package.json`.
+Each one has `src/`, `tests/` and `docs/README.md`, and the same small configs: a `tsconfig.json` from
+`@repo/typescript-config` and a `vitest.config.ts` whose coverage thresholds sit about a point below the package's
+coverage. It has no lint config of its own; the root `vite.config.ts` lints it. CI measures coverage on Linux. It
+exports subpaths from `package.json`.

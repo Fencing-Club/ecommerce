@@ -11,7 +11,7 @@
     "dev": "shopify-emails preview --dir src/emails",
     "check:types": "tsc --noEmit",
     "check:unused": "knip --directory ../.. --workspace packages/fc-templates",
-    "lint": "oxlint --max-warnings=0",
+    "lint": "vp lint --max-warnings=0",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
@@ -24,12 +24,10 @@
   "devDependencies": {
     "@react-email/render": "^2.1.1",
     "@react-email/ui": "6.11.3",
-    "@repo/oxlint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "^19.2.0",
     "@vitest/coverage-v8": "5.0.5",
-    "oxlint": "^1.89.0",
     "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vitest": "5.0.5"

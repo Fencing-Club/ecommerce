@@ -42,7 +42,14 @@
     },
     "lint": {
       "dependsOn": ["^lint"],
-      "inputs": ["$TURBO_DEFAULT$", "!**/*.pen", "!**/*.md", "!docs/**"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/vite.config.ts",
+        "$TURBO_ROOT$/packages/oxlint-config/base.json",
+        "!**/*.pen",
+        "!**/*.md",
+        "!docs/**"
+      ]
     },
     "check:types": {
       "dependsOn": ["^check:types"],
