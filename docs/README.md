@@ -3,6 +3,7 @@
 How the monorepo is built: the conventions and tools every app and package shares.
 
 - [Setup: Node, pnpm and checks](setup.md)
+- [Lint, format and Git hooks](lint-and-hooks.md)
 - [TypeScript conventions](typescript.md)
 - [React hooks](hooks.md)
 - [Preferred stack](tech-stack.md)

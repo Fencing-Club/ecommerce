@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "check:types": "tsc --noEmit",
-    "lint": "oxlint --max-warnings=0",
+    "lint": "vp lint --max-warnings=0",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
@@ -24,7 +24,6 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@repo/oxlint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "5.0.5",
