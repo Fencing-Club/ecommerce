@@ -10,6 +10,9 @@
     "source.addMissingImports": "explicit"
   },
   "oxc.enable": true,
+  // Lint and format settings come only from the root vite.config.ts, as in vp.
+  "oxc.disableNestedConfig": true,
+  "oxc.fmt.disableNestedConfig": true,
   "explorer.compactFolders": false,
   "files.associations": {
     "*.json": "jsonc" // Render JSON files as .jsonc files.

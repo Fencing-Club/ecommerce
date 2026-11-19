@@ -22,8 +22,7 @@ const shared = [
   /^\.nvmrc$/,
   /^turbo\.json$/,
   /^knip\.json$/,
-  /^\.oxfmtrc\.json$/,
-  /^\.oxlintrc\.json$/
+  /^vite\.config\.ts$/
 ]
 const notCode = [/(^|\/)docs\//, /\.md$/, /\.pen$/]
 

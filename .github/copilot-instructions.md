@@ -61,11 +61,11 @@ Project-specific requirements below take precedence over shared recommendations 
   `src/db/schema.ts` with `applySchema` (`apps/copacker/tests/database.ts`). Only CI's one `db:migrate` release gate
   runs them.
 - **Package manager:** pnpm `>=12` on Node `>=24` · **Tasks:** Turborepo
-- **Git hooks:** lefthook (pre-commit: `oxlint --fix` + `oxfmt`; pre-push: `check:types`). Don't use `--no-verify`.
-- **Styling:** shadcn/ui components from `@buildkitgg/shadcn`, which shadcn-sync generates on install (base-vega
-  style), used as they are, with Tailwind v4; no local copies or patches of shadcn's source. Existing vanilla-extract
-  page styles stay. See
-  [apps/copacker/docs/styling.md](apps/copacker/docs/styling.md).
+- **Git hooks:** Vite+ (pre-commit: `vp staged` runs `vp check --fix`, plus Theme Check for staged theme files;
+  pre-push: `check:types`). Don't use `--no-verify`.
+- **Styling:** shadcn/ui components from `@buildkitgg/shadcn`, which shadcn-sync generates on install (base-vega style),
+  used as they are, with Tailwind v4; no local copies or patches of shadcn's source. Existing vanilla-extract page
+  styles stay. See [apps/copacker/docs/styling.md](apps/copacker/docs/styling.md).
 - **Reuse first:** prefer `@mantine/hooks`, `ts-extras`, `ts-pattern`, and `tiny-invariant` over hand-rolled hooks /
   type helpers; narrow with type guards, not `as`.
 - **Product copy:** use clear, concise wording. Never use `·`, `•`, or another dot glyph as a visual separator.
@@ -100,7 +100,7 @@ setup and the [docs index](docs/README.md) for conventions.
 
 Complete the whole coherent deliverable before running unit tests, type-checks, lint, browser acceptance or the full
 verification suite; don't run them after each small edit. Then run the smallest relevant focused checks, repair related
-failures in one batch, and finish with `pnpm verify`, which must be clean. It runs, in order, `check:format` (oxfmt),
+failures in one batch, and finish with `pnpm verify`, which must be clean. It runs, in order, `check:format` (`vp fmt`),
 `check:lint` and `check:types` (per package via Turbo), `check:unused` (`knip` over the whole graph) and `test:changed`:
 the tests of the packages changed since `origin/main` and the packages that depend on them, and of Copacker only the
 unit tests the change reaches (`vitest --changed`), plus `tests/stories.test.ts` and `tests/localization.test.ts`, which
@@ -109,12 +109,12 @@ are per-package. The stories, end-to-end tests and coverage run in PR validation
 checks with every test and coverage when a change needs them locally. For changed stories, run their play tests
 directly: `pnpm --filter copacker exec vitest run --project storybook <story files>`.
 
-Git hooks (lefthook): **pre-commit** runs `oxlint --fix` + `oxfmt` on staged files; **pre-push** runs
-`pnpm check:types`. The pre-commit tools run via `node node_modules/...`, not `pnpm`, so lefthook can split any number
-of staged files into command lines Windows accepts; keep it that way. Do not bypass them with `--no-verify` unless the
-user explicitly authorizes it for a failure wholly caused by unrelated project work. That exception does not waive
-focused verification for the files being committed, and the commit handoff must record the unrelated blocker and the
-checks run directly.
+Git hooks (Vite+, `.vite-hooks/`): **pre-commit** runs `vp staged` with the `staged` block in `vite.config.ts`;
+**pre-push** runs `pnpm check:types`. The staged check runs `vp` through `node node_modules/vite-plus/bin/vp`, not the
+`vp.cmd` shim, so large commits fit a Windows command line; keep it that way. Do not bypass them with `--no-verify`
+unless the user explicitly authorizes it for a failure wholly caused by unrelated project work. That exception does not
+waive focused verification for the files being committed, and the commit handoff must record the unrelated blocker and
+the checks run directly.
 
 ## Workspace layout
 

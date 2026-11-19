@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "email dev --dir src/emails --port 3030",
     "check:types": "tsc --noEmit",
-    "lint": "oxlint --max-warnings=0",
+    "lint": "vp lint --max-warnings=0",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
@@ -20,7 +20,6 @@
   },
   "devDependencies": {
     "@react-email/ui": "6.11.3",
-    "@repo/oxlint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "^19.2.0",

@@ -23,7 +23,6 @@ peerDependencyRules:
 allowBuilds:
   workerd: true
   esbuild: true
-  lefthook: true
   sharp: true
   unrs-resolver: true
   "@swc/core": true
