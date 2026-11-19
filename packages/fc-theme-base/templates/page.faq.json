@@ -161,7 +161,7 @@
           "settings": {
             "category": "discounts",
             "question": "Why is everything marked on sale?",
-            "answer": "<p>Our aim is to provide the most competitive prices. The strike-out amount signifies the lowest price available among our competitors. This allows you to easily calculate your savings compared to the next cheapest supplier.</p><p>We use our price-match gaurentee program to continually keep the the discount price up-to-date.</p>",
+            "answer": "<p>Our aim is to provide the most competitive prices. The strike-out amount signifies the lowest price available among our competitors. This allows you to easily calculate your savings compared to the next cheapest supplier.</p>",
             "open": false
           }
         },
@@ -172,15 +172,6 @@
             "question": "Can you supply our club store with gear?",
             "answer": "<p>Wholesale pricing is available for clubs that meet certain volume criteria. Please contact us to determine if your club is a good fit.</p>",
             "open": true
-          }
-        },
-        "programs_price_match": {
-          "type": "faq_item",
-          "settings": {
-            "category": "programs",
-            "question": "Do you offer price matching?",
-            "answer": "<p>Yes, see our <a href=\"/pages/price-match-guarantee\">Price Match-Guarantee</a> for specifics on our matching program.</p>",
-            "open": false
           }
         },
         "programs_tax": {
@@ -249,7 +240,6 @@
         "discounts_education",
         "discounts_sale",
         "programs_club_store",
-        "programs_price_match",
         "programs_tax",
         "programs_everify",
         "about_location",

@@ -22,14 +22,6 @@
             "link": "shopify://policies/refund-policy"
           }
         },
-        "c35d8e11-fc85-493d-bf9d-a21bfc86249a": {
-          "type": "announcement",
-          "settings": {
-            "text": "Price-match guarantee",
-            "link_text": "Priced competitively, matched to win",
-            "link": "shopify://pages/price-match-guarantee"
-          }
-        },
         "announcement_XncpYJ": {
           "type": "announcement",
           "disabled": true,
@@ -40,7 +32,7 @@
           }
         }
       },
-      "block_order": ["announcement-1", "c35d8e11-fc85-493d-bf9d-a21bfc86249a", "announcement_XncpYJ"],
+      "block_order": ["announcement-1", "announcement_XncpYJ"],
       "custom_css": [".announcement-barDISABLED {background-color: #ff2222;}"],
       "settings": {
         "announcement_compact": true

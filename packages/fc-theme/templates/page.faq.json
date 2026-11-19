@@ -164,7 +164,7 @@
           "type": "question",
           "settings": {
             "title": "Why is everything marked on sale?",
-            "text": "<p>Our aim is to provide the most competitive prices. The strike-out amount signifies the lowest price available among our competitors. This allows you to easily calculate your savings compared to the next cheapest supplier.<br/><br/>We use our price-match gaurentee program to continually keep the the discount price up-to-date.</p>"
+            "text": "<p>Our aim is to provide the most competitive prices. The strike-out amount signifies the lowest price available among our competitors. This allows you to easily calculate your savings compared to the next cheapest supplier.</p>"
           }
         },
         "rich_text_hR4Nhi": {
@@ -180,13 +180,6 @@
           "settings": {
             "title": "Can you supply our club store with gear?",
             "text": "<p>Wholesale pricing is available for clubs that meet certain volume criteria. Please contact us to determine if your club is a good fit.</p>"
-          }
-        },
-        "question_iFFnwH": {
-          "type": "question",
-          "settings": {
-            "title": "Do you offer price matching?",
-            "text": "<p>Yes, see our <a href=\"/pages/price-match-guarantee\" target=\"_blank\" title=\"Price-Match Guarantee\">Price Match-Guarantee</a> for specifics on our matching program.</p>"
           }
         },
         "question_Wwjjyi": {
@@ -257,7 +250,6 @@
         "question_ecpN4K",
         "rich_text_hR4Nhi",
         "question_HQbXeD",
-        "question_iFFnwH",
         "question_Wwjjyi",
         "question_LgkTcC",
         "rich_text_9PhfCK",

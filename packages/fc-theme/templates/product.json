@@ -132,26 +132,17 @@
             "title": "Returns",
             "text": "<p>Free returns within 30 days<br/><br/><a href=\"/policies/refund-policy\" target=\"_blank\" title=\"Refund Policy\"><span style=\"text-decoration:underline\">Learn more</span></a></p>"
           }
-        },
-        "template--21727808323881__f5b12062-8ed2-443b-8cf6-2007bb8b1756-text_block-3": {
-          "type": "text_block",
-          "settings": {
-            "icon": "sales-tag",
-            "title": "Price-Match",
-            "text": "<p>Matching prices from other retailers<br/><br/><a href=\"/pages/price-match-guarantee\" target=\"_blank\" title=\"Price-Match Guarantee\"><span style=\"text-decoration:underline\">Learn more</span></a></p>"
-          }
         }
       },
       "block_order": [
         "template--21727808323881__f5b12062-8ed2-443b-8cf6-2007bb8b1756-text_block-1",
         "925c672a-f01f-4dd1-86ea-2d39e2d9993e",
-        "template--21727808323881__f5b12062-8ed2-443b-8cf6-2007bb8b1756-text_block-2",
-        "template--21727808323881__f5b12062-8ed2-443b-8cf6-2007bb8b1756-text_block-3"
+        "template--21727808323881__f5b12062-8ed2-443b-8cf6-2007bb8b1756-text_block-2"
       ],
       "settings": {
         "title": "",
         "align_text": "center",
-        "desktop_columns_per_row": 4,
+        "desktop_columns_per_row": 3,
         "icon_color": "#000000",
         "button_label": "",
         "button_link": "",
