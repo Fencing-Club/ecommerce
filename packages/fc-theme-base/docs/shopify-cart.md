@@ -3,7 +3,7 @@
 The cart flyout (`snippets/cart-drawer.liquid`) and the cart page (`sections/main-cart-items.liquid`) are built from
 the same snippets and follow the Cart flyout and Cart page lanes in `FencingClubWebsite.pen`. The flyout is a 520px
 drawer on tablet and desktop and fills the screen on phones. On phones both views move the total and checkout into a
-fixed checkout bar, and tapping Total opens the order breakdown. All cart styles live in `cart-experience.css`; the
+fixed checkout bar with the total, savings and checkout. All cart styles live in `cart-experience.css`; the
 Dawn cart stylesheets are gone.
 
 ## Parts

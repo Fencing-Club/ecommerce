@@ -92,7 +92,7 @@ describe('local component library', () => {
     for (const state of cartStates) expect(index).toContain(`/lab/cart/frame?view=flyout&amp;state=${state.id}`);
     for (const state of cartPageStates) expect(index).toContain(`/lab/cart/frame?view=page&amp;state=${state}`);
     const flyout = await (await fetch(`${base}/lab/cart/frame?view=flyout&state=ready`)).text();
-    for (const token of ['<cart-drawer', '<cart-drawer-items', '<cart-extras', '<cart-note', '<cart-discount', '<cart-checkout-bar', '/assets/cart-drawer.js', '/lab/cart-shim.js', '/lab/cart-states.js']) expect(flyout).toContain(token);
+    for (const token of ['<cart-drawer', '<cart-drawer-items', '<cart-extras', '<cart-note', '<cart-discount', 'data-cart-bar', '/assets/cart-drawer.js', '/lab/cart-shim.js', '/lab/cart-states.js']) expect(flyout).toContain(token);
     const page = await (await fetch(`${base}/lab/cart/frame?view=page&state=empty`)).text();
     expect(page).toContain('data-cart-state="empty"');
     expect(page).toContain('/assets/cart.js');

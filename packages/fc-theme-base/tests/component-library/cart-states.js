@@ -9,7 +9,6 @@
   const extras = root.querySelector('cart-extras');
   const discount = root.querySelector('cart-discount');
   const note = root.querySelector('cart-note');
-  const bar = root.querySelector('cart-checkout-bar');
   const rows = () => [...root.querySelectorAll('[data-cart-lines] > .fc-line')];
   const decode = value => new DOMParser().parseFromString(value, 'text/html').documentElement.textContent;
   const text = (key, replacements = {}) => Object.entries(replacements).reduce((value, [name, replacement]) => value.replace(`[${name}]`, replacement), decode(window.cartStrings[key]));
@@ -86,10 +85,6 @@
     },
     'checkout-opening': () => root.querySelectorAll('[data-checkout-state]').forEach(holder => holder.setAttribute('data-opening', '')),
     'checkout-failed': () => root.querySelectorAll('[data-checkout-state]').forEach(holder => holder.setAttribute('data-failed', '')),
-    'breakdown-open': () => {
-      bar.setAttribute('data-open', '');
-      bar.sync();
-    },
     'gift-changing': () => root.querySelector('.fc-gift-change')?.setAttribute('open', ''),
     'gift-change-error': () => {
       const change = root.querySelector('.fc-gift-change');

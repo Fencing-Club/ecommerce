@@ -69,16 +69,14 @@ describe('cart rows', () => {
 });
 
 describe('order summary', () => {
-  it('shows codes as removable chips in the summary and as plain labels in the phone breakdown', () => {
+  it('shows codes as removable chips in the summary and keeps the phone bar to the total and checkout', () => {
     const page = render('flyout', 'discounts-applied');
     const summary = page.querySelector('[data-cart-summary] [data-cart-breakdown]');
     const chip = summary.querySelector('[data-discount-chip="WELCOME10"]');
     expect(chip.querySelector('[data-remove-code="WELCOME10"]').getAttribute('aria-label')).toBe('Remove WELCOME10');
     expect(text(chip.closest('.fc-breakdown__row').querySelector('dd'))).toBe('-$58.89');
-    const phone = page.querySelector('.fc-bar [data-cart-breakdown]');
-    expect(phone.querySelector('[data-discount-chip]')).toBeNull();
-    expect(text(phone)).toContain('Discount WELCOME10');
-    expect(text(phone)).not.toContain('Estimated taxes');
+    expect(page.querySelector('.fc-bar [data-cart-breakdown], .fc-bar button:not([name="checkout"])')).toBeNull();
+    expect(text(page.querySelector('.fc-bar__label'))).toBe('Total');
     expect(text(page.querySelector('.fc-total__value'))).toBe('$529.96');
     expect(text(page.querySelector('.fc-savings'))).toBe('You save $88.89');
     expect(text(page.querySelector('.fc-bar__value'))).toBe('$529.96');

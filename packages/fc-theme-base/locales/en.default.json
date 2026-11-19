@@ -395,7 +395,6 @@
         "other": "Remove {{ count }} unavailable items to check out"
       },
       "blocked_note": "Save or clear your note to check out",
-      "close_summary": "Close order summary",
       "empty_body": "Find everything you need for your next bout, from a first kit to competition gear.",
       "load_failed": "We couldn't load your cart",
       "load_failed_body": "Your connection or our store didn't respond.",

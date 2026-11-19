@@ -408,20 +408,3 @@ describe('free gifts', () => {
   });
 });
 
-describe('phone checkout bar', () => {
-  it('opens the breakdown from Total and closes it on Escape or a tap behind it', () => {
-    mount('flyout');
-    const bar = document.querySelector('cart-checkout-bar');
-    const toggle = bar.querySelector('[data-toggle-breakdown]');
-    toggle.click();
-    expect(bar.hasAttribute('data-open')).toBe(true);
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(bar.querySelector('.fc-bar__breakdown').hidden).toBe(false);
-    bar.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', bubbles: true }));
-    expect(bar.hasAttribute('data-open')).toBe(false);
-    toggle.click();
-    document.querySelector('.fc-line__name').closest('.fc-line').click();
-    expect(bar.hasAttribute('data-open')).toBe(false);
-    expect(bar.querySelector('.fc-bar__breakdown').hidden).toBe(true);
-  });
-});

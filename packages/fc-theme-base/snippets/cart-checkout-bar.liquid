@@ -1,5 +1,5 @@
 {% doc %}
-  Fixed checkout bar for phones. Tapping Total opens the order breakdown.
+  Fixed checkout bar for phones: the total, savings and checkout. The summary rows stay in the cart above it.
   @param {string} context - Unique cart view name.
   @param {string} form_id - Cart form to submit.
 {% enddoc %}
@@ -24,17 +24,10 @@
   endif
   assign bar_context = context | append: '-bar'
 -%}
-<cart-checkout-bar class="fc-bar" data-cart-bar data-checkout-state="{{ state }}">
-  <div class="fc-bar__breakdown" id="CartBreakdown-{{ context }}" hidden>
-    <div class="fc-bar__breakdown-head">
-      <p class="fc-bar__breakdown-title" id="CartBreakdownTitle-{{ context }}">{{ 'sections.cart.order_summary' | t }}</p>
-      <button type="button" class="fc-icon-button fc-icon-button--small" data-close-breakdown aria-label="{{ 'sections.cart.close_summary' | t }}">{% render 'fc-icon', icon: 'x', size: 16 %}</button>
-    </div>
-    <div data-cart-region="bar-breakdown">{% render 'cart-breakdown', variant: 'plain' %}</div>
-  </div>
+<div class="fc-bar" data-cart-bar data-checkout-state="{{ state }}">
   <div class="fc-bar__row" data-cart-region="bar-total">
     <div class="fc-bar__total">
-      <button type="button" class="fc-bar__toggle" data-toggle-breakdown aria-controls="CartBreakdown-{{ context }}" aria-expanded="false">{{ 'sections.cart.total' | t }}{% render 'fc-icon', icon: 'chevron-up', size: 14 %}</button>
+      <p class="fc-bar__label">{{ 'sections.cart.total' | t }}</p>
       <p class="fc-bar__value"><span>{{ cart.total_price | money }}</span></p>
     </div>
     {%- if savings > 0 -%}
@@ -43,4 +36,4 @@
   </div>
   <div data-cart-region="bar-checkout">{% render 'cart-checkout', form_id: form_id, context: bar_context, reason: checkout_reason %}</div>
   <p class="fc-bar__note">{% if cart.taxes_included %}{{ 'sections.cart.taxes_included_shipping_at_checkout' | t }}{% else %}{{ 'sections.cart.shipping_and_taxes_at_checkout' | t }}{% endif %}</p>
-</cart-checkout-bar>
+</div>

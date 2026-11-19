@@ -122,7 +122,6 @@ export const cartStates = [
   { id: 'checkout-waiting', group: 'Summary and checkout', label: 'Waiting for changes', cart: standard, client: true },
   { id: 'checkout-opening', group: 'Summary and checkout', label: 'Opening checkout', cart: standard, client: true },
   { id: 'checkout-failed', group: 'Summary and checkout', label: 'Checkout did not open', cart: standard, client: true },
-  { id: 'breakdown-open', group: 'Summary and checkout', label: 'Phone breakdown open', cart: standard, client: true },
   { id: 'empty', group: 'Cart message', label: 'Empty', cart: () => cart([]) },
   { id: 'loading', group: 'Cart message', label: 'Loading', cart: standard, client: true },
   { id: 'load-failed', group: 'Cart message', label: 'Load failed', cart: standard, client: true },
