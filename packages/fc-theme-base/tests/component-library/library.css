@@ -46,6 +46,7 @@ output { display: block; margin-top: 12px; font-size: 14px; color: var(--cp-text
 .lab-selection legend { margin-bottom: 12px; font-size: 14px; }
 .specimen ui-drawer { margin-top: 24px; }.specimen .ui-drawer { text-align: start; }
 .lab-menu { position: relative; min-height: 480px; padding: 16px; }
+.lab-account { display: flex; justify-content: flex-end; padding: 16px; }
 .lab-menu.header-wrapper--inverted { background: #0b0b0c; }
 .lab-menu.header-wrapper--translucent { background: linear-gradient(rgba(11,11,12,.72),rgba(11,11,12,.25)), url('/assets/mega-sizing-guide.jpg') center 40% / cover; }
 .lab-menu .mega-menu__content { --color-foreground: 18,18,18; --color-background: 255,255,255; color: rgb(var(--color-foreground)); }

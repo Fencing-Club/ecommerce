@@ -367,9 +367,6 @@
       "settings": {
         "paragraph": {
           "content": "在客户账户设置中[管理可见性](/admin/settings/customer_accounts)。"
-        },
-        "customer_account_menu": {
-          "label": "菜单"
         }
       }
     }

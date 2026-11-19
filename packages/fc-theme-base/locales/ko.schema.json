@@ -367,9 +367,6 @@
       "settings": {
         "paragraph": {
           "content": "고객 계정 설정에서 [표시 여부를 관리](/admin/settings/customer_accounts)하십시오."
-        },
-        "customer_account_menu": {
-          "label": "메뉴"
         }
       }
     }

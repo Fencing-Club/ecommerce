@@ -158,9 +158,6 @@
       "settings": {
         "paragraph": {
           "content": "[Manage visibility](/admin/settings/customer_accounts) in customer account settings."
-        },
-        "customer_account_menu": {
-          "label": "Menu"
         }
       }
     },
@@ -351,8 +348,8 @@
         "cart_rewards": {
           "header": "Rewards",
           "free_shipping": {
-            "label": "Free shipping minimum",
-            "info": "Cart total after discounts, in the store currency. Needs a matching free shipping automatic discount in Shopify admin. Leave blank to turn free shipping off."
+            "label": "Free US shipping minimum",
+            "info": "Cart total after discounts, in the store currency. Shown to US shoppers only. Needs a matching free shipping automatic discount in Shopify admin. Leave blank to turn free shipping off."
           },
           "gifts": {
             "content": "Free gifts are Cart gift entries in Shopify admin, under Content, Metaobjects. Each gift's minimum total sets the cart total that earns it, and gifts with the same minimum are offered as a choice."
@@ -360,7 +357,8 @@
         },
         "cart_trust": {
           "header": "Cart reassurance",
-          "returns": { "label": "Returns note" }
+          "returns": { "label": "Returns note" },
+          "checkout": { "label": "Checkout note" }
         },
         "cart_empty": {
           "header": "Empty cart",

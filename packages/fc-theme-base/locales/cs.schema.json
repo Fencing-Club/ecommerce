@@ -367,9 +367,6 @@
       "settings": {
         "paragraph": {
           "content": "[Spravovat viditelnost](/admin/settings/customer_accounts) v nastavení zákaznických účtů."
-        },
-        "customer_account_menu": {
-          "label": "Nabídka"
         }
       }
     }

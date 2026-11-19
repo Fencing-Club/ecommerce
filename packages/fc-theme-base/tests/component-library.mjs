@@ -98,6 +98,10 @@ function labSettings() {
   return { ...defaults, ...current, popular_categories_menu: popularCategoriesMenu, social_instagram_link: '#utilities', social_facebook_link: '#utilities', predictive_search_enabled: true, predictive_search_show_price: true, size_chart_index_page: { url: '#disclosures' }, type_body_font: { family: 'Inter', fallback_families: 'sans-serif', style: 'normal', weight: 400 }, type_header_font: { family: 'Archivo', fallback_families: 'sans-serif', style: 'normal', weight: 400 } };
 }
 
+// Account links stay on the lab page; the account menu reads them from the routes global.
+const labRoutes = { root_url: '/', all_products_collection_url: '#cards', search_url: '/lab/search', account_url: '#account', account_login_url: '#account', account_profile_url: '#account', account_logout_url: '#account' };
+const accountCustomer = { first_name: 'Alex', name: 'Alex Morgan', email: 'alex@example.com' };
+
 export async function renderLibrary() {
   const settings = labSettings();
   const section = { id: 'component-lab', settings: { menu: { links: navigation.menus[0].items.map(menuLink) }, menu_color_scheme: 'scheme-1', image_zoom: 'modal' } };
@@ -109,8 +113,8 @@ export async function renderLibrary() {
   return engine.renderFileSync('page', {
     section, settings, products, articles, examples: sections, search_page: { title: 'Size guides', url: '#cards', content: 'Measure before selecting your equipment.' }, option: { name: 'Size', position: 1, values },
     variant: { id: 'lab-quantity', title: 'Practice glove', quantity_rule: { min: 1, max: 5, increment: 1 } },
-    cart: { currency: { symbol: '$' } }, localization, announcements, commerce, gallery, policy, dropdown_section: { id: 'lab-dropdown' }, share_block: { id: 'lab-share', settings: { share_label: 'Share' } }, chart: chartFixtures()[0], catalog: catalogFixture(), routes: { root_url: '/', all_products_collection_url: '#cards', search_url: '/lab/search' },
-  }, { globals: { section, settings, linklists, localization, cart: { currency: { symbol: '$' } }, routes: { root_url: '/', all_products_collection_url: '#cards', search_url: '/lab/search' }, pages: {}, collections: {}, blogs, shop: { privacy_policy: { url: '#privacy' } } } });
+    cart: { currency: { symbol: '$' } }, localization, announcements, commerce, gallery, policy, dropdown_section: { id: 'lab-dropdown' }, share_block: { id: 'lab-share', settings: { share_label: 'Share' } }, chart: chartFixtures()[0], catalog: catalogFixture(), routes: labRoutes, account_customer: accountCustomer,
+  }, { globals: { section, settings, linklists, localization, cart: { currency: { symbol: '$' } }, routes: labRoutes, pages: {}, collections: {}, blogs, shop: { privacy_policy: { url: '#privacy' } } } });
 }
 
 export function renderCartIndex() {
@@ -132,7 +136,7 @@ export function renderCartFrame(parameters) {
   const settings = { ...labSettings(), ...cartSettings, cart_type: view === 'page' ? 'page' : 'drawer' };
   const section = { id: 'lab-cart', blocks: [], settings: {} };
   const cartJson = JSON.stringify(json).replaceAll('</', `<${String.fromCharCode(92)}/`);
-  return engine.renderFileSync('cart-frame', { view, state, section, cart_json: cartJson }, { globals: { settings, cart: liquid, routes: cartRoutes, shop: { currency: 'USD', metaobjects: { cart_gift: { values: state.gifts?.() || cartGifts() } } } } });
+  return engine.renderFileSync('cart-frame', { view, state, section, cart_json: cartJson }, { globals: { settings, cart: liquid, routes: cartRoutes, localization, shop: { currency: 'USD', metaobjects: { cart_gift: { values: state.gifts?.() || cartGifts() } } } } });
 }
 
 export function renderCatalog(parameters) {

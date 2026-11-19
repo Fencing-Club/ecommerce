@@ -1,6 +1,6 @@
 {% doc %}
-  Order summary: discount and note, summary rows, total, savings, checkout and reassurance.
-  On phones the total and checkout move to the fixed checkout bar.
+  Order summary, the cart's footer at every width: discount and note buttons, summary rows, the total with the checkout
+  note and savings under it, checkout and the trust notes. The checkout note drops shipping once shipping is free.
   @param {string} context - Unique cart view name.
   @param {string} form_id - Cart form to submit.
 {% enddoc %}
@@ -24,29 +24,47 @@
     assign checkout_reason = 'sections.cart.blocked_unavailable' | t: count: unavailable_count
     assign state = 'blocked'
   endif
+
+  capture free_shipping
+    render 'cart-free-shipping'
+  endcapture
+  assign free_shipping = free_shipping | plus: 0
+  assign shipping_free = false
+  if free_shipping > 0 and cart.total_price >= free_shipping
+    assign shipping_free = true
+  endif
 -%}
 <div class="fc-summary" data-cart-summary data-checkout-state="{{ state }}">
   {% render 'cart-extras', context: context, form_id: form_id %}
-  <div data-cart-region="breakdown">{% render 'cart-breakdown' %}</div>
+  <div data-cart-region="breakdown">{% render 'cart-breakdown', shipping_free: shipping_free %}</div>
   {%- assign discount_feedback_id = 'CartDiscountRemoveStatus-' | append: context -%}
   <div class="fc-summary__feedback" data-discount-feedback>{% render 'cart-feedback', id: discount_feedback_id %}</div>
   <template data-chip-template>{% render 'cart-discount-chip', code: '[code]' %}</template>
   <div class="fc-total" data-cart-region="total">
     <div class="fc-total__row">
-      <div class="fc-total__labels">
-        <p class="fc-total__label">{{ 'sections.cart.total' | t }}</p>
-        <p class="fc-total__value"><span>{{ cart.total_price | money }}</span></p>
-      </div>
+      <p class="fc-total__label">{{ 'sections.cart.total' | t }}</p>
+      <p class="fc-total__value"><span>{{ cart.total_price | money }}</span></p>
+    </div>
+    <div class="fc-total__meta">
+      <p class="fc-total__note">
+        {%- if cart.taxes_included -%}
+          <span data-shipping-note="paid">{{ 'sections.cart.taxes_included_shipping_at_checkout' | t }}</span>
+          <span data-shipping-note="free">{{ 'sections.cart.taxes_included' | t }}</span>
+        {%- else -%}
+          <span data-shipping-note="paid">{{ 'sections.cart.shipping_and_taxes_at_checkout' | t }}</span>
+          <span data-shipping-note="free">{{ 'sections.cart.taxes_at_checkout' | t }}</span>
+        {%- endif -%}
+      </p>
       {%- if savings > 0 -%}
-        <p class="fc-savings">{% render 'fc-icon', icon: 'badge-percent', size: 15 %}<span>{{ 'sections.cart.you_save' | t: amount: savings_money }}</span></p>
+        <p class="fc-savings">{% render 'fc-icon', icon: 'badge-percent', size: 14 %}<span>{{ 'sections.cart.you_save' | t: amount: savings_money }}</span></p>
       {%- endif -%}
     </div>
-    <p class="fc-total__note">{% if cart.taxes_included %}{{ 'sections.cart.taxes_included_shipping_at_checkout' | t }}{% else %}{{ 'sections.cart.shipping_and_taxes_at_checkout' | t }}{% endif %}</p>
   </div>
   <div data-cart-region="checkout">{% render 'cart-checkout', form_id: form_id, context: context, reason: checkout_reason %}</div>
-  {%- if settings.cart_trust_returns != blank -%}
+  {%- if settings.cart_trust_checkout != blank or settings.cart_trust_returns != blank -%}
     <ul class="fc-trust" role="list">
-      <li>{% render 'fc-icon', icon: 'rotate-ccw', size: 14 %}{{ settings.cart_trust_returns | escape }}</li>
+      {%- if settings.cart_trust_returns != blank -%}<li>{% render 'fc-icon', icon: 'rotate-ccw', size: 14 %}{{ settings.cart_trust_returns | escape }}</li>{%- endif -%}
+      {%- if settings.cart_trust_checkout != blank -%}<li>{% render 'fc-icon', icon: 'shield-check', size: 14 %}{{ settings.cart_trust_checkout | escape }}</li>{%- endif -%}
     </ul>
   {%- endif -%}
 </div>

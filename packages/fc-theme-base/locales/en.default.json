@@ -363,7 +363,6 @@
       },
       "view_cart": "View cart",
       "close": "Close cart",
-      "item_added": "{{ title }} added to your cart",
       "unavailable": "No longer available",
       "unavailable_hint": "Remove it to check out.",
       "remove": "Remove",
@@ -371,8 +370,6 @@
       "remove_error": "We couldn't remove this item.",
       "stock_limit": "Only {{ count }} in stock.",
       "removed": "{{ title }} removed",
-      "undo": "Undo",
-      "undo_error": "We couldn't add {{ title }} back.",
       "applying": "Applying",
       "discount_remove_error": "We couldn't remove {{ code }}.",
       "close_discount": "Close discount code",
@@ -386,6 +383,8 @@
       "total": "Total",
       "shipping_and_taxes_at_checkout": "Shipping and taxes calculated at checkout",
       "taxes_included_shipping_at_checkout": "Taxes included. Shipping calculated at checkout.",
+      "taxes_at_checkout": "Taxes calculated at checkout",
+      "taxes_included": "Taxes included",
       "you_save": "You save {{ amount }}",
       "opening_checkout": "Opening checkout",
       "checkout_failed": "Checkout didn't open.",
@@ -400,12 +399,12 @@
       "try_again": "Try again",
       "open_cart_page": "Open cart page",
       "loading": "Loading your cart",
-      "free_shipping_remaining_html": "<strong>{{ amount }}</strong> away from free shipping",
+      "free_shipping_remaining_html": "<strong>{{ amount }}</strong> away from free US shipping",
       "gift_remaining_html": "<strong>{{ amount }}</strong> away from a free gift",
       "another_gift_remaining_html": "<strong>{{ amount }}</strong> away from another free gift",
       "rewards_unlocked": "Every reward unlocked",
-      "free_shipping_unlocked": "Free shipping unlocked",
-      "free_shipping_unlocked_short": "Free shipping",
+      "free_shipping_unlocked": "Free US shipping unlocked",
+      "free_shipping_unlocked_short": "Free US shipping",
       "gift_unlocked": "Free gift unlocked",
       "gift_unlocked_short": "Free gift",
       "gift_ready": "Your free gift is ready",
@@ -415,10 +414,7 @@
       "gift_unavailable": "Unavailable",
       "gift_change": "Change gift",
       "gift_add_error": "We couldn't add [gift].",
-      "gift_change_error": "We couldn't switch to [gift].",
-      "gift_removed": "Free gift removed",
-      "gift_removed_body": "Your cart is under {{ amount }} now, so {{ gift }} came out. Add {{ remaining }} to choose a free gift again.",
-      "gift_removed_body_single": "Your cart is under {{ amount }} now, so {{ gift }} came out. Add {{ remaining }} to get your free gift back."
+      "gift_change_error": "We couldn't switch to [gift]."
     },
     "footer": {
       "payment": "Payment methods"
@@ -496,6 +492,16 @@
       "details": "Account details",
       "view_addresses": "View addresses",
       "return": "Return to Account details"
+    },
+    "account_menu": {
+      "label": "Account",
+      "title": "Your account",
+      "benefit": "Sign in to track orders, start returns and check out faster.",
+      "sign_in": "Sign in",
+      "close": "Close account menu",
+      "orders": "Orders",
+      "profile": "Profile",
+      "sign_out": "Sign out"
     },
     "activate_account": {
       "title": "Activate account",

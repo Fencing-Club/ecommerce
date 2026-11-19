@@ -22,10 +22,11 @@ beforeAll(async () => {
   vi.stubGlobal('routes', { cart_url: '/cart', cart_add_url: '/cart/add.js', cart_change_url: '/cart/change.js', cart_update_url: '/cart/update.js' });
   window.cartStrings = {
     quantityChangeError: "We couldn't change the quantity.", removeError: "We couldn't remove this item.", stockLimit: 'Only [count] in stock.',
-    removed: '[title] removed', undoError: "We couldn't add [title] back.", itemAdded: '[title] added to your cart',
+    removed: '[title] removed',
     blockedNote: 'Save or clear your note to check out', blockedUnavailableOne: 'Remove [count] unavailable item to check out',
     blockedUnavailableOther: 'Remove [count] unavailable items to check out', checkoutFailed: "Checkout didn't open.",
   };
+  await import('../assets/motion.js');
   await import('../assets/cart.js');
   // Theme scripts share top-level classes the way browser scripts do.
   vi.stubGlobal('CartItems', customElements.get('cart-items'));
@@ -122,24 +123,54 @@ describe('line changes', () => {
     expect(row.querySelector('.fc-feedback__text').textContent).toBe("We couldn't remove this item.");
   });
 
-  it('leaves an undo row after a removal that adds the same line back', async () => {
+  it('opens added rows and closes removed ones in place when regions swap', async () => {
     const view = mount('flyout');
-    vi.spyOn(view, 'renderSections').mockImplementation(() => {});
-    const requests = [];
-    vi.stubGlobal('fetch', vi.fn(async (url, options) => {
-      requests.push([url, JSON.parse(options.body)]);
-      return url === '/cart/change.js' ? json({ items: [], sections: {} }) : json({ status: 500 }, 500);
-    }));
-    // Shopify's Liquid serializes empty line properties as [].
-    view.querySelector('.fc-line[data-line="3"]').dataset.properties = '[]';
-    await view.updateQuantity('3', 0);
-    const removed = view.querySelector('.fc-line--removed');
-    expect(removed.querySelector('[data-removed-text]').textContent).toBe('Grip fencing glove removed');
-    expect([...view.querySelectorAll('[data-cart-lines] > li')].indexOf(removed)).toBe(2);
-    await view.undoRemove(removed);
-    expect(requests[1]).toEqual(['/cart/add.js', expect.objectContaining({ items: [{ id: 8031, quantity: 2 }] })]);
-    expect(removed.querySelector('.fc-feedback__text').textContent).toBe("We couldn't add Grip fencing glove back.");
-    expect(removed.querySelector('[data-undo-remove]').disabled).toBe(false);
+    const animate = vi.fn(() => ({ finished: Promise.resolve() }));
+    HTMLElement.prototype.animate = animate;
+    try {
+      const region = view.querySelector('[data-cart-region="lines"]');
+      const html = new DOMParser().parseFromString(`<div data-cart-region="lines">${region.innerHTML}</div>`, 'text/html');
+      const lines = html.querySelector('[data-cart-lines]');
+      const leaving = lines.querySelector('.fc-line[data-line="2"]');
+      const added = leaving.cloneNode(true);
+      added.dataset.lineKey = 'new-key';
+      leaving.remove();
+      lines.append(added);
+      CartItems.applyRegions(view.viewRoot, html);
+      const ghost = region.querySelector('[data-leaving]');
+      expect(ghost.dataset.line).toBe('2');
+      expect(ghost.inert).toBe(true);
+      expect(ghost.nextElementSibling.dataset.line).toBe('3');
+      expect(animate.mock.calls.map(([frames]) => frames[0].opacity)).toEqual([0, 1]);
+      await new Promise(resolve => setTimeout(resolve));
+      expect(region.querySelector('[data-leaving]')).toBeNull();
+    } finally {
+      delete HTMLElement.prototype.animate;
+    }
+  });
+
+  it('says what was removed and moves focus to the next row', async () => {
+    const view = mount('flyout');
+    vi.spyOn(view, 'renderSections').mockImplementation(() => view.querySelector('.fc-line[data-line="2"]').remove());
+    vi.stubGlobal('fetch', vi.fn(async () => json({ items: [], sections: {} })));
+    const removed = view.querySelector('.fc-line[data-line="2"]');
+    await view.updateQuantity('2', 0);
+    expect(view.querySelector('.fc-line--removed, [data-undo-remove]')).toBeNull();
+    expect(view.querySelector('#CartDrawer-LiveRegionText').textContent).toBe(`${removed.dataset.title} removed`);
+    expect(document.activeElement).toBe(view.querySelector('.fc-line[data-line="3"] .fc-line__name'));
+  });
+
+  it('hides a stale price from the first click while the quantity debounce waits', () => {
+    const view = mount('flyout');
+    vi.spyOn(view, 'updateQuantity').mockImplementation(() => {});
+    const row = view.querySelector('.fc-line[data-line="1"]');
+    const input = row.querySelector('input[data-index]');
+    input.value = '2';
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(row.hasAttribute('data-pending')).toBe(true);
+    view.flushQuantity();
+    expect(row.hasAttribute('data-pending')).toBe(false);
+    expect(view.updateQuantity).toHaveBeenCalled();
   });
 
   it('keeps edit and remove usable while a row updates, sending a waiting quantity change before the removal', async () => {
@@ -181,14 +212,6 @@ describe('line changes', () => {
     expect(region.querySelector('.fc-progress__fill').style.width).toBe('60%');
   });
 
-  it('shows an added toast until the next change', () => {
-    const view = mount('flyout');
-    view.showAddedToast({ key: '8021:kit', product_title: 'Club starter kit' });
-    expect(document.querySelector('[data-cart-toast]').hidden).toBe(false);
-    expect(document.querySelector('[data-cart-toast-text]').textContent).toBe('Club starter kit added to your cart');
-    view.hideAddedToast();
-    expect(document.querySelector('[data-cart-toast]').hidden).toBe(true);
-  });
 });
 
 describe('refreshing', () => {
@@ -388,7 +411,6 @@ describe('free gifts', () => {
     await vi.waitFor(() => expect(posts).toEqual([{ attributes: { [giftKey]: '' } }]));
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(posts.length).toBe(1);
-    expect(document.querySelector('.fc-gift-notice')).not.toBeNull();
   });
 
   it('saves the gift of a tier with only one gift without rendering again', async () => {

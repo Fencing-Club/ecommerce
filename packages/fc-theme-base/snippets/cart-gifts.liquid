@@ -1,9 +1,10 @@
 {% doc %}
-  Gift choice panels and gift removed notices, from the Gift states in the Pen. A tier offers the Cart gift entries
+  Gift choice panels, from the Gift states in the Pen. A tier offers the Cart gift entries
   whose minimum total is that tier. A reached tier with two or more gifts and no choice gets a panel, which shows
   unavailable gifts too; a chosen tier shows as a gift line instead (cart-gift-lines). A reached tier with one gift
   needs no choice: its gift line shows right away and cart-gift-sync saves the gift to the tier's cart attribute. When the cart drops
-  under a chosen tier, the notice says so and cart-gift-sync clears that tier's attribute. It also clears choices that
+  under a chosen tier, cart-gift-sync clears that tier's attribute without a notice; the reward progress shows the
+  distance back. It also clears choices that
   no longer match a gift and attributes left from tiers that were removed.
   @param {string} context - Unique cart view name.
 {% enddoc %}
@@ -68,43 +69,6 @@
   assign clear_keys = clear | remove_first: ',' | split: ','
   assign set_json = set_pairs | remove_first: ','
 -%}
-{%- for tier_text in tiers -%}
-  {%- liquid
-    assign tier = tier_text | plus: 0
-    assign tier_money = tier | money_without_trailing_zeros
-    assign key = prefix | append: tier_money
-    assign chosen = cart.attributes[key]
-  -%}
-  {%- if chosen != blank and cart.total_price < tier -%}
-    {%- liquid
-      assign gift_name = chosen
-      assign option_count = 0
-      for gift in shop.metaobjects.cart_gift.values
-        assign minimum = gift.minimum_total.value | times: 100 | round
-        assign label = gift.name.value | default: ''
-        if chosen == label
-          assign gift_name = gift.name.value
-        endif
-        if minimum == tier
-          assign option_count = option_count | plus: 1
-        endif
-      endfor
-      assign remaining = tier | minus: cart.total_price | money
-      if option_count == 1
-        assign body = 'sections.cart.gift_removed_body_single' | t: amount: tier_money, gift: gift_name, remaining: remaining
-      else
-        assign body = 'sections.cart.gift_removed_body' | t: amount: tier_money, gift: gift_name, remaining: remaining
-      endif
-    -%}
-    <div class="fc-gift-notice" role="status">
-      <span class="fc-gift-notice__badge">{% render 'fc-icon', icon: 'gift', size: 18 %}</span>
-      <div class="fc-gift-notice__text">
-        <p class="fc-gift-notice__title">{{ 'sections.cart.gift_removed' | t }}</p>
-        <p class="fc-gift-notice__body">{{ body }}</p>
-      </div>
-    </div>
-  {%- endif -%}
-{%- endfor -%}
 {%- assign ready_seen = 0 -%}
 {%- for tier_text in tiers -%}
   {%- liquid

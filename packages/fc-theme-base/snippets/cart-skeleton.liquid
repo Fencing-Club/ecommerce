@@ -1,6 +1,6 @@
 {% doc %}
   Loading placeholders that match the cart layout.
-  @param {string} part - lines, progress, summary or bar.
+  @param {string} part - lines, progress or summary.
   @param {number} [count] - Number of line placeholders. Default 3.
 {% enddoc %}
 {%- assign line_count = count | default: 3 -%}
@@ -34,16 +34,10 @@
         <span class="fc-skeleton-row"><span class="fc-bone" style="--w: 70px; --h: 12px"></span><span class="fc-bone" style="--w: 40px; --h: 12px"></span></span>
       </span>
       <span class="fc-skeleton-total">
-        <span class="fc-skeleton-row fc-skeleton-row--end"><span class="fc-skeleton-stack"><span class="fc-bone" style="--w: 60px; --h: 18px"></span><span class="fc-bone" style="--w: 150px; --h: 12px"></span></span><span class="fc-bone" style="--w: 130px; --h: 30px"></span></span>
-        <span class="fc-bone fc-bone--banner"></span>
+        <span class="fc-skeleton-row fc-skeleton-row--end"><span class="fc-bone" style="--w: 48px; --h: 18px"></span><span class="fc-bone" style="--w: 120px; --h: 26px"></span></span>
+        <span class="fc-skeleton-row"><span class="fc-bone" style="--w: 170px; --h: 12px"></span><span class="fc-bone" style="--w: 100px; --h: 12px"></span></span>
       </span>
       <span class="fc-skeleton-checkout">{% render 'fc-icon', icon: 'lock', size: 16 %}{{ 'sections.cart.checkout' | t }}</span>
-      <span class="fc-skeleton-row fc-skeleton-row--center"><span class="fc-bone" style="--w: 240px; --h: 12px"></span></span>
-    </div>
-  {%- when 'bar' -%}
-    <div class="fc-skeleton-bar" aria-hidden="true">
-      <span class="fc-skeleton-row fc-skeleton-row--end"><span class="fc-skeleton-stack"><span class="fc-bone" style="--w: 40px; --h: 12px"></span><span class="fc-bone" style="--w: 120px; --h: 28px"></span></span><span class="fc-bone fc-bone--pill" style="--w: 132px; --h: 30px"></span></span>
-      <span class="fc-skeleton-checkout">{% render 'fc-icon', icon: 'lock', size: 16 %}{{ 'sections.cart.checkout' | t }}</span>
-      <span class="fc-skeleton-row fc-skeleton-row--center"><span class="fc-bone" style="--w: 170px; --h: 12px"></span></span>
+      <span class="fc-skeleton-row fc-skeleton-row--center"><span class="fc-bone" style="--w: 130px; --h: 12px"></span></span>
     </div>
 {%- endcase -%}

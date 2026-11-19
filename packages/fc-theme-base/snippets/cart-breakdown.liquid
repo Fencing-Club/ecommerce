@@ -1,7 +1,8 @@
 {% doc %}
   Order summary rows. Codes show as removable chips.
-  Subtotal shows only when it differs from the total. The Shipping row shows only while a shipping code is applied
-  (scripts add data-code-free), so the code can be removed; otherwise shipping is left to checkout.
+  Subtotal shows only when it differs from the total. The Shipping row shows only when shipping is free: the cart
+  earned it (data-free) or a shipping code is applied (scripts add data-code-free).
+  @param {boolean} [shipping_free] - The cart reached the free shipping minimum.
 {% enddoc %}
 <dl class="fc-breakdown" data-cart-breakdown>
   {%- if cart.items_subtotal_price != cart.total_price -%}
@@ -28,7 +29,7 @@
     {%- endif -%}
   {%- endfor -%}
   {%- if cart.requires_shipping -%}
-    <div class="fc-breakdown__row" data-shipping-row>
+    <div class="fc-breakdown__row" data-shipping-row{% if shipping_free %} data-free{% endif %}>
       <dt>{{ 'sections.cart.shipping' | t }}<span class="fc-chips" data-shipping-codes></span></dt>
       <dd class="fc-benefit">{{ 'sections.cart.free' | t }}</dd>
     </div>

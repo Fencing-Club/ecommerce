@@ -43,15 +43,14 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
       if (!event.target.matches('input[data-index]')) return;
       clearTimeout(this.quantityTimer);
       this.pendingChange = event;
+      // The price is stale from the first click, so it shows the placeholder while the debounce waits for more.
+      event.target.closest('.fc-line')?.setAttribute('data-pending', '');
       CartItems.pendingQuantities.add(this);
       CartItems.updateCheckoutState();
       this.quantityTimer = setTimeout(() => this.flushQuantity(), ON_CHANGE_DEBOUNCE_TIMER);
     });
     this.addEventListener('click', event => {
-      const retry = event.target.closest('[data-cart-retry]');
-      const undo = event.target.closest('[data-undo-remove]');
-      if (retry) this.refresh({ visible: true });
-      else if (undo) this.undoRemove(undo.closest('.fc-line--removed'));
+      if (event.target.closest('[data-cart-retry]')) this.refresh({ visible: true });
     });
   }
 
@@ -77,6 +76,7 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     this.pendingChange = null;
     CartItems.pendingQuantities.delete(this);
     if (event) this.onChange(event);
+    this.querySelectorAll('.fc-line[data-pending]').forEach(row => row.removeAttribute('data-pending'));
     CartItems.updateCheckoutState();
   }
 
@@ -165,6 +165,13 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     fill.style.width = to;
   }
 
+  /** Cart rows for RowMotion: products by line key and gift lines by tier, each closing back into its own list. */
+  static lineRows = {
+    rows: region => [...region.querySelectorAll('.fc-line[data-line-key], .fc-line[data-gift-key]')],
+    key: row => (row.dataset.lineKey ? `line:${row.dataset.lineKey}` : `gift:${row.dataset.giftKey}`),
+    listFor: (row, region) => region.querySelector(row.matches('[data-gift-line]') ? '.fc-lines--gifts' : '[data-cart-lines]'),
+  };
+
   /** Swaps every region in the view for the matching region in the rendered section. */
   static applyRegions(root, html) {
     const sourceRoot = html.querySelector('[data-cart-state]');
@@ -173,8 +180,10 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
       if (!source) return;
       CartItems.preserveControls(region, source);
       const fillFrom = region.querySelector('.fc-progress__fill')?.style.width;
+      const rowsBefore = RowMotion.currentRows(region, CartItems.lineRows);
       region.replaceChildren(...source.childNodes);
       CartItems.animateFill(region.querySelector('.fc-progress__fill'), fillFrom);
+      RowMotion.animateListChanges(region, rowsBefore, CartItems.lineRows);
     });
     if (sourceRoot) root.dataset.cartState = sourceRoot.dataset.cartState;
     root.dispatchEvent(new CustomEvent('cart:regions-updated', { bubbles: true }));
@@ -299,13 +308,6 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     const key = row.dataset.lineKey;
     const variantId = row.dataset.variantId;
     const removing = quantity === 0;
-    const snapshot = {
-      variantId,
-      quantity: Number(row.dataset.quantity),
-      title: row.dataset.title,
-      properties: JSON.parse(row.dataset.properties || '{}'),
-      sellingPlan: row.dataset.sellingPlan || null,
-    };
     const eventTarget = event?.currentTarget instanceof CartRemoveButton ? 'clear' : 'change';
     const marker = window.CartPerformance?.createStartingMarker(`${eventTarget}:user-action`);
     const deferred = this.createCartLinesUpdateEvent(removing ? 'remove' : 'update', variantId, quantity, key);
@@ -314,7 +316,6 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
 
     this.setLineFeedback(row, '');
     row.dataset.state = 'updating';
-    this.hideAddedToast();
 
     return CartItems.mutate(async () => {
       let state;
@@ -341,12 +342,13 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
 
       this.resolveCartLinesUpdate(deferred, state);
       const lines = [...this.querySelectorAll('[data-cart-lines] > .fc-line')];
-      const position = lines.indexOf(row);
+      const removedRow = removing ? this.lineByKey(key) || row : null;
+      const position = lines.indexOf(removedRow);
       this.renderSections(state.sections, entries);
       this.announce();
 
       if (removing) {
-        this.showRemoved(position, snapshot);
+        this.focusAfterRemove(position, removedRow.dataset.title);
       } else {
         const updated = state.items?.find(item => item.key === key);
         const current = this.lineByKey(key);
@@ -367,76 +369,16 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
     else element.focus({ preventScroll: true });
   }
 
-  /** Leaves a row where the removed product was, with Undo. It stays until the next cart change. */
-  showRemoved(position, snapshot) {
-    const list = this.querySelector('[data-cart-lines]');
-    const template = this.querySelector('template[data-removed-template]');
-    if (!list || !template || this.viewRoot.dataset.cartState === 'empty') return;
-    const row = template.content.firstElementChild.cloneNode(true);
-    row.snapshot = snapshot;
-    row.querySelector('[data-removed-text]').textContent = cartText('removed', { title: snapshot.title });
-    const feedback = row.querySelector('.fc-feedback');
-    feedback.id = `${feedback.id}-${Date.now()}`;
-    list.insertBefore(row, list.children[position] || null);
-    this.focusInView(row.querySelector('[data-undo-remove]'));
-  }
-
-  undoRemove(row) {
-    const snapshot = row?.snapshot;
-    if (!snapshot || row.hasAttribute('data-busy')) return;
-    const button = row.querySelector('[data-undo-remove]');
-    row.setAttribute('data-busy', '');
-    button.disabled = true;
-    this.setLineFeedback(row, '');
-    const item = { id: Number(snapshot.variantId), quantity: snapshot.quantity };
-    // Liquid serializes empty line properties as [], which /cart/add rejects.
-    const { properties } = snapshot;
-    if (properties && !Array.isArray(properties) && Object.keys(properties).length) item.properties = properties;
-    if (snapshot.sellingPlan) item.selling_plan = Number(snapshot.sellingPlan);
-    return this.addItems([item], () => {
-      row.removeAttribute('data-busy');
-      button.disabled = false;
-      this.setLineFeedback(row, cartText('undoError', { title: snapshot.title }));
-    });
-  }
-
-  /** Adds items through the queue and renders the result. onError runs when the request fails. */
-  addItems(items, onError) {
-    const entries = this.getSectionsToRender();
-    this.hideAddedToast();
-    return CartItems.mutate(async () => {
-      let state;
-      try {
-        const response = await fetch(routes.cart_add_url, { ...fetchConfig(), body: JSON.stringify({ items, sections: entries.map(entry => entry.section), sections_url: window.location.pathname }) });
-        state = await response.json();
-        if (!response.ok || state.status) throw new Error(state.description || state.message || 'Cart add failed');
-      } catch (error) {
-        onError?.(error);
-        this.dispatchCartErrorEvent(error.message, 'SERVICE_UNAVAILABLE');
-        return;
-      }
-      this.renderSections(state.sections, entries);
-      this.announce();
-      const added = state.items?.[0];
-      const row = added && this.lineByKey(added.key);
-      if (row) this.focusInView(row.querySelector('.fc-line__name'));
-      publish(PUB_SUB_EVENTS.cartUpdate, { source: 'cart-items', cartData: state });
-      await Promise.all([...document.querySelectorAll('cart-items, cart-drawer-items')].filter(view => view !== this).map(view => view.onCartUpdate()));
-    });
-  }
-
-  /** Shows the added toast until the next cart change. */
-  showAddedToast(item) {
-    const toast = this.viewRoot.querySelector('[data-cart-toast]');
-    if (toast && item.product_title) {
-      toast.querySelector('[data-cart-toast-text]').textContent = cartText('itemAdded', { title: item.product_title });
-      toast.hidden = false;
-    }
-  }
-
-  hideAddedToast() {
-    const toast = this.viewRoot.querySelector('[data-cart-toast]');
-    if (toast) toast.hidden = true;
+  /** Says what was removed and moves focus to the row that took its place, the row above it, or the cart itself. */
+  focusAfterRemove(position, title) {
+    const status = this.querySelector('#cart-live-region-text, #CartDrawer-LiveRegionText');
+    if (status && title) status.textContent = cartText('removed', { title });
+    const rows = RowMotion.currentRows(this, CartItems.lineRows);
+    const next = rows[position] || rows[position - 1];
+    const target = next?.querySelector('a.fc-line__name, .fc-line__body button') || this.viewRoot.querySelector('[role="dialog"], h1');
+    if (!target) return;
+    if (!target.matches('a, button, input, [tabindex]')) target.setAttribute('tabindex', '-1');
+    this.focusInView(target);
   }
 
   announce() {

@@ -367,9 +367,6 @@
       "settings": {
         "paragraph": {
           "content": "[Zichtbaarheid beheren](/admin/settings/customer_accounts) in de instellingen voor klantaccounts."
-        },
-        "customer_account_menu": {
-          "label": "Menu"
         }
       }
     }

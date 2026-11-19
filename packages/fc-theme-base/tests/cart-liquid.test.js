@@ -69,27 +69,35 @@ describe('cart rows', () => {
 });
 
 describe('order summary', () => {
-  it('shows codes as removable chips in the summary and keeps the phone bar to the total and checkout', () => {
+  it('shows codes as removable chips in the one summary footer', () => {
     const page = render('flyout', 'discounts-applied');
     const summary = page.querySelector('[data-cart-summary] [data-cart-breakdown]');
     const chip = summary.querySelector('[data-discount-chip="WELCOME10"]');
     expect(chip.querySelector('[data-remove-code="WELCOME10"]').getAttribute('aria-label')).toBe('Remove WELCOME10');
     expect(text(chip.closest('.fc-breakdown__row').querySelector('dd'))).toBe('-$58.89');
-    expect(page.querySelector('.fc-bar [data-cart-breakdown], .fc-bar button:not([name="checkout"])')).toBeNull();
-    expect(text(page.querySelector('.fc-bar__label'))).toBe('Total');
+    expect(page.querySelectorAll('[data-cart-breakdown]').length).toBe(1);
+    expect(page.querySelector('.fc-bar')).toBeNull();
     expect(text(page.querySelector('.fc-total__value'))).toBe('$529.96');
     expect(text(page.querySelector('.fc-savings'))).toBe('You save $88.89');
-    expect(text(page.querySelector('.fc-bar__value'))).toBe('$529.96');
   });
 
-  it('never invents a shipping price and leaves shipping to checkout', () => {
+  it('never invents a shipping price and leaves shipping to checkout until it is free', () => {
     const page = render('page', 'below-free-shipping');
     const row = page.querySelector('[data-cart-summary] [data-shipping-row]');
     expect(text(row.querySelector('dd'))).toBe('Free');
     expect(row.querySelector('[data-shipping-codes]')).not.toBeNull();
+    expect(row.hasAttribute('data-free')).toBe(false);
     expect(row.hasAttribute('data-code-free')).toBe(false);
-    expect(text(page.querySelector('.fc-trust'))).toBe('Free 30-day returns');
-    expect(text(page.querySelector('.fc-total__note'))).toBe('Shipping and taxes calculated at checkout');
+    expect([...page.querySelectorAll('.fc-trust li')].map(text)).toEqual(['Free 30-day returns', 'Secure checkout']);
+    const note = page.querySelector('.fc-total__note');
+    expect(text(note.querySelector('[data-shipping-note="paid"]'))).toBe('Shipping and taxes calculated at checkout');
+    expect(text(note.querySelector('[data-shipping-note="free"]'))).toBe('Taxes calculated at checkout');
+  });
+
+  it('lists free shipping once the cart earns it', () => {
+    const row = render('page', 'ready').querySelector('[data-cart-summary] [data-shipping-row]');
+    expect(row.hasAttribute('data-free')).toBe(true);
+    expect(text(row.querySelector('dd'))).toBe('Free');
   });
 
   it('shows the items subtotal only when it differs from the total', () => {
@@ -122,7 +130,7 @@ describe('free shipping', () => {
     for (const view of ['flyout', 'page']) {
       const page = render(view, 'below-free-shipping');
       const progress = page.querySelector('[data-cart-region="progress"] .fc-progress');
-      expect(text(progress.querySelector('.fc-progress__message'))).toBe('$180.10 away from free shipping');
+      expect(text(progress.querySelector('.fc-progress__message'))).toBe('$180.10 away from free US shipping');
       // The track runs to the highest reward, the $900 gift.
       expect(progress.querySelector('.fc-progress__fill').getAttribute('style')).toBe('width: 7.77%');
       expect(progress.querySelector('.fc-progress__stop').hasAttribute('data-reached')).toBe(false);
@@ -135,17 +143,20 @@ describe('free shipping', () => {
     const page = render('flyout', 'ready');
     const progress = page.querySelector('.fc-progress');
     expect(text(progress.querySelector('.fc-progress__message'))).toBe('$11.15 away from a free gift');
-    expect(text(progress.querySelector('.fc-progress__note-long'))).toBe('Free shipping unlocked');
-    expect(text(progress.querySelector('.fc-progress__note-short'))).toBe('Free shipping');
+    expect(text(progress.querySelector('.fc-progress__note-long'))).toBe('Free US shipping unlocked');
+    expect(text(progress.querySelector('.fc-progress__note-short'))).toBe('Free US shipping');
     expect([...progress.querySelectorAll('.fc-progress__stop')].map(stop => stop.hasAttribute('data-reached'))).toEqual([true, false, false]);
   });
 
-  it('shows no progress when the minimum is blank or the cart is in another currency', async () => {
+  it('shows no progress when the minimum is blank, the cart is in another currency or the shopper is outside the US', async () => {
     const cart = { items: [{}], total_price: 5000, currency: { iso_code: 'USD' } };
     const shop = { currency: 'USD' };
-    expect((await engine.renderFile('cart-reward-progress', {}, { globals: { cart, shop, settings: {} } })).trim()).toBe('');
-    expect((await engine.renderFile('cart-reward-progress', {}, { globals: { cart: { ...cart, currency: { iso_code: 'CAD' } }, shop, settings: { cart_free_shipping_threshold: 250 } } })).trim()).toBe('');
-    expect(await engine.renderFile('cart-reward-progress', {}, { globals: { cart, shop, settings: { cart_free_shipping_threshold: 250 } } })).toContain('sections.cart.free_shipping_remaining_html');
+    const us = { country: { iso_code: 'US' } };
+    const settings = { cart_free_shipping_threshold: 250 };
+    expect((await engine.renderFile('cart-reward-progress', {}, { globals: { cart, shop, localization: us, settings: {} } })).trim()).toBe('');
+    expect((await engine.renderFile('cart-reward-progress', {}, { globals: { cart: { ...cart, currency: { iso_code: 'CAD' } }, shop, localization: us, settings } })).trim()).toBe('');
+    expect((await engine.renderFile('cart-reward-progress', {}, { globals: { cart, shop, localization: { country: { iso_code: 'CA' } }, settings } })).trim()).toBe('');
+    expect(await engine.renderFile('cart-reward-progress', {}, { globals: { cart, shop, localization: us, settings } })).toContain('sections.cart.free_shipping_remaining_html');
   });
 });
 
@@ -211,12 +222,9 @@ describe('free gifts', () => {
     expect(text(towel.querySelector('.fc-gift__price'))).toBe('Unavailable');
   });
 
-  it('says when the cart drops under a chosen gift and clears the choice', () => {
+  it('clears a chosen gift without a notice when the cart drops under its tier', () => {
     const page = render('flyout', 'gift-removed');
-    const notice = page.querySelector('.fc-gift-notice');
-    expect(notice.getAttribute('role')).toBe('status');
-    expect(text(notice.querySelector('.fc-gift-notice__title'))).toBe('Free gift removed');
-    expect(text(notice.querySelector('.fc-gift-notice__body'))).toBe('Your cart is under $600 now, so Club socks came out. Add $11.15 to choose a free gift again.');
+    expect(page.querySelector('.fc-gift-notice')).toBeNull();
     expect(JSON.parse(page.querySelector('cart-gift-sync').dataset.clear)).toEqual([giftKey]);
     expect(page.querySelector('[data-gift-line], .fc-gift-choice')).toBeNull();
   });
@@ -224,7 +232,7 @@ describe('free gifts', () => {
   it('adds the gift of a tier that has only one, with no choice to make', () => {
     for (const view of ['flyout', 'page']) {
       const page = render(view, 'gift-added');
-      expect(page.querySelector('.fc-gift-choice, .fc-gift-change, .fc-gift-notice')).toBeNull();
+      expect(page.querySelector('.fc-gift-choice, .fc-gift-change')).toBeNull();
       const lines = [...page.querySelectorAll('.fc-lines--gifts > [data-gift-line]')];
       expect(lines.map(line => line.dataset.giftKey)).toEqual(['Free gift at $175', 'Free gift at $375']);
       expect(lines.map(line => text(line.querySelector('.fc-line__name')))).toEqual(['Harut point protectors', 'The Fencing Journal']);
@@ -239,9 +247,8 @@ describe('free gifts', () => {
     }
   });
 
-  it('says a single gift came out and clears it when the cart drops under its tier', () => {
+  it('clears a single gift when the cart drops under its tier', () => {
     const page = render('flyout', 'gift-added-removed');
-    expect(text(page.querySelector('.fc-gift-notice__body'))).toBe('Your cart is under $175 now, so Harut point protectors came out. Add $105.10 to get your free gift back.');
     expect(JSON.parse(page.querySelector('cart-gift-sync').dataset.clear)).toEqual(['Free gift at $175']);
     expect(page.querySelector('[data-gift-line]')).toBeNull();
   });
@@ -301,7 +308,7 @@ describe('cart sources', () => {
     const drawer = await readFile(resolve('snippets/cart-drawer.liquid'), 'utf8');
     const page = await readFile(resolve('sections/main-cart-items.liquid'), 'utf8');
     for (const source of [drawer, page]) {
-      for (const part of ["render 'cart-lines'", "render 'cart-summary'", "render 'cart-checkout-bar'", "render 'cart-message', kind: 'empty'", "render 'cart-message', kind: 'failed'", "render 'cart-skeleton'"]) expect(source).toContain(part);
+      for (const part of ["render 'cart-lines'", "render 'cart-summary'", "render 'cart-message', kind: 'empty'", "render 'cart-message', kind: 'failed'", "render 'cart-skeleton'"]) expect(source).toContain(part);
     }
   });
 

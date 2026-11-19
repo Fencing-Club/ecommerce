@@ -26,10 +26,6 @@
     note.textarea.value = 'Please ship the foil and mask together.';
     note.updateCount();
   };
-  const removed = () => {
-    view.showRemoved(1, { variantId: '8031', quantity: 2, title: 'Grip fencing glove', properties: {}, sellingPlan: null });
-    return root.querySelector('.fc-line--removed');
-  };
 
   if (drawer) {
     drawer.classList.add('animate', 'active');
@@ -37,15 +33,12 @@
   }
 
   const states = {
-    'just-added': () => view.showAddedToast({ key: rows()[0].dataset.lineKey, product_title: rows()[0].dataset.title }),
     updating: () => {
       rows()[2].dataset.state = 'updating';
       controller.mutationCount = 1;
     },
     'quantity-error': () => view.setLineFeedback(rows()[2], text('quantityChangeError')),
     'remove-error': () => view.setLineFeedback(rows()[2], text('removeError')),
-    removed,
-    'undo-error': () => view.setLineFeedback(removed(), text('undoError', { title: 'Grip fencing glove' })),
     'kit-open': () => root.querySelector('.fc-line__contents')?.setAttribute('open', ''),
     'discount-open': () => openEditor('discount'),
     'discount-applying': () => {

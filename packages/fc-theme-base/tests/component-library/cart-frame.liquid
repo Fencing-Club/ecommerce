@@ -14,8 +14,6 @@
       removeError: `{{ 'sections.cart.remove_error' | t }}`,
       stockLimit: `{{ 'sections.cart.stock_limit' | t: count: '[count]' }}`,
       removed: `{{ 'sections.cart.removed' | t: title: '[title]' }}`,
-      undoError: `{{ 'sections.cart.undo_error' | t: title: '[title]' }}`,
-      itemAdded: `{{ 'sections.cart.item_added' | t: title: '[title]' }}`,
       blockedNote: `{{ 'sections.cart.blocked_note' | t }}`,
       blockedUnavailableOne: `{{ 'sections.cart.blocked_unavailable.one' | t: count: '[count]' }}`,
       blockedUnavailableOther: `{{ 'sections.cart.blocked_unavailable.other' | t: count: '[count]' }}`,
@@ -25,7 +23,7 @@
   </script>
   <script type="application/json" id="LabCart">{{ cart_json }}</script>
   <script src="/lab/cart-shim.js"></script>
-  <script src="/assets/constants.js" defer></script><script src="/assets/pubsub.js" defer></script><script src="/assets/global.js" defer></script>
+  <script src="/assets/constants.js" defer></script><script src="/assets/pubsub.js" defer></script><script src="/assets/global.js" defer></script><script src="/assets/motion.js" defer></script>
 </head>
 <body class="lab-cart-frame lab-cart-frame--{{ view }}" data-lab-state="{{ state.id }}">
   {%- if view == 'flyout' -%}

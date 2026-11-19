@@ -25,7 +25,6 @@
         {%- for block in section.blocks -%}{%- if block.type == '@app' -%}{% render block %}{%- endif -%}{%- endfor -%}
       </section>
     </form>
-    {% render 'cart-checkout-bar', context: 'page', form_id: 'cart' %}
     <p class="visually-hidden" id="cart-live-region-text" role="status"></p>
     <noscript><button type="submit" name="update" class="fc-button fc-button--outline" form="cart">{{ 'sections.cart.update' | t }}</button></noscript>
   </div>
@@ -46,7 +45,6 @@
         <div class="fc-cart-page__card">{% render 'cart-skeleton', part: 'summary' %}</div>
       </div>
     </div>
-    {% render 'cart-skeleton', part: 'bar' %}
   </div>
 </cart-items>
 {% schema %}
