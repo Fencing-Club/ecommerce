@@ -5,6 +5,7 @@ The new Fencing Club Shopify theme, built on Dawn.
 ## Development
 
 - [Storybook](storybook.md): the component library, how stories render Liquid, and how they're tested.
+- [Theme Check and translations](theme-check.md): the lint gate, and why the theme ships English only for now.
 
 ## Store features
 
