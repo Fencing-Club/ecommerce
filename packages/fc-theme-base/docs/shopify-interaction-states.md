@@ -118,7 +118,7 @@ template-owned hooks, never customer-supplied HTML. Callers must provide unique 
 | Icon actions | Header menu/search/account/cart, close, remove, share, copy, gallery controls, filter/reset | Tooltip/accessibility name, pressed, disabled; no hover-only meaning |
 | Links | `ui-link`, breadcrumbs, footer/social/contact links, support-band links | Visited where appropriate, current, download feedback; underline/arrow movement without layout shift |
 | Product options | `product-variant-picker`, `product-variant-options`, `swatch-input`, `swatch` | Selected, selected-hover, unavailable, unavailable-selected, focus, variant-loading; compare Dawn pills with a larger softened brand shape |
-| Quantities | `quantity-input`, cart steppers, quick-order rows, volume-pricing controls | Min/max, blocked by inventory, busy, rejected/reset; announce accepted quantity and totals |
+| Quantities | `quantity-input`, cart steppers, volume-pricing controls | Min/max, blocked by inventory, busy, rejected/reset; announce accepted quantity and totals |
 | Pills and tabs | `ui-pill`, journal filters, search category tabs, size-chart units/sizes | Selected/current, disabled, keyboard navigation appropriate to semantics; do not make static pills clickable |
 | Checkboxes and fields | `ui-checkbox-field`, cookie preferences, gift-card recipient form | Checked, indeterminate where used, disabled, invalid, required, autofill, validation success |
 | Text entry | Search, contact/newsletter, cart note/discount, price range, account forms | Empty, filled, focused, invalid, submitting, saved; errors next to the field, retain input on failure |
@@ -211,7 +211,7 @@ Catalog filtering uses a deterministic local response adapter, not Shopify's fac
 search retains the production presentation and keyboard controller with a local transport/recent-history adapter.
 Localization uses production dropdown behavior but replaces each fixture form's submission with local selection.
 Cart lab changes always fail and contact submissions simulate feedback only; no cart changes and no message is sent.
-Full cart/checkout integration, pickup, gift-card recipients, quick-order commerce, video/3D, and app blocks still
+Full cart/checkout integration, pickup, gift-card recipients, video/3D, and app blocks still
 require store-specific acceptance. The inventory does not claim those integrations are verified.
 Automated accessibility scans are paired with keyboard, motion, and mobile checks; they do not establish complete
 WCAG conformance or replace assistive-technology testing.

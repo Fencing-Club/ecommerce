@@ -1,0 +1,5 @@
+ignore:
+  # The component lab and Storybook fixtures, which Shopify never receives.
+  - tests/**
+  - stories/**
+  - .storybook/**

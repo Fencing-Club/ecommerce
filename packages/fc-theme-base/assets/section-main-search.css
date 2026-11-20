@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.8rem;
-  padding: 5.6rem 9.6rem 3rem;
+  padding: 5.6rem var(--page-gutter) 3rem;
   border-bottom: 0.1rem solid var(--border);
 }
 
@@ -31,7 +31,7 @@
 }
 
 .search-results__section {
-  padding: 4.8rem 9.6rem 0;
+  padding: 4.8rem var(--page-gutter) 0;
 }
 
 .search-results__section + .search-results__section {
@@ -677,7 +677,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 3.4rem;
-  padding: 7.2rem 9.6rem 9.6rem;
+  padding: 7.2rem var(--page-gutter) 9.6rem;
 }
 
 .search-results__empty-copy {
@@ -828,7 +828,7 @@
 
 @media screen and (max-width: 989px) {
   .search-results__band {
-    padding: 4.4rem 4.8rem 2.6rem;
+    padding-block: 4.4rem 2.6rem;
   }
 
   .search-results__title {
@@ -836,7 +836,7 @@
   }
 
   .search-results__section {
-    padding: 4rem 4.8rem 0;
+    padding-block: 4rem 0;
   }
 
   .search-results__section + .search-results__section {
@@ -862,14 +862,14 @@
 
   .search-results__empty {
     gap: 2.8rem;
-    padding: 5.6rem 4.8rem 7.2rem;
+    padding-block: 5.6rem 7.2rem;
   }
 }
 
 @media screen and (max-width: 749px) {
   .search-results__band {
     gap: 1.4rem;
-    padding: 3.2rem 2rem 2.2rem;
+    padding-block: 3.2rem 2.2rem;
   }
 
   /* Both controls have to share one row at 390px. */
@@ -891,7 +891,7 @@
   }
 
   .search-results__section {
-    padding: 2.8rem 2rem 0;
+    padding-block: 2.8rem 0;
   }
 
   .search-results__section + .search-results__section {
@@ -923,7 +923,7 @@
 
   .search-results__empty {
     gap: 2.4rem;
-    padding: 4rem 2rem 5.6rem;
+    padding-block: 4rem 5.6rem;
   }
 
   .search-results__empty-heading {

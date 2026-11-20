@@ -38,7 +38,6 @@ These files were included in the audit rather than silently omitted or represent
 | --- | --- |
 | Live cart requests | The cart lab never changes a cart and does not stand in for stock, totals, discount eligibility or checkout. Those stay with development store acceptance. |
 | `buy-buttons`, `gift-card-recipient-form`, pickup availability section/controller | Depend on native product form, Shopify endpoints and merchant configuration. Button/field states are represented, but purchase, gift-card delivery and pickup promises are not simulated as verified. |
-| `quick-order-list`, `quick-order-list-row`, `quick-order-product-row`, `quick-order-list`/`bulk-quick-order-list` sections, quick-add/volume-pricing controllers | Optional bulk commerce surfaces. Reuse quantity, price, field and status contracts; require real variant/quantity-rule fixtures and a dedicated commerce harness before claiming working bulk orders. |
 | `card-product`, `card-collection`, `article-card`, `pagination`, `facets` | Inherited Dawn alternatives used by configurable base sections. Custom Fencing Club equivalents are the review targets; do not create another competing component system. Native facet AJAX and show-more behavior are not covered by the local catalog adapter. |
 | `header-dropdown-menu`, `header-search` | Alternate header composition and the outer search shell. The mega/mobile menus and the shared search internals have specimens; sticky-header/search-shell integration still belongs to storefront acceptance. |
 | `product-variant-picker`, `size-chart-flyout`, `size-chart-directory`, `size-chart-directory-group` | Existing product/directory compositions around the represented option/chart/drawer primitives, with dedicated sizing tests. Do not duplicate their domain data or build a second chart implementation. |
@@ -47,7 +46,7 @@ These files were included in the audit rather than silently omitted or represent
 | `icon-accordion`, `icon-with-text`, `shop-contact-details`, `shop-phone`, `progress-bar` | Small content/presentation compositions. Keep them noninteractive unless they contain real links or commands; progress must reflect actual work rather than decorative perpetual motion. |
 | `collection-context-url`, `meta-tags`, `structured-data`, `theme-tokens` | Nonvisual helpers, metadata or shared environment. No artificial visible specimen is needed. Tokens are rendered by the lab itself. |
 | Deferred video, external video, product model/XR, app blocks, accelerated checkout | Platform/media integrations requiring real assets or SDKs. Image-gallery coverage is not a claim that these work offline. |
-| Image banner, hero, slideshow, collage, collection list, multicolumn/multirow, rich text, related/featured content, brand logos | Section compositions, not new primitive families. Existing cards, links, media and carousel specimens expose their reusable interaction contracts; page-specific editorial layout remains a separate review. |
+| Hero, related/featured content, brand logos | Section compositions, not new primitive families. Existing cards, links, media and carousel specimens expose their reusable interaction contracts; page-specific editorial layout remains a separate review. Dawn's unused layout sections (image banner, slideshow, collage, collection list, multicolumn, multirow, rich text) were removed; Fencing Club sections are designed from scratch. |
 | Newsletter/password/customer/account and checkout surfaces | Field/button patterns are represented. Real subscriptions, authentication and checkout require platform acceptance; Shopify customer accounts are not owned by this theme's Liquid component library. |
 
 ## Component Candidates
@@ -55,7 +54,7 @@ These files were included in the audit rather than silently omitted or represent
 - Shared fields, enhanced dropdowns, product/chart choice pills and product/collection swatches are now implemented and
   adopted by the touched consumers. See [Shared Controls](shopify-interaction-states.md#shared-controls) for ownership
   and APIs. Search retains its specialized composite field. Newsletter/account forms are not yet migrated.
-- One quantity primitive for PDP, cart and quick-order contexts. The circular hover treatment is shared; dimensions
+- One quantity primitive for PDP and cart contexts. The circular hover treatment is shared; dimensions
   and commerce ownership are not yet consolidated. Do not describe that earlier proposal as implemented.
 - A shared inline status/error wrapper, with polite status versus assertive error semantics and optional retry.
   Domain controllers still own pending state, retained input and errors.

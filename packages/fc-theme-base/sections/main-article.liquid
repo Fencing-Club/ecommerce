@@ -32,7 +32,7 @@
                   {% if article.image.width >= 3000 %}{{ article.image | image_url: width: 3000 }} 3000w,{% endif %}
                   {{ article.image | image_url }} {{ article.image.width }}w
                 "
-                sizes="(min-width: 1440px) 1248px, (min-width: 750px) calc(100vw - 8rem), calc(100vw - 4rem)"
+                sizes="(min-width: 1296px) 1248px, (min-width: 990px) calc(100vw - 4.8rem), calc(100vw - 3.2rem)"
                 src="{{ article.image | image_url: width: 1500 }}"
                 loading="eager"
                 fetchpriority="high"
@@ -95,7 +95,7 @@
     {%- endcase -%}
   {%- endfor -%}
 
-  <div class="article-template__back element-margin-top center{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}">
+  <div class="article-template__back page-width element-margin-top center{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}">
     <a href="{{ blog.url }}" class="article-template__link link animate-arrow">
       <span class="icon-wrap">
         <span class="svg-wrapper">
