@@ -2301,14 +2301,14 @@
           "type": "ref",
           "ref": "D8fOO",
           "x": 72,
-          "y": 3185
+          "y": 3217
         },
         {
           "id": "ZvjGv",
           "type": "ref",
           "ref": "D8fOO",
           "x": 72,
-          "y": 3249
+          "y": 3281
         },
         {
           "type": "frame",
@@ -9631,7 +9631,7 @@
           "gap": 8,
           "padding": [
             11,
-            12
+            16
           ],
           "justifyContent": "space_between",
           "alignItems": "center",
@@ -10081,7 +10081,9 @@
               "fill": "$background",
               "padding": [
                 10,
-                16
+                16,
+                10,
+                6
               ],
               "justifyContent": "space_between",
               "alignItems": "center",
@@ -10760,7 +10762,7 @@
                       "name": "Clothing",
                       "fill": "#101012",
                       "content": "Clothing",
-                      "fontFamily": "Archivo",
+                      "fontFamily": "$font-body",
                       "fontSize": 22,
                       "fontWeight": "500"
                     },
@@ -11094,7 +11096,7 @@
                       "name": "Masks",
                       "fill": "#101012",
                       "content": "Masks",
-                      "fontFamily": "Archivo",
+                      "fontFamily": "$font-body",
                       "fontSize": 22,
                       "fontWeight": "500"
                     },
@@ -11349,7 +11351,7 @@
                       "name": "Weapons",
                       "fill": "#101012",
                       "content": "Weapons",
-                      "fontFamily": "Archivo",
+                      "fontFamily": "$font-body",
                       "fontSize": 22,
                       "fontWeight": "500"
                     },
@@ -11419,7 +11421,7 @@
                       "name": "Bags",
                       "fill": "#101012",
                       "content": "Bags",
-                      "fontFamily": "Archivo",
+                      "fontFamily": "$font-body",
                       "fontSize": 22,
                       "fontWeight": "500"
                     }
@@ -11464,7 +11466,7 @@
                       "name": "Kids",
                       "fill": "#101012",
                       "content": "Kids",
-                      "fontFamily": "Archivo",
+                      "fontFamily": "$font-body",
                       "fontSize": 22,
                       "fontWeight": "500"
                     }
@@ -11912,7 +11914,7 @@
                           "name": "Clothing",
                           "fill": "#101012",
                           "content": "Clothing",
-                          "fontFamily": "Archivo",
+                          "fontFamily": "$font-body",
                           "fontSize": 22,
                           "fontWeight": "500"
                         },
@@ -12246,7 +12248,7 @@
                           "name": "Masks",
                           "fill": "#101012",
                           "content": "Masks",
-                          "fontFamily": "Archivo",
+                          "fontFamily": "$font-body",
                           "fontSize": 22,
                           "fontWeight": "500"
                         },
@@ -12501,7 +12503,7 @@
                           "name": "Weapons",
                           "fill": "#101012",
                           "content": "Weapons",
-                          "fontFamily": "Archivo",
+                          "fontFamily": "$font-body",
                           "fontSize": 22,
                           "fontWeight": "500"
                         },
@@ -12571,7 +12573,7 @@
                           "name": "Bags",
                           "fill": "#101012",
                           "content": "Bags",
-                          "fontFamily": "Archivo",
+                          "fontFamily": "$font-body",
                           "fontSize": 22,
                           "fontWeight": "500"
                         }
@@ -12616,7 +12618,7 @@
                           "name": "Kids",
                           "fill": "#101012",
                           "content": "Kids",
-                          "fontFamily": "Archivo",
+                          "fontFamily": "$font-body",
                           "fontSize": 22,
                           "fontWeight": "500"
                         }
@@ -20235,7 +20237,7 @@
           "ref": "s7t1vj",
           "name": "Component/Announcement — Sale",
           "x": 64,
-          "y": 1042,
+          "y": 1046,
           "fill": "#B91C1C",
           "descendants": {
             "ufbHL": {
@@ -20266,7 +20268,7 @@
           "ref": "s7t1vj",
           "name": "Component/Announcement — Event",
           "x": 64,
-          "y": 1191,
+          "y": 1195,
           "fill": "#1D4ED8",
           "descendants": {
             "ufbHL": {
@@ -20297,7 +20299,7 @@
           "ref": "s7t1vj",
           "name": "Component/Announcement — Vacation",
           "x": 64,
-          "y": 1340,
+          "y": 1344,
           "fill": "#B45309",
           "descendants": {
             "ufbHL": {
@@ -51340,6 +51342,7 @@
                   "x": 24,
                   "y": 334,
                   "name": "Arrow Left",
+                  "enabled": false,
                   "width": 52,
                   "height": 52,
                   "fill": "#00000059",
@@ -51370,6 +51373,7 @@
                   "x": 1364,
                   "y": 334,
                   "name": "Arrow Right",
+                  "enabled": false,
                   "width": 52,
                   "height": 52,
                   "fill": "#00000059",
@@ -51399,30 +51403,59 @@
                   "layoutPosition": "absolute",
                   "x": 0,
                   "y": 680,
-                  "name": "Dots",
+                  "name": "Controls",
                   "width": 1440,
                   "height": 12,
-                  "gap": 8,
+                  "gap": 16,
                   "justifyContent": "center",
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "rectangle",
-                      "cornerRadius": 4,
-                      "id": "Qd93B",
-                      "name": "Dot 1",
-                      "fill": "$on-dark",
-                      "width": 26,
-                      "height": 8
+                      "type": "icon",
+                      "id": "FNvyu",
+                      "name": "Previous",
+                      "width": 14,
+                      "height": 14,
+                      "icon": "chevron-left",
+                      "library": "lucide",
+                      "fill": "#FFFFFF66"
                     },
                     {
-                      "type": "rectangle",
-                      "cornerRadius": 4,
-                      "id": "w1RsCh",
-                      "name": "Dot 2",
-                      "fill": "#FFFFFF66",
-                      "width": 8,
-                      "height": 8
+                      "type": "frame",
+                      "id": "a0C7o",
+                      "name": "Dots",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "cornerRadius": 4,
+                          "id": "Qd93B",
+                          "name": "Dot 1",
+                          "fill": "$on-dark",
+                          "width": 26,
+                          "height": 8
+                        },
+                        {
+                          "type": "rectangle",
+                          "cornerRadius": 4,
+                          "id": "w1RsCh",
+                          "name": "Dot 2",
+                          "fill": "#FFFFFF66",
+                          "width": 8,
+                          "height": 8
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon",
+                      "id": "e0a3Q",
+                      "name": "Next",
+                      "width": 14,
+                      "height": 14,
+                      "icon": "chevron-right",
+                      "library": "lucide",
+                      "fill": "#FFFFFF66"
                     }
                   ]
                 }
@@ -52318,7 +52351,7 @@
               "name": "Title",
               "fill": "$foreground",
               "content": "Clothing",
-              "fontFamily": "Archivo",
+              "fontFamily": "$font-body",
               "fontSize": 46,
               "fontWeight": "700",
               "letterSpacing": -1
@@ -52563,7 +52596,7 @@
                       "name": "Title",
                       "fill": "$foreground",
                       "content": "Filters",
-                      "fontFamily": "Archivo",
+                      "fontFamily": "$font-body",
                       "fontSize": 17,
                       "fontWeight": "600"
                     },
@@ -54988,7 +55021,7 @@
               "name": "Title",
               "fill": "$foreground",
               "content": "Clothing",
-              "fontFamily": "Archivo",
+              "fontFamily": "$font-body",
               "fontSize": 46,
               "fontWeight": "700",
               "letterSpacing": -1
@@ -55233,7 +55266,7 @@
                       "name": "Title",
                       "fill": "$foreground",
                       "content": "Filters",
-                      "fontFamily": "Archivo",
+                      "fontFamily": "$font-body",
                       "fontSize": 17,
                       "fontWeight": "600"
                     },
@@ -57524,7 +57557,7 @@
                               "name": "Label",
                               "fill": "$foreground",
                               "content": "Description",
-                              "fontFamily": "Archivo",
+                              "fontFamily": "$font-body",
                               "fontSize": 16,
                               "fontWeight": "600"
                             }
@@ -57552,7 +57585,7 @@
                               "name": "Label",
                               "fill": "$muted-foreground",
                               "content": "Specifications",
-                              "fontFamily": "Archivo",
+                              "fontFamily": "$font-body",
                               "fontSize": 16,
                               "fontWeight": "500"
                             }
@@ -57580,7 +57613,7 @@
                               "name": "Label",
                               "fill": "$muted-foreground",
                               "content": "Care & washing",
-                              "fontFamily": "Archivo",
+                              "fontFamily": "$font-body",
                               "fontSize": 16,
                               "fontWeight": "500"
                             }
@@ -57608,7 +57641,7 @@
                               "name": "Label",
                               "fill": "$muted-foreground",
                               "content": "Warranty",
-                              "fontFamily": "Archivo",
+                              "fontFamily": "$font-body",
                               "fontSize": 16,
                               "fontWeight": "500"
                             }
@@ -57636,7 +57669,7 @@
                               "name": "Label",
                               "fill": "$muted-foreground",
                               "content": "Shipping & returns",
-                              "fontFamily": "Archivo",
+                              "fontFamily": "$font-body",
                               "fontSize": 16,
                               "fontWeight": "500"
                             }
@@ -62214,7 +62247,7 @@
               "width": 940,
               "content": "How to choose your first foil",
               "lineHeight": 1.05,
-              "fontFamily": "Archivo",
+              "fontFamily": "$font-body",
               "fontSize": 52,
               "fontWeight": "700",
               "letterSpacing": -1.5
@@ -62334,7 +62367,7 @@
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
                   "content": "Grip: French vs pistol",
-                  "fontFamily": "Archivo",
+                  "fontFamily": "$font-body",
                   "fontSize": 26,
                   "fontWeight": "700"
                 },
@@ -62392,7 +62425,7 @@
                       "width": "fill_container",
                       "content": "Your first foil should disappear in your hand — you should think about the touch, not the tool.",
                       "lineHeight": 1.4,
-                      "fontFamily": "Archivo",
+                      "fontFamily": "$font-body",
                       "fontSize": 24,
                       "fontWeight": "500",
                       "fontStyle": "italic"
@@ -62422,7 +62455,7 @@
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
                   "content": "Weight & balance",
-                  "fontFamily": "Archivo",
+                  "fontFamily": "$font-body",
                   "fontSize": 26,
                   "fontWeight": "700"
                 },
@@ -63193,7 +63226,7 @@
               "name": "Related Heading",
               "fill": "$foreground",
               "content": "Keep reading",
-              "fontFamily": "Archivo",
+              "fontFamily": "$font-body",
               "fontSize": 28,
               "fontWeight": "700"
             },
@@ -63247,7 +63280,7 @@
                       "width": "fill_container",
                       "content": "Footwork drills for faster lunges",
                       "lineHeight": 1.3,
-                      "fontFamily": "Archivo",
+                      "fontFamily": "$font-body",
                       "fontSize": 18,
                       "fontWeight": "600"
                     },
@@ -63306,7 +63339,7 @@
                       "width": "fill_container",
                       "content": "Épée vs foil: which to start with",
                       "lineHeight": 1.3,
-                      "fontFamily": "Archivo",
+                      "fontFamily": "$font-body",
                       "fontSize": 18,
                       "fontWeight": "600"
                     },
@@ -63365,7 +63398,7 @@
                       "width": "fill_container",
                       "content": "Caring for your FIE mask",
                       "lineHeight": 1.3,
-                      "fontFamily": "Archivo",
+                      "fontFamily": "$font-body",
                       "fontSize": 18,
                       "fontWeight": "600"
                     },
@@ -64628,7 +64661,7 @@
           "type": "ref",
           "ref": "IPBQu",
           "x": 0,
-          "y": 1948,
+          "y": 1964,
           "descendants": {
             "rIevG": {
               "content": "Join the list for early drops, limited restocks, and fitting guides. No noise, just the essentials."
@@ -74774,7 +74807,7 @@
                               "name": "Weight Value",
                               "fill": "$foreground",
                               "content": "534 g",
-                              "fontFamily": "Archivo",
+                              "fontFamily": "$font-body",
                               "fontSize": 40,
                               "fontWeight": "800"
                             }
@@ -74804,7 +74837,7 @@
                           "name": "Total Label",
                           "fill": "$foreground",
                           "content": "Total",
-                          "fontFamily": "Archivo",
+                          "fontFamily": "$font-body",
                           "fontSize": 18,
                           "fontWeight": "700"
                         },
@@ -74814,7 +74847,7 @@
                           "name": "Total Value",
                           "fill": "$foreground",
                           "content": "$109.00",
-                          "fontFamily": "Archivo",
+                          "fontFamily": "$font-body",
                           "fontSize": 18,
                           "fontWeight": "700"
                         }
@@ -191131,7 +191164,7 @@
                       "fill": "$muted-foreground",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
-                      "content": "Primary is the single main action per area. Sizes: h-9, h-11, h-13. Arrows and chevrons go after the label; action icons such as plus, search or the loading spinner go before it.",
+                      "content": "Primary is the single main action per area. Sizes: h-9 (default, 36), h-11 and h-13. Arrows and chevrons go after the label; action icons such as plus, search or the loading spinner go before it.",
                       "fontFamily": "$font-body",
                       "fontSize": 20,
                       "fontWeight": "$font-normal"
@@ -191164,7 +191197,7 @@
                               "id": "RUCF3",
                               "name": "UI/Button/Primary",
                               "reusable": true,
-                              "height": 44,
+                              "height": 36,
                               "fill": "$primary",
                               "cornerRadius": "$radius-md",
                               "gap": "$space-2",
@@ -191464,7 +191497,7 @@
                               "id": "aPBZg",
                               "name": "UI/Button/Secondary",
                               "reusable": true,
-                              "height": 44,
+                              "height": 36,
                               "fill": "$secondary",
                               "cornerRadius": "$radius-md",
                               "gap": "$space-2",
@@ -191764,7 +191797,7 @@
                               "id": "x9rRK",
                               "name": "UI/Button/Outline",
                               "reusable": true,
-                              "height": 44,
+                              "height": 36,
                               "fill": "$background",
                               "cornerRadius": "$radius-md",
                               "stroke": "$input",
@@ -192067,7 +192100,7 @@
                               "id": "FKvM4",
                               "name": "UI/Button/Ghost",
                               "reusable": true,
-                              "height": 44,
+                              "height": 36,
                               "fill": "#FFFFFF00",
                               "cornerRadius": "$radius-md",
                               "gap": "$space-2",
@@ -192368,8 +192401,8 @@
                               "id": "HC4UL",
                               "name": "UI/Button/Icon",
                               "reusable": true,
-                              "width": 44,
-                              "height": 44,
+                              "width": 36,
+                              "height": 36,
                               "fill": "#FFFFFF00",
                               "cornerRadius": "$radius-md",
                               "justifyContent": "center",
@@ -201353,7 +201386,7 @@
                       "fill": "$muted-foreground",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
-                      "content": "Variant option such as size or blade length. Sold out stays selectable for back-in-stock but is struck through.",
+                      "content": "Variant option such as size or blade length. Sold out is struck through at half opacity and can't be selected.",
                       "fontFamily": "$font-body",
                       "fontSize": 20,
                       "fontWeight": "$font-normal"
@@ -201937,7 +201970,7 @@
                       "id": "XVulC",
                       "name": "Snippet",
                       "fill": "$muted-foreground",
-                      "content": "ui-quantity (new)",
+                      "content": "ui-quantity (new), replaces quantity-input and the cart stepper",
                       "fontFamily": "$font-body",
                       "fontSize": 22,
                       "fontWeight": "$font-normal"
@@ -201949,7 +201982,7 @@
                       "fill": "$muted-foreground",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
-                      "content": "Minus, value, plus. Minus disables at 1; plus disables at stock. Updating shows a spinner in place of the value.",
+                      "content": "One stepper everywhere. Default 44 on the product page; compact 40 on cart lines. Minus disables at 1; plus disables at stock. Updating shows a spinner in place of the value.",
                       "fontFamily": "$font-body",
                       "fontSize": 20,
                       "fontWeight": "$font-normal"
@@ -201984,7 +202017,7 @@
                               "reusable": true,
                               "height": 44,
                               "fill": "$background",
-                              "cornerRadius": "$radius-full",
+                              "cornerRadius": "$radius-md",
                               "stroke": "$input",
                               "strokeWidth": "$border-width",
                               "alignItems": "center",
@@ -201995,7 +202028,7 @@
                                   "name": "Minus",
                                   "width": 44,
                                   "height": 44,
-                                  "cornerRadius": "$radius-full",
+                                  "cornerRadius": "$radius-md",
                                   "justifyContent": "center",
                                   "alignItems": "center",
                                   "children": [
@@ -202051,7 +202084,7 @@
                                   "name": "Plus",
                                   "width": 44,
                                   "height": 44,
-                                  "cornerRadius": "$radius-full",
+                                  "cornerRadius": "$radius-md",
                                   "justifyContent": "center",
                                   "alignItems": "center",
                                   "children": [
@@ -202263,6 +202296,45 @@
                               "name": "Caption",
                               "fill": "$muted-foreground",
                               "content": "Disabled",
+                              "fontFamily": "$font-body",
+                              "fontSize": 18,
+                              "fontWeight": "$font-normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "gQRZd",
+                          "name": "State / Compact 40",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "id": "jiaRH",
+                              "type": "ref",
+                              "ref": "lqcQ7",
+                              "name": "Stepper compact",
+                              "height": 40,
+                              "descendants": {
+                                "DrZYl": {
+                                  "width": 40,
+                                  "height": 40
+                                },
+                                "rMDTB": {
+                                  "height": 40
+                                },
+                                "n7opV": {
+                                  "width": 40,
+                                  "height": 40
+                                }
+                              }
+                            },
+                            {
+                              "type": "text",
+                              "id": "ieWsi",
+                              "name": "Caption",
+                              "fill": "$muted-foreground",
+                              "content": "Compact 40, cart lines",
                               "fontFamily": "$font-body",
                               "fontSize": 18,
                               "fontWeight": "$font-normal"
@@ -207185,7 +207257,6 @@
                               "name": "UI/Contact intent card",
                               "reusable": true,
                               "width": 300,
-                              "height": 156,
                               "cornerRadius": "$radius-xl",
                               "stroke": "$border",
                               "strokeWidth": "$border-width",
@@ -207228,9 +207299,12 @@
                                 {
                                   "type": "frame",
                                   "id": "JM9ys",
+                                  "x": 26,
+                                  "y": 114,
                                   "name": "Spacer",
-                                  "width": "fill_container",
-                                  "height": "fill_container"
+                                  "enabled": false,
+                                  "width": "fill_container(248)",
+                                  "height": 0
                                 },
                                 {
                                   "type": "frame",
@@ -207356,6 +207430,7 @@
                                   "type": "ref",
                                   "ref": "xBnaf",
                                   "name": "Orders & shipping",
+                                  "height": 172,
                                   "descendants": {
                                     "bvVUI": {
                                       "icon": "package"
@@ -207365,6 +207440,10 @@
                                     },
                                     "SrJ7o": {
                                       "content": "Track, change or ask about an order."
+                                    },
+                                    "JM9ys": {
+                                      "enabled": true,
+                                      "height": "fill_container"
                                     }
                                   }
                                 },
@@ -207373,6 +207452,7 @@
                                   "type": "ref",
                                   "ref": "xBnaf",
                                   "name": "Sizing & fit",
+                                  "height": 172,
                                   "descendants": {
                                     "bvVUI": {
                                       "icon": "ruler"
@@ -207382,6 +207462,10 @@
                                     },
                                     "SrJ7o": {
                                       "content": "Size charts and fit advice for every weapon."
+                                    },
+                                    "JM9ys": {
+                                      "enabled": true,
+                                      "height": "fill_container"
                                     }
                                   }
                                 },
@@ -207390,6 +207474,7 @@
                                   "type": "ref",
                                   "ref": "xBnaf",
                                   "name": "Returns & exchanges",
+                                  "height": 172,
                                   "descendants": {
                                     "bvVUI": {
                                       "icon": "rotate-ccw"
@@ -207399,6 +207484,10 @@
                                     },
                                     "SrJ7o": {
                                       "content": "Free 30-day returns and swaps."
+                                    },
+                                    "JM9ys": {
+                                      "enabled": true,
+                                      "height": "fill_container"
                                     }
                                   }
                                 }
@@ -207415,6 +207504,7 @@
                                   "type": "ref",
                                   "ref": "xBnaf",
                                   "name": "Club & school supply",
+                                  "height": 156,
                                   "descendants": {
                                     "bvVUI": {
                                       "icon": "users"
@@ -207424,6 +207514,10 @@
                                     },
                                     "SrJ7o": {
                                       "content": "Bulk kit, loaners and fittings."
+                                    },
+                                    "JM9ys": {
+                                      "enabled": true,
+                                      "height": "fill_container"
                                     }
                                   }
                                 },
@@ -207432,6 +207526,7 @@
                                   "type": "ref",
                                   "ref": "xBnaf",
                                   "name": "Product & press",
+                                  "height": 156,
                                   "descendants": {
                                     "bvVUI": {
                                       "icon": "mic"
@@ -207441,6 +207536,10 @@
                                     },
                                     "SrJ7o": {
                                       "content": "Wholesale, media and partnerships."
+                                    },
+                                    "JM9ys": {
+                                      "enabled": true,
+                                      "height": "fill_container"
                                     }
                                   }
                                 },
@@ -207449,6 +207548,7 @@
                                   "type": "ref",
                                   "ref": "xBnaf",
                                   "name": "Everything else",
+                                  "height": 156,
                                   "descendants": {
                                     "bvVUI": {
                                       "icon": "message-circle"
@@ -207458,6 +207558,10 @@
                                     },
                                     "SrJ7o": {
                                       "content": "General questions. Just ask."
+                                    },
+                                    "JM9ys": {
+                                      "enabled": true,
+                                      "height": "fill_container"
                                     }
                                   }
                                 }
@@ -208473,6 +208577,404 @@
             },
             {
               "type": "frame",
+              "id": "Tz4zR",
+              "name": "Row / Cookie banner",
+              "width": "fill_container",
+              "stroke": "$border",
+              "strokeWidth": {
+                "bottom": 1
+              },
+              "gap": 64,
+              "padding": [
+                0,
+                0,
+                64,
+                0
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ez8Oi",
+                  "name": "Label",
+                  "width": 520,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "x6UeS6",
+                      "name": "Name",
+                      "fill": "$foreground",
+                      "content": "Cookie banner",
+                      "fontFamily": "$font-display",
+                      "fontSize": 44,
+                      "fontWeight": "$font-semibold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "jbwzk",
+                      "name": "Snippet",
+                      "fill": "$muted-foreground",
+                      "content": "cookie-consent",
+                      "fontFamily": "$font-body",
+                      "fontSize": 22,
+                      "fontWeight": "$font-normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "xchy2",
+                      "name": "Note",
+                      "fill": "$muted-foreground",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Fixed to the bottom of the screen until the shopper decides. Decline and Accept carry equal weight; Manage preferences opens the cookie preferences dialog. Switched off in the theme today.",
+                      "fontFamily": "$font-body",
+                      "fontSize": 20,
+                      "fontWeight": "$font-normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "v0t2xR",
+                  "name": "Component and states",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 48,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "rq9Q3",
+                      "name": "Variant / Cookie banner",
+                      "layout": "vertical",
+                      "gap": 40,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "WcJHw",
+                          "name": "State / Desktop",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "POICJ",
+                              "name": "UI/Cookie banner",
+                              "reusable": true,
+                              "width": 1248,
+                              "fill": "$background",
+                              "cornerRadius": "$radius-md",
+                              "stroke": "$border",
+                              "strokeWidth": "$border-width",
+                              "effect": {
+                                "type": "shadow",
+                                "shadowType": "outer",
+                                "color": "$shadow-color",
+                                "offset": {
+                                  "x": 0,
+                                  "y": 18
+                                },
+                                "blur": 44
+                              },
+                              "gap": 32,
+                              "padding": [
+                                22,
+                                24
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "HP8Pl",
+                                  "name": "Message",
+                                  "width": "fill_container",
+                                  "gap": 20,
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "jkIc2",
+                                      "name": "Icon tile",
+                                      "width": 44,
+                                      "height": 44,
+                                      "fill": "$muted",
+                                      "cornerRadius": 4,
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon",
+                                          "id": "ZoDzc",
+                                          "name": "Icon",
+                                          "width": 22,
+                                          "height": 22,
+                                          "icon": "shield-check",
+                                          "library": "lucide",
+                                          "fill": "$foreground"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "W4NLl",
+                                      "name": "Copy",
+                                      "width": "fill_container",
+                                      "layout": "vertical",
+                                      "gap": 6,
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "g6VUx",
+                                          "name": "Heading",
+                                          "fill": "$foreground",
+                                          "content": "You choose how we use cookies",
+                                          "lineHeight": 1.3,
+                                          "fontFamily": "$font-display",
+                                          "fontSize": "$text-2xl",
+                                          "fontWeight": "$font-semibold"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "B9vhvU",
+                                          "name": "Body",
+                                          "fill": "$muted-foreground",
+                                          "textGrowth": "fixed-width",
+                                          "width": 620,
+                                          "content": "Some cookies keep your cart and checkout working. Others let us and our partners, including Shopify, show you ads and measure how the site performs. We won't use those unless you accept.",
+                                          "lineHeight": 1.55,
+                                          "fontFamily": "$font-body",
+                                          "fontSize": "$text-sm",
+                                          "fontWeight": "$font-normal"
+                                        },
+                                        {
+                                          "id": "Pc5JX",
+                                          "type": "ref",
+                                          "ref": "d2W90",
+                                          "name": "Privacy policy",
+                                          "descendants": {
+                                            "jMTJR": {
+                                              "content": "Privacy policy",
+                                              "fontSize": 13
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "aCzvK",
+                                  "name": "Actions",
+                                  "width": 260,
+                                  "layout": "vertical",
+                                  "gap": 10,
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "NLSa7",
+                                      "x": 0,
+                                      "y": 0,
+                                      "name": "Error",
+                                      "enabled": false,
+                                      "fill": "$destructive",
+                                      "content": "We couldn't save your choice. Try again.",
+                                      "fontFamily": "$font-body",
+                                      "fontSize": 13,
+                                      "fontWeight": "$font-normal"
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "bTZQX",
+                                      "name": "Decisions",
+                                      "width": "fill_container",
+                                      "gap": 10,
+                                      "children": [
+                                        {
+                                          "id": "kYzOd",
+                                          "type": "ref",
+                                          "ref": "x9rRK",
+                                          "name": "Decline",
+                                          "width": "fill_container",
+                                          "descendants": {
+                                            "i6KLU": {
+                                              "content": "Decline"
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "id": "wjU5p",
+                                          "type": "ref",
+                                          "ref": "RUCF3",
+                                          "name": "Accept",
+                                          "width": "fill_container",
+                                          "descendants": {
+                                            "dugpM": {
+                                              "content": "Accept"
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "id": "nPMpg",
+                                      "type": "ref",
+                                      "ref": "FKvM4",
+                                      "name": "Manage preferences",
+                                      "height": 36,
+                                      "padding": 0,
+                                      "descendants": {
+                                        "LHKPh": {
+                                          "enabled": true,
+                                          "icon": "sliders-horizontal",
+                                          "width": 16,
+                                          "height": 16
+                                        },
+                                        "Aq17q": {
+                                          "content": "Manage preferences"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "cYkDb",
+                              "name": "Caption",
+                              "fill": "$muted-foreground",
+                              "content": "Cookie banner / desktop",
+                              "fontFamily": "$font-body",
+                              "fontSize": 18,
+                              "fontWeight": "$font-normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "p6RTz",
+                          "name": "More states",
+                          "gap": 40,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "bYQ4B",
+                              "name": "State / Mobile",
+                              "layout": "vertical",
+                              "gap": 12,
+                              "children": [
+                                {
+                                  "id": "n13AM",
+                                  "type": "ref",
+                                  "ref": "POICJ",
+                                  "name": "Banner mobile",
+                                  "width": 358,
+                                  "layout": "vertical",
+                                  "gap": 14,
+                                  "padding": 18,
+                                  "alignItems": "start",
+                                  "descendants": {
+                                    "HP8Pl": {
+                                      "gap": 12
+                                    },
+                                    "jkIc2": {
+                                      "width": 36,
+                                      "height": 36
+                                    },
+                                    "ZoDzc": {
+                                      "width": 19,
+                                      "height": 19
+                                    },
+                                    "g6VUx": {
+                                      "fontSize": 19
+                                    },
+                                    "B9vhvU": {
+                                      "fontSize": 13,
+                                      "width": "fill_container"
+                                    },
+                                    "aCzvK": {
+                                      "width": "fill_container"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "fIPgz",
+                                  "name": "Caption",
+                                  "fill": "$muted-foreground",
+                                  "content": "Phone, 16 from the edges",
+                                  "fontFamily": "$font-body",
+                                  "fontSize": 18,
+                                  "fontWeight": "$font-normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "v8LUGT",
+                              "name": "State / Save failed",
+                              "layout": "vertical",
+                              "gap": 12,
+                              "children": [
+                                {
+                                  "id": "QZxwp",
+                                  "type": "ref",
+                                  "ref": "POICJ",
+                                  "name": "Banner error",
+                                  "width": 358,
+                                  "layout": "vertical",
+                                  "gap": 14,
+                                  "padding": 18,
+                                  "alignItems": "start",
+                                  "descendants": {
+                                    "HP8Pl": {
+                                      "gap": 12
+                                    },
+                                    "jkIc2": {
+                                      "width": 36,
+                                      "height": 36
+                                    },
+                                    "ZoDzc": {
+                                      "width": 19,
+                                      "height": 19
+                                    },
+                                    "g6VUx": {
+                                      "fontSize": 19
+                                    },
+                                    "B9vhvU": {
+                                      "fontSize": 13,
+                                      "width": "fill_container"
+                                    },
+                                    "aCzvK": {
+                                      "width": "fill_container"
+                                    },
+                                    "NLSa7": {
+                                      "enabled": true
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "rpYmr",
+                                  "name": "Caption",
+                                  "fill": "$muted-foreground",
+                                  "content": "Save failed",
+                                  "fontFamily": "$font-body",
+                                  "fontSize": 18,
+                                  "fontWeight": "$font-normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
               "id": "O1RSXr",
               "name": "Row / Dialog",
               "width": "fill_container",
@@ -209265,80 +209767,27 @@
                                       "alignItems": "center",
                                       "children": [
                                         {
-                                          "type": "frame",
-                                          "id": "GjM0n",
+                                          "id": "ovzDV",
+                                          "type": "ref",
+                                          "ref": "lqcQ7",
                                           "name": "Stepper",
                                           "height": 40,
-                                          "fill": "$background",
-                                          "cornerRadius": "$radius-md",
-                                          "stroke": "$input",
-                                          "strokeWidth": "$border-width",
-                                          "alignItems": "center",
-                                          "children": [
-                                            {
-                                              "type": "frame",
-                                              "id": "dZ7mT",
-                                              "name": "Decrease",
+                                          "descendants": {
+                                            "DrZYl": {
                                               "width": 40,
-                                              "height": 38,
-                                              "justifyContent": "center",
-                                              "alignItems": "center",
-                                              "children": [
-                                                {
-                                                  "type": "icon",
-                                                  "id": "waPg7",
-                                                  "name": "Icon",
-                                                  "width": 16,
-                                                  "height": 16,
-                                                  "icon": "minus",
-                                                  "library": "lucide",
-                                                  "fill": "$foreground"
-                                                }
-                                              ]
+                                              "height": 40
                                             },
-                                            {
-                                              "type": "frame",
-                                              "id": "iODLI",
-                                              "name": "Value",
-                                              "width": 30,
-                                              "height": 38,
-                                              "justifyContent": "center",
-                                              "alignItems": "center",
-                                              "children": [
-                                                {
-                                                  "type": "text",
-                                                  "id": "Zq93R",
-                                                  "name": "Quantity",
-                                                  "fill": "$foreground",
-                                                  "content": "1",
-                                                  "fontFamily": "$font-body",
-                                                  "fontSize": "$text-sm",
-                                                  "fontWeight": "$font-medium"
-                                                }
-                                              ]
+                                            "rMDTB": {
+                                              "height": 40
                                             },
-                                            {
-                                              "type": "frame",
-                                              "id": "zZTuf",
-                                              "name": "Increase",
+                                            "UaIXa": {
+                                              "content": "1"
+                                            },
+                                            "n7opV": {
                                               "width": 40,
-                                              "height": 38,
-                                              "justifyContent": "center",
-                                              "alignItems": "center",
-                                              "children": [
-                                                {
-                                                  "type": "icon",
-                                                  "id": "E8r3IX",
-                                                  "name": "Icon",
-                                                  "width": 16,
-                                                  "height": 16,
-                                                  "icon": "plus",
-                                                  "library": "lucide",
-                                                  "fill": "$foreground"
-                                                }
-                                              ]
+                                              "height": 40
                                             }
-                                          ]
+                                          }
                                         },
                                         {
                                           "type": "frame",
@@ -209605,6 +210054,9 @@
                                 },
                                 "j2q3h": {
                                   "enabled": true
+                                },
+                                "SGi4U": {
+                                  "enabled": false
                                 }
                               }
                             },
@@ -209767,6 +210219,19 @@
                                       "fontFamily": "$font-body",
                                       "fontSize": "$text-xl",
                                       "fontWeight": "$font-medium"
+                                    },
+                                    {
+                                      "type": "icon",
+                                      "id": "BPSVo",
+                                      "x": 0,
+                                      "y": 0,
+                                      "name": "Spinner",
+                                      "enabled": false,
+                                      "width": 18,
+                                      "height": 18,
+                                      "icon": "loader-circle",
+                                      "library": "lucide",
+                                      "fill": "$muted-foreground"
                                     },
                                     {
                                       "type": "icon",
@@ -210757,24 +211222,1118 @@
                         },
                         {
                           "type": "frame",
-                          "id": "G9Xsr",
+                          "id": "syv7p",
+                          "name": "State / Idle, no recent searches",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "id": "nbld6",
+                              "type": "ref",
+                              "ref": "S3pTQ6",
+                              "name": "Search idle",
+                              "descendants": {
+                                "r74Tac": {
+                                  "content": "Search products, guides and help",
+                                  "fill": "$muted-foreground"
+                                },
+                                "Q9tE2": {
+                                  "type": "frame",
+                                  "id": "WTjzr",
+                                  "name": "Content",
+                                  "width": "fill_container",
+                                  "gap": 44,
+                                  "padding": [
+                                    26,
+                                    96
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "N3FTL6",
+                                      "name": "Main",
+                                      "width": "fill_container",
+                                      "layout": "vertical",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "ovhrx",
+                                          "name": "Group Popular categories",
+                                          "width": "fill_container",
+                                          "layout": "vertical",
+                                          "gap": 2,
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "HgOw3",
+                                              "name": "Heading row",
+                                              "width": "fill_container",
+                                              "padding": [
+                                                0,
+                                                0,
+                                                6,
+                                                0
+                                              ],
+                                              "justifyContent": "space_between",
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "wgykO",
+                                                  "name": "Heading",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "POPULAR CATEGORIES",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 11,
+                                                  "fontWeight": "$font-semibold",
+                                                  "letterSpacing": 1.4
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "QyHGp",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "f3aEC",
+                                                  "name": "Icon",
+                                                  "width": 15,
+                                                  "height": 15,
+                                                  "icon": "layout-grid",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "F3wjCH",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "Weapons",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "vF1OD",
+                                                  "name": "Count",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "214 products",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "$font-normal"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "bnvPt",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "MBnR2",
+                                                  "name": "Icon",
+                                                  "width": 15,
+                                                  "height": 15,
+                                                  "icon": "layout-grid",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "l13QF",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "Masks",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "QxyDu",
+                                                  "name": "Count",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "38 products",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "$font-normal"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "fOJ9m",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "CM2Tr",
+                                                  "name": "Icon",
+                                                  "width": 15,
+                                                  "height": 15,
+                                                  "icon": "layout-grid",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "Ye9aW",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "Clothing",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "Atax2",
+                                                  "name": "Count",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "126 products",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "$font-normal"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "xNnkI",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "t1Ic8E",
+                                                  "name": "Icon",
+                                                  "width": 15,
+                                                  "height": 15,
+                                                  "icon": "layout-grid",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "Vj2b3",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "Starter kits",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "LolvM",
+                                                  "name": "Count",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "12 products",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "$font-normal"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "ruhJC",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "C7JLG",
+                                                  "name": "Icon",
+                                                  "width": 15,
+                                                  "height": 15,
+                                                  "icon": "layout-grid",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "t7iLv",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "Bags",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "ndq1G",
+                                                  "name": "Count",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "27 products",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "$font-normal"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "G7T0xY": {
+                                  "enabled": false
+                                }
+                              }
+                            },
+                            {
+                              "type": "text",
+                              "id": "JHoa5",
+                              "name": "Caption",
+                              "fill": "$muted-foreground",
+                              "content": "Idle, no recent searches",
+                              "fontFamily": "$font-body",
+                              "fontSize": 18,
+                              "fontWeight": "$font-normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "BdSsV",
+                          "name": "State / Idle, recent searches",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "id": "BJZcN",
+                              "type": "ref",
+                              "ref": "S3pTQ6",
+                              "name": "Search idle recent",
+                              "descendants": {
+                                "r74Tac": {
+                                  "content": "Search products, guides and help",
+                                  "fill": "$muted-foreground"
+                                },
+                                "Q9tE2": {
+                                  "type": "frame",
+                                  "id": "hLN41",
+                                  "name": "Content",
+                                  "width": "fill_container",
+                                  "gap": 44,
+                                  "padding": [
+                                    26,
+                                    96
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "KhL79",
+                                      "name": "Rail",
+                                      "width": 264,
+                                      "layout": "vertical",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "G2qCy",
+                                          "name": "Group Recent searches",
+                                          "width": "fill_container",
+                                          "layout": "vertical",
+                                          "gap": 2,
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "g19Dbv",
+                                              "name": "Heading row",
+                                              "width": "fill_container",
+                                              "padding": [
+                                                0,
+                                                0,
+                                                6,
+                                                0
+                                              ],
+                                              "justifyContent": "space_between",
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "lbJfG",
+                                                  "name": "Heading",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "RECENT SEARCHES",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 11,
+                                                  "fontWeight": "$font-semibold",
+                                                  "letterSpacing": 1.4
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "w89vD",
+                                                  "name": "Action",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "Clear",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 11,
+                                                  "fontWeight": "$font-medium"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "ZRnvX",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "tBjEI",
+                                                  "name": "Icon",
+                                                  "width": 16,
+                                                  "height": 16,
+                                                  "icon": "history",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "oyvcZ",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "epee blade",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "n4w6F",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "YTb01",
+                                                  "name": "Icon",
+                                                  "width": 16,
+                                                  "height": 16,
+                                                  "icon": "history",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "XhVlc",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "chest protector",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "ZsxTj",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "nMVdU",
+                                                  "name": "Icon",
+                                                  "width": 16,
+                                                  "height": 16,
+                                                  "icon": "history",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "E5xSqq",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "kids jacket",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "okgyy",
+                                      "name": "Main",
+                                      "width": "fill_container",
+                                      "stroke": "$border",
+                                      "strokeWidth": {
+                                        "left": 1
+                                      },
+                                      "layout": "vertical",
+                                      "padding": [
+                                        0,
+                                        0,
+                                        0,
+                                        44
+                                      ],
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "J7jifI",
+                                          "name": "Group Popular categories",
+                                          "width": "fill_container",
+                                          "layout": "vertical",
+                                          "gap": 2,
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "g1cfA",
+                                              "name": "Heading row",
+                                              "width": "fill_container",
+                                              "padding": [
+                                                0,
+                                                0,
+                                                6,
+                                                0
+                                              ],
+                                              "justifyContent": "space_between",
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "jeC5s",
+                                                  "name": "Heading",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "POPULAR CATEGORIES",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 11,
+                                                  "fontWeight": "$font-semibold",
+                                                  "letterSpacing": 1.4
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "xMLxy",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "Gls3Y",
+                                                  "name": "Icon",
+                                                  "width": 15,
+                                                  "height": 15,
+                                                  "icon": "layout-grid",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "Qb2p1",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "Weapons",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "qtSw2",
+                                                  "name": "Count",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "214 products",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "$font-normal"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "pYQKd",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "mOARh",
+                                                  "name": "Icon",
+                                                  "width": 15,
+                                                  "height": 15,
+                                                  "icon": "layout-grid",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "Pxsvv",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "Masks",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "NoZKP",
+                                                  "name": "Count",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "38 products",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "$font-normal"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "ooLap",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "FXoBA",
+                                                  "name": "Icon",
+                                                  "width": 15,
+                                                  "height": 15,
+                                                  "icon": "layout-grid",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "bk5oh",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "Clothing",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "kvWJZ",
+                                                  "name": "Count",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "126 products",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "$font-normal"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "zNvWW",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "w16eb",
+                                                  "name": "Icon",
+                                                  "width": 15,
+                                                  "height": 15,
+                                                  "icon": "layout-grid",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "O7RdkX",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "Starter kits",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "pjtSz",
+                                                  "name": "Count",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "12 products",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "$font-normal"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "IRTPH",
+                                              "name": "Row",
+                                              "width": "fill_container",
+                                              "cornerRadius": "$radius-md",
+                                              "gap": 10,
+                                              "padding": [
+                                                7,
+                                                10
+                                              ],
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "JGBgs",
+                                                  "name": "Icon",
+                                                  "width": 15,
+                                                  "height": 15,
+                                                  "icon": "layout-grid",
+                                                  "library": "lucide",
+                                                  "fill": "$muted-foreground"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "lagLF",
+                                                  "name": "Title",
+                                                  "fill": "$foreground",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": "fill_container",
+                                                  "content": "Bags",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": "$text-sm",
+                                                  "fontWeight": "$font-medium"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "PTSFO",
+                                                  "name": "Count",
+                                                  "fill": "$muted-foreground",
+                                                  "content": "27 products",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "$font-normal"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "G7T0xY": {
+                                  "enabled": false
+                                }
+                              }
+                            },
+                            {
+                              "type": "text",
+                              "id": "PzePL",
+                              "name": "Caption",
+                              "fill": "$muted-foreground",
+                              "content": "Idle, recent searches",
+                              "fontFamily": "$font-body",
+                              "fontSize": 18,
+                              "fontWeight": "$font-normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "lgtnt",
+                          "name": "State / Loading",
+                          "layout": "vertical",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "id": "qK1m6",
+                              "type": "ref",
+                              "ref": "S3pTQ6",
+                              "name": "Search loading",
+                              "descendants": {
+                                "r74Tac": {
+                                  "content": "epee",
+                                  "fill": "$foreground"
+                                },
+                                "BPSVo": {
+                                  "enabled": true
+                                },
+                                "Q9tE2": {
+                                  "type": "frame",
+                                  "id": "k0ial0",
+                                  "name": "Content",
+                                  "width": "fill_container",
+                                  "gap": 44,
+                                  "padding": [
+                                    26,
+                                    96
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "D04wo",
+                                      "name": "Rail",
+                                      "width": 264,
+                                      "layout": "vertical",
+                                      "gap": 14,
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "b4a061",
+                                          "name": "Bar",
+                                          "width": 90,
+                                          "height": 11,
+                                          "fill": "$muted",
+                                          "cornerRadius": "$radius-sm"
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "trQoC",
+                                          "name": "Bar",
+                                          "width": 150,
+                                          "height": 11,
+                                          "fill": "$muted",
+                                          "cornerRadius": "$radius-sm"
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "C7W8Ov",
+                                          "name": "Bar",
+                                          "width": 120,
+                                          "height": 11,
+                                          "fill": "$muted",
+                                          "cornerRadius": "$radius-sm"
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "KiHdT",
+                                          "name": "Bar",
+                                          "width": 140,
+                                          "height": 11,
+                                          "fill": "$muted",
+                                          "cornerRadius": "$radius-sm"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "UOP6T",
+                                      "name": "Main",
+                                      "width": "fill_container",
+                                      "stroke": "$border",
+                                      "strokeWidth": {
+                                        "left": 1
+                                      },
+                                      "gap": 20,
+                                      "padding": [
+                                        0,
+                                        0,
+                                        0,
+                                        44
+                                      ],
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "aEtqu",
+                                          "name": "Card",
+                                          "width": "fill_container",
+                                          "layout": "vertical",
+                                          "gap": 10,
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "Yr1A5",
+                                              "name": "Image",
+                                              "width": "fill_container",
+                                              "height": 150,
+                                              "fill": "$muted",
+                                              "cornerRadius": 12
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "qEHjd",
+                                              "name": "Bar",
+                                              "width": "fill_container",
+                                              "height": 11,
+                                              "fill": "$muted",
+                                              "cornerRadius": "$radius-sm"
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "JTSGA",
+                                              "name": "Bar short",
+                                              "width": 64,
+                                              "height": 11,
+                                              "fill": "$muted",
+                                              "cornerRadius": "$radius-sm"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "sJ8pe",
+                                          "name": "Card",
+                                          "width": "fill_container",
+                                          "layout": "vertical",
+                                          "gap": 10,
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "Gb0WA",
+                                              "name": "Image",
+                                              "width": "fill_container",
+                                              "height": 150,
+                                              "fill": "$muted",
+                                              "cornerRadius": 12
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "hFccT",
+                                              "name": "Bar",
+                                              "width": "fill_container",
+                                              "height": 11,
+                                              "fill": "$muted",
+                                              "cornerRadius": "$radius-sm"
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "XUrGR",
+                                              "name": "Bar short",
+                                              "width": 64,
+                                              "height": 11,
+                                              "fill": "$muted",
+                                              "cornerRadius": "$radius-sm"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "h0SmqY",
+                                          "name": "Card",
+                                          "width": "fill_container",
+                                          "layout": "vertical",
+                                          "gap": 10,
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "vAnH0",
+                                              "name": "Image",
+                                              "width": "fill_container",
+                                              "height": 150,
+                                              "fill": "$muted",
+                                              "cornerRadius": 12
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "c3v2c",
+                                              "name": "Bar",
+                                              "width": "fill_container",
+                                              "height": 11,
+                                              "fill": "$muted",
+                                              "cornerRadius": "$radius-sm"
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "M5Vme9",
+                                              "name": "Bar short",
+                                              "width": 64,
+                                              "height": 11,
+                                              "fill": "$muted",
+                                              "cornerRadius": "$radius-sm"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "ma17T",
+                                          "name": "Card",
+                                          "width": "fill_container",
+                                          "layout": "vertical",
+                                          "gap": 10,
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "COJdB",
+                                              "name": "Image",
+                                              "width": "fill_container",
+                                              "height": 150,
+                                              "fill": "$muted",
+                                              "cornerRadius": 12
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "DSt8G",
+                                              "name": "Bar",
+                                              "width": "fill_container",
+                                              "height": 11,
+                                              "fill": "$muted",
+                                              "cornerRadius": "$radius-sm"
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "GONpd",
+                                              "name": "Bar short",
+                                              "width": 64,
+                                              "height": 11,
+                                              "fill": "$muted",
+                                              "cornerRadius": "$radius-sm"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "G7T0xY": {
+                                  "enabled": false
+                                }
+                              }
+                            },
+                            {
+                              "type": "text",
+                              "id": "f7V3W",
+                              "name": "Caption",
+                              "fill": "$muted-foreground",
+                              "content": "Loading",
+                              "fontFamily": "$font-body",
+                              "fontSize": 18,
+                              "fontWeight": "$font-normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "N0G1g2",
                           "name": "State / No results",
                           "layout": "vertical",
                           "gap": 12,
                           "children": [
                             {
-                              "id": "uEPb7",
+                              "id": "G89464",
                               "type": "ref",
                               "ref": "S3pTQ6",
                               "name": "Search empty",
                               "descendants": {
                                 "r74Tac": {
-                                  "content": "epeee"
+                                  "content": "epeee",
+                                  "fill": "$foreground"
                                 },
                                 "Q9tE2": {
                                   "type": "frame",
-                                  "id": "d8rvC",
-                                  "name": "Empty",
+                                  "id": "x5nokY",
+                                  "name": "Content",
                                   "width": "fill_container",
                                   "layout": "vertical",
                                   "gap": 8,
@@ -210788,7 +212347,7 @@
                                   "children": [
                                     {
                                       "type": "icon",
-                                      "id": "JuVUW",
+                                      "id": "UbZdZ",
                                       "name": "Icon",
                                       "width": 26,
                                       "height": 26,
@@ -210798,7 +212357,7 @@
                                     },
                                     {
                                       "type": "text",
-                                      "id": "roomW",
+                                      "id": "x3145T",
                                       "name": "Title",
                                       "fill": "$foreground",
                                       "content": "No results for “epeee”",
@@ -210808,24 +212367,154 @@
                                     },
                                     {
                                       "type": "text",
-                                      "id": "s8RL8o",
+                                      "id": "Wjms2",
                                       "name": "Hint",
                                       "fill": "$muted-foreground",
                                       "content": "Check the spelling, or try a broader term.",
                                       "fontFamily": "$font-body",
                                       "fontSize": 13,
                                       "fontWeight": "$font-normal"
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "Y5WMY",
+                                      "name": "Popular categories",
+                                      "gap": 10,
+                                      "padding": [
+                                        10,
+                                        0,
+                                        0,
+                                        0
+                                      ],
+                                      "justifyContent": "center",
+                                      "children": [
+                                        {
+                                          "id": "oGTFO",
+                                          "type": "ref",
+                                          "ref": "lFo0D",
+                                          "name": "Chip Weapons",
+                                          "descendants": {
+                                            "BrDgZ": {
+                                              "content": "Weapons"
+                                            },
+                                            "A88Wmn": {
+                                              "enabled": true,
+                                              "icon": "arrow-up-right"
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "id": "q7xkE3",
+                                          "type": "ref",
+                                          "ref": "lFo0D",
+                                          "name": "Chip Masks",
+                                          "descendants": {
+                                            "BrDgZ": {
+                                              "content": "Masks"
+                                            },
+                                            "A88Wmn": {
+                                              "enabled": true,
+                                              "icon": "arrow-up-right"
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "id": "FPJoF",
+                                          "type": "ref",
+                                          "ref": "lFo0D",
+                                          "name": "Chip Clothing",
+                                          "descendants": {
+                                            "BrDgZ": {
+                                              "content": "Clothing"
+                                            },
+                                            "A88Wmn": {
+                                              "enabled": true,
+                                              "icon": "arrow-up-right"
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "id": "Q2HRmX",
+                                          "type": "ref",
+                                          "ref": "lFo0D",
+                                          "name": "Chip Starter kits",
+                                          "descendants": {
+                                            "BrDgZ": {
+                                              "content": "Starter kits"
+                                            },
+                                            "A88Wmn": {
+                                              "enabled": true,
+                                              "icon": "arrow-up-right"
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "id": "ND8al",
+                                          "type": "ref",
+                                          "ref": "lFo0D",
+                                          "name": "Chip Bags",
+                                          "descendants": {
+                                            "BrDgZ": {
+                                              "content": "Bags"
+                                            },
+                                            "A88Wmn": {
+                                              "enabled": true,
+                                              "icon": "arrow-up-right"
+                                            }
+                                          }
+                                        }
+                                      ]
                                     }
                                   ]
                                 },
-                                "p6LTIe": {
-                                  "content": "Contact us"
+                                "G7T0xY": {
+                                  "type": "frame",
+                                  "id": "wmdZN",
+                                  "name": "Help footer",
+                                  "width": "fill_container",
+                                  "fill": "$muted",
+                                  "stroke": "$border",
+                                  "strokeWidth": {
+                                    "top": 1
+                                  },
+                                  "gap": 8,
+                                  "padding": [
+                                    13,
+                                    96,
+                                    15,
+                                    96
+                                  ],
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "oMn5R",
+                                      "name": "Help",
+                                      "fill": "$muted-foreground",
+                                      "content": "Not finding something?",
+                                      "fontFamily": "$font-body",
+                                      "fontSize": 13,
+                                      "fontWeight": "$font-normal"
+                                    },
+                                    {
+                                      "id": "ZYA6L",
+                                      "type": "ref",
+                                      "ref": "d2W90",
+                                      "name": "Contact us",
+                                      "descendants": {
+                                        "jMTJR": {
+                                          "content": "Contact us"
+                                        }
+                                      }
+                                    }
+                                  ]
                                 }
                               }
                             },
                             {
                               "type": "text",
-                              "id": "AwICu",
+                              "id": "hhKI0",
                               "name": "Caption",
                               "fill": "$muted-foreground",
                               "content": "No results",
@@ -211565,7 +213254,7 @@
               "name": "Title",
               "fill": "$foreground",
               "content": "Clothing",
-              "fontFamily": "Archivo",
+              "fontFamily": "$font-body",
               "fontSize": 46,
               "fontWeight": "700",
               "letterSpacing": -1
@@ -211724,7 +213413,7 @@
                       "name": "Title",
                       "fill": "$foreground",
                       "content": "Filters",
-                      "fontFamily": "Archivo",
+                      "fontFamily": "$font-body",
                       "fontSize": 17,
                       "fontWeight": "600"
                     },
@@ -219495,6 +221184,1057 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "kcV8N",
+      "x": 10360,
+      "y": 17825,
+      "name": "Homepage hero",
+      "width": 9600,
+      "fill": "$background",
+      "layout": "vertical",
+      "gap": 10,
+      "padding": [
+        14,
+        24
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "wjIUh",
+          "name": "Component libraries label",
+          "fill": "$foreground",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Homepage hero",
+          "fontFamily": "$font-body",
+          "fontSize": 30,
+          "fontWeight": "600"
+        },
+        {
+          "type": "text",
+          "id": "cTlQj",
+          "name": "Fade note",
+          "fill": "$muted-foreground",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Below 990px the header sits above the hero. From 990px it overlays the photo. Past 1840px the photo stops at 1808px wide and its sides fade into black. On the site that fade is a noise-warped mist; these boards draw it with straight gradients.",
+          "fontFamily": "$font-body",
+          "fontSize": 18,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "qE6b6",
+      "x": 10360,
+      "y": 17969,
+      "name": "Homepage hero / Mobile",
+      "clip": true,
+      "width": 390,
+      "fill": "$background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "moAR7",
+          "type": "ref",
+          "ref": "z2pZ5",
+          "name": "Header",
+          "width": "fill_container"
+        },
+        {
+          "type": "frame",
+          "id": "Kp9UV",
+          "name": "Hero",
+          "clip": true,
+          "width": 390,
+          "height": 520,
+          "fill": "$surface-dark",
+          "layout": "none",
+          "children": [
+            {
+              "type": "rectangle",
+              "id": "qVFhr",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Slide Image",
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "images/generated-1783898148562.png",
+                "mode": "cover"
+              },
+              "width": 390,
+              "height": 520
+            },
+            {
+              "type": "rectangle",
+              "id": "oc7tD",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Overlay",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 270,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#000000E6",
+                    "position": 0
+                  },
+                  {
+                    "color": "#00000066",
+                    "position": 1
+                  }
+                ]
+              },
+              "width": 390,
+              "height": 520
+            },
+            {
+              "type": "rectangle",
+              "id": "uAuNX",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Top Scrim",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 180,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#000000CC",
+                    "position": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "position": 1
+                  }
+                ]
+              },
+              "width": 390,
+              "height": 250
+            },
+            {
+              "type": "frame",
+              "id": "dBqT0",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Slide Content",
+              "width": 390,
+              "height": 520,
+              "layout": "vertical",
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "av6Xa",
+                  "name": "Inner",
+                  "width": 358,
+                  "layout": "vertical",
+                  "gap": 22,
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "UabIn",
+                      "name": "Accent Bar",
+                      "fill": "$on-dark",
+                      "width": 48,
+                      "height": 3
+                    },
+                    {
+                      "type": "text",
+                      "id": "R8j2OF",
+                      "name": "Eyebrow",
+                      "fill": "$on-dark",
+                      "content": "BEST-PRICED BLADES",
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
+                      "fontWeight": "600",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "text",
+                      "id": "Crc7T",
+                      "name": "Headline",
+                      "fill": "$on-dark",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Get a blade",
+                      "lineHeight": 1.02,
+                      "fontFamily": "$font-display",
+                      "fontSize": 56,
+                      "fontWeight": "700",
+                      "letterSpacing": -1.5
+                    },
+                    {
+                      "type": "text",
+                      "id": "Vprvo",
+                      "name": "Subline",
+                      "fill": "$on-dark",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Best priced blades for beginners to elite athletes",
+                      "lineHeight": 1.5,
+                      "fontFamily": "$font-body",
+                      "fontSize": 17,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "GNDDT",
+                      "name": "Buttons",
+                      "gap": 18,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "K9lvq6",
+                          "name": "Primary Btn",
+                          "fill": "$on-dark",
+                          "cornerRadius": "$radius-xl",
+                          "padding": [
+                            15,
+                            28
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "r46N5z",
+                              "name": "Primary Label",
+                              "fill": "$foreground",
+                              "content": "Weapons",
+                              "fontFamily": "$font-body",
+                              "fontSize": 15,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "CXtQJ",
+                          "name": "Text Link",
+                          "gap": 6,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "NEtB3",
+                              "name": "L",
+                              "fill": "$on-dark",
+                              "content": "Blades",
+                              "fontFamily": "$font-body",
+                              "fontSize": 15,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "Rw4c1",
+                              "name": "A",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "arrow-right",
+                              "library": "lucide",
+                              "fill": "$on-dark"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "w6Yrwj",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 480,
+              "name": "Controls",
+              "width": 390,
+              "height": 12,
+              "gap": 16,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "Nj7th",
+                  "name": "Previous",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "#FFFFFF66"
+                },
+                {
+                  "type": "frame",
+                  "id": "yG1Tc",
+                  "name": "Dots",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 4,
+                      "id": "mMnaX",
+                      "name": "Dot 1",
+                      "fill": "$on-dark",
+                      "width": 26,
+                      "height": 8
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 4,
+                      "id": "r8POSY",
+                      "name": "Dot 2",
+                      "fill": "#FFFFFF66",
+                      "width": 8,
+                      "height": 8
+                    }
+                  ]
+                },
+                {
+                  "type": "icon",
+                  "id": "SBBZi",
+                  "name": "Next",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "chevron-right",
+                  "library": "lucide",
+                  "fill": "#FFFFFF66"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "kiiQG",
+      "x": 10910,
+      "y": 17969,
+      "name": "Homepage hero / Tablet",
+      "clip": true,
+      "width": 768,
+      "fill": "$background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "KFCXX",
+          "type": "ref",
+          "ref": "s1q7Xo",
+          "name": "Header",
+          "width": "fill_container"
+        },
+        {
+          "type": "frame",
+          "id": "wuIUD",
+          "name": "Hero",
+          "clip": true,
+          "width": 768,
+          "height": 600,
+          "fill": "$surface-dark",
+          "layout": "none",
+          "children": [
+            {
+              "type": "rectangle",
+              "id": "xlBik",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Slide Image",
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "images/generated-1783898148562.png",
+                "mode": "cover"
+              },
+              "width": 768,
+              "height": 600
+            },
+            {
+              "type": "rectangle",
+              "id": "M3p8P",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Overlay",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 270,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#000000E6",
+                    "position": 0
+                  },
+                  {
+                    "color": "#00000066",
+                    "position": 1
+                  }
+                ]
+              },
+              "width": 768,
+              "height": 600
+            },
+            {
+              "type": "rectangle",
+              "id": "TrKen",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Top Scrim",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 180,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#000000CC",
+                    "position": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "position": 1
+                  }
+                ]
+              },
+              "width": 768,
+              "height": 250
+            },
+            {
+              "type": "frame",
+              "id": "w42Tc",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Slide Content",
+              "width": 768,
+              "height": 600,
+              "layout": "vertical",
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "BslW9",
+                  "name": "Inner",
+                  "width": 620,
+                  "layout": "vertical",
+                  "gap": 22,
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "B1HxR",
+                      "name": "Accent Bar",
+                      "fill": "$on-dark",
+                      "width": 48,
+                      "height": 3
+                    },
+                    {
+                      "type": "text",
+                      "id": "RnDpk",
+                      "name": "Eyebrow",
+                      "fill": "$on-dark",
+                      "content": "BEST-PRICED BLADES",
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
+                      "fontWeight": "600",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "text",
+                      "id": "UDE0j",
+                      "name": "Headline",
+                      "fill": "$on-dark",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Get a blade",
+                      "lineHeight": 1.02,
+                      "fontFamily": "$font-display",
+                      "fontSize": 56,
+                      "fontWeight": "700",
+                      "letterSpacing": -1.5
+                    },
+                    {
+                      "type": "text",
+                      "id": "xIMYv",
+                      "name": "Subline",
+                      "fill": "$on-dark",
+                      "textGrowth": "fixed-width",
+                      "width": 480,
+                      "content": "Best priced blades for beginners to elite athletes",
+                      "lineHeight": 1.5,
+                      "fontFamily": "$font-body",
+                      "fontSize": 17,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "T2a0fa",
+                      "name": "Buttons",
+                      "gap": 18,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "QXVYv",
+                          "name": "Primary Btn",
+                          "fill": "$on-dark",
+                          "cornerRadius": "$radius-xl",
+                          "padding": [
+                            15,
+                            28
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "osF5M",
+                              "name": "Primary Label",
+                              "fill": "$foreground",
+                              "content": "Weapons",
+                              "fontFamily": "$font-body",
+                              "fontSize": 15,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "csEE3",
+                          "name": "Text Link",
+                          "gap": 6,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "R6vyDZ",
+                              "name": "L",
+                              "fill": "$on-dark",
+                              "content": "Blades",
+                              "fontFamily": "$font-body",
+                              "fontSize": 15,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "p7eio5",
+                              "name": "A",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "arrow-right",
+                              "library": "lucide",
+                              "fill": "$on-dark"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "mrMfY",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 560,
+              "name": "Controls",
+              "width": 768,
+              "height": 12,
+              "gap": 16,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "JUUvL",
+                  "name": "Previous",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "#FFFFFF66"
+                },
+                {
+                  "type": "frame",
+                  "id": "GYMp1",
+                  "name": "Dots",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 4,
+                      "id": "BlXT9",
+                      "name": "Dot 1",
+                      "fill": "$on-dark",
+                      "width": 26,
+                      "height": 8
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 4,
+                      "id": "e3PIz",
+                      "name": "Dot 2",
+                      "fill": "#FFFFFF66",
+                      "width": 8,
+                      "height": 8
+                    }
+                  ]
+                },
+                {
+                  "type": "icon",
+                  "id": "mYxP4",
+                  "name": "Next",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "chevron-right",
+                  "library": "lucide",
+                  "fill": "#FFFFFF66"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "nq9DX",
+      "x": 11838,
+      "y": 17969,
+      "name": "Homepage hero / Wide (2200)",
+      "clip": true,
+      "width": 2200,
+      "height": 720,
+      "fill": "$surface-dark",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "znk6m",
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 0,
+          "name": "Hero",
+          "clip": true,
+          "width": 2200,
+          "height": 720,
+          "fill": "$surface-dark",
+          "layout": "none",
+          "children": [
+            {
+              "type": "rectangle",
+              "id": "anYzS",
+              "layoutPosition": "absolute",
+              "x": 196,
+              "y": 0,
+              "name": "Slide Image",
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "images/generated-1783898148562.png",
+                "mode": "cover"
+              },
+              "width": 1808,
+              "height": 720
+            },
+            {
+              "type": "rectangle",
+              "id": "i3p4a",
+              "layoutPosition": "absolute",
+              "x": 196,
+              "y": 0,
+              "name": "Left Fade",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 270,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#0B0B0C",
+                    "position": 0
+                  },
+                  {
+                    "color": "#0B0B0C",
+                    "position": 0.154
+                  },
+                  {
+                    "color": "#0B0B0C80",
+                    "position": 0.577
+                  },
+                  {
+                    "color": "#0B0B0C00",
+                    "position": 1
+                  }
+                ]
+              },
+              "width": 353,
+              "height": 720
+            },
+            {
+              "type": "rectangle",
+              "id": "tl736",
+              "layoutPosition": "absolute",
+              "x": 1651,
+              "y": 0,
+              "name": "Right Fade",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 90,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#0B0B0C",
+                    "position": 0
+                  },
+                  {
+                    "color": "#0B0B0C",
+                    "position": 0.154
+                  },
+                  {
+                    "color": "#0B0B0C80",
+                    "position": 0.577
+                  },
+                  {
+                    "color": "#0B0B0C00",
+                    "position": 1
+                  }
+                ]
+              },
+              "width": 353,
+              "height": 720
+            },
+            {
+              "type": "rectangle",
+              "id": "uRbUd",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Overlay",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 270,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#000000E6",
+                    "position": 0
+                  },
+                  {
+                    "color": "#00000066",
+                    "position": 1
+                  }
+                ]
+              },
+              "width": 2200,
+              "height": 720
+            },
+            {
+              "type": "rectangle",
+              "id": "W15MA",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Top Scrim",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 180,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#000000CC",
+                    "position": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "position": 1
+                  }
+                ]
+              },
+              "width": 2200,
+              "height": 250
+            },
+            {
+              "type": "frame",
+              "id": "S0EOnY",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Slide Content",
+              "width": 2200,
+              "height": 720,
+              "layout": "vertical",
+              "padding": [
+                0,
+                476
+              ],
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "s0JSG",
+                  "name": "Inner",
+                  "width": 620,
+                  "layout": "vertical",
+                  "gap": 22,
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "qUiLH",
+                      "name": "Accent Bar",
+                      "fill": "$on-dark",
+                      "width": 48,
+                      "height": 3
+                    },
+                    {
+                      "type": "text",
+                      "id": "ZUT0g",
+                      "name": "Eyebrow",
+                      "fill": "$on-dark",
+                      "content": "BEST-PRICED BLADES",
+                      "fontFamily": "$font-body",
+                      "fontSize": 13,
+                      "fontWeight": "600",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "text",
+                      "id": "C0Ng7u",
+                      "name": "Headline",
+                      "fill": "$on-dark",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Get a blade",
+                      "lineHeight": 1.02,
+                      "fontFamily": "$font-display",
+                      "fontSize": 56,
+                      "fontWeight": "700",
+                      "letterSpacing": -1.5
+                    },
+                    {
+                      "type": "text",
+                      "id": "j67Lns",
+                      "name": "Subline",
+                      "fill": "$on-dark",
+                      "textGrowth": "fixed-width",
+                      "width": 480,
+                      "content": "Best priced blades for beginners to elite athletes",
+                      "lineHeight": 1.5,
+                      "fontFamily": "$font-body",
+                      "fontSize": 17,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "otQLS",
+                      "name": "Buttons",
+                      "gap": 18,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "B7GCM",
+                          "name": "Primary Btn",
+                          "fill": "$on-dark",
+                          "cornerRadius": "$radius-xl",
+                          "padding": [
+                            15,
+                            28
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "IDj0Y",
+                              "name": "Primary Label",
+                              "fill": "$foreground",
+                              "content": "Weapons",
+                              "fontFamily": "$font-body",
+                              "fontSize": 15,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ISGqk",
+                          "name": "Text Link",
+                          "gap": 6,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Qf14q",
+                              "name": "L",
+                              "fill": "$on-dark",
+                              "content": "Blades",
+                              "fontFamily": "$font-body",
+                              "fontSize": 15,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "DruQq",
+                              "name": "A",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "arrow-right",
+                              "library": "lucide",
+                              "fill": "$on-dark"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "v8dLO",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 680,
+              "name": "Controls",
+              "width": 2200,
+              "height": 12,
+              "gap": 16,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "gF0DR",
+                  "name": "Previous",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "#FFFFFF66"
+                },
+                {
+                  "type": "frame",
+                  "id": "PIXZB",
+                  "name": "Dots",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 4,
+                      "id": "SNoNP",
+                      "name": "Dot 1",
+                      "fill": "$on-dark",
+                      "width": 26,
+                      "height": 8
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 4,
+                      "id": "DWEI5",
+                      "name": "Dot 2",
+                      "fill": "#FFFFFF66",
+                      "width": 8,
+                      "height": 8
+                    }
+                  ]
+                },
+                {
+                  "type": "icon",
+                  "id": "LhXre",
+                  "name": "Next",
+                  "width": 14,
+                  "height": 14,
+                  "icon": "chevron-right",
+                  "library": "lucide",
+                  "fill": "#FFFFFF66"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "lPEvm",
+          "type": "ref",
+          "ref": "TU6r0",
+          "name": "Header",
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 0,
+          "width": 2200,
+          "descendants": {
+            "c46QZK": {
+              "padding": [
+                9,
+                476
+              ]
+            },
+            "f8WeJZ": {
+              "padding": [
+                20,
+                476
+              ]
+            }
+          }
+        }
+      ]
     }
   ],
   "themes": {
@@ -219535,7 +222275,7 @@
     },
     "font-display": {
       "type": "string",
-      "value": "Archivo"
+      "value": "Inter"
     },
     "font-body": {
       "type": "string",
@@ -219615,11 +222355,11 @@
     },
     "cart-benefit": {
       "type": "color",
-      "value": "#216B43"
+      "value": "#008236"
     },
     "cart-benefit-surface": {
       "type": "color",
-      "value": "#EFF6F1"
+      "value": "#F0FDF4"
     },
     "text-xs": {
       "type": "number",

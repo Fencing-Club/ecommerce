@@ -25,6 +25,30 @@ function registerBlockTag(engine, name, render) {
   });
 }
 
+// Block tags whose Liquid body renders as usual, wrapped in `open` and `close`, with `scope` as extra variables.
+function registerRenderedBlockTag(engine, name, { open = '', close = '', scope } = {}) {
+  engine.registerTag(name, {
+    parse(token, tokens) {
+      this.templates = [];
+      const stream = this.liquid.parser.parseStream(tokens);
+      stream
+        .on(`tag:end${name}`, () => stream.stop())
+        .on('template', (template) => this.templates.push(template))
+        .on('end', () => {
+          throw new Error(`tag ${token.getText()} not closed`);
+        });
+      stream.start();
+    },
+    *render(context, emitter) {
+      emitter.write(open);
+      if (scope) context.push(scope);
+      yield this.liquid.renderer.renderTemplates(this.templates, context, emitter);
+      if (scope) context.pop();
+      emitter.write(close);
+    },
+  });
+}
+
 /**
  * Registers the Shopify tags and filters on a liquidjs engine.
  *
@@ -36,6 +60,11 @@ function registerBlockTag(engine, name, render) {
 export function registerShopifyLiquid(engine, { locale = {}, readAsset } = {}) {
   for (const name of ['doc', 'schema', 'form', 'javascript']) registerBlockTag(engine, name, () => '');
   registerBlockTag(engine, 'stylesheet', (content) => `<style>${content}</style>`);
+  // `style` renders its Liquid body inside a <style> element; `paginate` renders its body as a single page.
+  registerRenderedBlockTag(engine, 'style', { open: '<style>', close: '</style>' });
+  registerRenderedBlockTag(engine, 'paginate', {
+    scope: { paginate: { current_page: 1, pages: 1, items: 0, parts: [], previous: null, next: null } },
+  });
 
   engine.registerFilter('asset_url', (name) => `/assets/${name}`);
   engine.registerFilter('stylesheet_tag', (url) => `<link rel="stylesheet" href="${escapeAttribute(url)}">`);
