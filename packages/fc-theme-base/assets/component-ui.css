@@ -1,10 +1,10 @@
 .ui-button {
   display: inline-flex;
-  gap: calc(var(--spacing) * 2);
+  gap: var(--spacing-2);
   align-items: center;
   justify-content: center;
   min-height: 3.6rem;
-  padding: 0 calc(var(--spacing) * 5);
+  padding: 0 var(--spacing-5);
   border: 0.1rem solid transparent;
   border-radius: var(--radius-sm);
   font-family: inherit;
@@ -45,7 +45,7 @@
 }
 
 .ui-button--ghost {
-  padding: 0 calc(var(--spacing) * 1);
+  padding: 0 var(--spacing-1);
   background: none;
   color: rgb(var(--color-foreground));
 }
@@ -87,7 +87,7 @@
 .ui-breadcrumbs {
   display: flex;
   align-items: center;
-  gap: calc(var(--spacing) * 1.5);
+  gap: var(--spacing-1-5);
   font-family: var(--font-body-family);
   font-size: 1.3rem;
   line-height: 1.25;
@@ -115,7 +115,7 @@
   display: inline-flex;
   align-items: center;
   height: 3.4rem;
-  padding: 0 calc(var(--spacing) * 4);
+  padding: 0 var(--spacing-4);
   border: 0.1rem solid var(--border);
   border-radius: 999rem;
   font-family: var(--font-body-family);
@@ -136,23 +136,23 @@
 }
 
 .ui-pill--with-icon {
-  gap: calc(var(--spacing) * 1.5);
-  padding-inline: calc(var(--spacing) * 3.5);
+  gap: var(--spacing-1-5);
+  padding-inline: var(--spacing-3-5);
   font-weight: 600;
 }
 
 .ui-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: calc(var(--spacing) * 2);
+  gap: var(--spacing-2);
 }
 
 .ui-pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: calc(var(--spacing) * 2.5);
-  margin-top: calc(var(--spacing) * 8);
+  gap: var(--spacing-2-5);
+  margin-top: var(--spacing-8);
 }
 
 .ui-pagination__item {
@@ -219,7 +219,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--spacing) * 0.5);
+  gap: var(--spacing-0-5);
   height: 1.9rem;
   padding: 0 0.7rem;
   border: 0.1rem solid rgba(var(--color-foreground), 0.12);
@@ -287,7 +287,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--spacing) * 5);
+  gap: var(--spacing-5);
 }
 
 .ui-article-card__media {
@@ -317,13 +317,13 @@
 .ui-article-card__body {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--spacing) * 3);
+  gap: var(--spacing-3);
 }
 
 .ui-article-card__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: calc(var(--spacing) * 2);
+  gap: var(--spacing-2);
   margin: 0;
   font-family: var(--font-body-family);
   font-size: var(--text-xs);
@@ -369,9 +369,9 @@
 .ui-page-link-card {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--spacing) * 2.5);
+  gap: var(--spacing-2-5);
   min-height: 12.8rem;
-  padding: calc(var(--spacing) * 6);
+  padding: var(--spacing-6);
   border: 0.1rem solid var(--border);
   border-radius: var(--radius-xl);
   background: #ffffff;
@@ -382,7 +382,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: calc(var(--spacing) * 2);
+  gap: var(--spacing-2);
   color: var(--foreground);
 }
 
@@ -403,9 +403,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: calc(var(--spacing) * 4);
+  gap: var(--spacing-4);
   min-height: 7rem;
-  padding: calc(var(--spacing) * 6) calc(var(--spacing) * 6.5);
+  padding: var(--spacing-6) calc(var(--spacing) * 6.5);
   border: 0.1rem solid var(--border);
   border-radius: var(--radius-xl);
   font-family: var(--font-heading-family);
@@ -444,7 +444,7 @@
 .shop-contact-details {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--spacing) * 3);
+  gap: var(--spacing-3);
   padding: 0;
   margin: 0;
   list-style: none;
@@ -453,7 +453,7 @@
 .shop-contact-details__item {
   display: flex;
   align-items: flex-start;
-  gap: calc(var(--spacing) * 2.5);
+  gap: var(--spacing-2-5);
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
@@ -492,11 +492,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: calc(var(--spacing) * 3);
+  gap: var(--spacing-3);
 }
 
 .ui-product-card--home {
-  gap: calc(var(--spacing) * 4);
+  gap: var(--spacing-4);
 }
 
 .ui-product-card--home .ui-product-card__media {
@@ -513,7 +513,7 @@
   justify-content: center;
   min-width: 10.7rem;
   height: 2.5rem;
-  padding: calc(var(--spacing) * 1.5) calc(var(--spacing) * 3);
+  padding: var(--spacing-1-5) var(--spacing-3);
   border-radius: 10rem;
   background: var(--foreground);
   font-family: var(--font-body-family);
@@ -525,7 +525,7 @@
 }
 
 .ui-product-card--home .ui-product-card__info {
-  gap: calc(var(--spacing) * 1.5);
+  gap: var(--spacing-1-5);
 }
 
 .ui-product-card--home .ui-product-card__tag {
@@ -560,10 +560,10 @@
 
 .ui-product-card__add {
   display: inline-flex;
-  gap: calc(var(--spacing) * 1.5);
+  gap: var(--spacing-1-5);
   align-items: center;
   justify-content: center;
-  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3.5);
+  padding: var(--spacing-2) var(--spacing-3-5);
   border: 0;
   border-radius: 10rem;
   background: var(--muted);
@@ -585,7 +585,7 @@
 }
 
 .ui-product-card--search {
-  gap: calc(var(--spacing) * 2);
+  gap: var(--spacing-2);
 }
 
 .ui-product-card--search .ui-product-card__media {
@@ -623,7 +623,7 @@
 
 @container (min-width: 1100px) {
   .ui-product-card--search {
-    gap: calc(var(--spacing) * 2.5);
+    gap: var(--spacing-2-5);
   }
 
   .ui-product-card--search .ui-product-card__media {
@@ -663,7 +663,7 @@
   min-height: 4.4rem;
   min-width: 5.2rem;
   max-width: 100%;
-  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 4.5);
+  padding: var(--spacing-2) calc(var(--spacing) * 4.5);
   border: var(--variant-pills-border-width, 1px) solid rgba(var(--color-foreground), var(--variant-pills-border-opacity, 0.4));
   border-radius: var(--variant-pills-radius, 40px);
   background: rgb(var(--color-background));
@@ -697,7 +697,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 12rem;
-  padding: calc(var(--spacing) * 1);
+  padding: var(--spacing-1);
   border: 1px solid var(--input);
   border-radius: 3rem;
   background: var(--muted);
@@ -730,7 +730,7 @@
 .ui-field {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--spacing) * 1.5);
+  gap: var(--spacing-1-5);
   min-width: 0;
   letter-spacing: 0;
 }
@@ -746,10 +746,10 @@
 .ui-text-field__control {
   display: flex;
   align-items: center;
-  gap: calc(var(--spacing) * 1);
+  gap: var(--spacing-1);
   min-width: 0;
   min-height: 4.4rem;
-  padding: calc(var(--spacing) * 2.5) calc(var(--spacing) * 3);
+  padding: var(--spacing-2-5) var(--spacing-3);
   border: 1px solid var(--input);
   border-radius: var(--radius-lg);
   background: #fff;
@@ -804,7 +804,7 @@
   width: 100%;
   min-width: 0;
   min-height: 4.4rem;
-  padding: 0.9rem calc(var(--spacing) * 10.5) 0.9rem calc(var(--spacing) * 3.5);
+  padding: 0.9rem calc(var(--spacing) * 10.5) 0.9rem var(--spacing-3-5);
   margin: 0;
   border: 1px solid var(--input);
   border-radius: var(--radius-xl);
@@ -873,7 +873,7 @@
 .ui-price-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: calc(var(--spacing) * 3);
+  gap: var(--spacing-3);
   width: 100%;
   min-width: 0;
   flex: 1 1 auto;
@@ -931,7 +931,7 @@
 .ui-search-form__input:focus-visible {
   min-width: 0;
   flex: 1 1 auto;
-  padding: 0 calc(var(--spacing) * 3);
+  padding: 0 var(--spacing-3);
   border: 0;
   outline: 0;
   background: transparent;
@@ -959,7 +959,7 @@
   justify-content: center;
   width: 3.6rem;
   height: 3.6rem;
-  margin-right: calc(var(--spacing) * 2);
+  margin-right: var(--spacing-2);
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -1013,7 +1013,7 @@
   .ui-search-form__input:focus-visible {
     width: 100%;
     min-height: 4.6rem;
-    padding: 0 calc(var(--spacing) * 13) 0 calc(var(--spacing) * 11);
+    padding: 0 calc(var(--spacing) * 13) 0 var(--spacing-11);
     border: 0.1rem solid #767676;
     border-radius: var(--radius-xl);
     background: #fff;
@@ -1034,7 +1034,7 @@
 
   .ui-search-form__submit.ui-button {
     width: 100%;
-    margin-top: calc(var(--spacing) * 3.5);
+    margin-top: var(--spacing-3-5);
   }
 }
 
@@ -1066,7 +1066,7 @@
 /* Keeps the label and its arrow on one line when the link sits inside running text. */
 .ui-link--with-icon {
   display: inline-flex;
-  gap: calc(var(--spacing) * 1);
+  gap: var(--spacing-1);
   align-items: center;
 }
 
@@ -1096,7 +1096,7 @@
 }
 
 .ui-badge {
-  padding: 0.1rem calc(var(--spacing) * 2);
+  padding: 0.1rem var(--spacing-2);
   border-radius: 0.3rem;
   background-color: rgba(var(--color-foreground), 0.06);
   font-size: 1.1rem;
@@ -1110,16 +1110,16 @@
   position: relative;
   display: grid;
   grid-template-columns: 1.8rem minmax(0, 1fr) auto;
-  gap: calc(var(--spacing) * 3);
+  gap: var(--spacing-3);
   align-items: center;
   min-width: 0;
   min-height: 4.4rem;
-  padding: calc(var(--spacing) * 2.5);
+  padding: var(--spacing-2-5);
   border-radius: var(--radius-md);
   transition: background-color 160ms ease;
 }
 .ui-checkbox-field--radio { grid-template-columns: 2rem minmax(0, 1fr) auto; }
-.ui-checkbox-field + .ui-checkbox-field { margin-block-start: calc(var(--spacing) * 1.5); }
+.ui-checkbox-field + .ui-checkbox-field { margin-block-start: var(--spacing-1-5); }
 .ui-checkbox-field--filter:has(input:checked) { background: var(--muted); }
 
 /* Specificity must beat Dawn's base.css `input[type="checkbox"] { width: auto }`. */
@@ -1184,7 +1184,7 @@ input:disabled + .ui-checkbox-field__copy {
 /* Line height matches the 2rem checkbox so both align on their first line. */
 .ui-checkbox-field__label {
   display: flex;
-  gap: calc(var(--spacing) * 2.5);
+  gap: var(--spacing-2-5);
   align-items: center;
   min-height: 2rem;
   font-size: var(--text-sm);
@@ -1269,14 +1269,14 @@ input:disabled + .ui-checkbox-field__copy {
 
 .ui-select__trigger {
   display: flex;
-  gap: calc(var(--spacing) * 3);
+  gap: var(--spacing-3);
   align-items: center;
-  padding: 0.9rem calc(var(--spacing) * 3.5);
+  padding: 0.9rem var(--spacing-3-5);
   text-align: start;
 }
 .ui-select__prefix { flex: 0 0 auto; }
-.ui-select__trigger:has(.ui-select__prefix) { gap: calc(var(--spacing) * 1); }
-.ui-select__trigger:has(.ui-select__prefix) > .ui-icon { margin-inline-start: calc(var(--spacing) * 2); }
+.ui-select__trigger:has(.ui-select__prefix) { gap: var(--spacing-1); }
+.ui-select__trigger:has(.ui-select__prefix) > .ui-icon { margin-inline-start: var(--spacing-2); }
 .ui-select__control:has(.dropdown-swatch) .ui-select__trigger { padding-inline-start: calc(2.4rem + var(--swatch-input--size)); }
 
 .ui-select__current {
@@ -1300,7 +1300,7 @@ input:disabled + .ui-checkbox-field__copy {
 
 .ui-select__menu {
   display: grid;
-  gap: calc(var(--spacing) * 1.5);
+  gap: var(--spacing-1-5);
   position: absolute;
   z-index: 4;
   top: calc(100% + 0.6rem);
@@ -1309,7 +1309,7 @@ input:disabled + .ui-checkbox-field__copy {
   overscroll-behavior: contain;
   width: 100%;
   max-height: 32rem;
-  padding: calc(var(--spacing) * 2);
+  padding: var(--spacing-2);
   border: 0.1rem solid var(--border);
   border-radius: var(--radius-xl);
   background: #ffffff;
@@ -1323,10 +1323,10 @@ input:disabled + .ui-checkbox-field__copy {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: calc(var(--spacing) * 4);
+  gap: var(--spacing-4);
   width: 100%;
   min-height: 4.4rem;
-  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 2.5);
+  padding: var(--spacing-2) var(--spacing-2-5);
   border: 0;
   border-radius: var(--radius-md);
   background: transparent;
