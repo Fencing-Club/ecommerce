@@ -12,10 +12,9 @@ The tools we reach for **first**. Prefer them before introducing an alternative 
 - **Turborepo** — task runner + caching.
 - **Vite** — bundler / dev server.
 - **TanStack Start** — web framework for server-rendered apps on Cloudflare Workers, with TanStack Router and Vite.
-- **oxlint** — linter · **oxfmt** — formatter.
+- **Vite+** (`vp`) — linting (Oxlint), formatting (Oxfmt), staged-file checks and Git hooks.
 - **knip** — unused files / deps / exports.
 - **npm-run-all2** — script orchestration (`run-s` / `run-p`).
-- **lefthook** — git hooks.
 - **Dependabot** — dependency update PRs.
 - **beachball** — versioning + changelogs (`pnpm change` to add change files; `pnpm change:release` to bump +
   publish).

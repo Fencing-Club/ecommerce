@@ -11,7 +11,7 @@
     "check:takes": "node --env-file-if-exists=.env scripts/elevenlabs.ts check",
     "audio": "node scripts/score.ts && node scripts/sfx.ts && remotion render Voiceover public/audio/voiceover.wav --codec=wav --log=error",
     "subtitles": "node scripts/subtitles.ts",
-    "lint": "oxlint --max-warnings=0",
+    "lint": "vp lint --max-warnings=0",
     "check:types": "tsc --noEmit"
   },
   "dependencies": {
@@ -23,7 +23,6 @@
     "remotion": "4.0.539"
   },
   "devDependencies": {
-    "@repo/oxlint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "^19.2.17",

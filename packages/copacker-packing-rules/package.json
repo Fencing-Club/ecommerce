@@ -11,12 +11,11 @@
   },
   "scripts": {
     "check:types": "tsc --noEmit",
-    "lint": "oxlint --max-warnings=0",
+    "lint": "vp lint --max-warnings=0",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "@repo/oxlint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",

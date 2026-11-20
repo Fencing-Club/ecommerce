@@ -38,7 +38,9 @@ export const Headline = ({
   style
 }: HeadlineProps) => {
   const leaving = out === undefined ? 0 : ramp(t, out, out + 0.35, Easing.in(Easing.cubic))
-  let index = 0
+  const words = lines.map((line) => line.split(" "))
+  // Each line's first word number, so the words rise in one sequence across lines.
+  const firsts = words.map((_, l) => words.slice(0, l).reduce((count, w) => count + w.length, 0))
   return (
     <div
       style={{
@@ -55,10 +57,10 @@ export const Headline = ({
         ...style
       }}
     >
-      {lines.map((line) => (
+      {lines.map((line, l) => (
         <div key={line} style={{ whiteSpace: "nowrap" }}>
-          {line.split(" ").map((word, i) => {
-            const rise = settle(t, at + index++ * 0.055, 20, 170)
+          {words[l].map((word, i) => {
+            const rise = settle(t, at + (firsts[l] + i) * 0.055, 20, 170)
             return (
               <span
                 key={`${i}-${word}`}
