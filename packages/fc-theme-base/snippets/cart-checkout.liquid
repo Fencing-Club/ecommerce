@@ -8,8 +8,8 @@
 {% enddoc %}
 <div class="fc-checkout" data-cart-checkout>
   <button type="submit" class="fc-checkout__button" name="checkout" form="{{ form_id }}" id="CartCheckout-{{ context }}" aria-describedby="CartCheckoutReason-{{ context }}" {% if cart == empty or reason != blank %}disabled{% endif %}>
-    <span class="fc-checkout__idle">{% render 'fc-icon', icon: 'lock', size: 16 %}{{ 'sections.cart.checkout' | t }}</span>
-    <span class="fc-checkout__busy" aria-hidden="true">{% render 'fc-icon', icon: 'loader-circle', size: 16 %}{{ 'sections.cart.opening_checkout' | t }}</span>
+    <span class="fc-checkout__idle">{% render 'ui-icon', icon: 'lock', size: 16 %}{{ 'sections.cart.checkout' | t }}</span>
+    <span class="fc-checkout__busy" aria-hidden="true">{% render 'ui-icon', icon: 'loader-circle', size: 16 %}{{ 'sections.cart.opening_checkout' | t }}</span>
   </button>
-  <p class="fc-checkout__reason" id="CartCheckoutReason-{{ context }}" role="status"><span class="fc-checkout__icon" data-icon="error">{% render 'fc-icon', icon: 'circle-alert', size: 14 %}</span><span class="fc-checkout__icon" data-icon="info">{% render 'fc-icon', icon: 'info', size: 14 %}</span><span data-checkout-reason>{{ reason }}</span></p>
+  <p class="fc-checkout__reason" id="CartCheckoutReason-{{ context }}" role="status"><span class="fc-checkout__icon" data-icon="error">{% render 'ui-icon', icon: 'circle-alert', size: 14 %}</span><span class="fc-checkout__icon" data-icon="info">{% render 'ui-icon', icon: 'info', size: 14 %}</span><span data-checkout-reason>{{ reason }}</span></p>
 </div>

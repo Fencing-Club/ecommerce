@@ -56,15 +56,15 @@
         {%- endif -%}
       </p>
       {%- if savings > 0 -%}
-        <p class="fc-savings">{% render 'fc-icon', icon: 'badge-percent', size: 14 %}<span>{{ 'sections.cart.you_save' | t: amount: savings_money }}</span></p>
+        <p class="fc-savings">{% render 'ui-icon', icon: 'badge-percent', size: 14 %}<span>{{ 'sections.cart.you_save' | t: amount: savings_money }}</span></p>
       {%- endif -%}
     </div>
   </div>
   <div data-cart-region="checkout">{% render 'cart-checkout', form_id: form_id, context: context, reason: checkout_reason %}</div>
   {%- if settings.cart_trust_checkout != blank or settings.cart_trust_returns != blank -%}
     <ul class="fc-trust" role="list">
-      {%- if settings.cart_trust_returns != blank -%}<li>{% render 'fc-icon', icon: 'rotate-ccw', size: 14 %}{{ settings.cart_trust_returns | escape }}</li>{%- endif -%}
-      {%- if settings.cart_trust_checkout != blank -%}<li>{% render 'fc-icon', icon: 'shield-check', size: 14 %}{{ settings.cart_trust_checkout | escape }}</li>{%- endif -%}
+      {%- if settings.cart_trust_returns != blank -%}<li>{% render 'ui-icon', icon: 'rotate-ccw', size: 14 %}{{ settings.cart_trust_returns | escape }}</li>{%- endif -%}
+      {%- if settings.cart_trust_checkout != blank -%}<li>{% render 'ui-icon', icon: 'shield-check', size: 14 %}{{ settings.cart_trust_checkout | escape }}</li>{%- endif -%}
     </ul>
   {%- endif -%}
 </div>

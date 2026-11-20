@@ -56,7 +56,7 @@
           {%- if match.description.value != blank -%}<p class="fc-line__description">{{ match.description.value | escape }}</p>{%- endif -%}
           {%- if option_count > 1 -%}
             <details class="fc-line__contents fc-gift-change" id="{{ change_id }}">
-              <summary id="{{ change_id }}-label">{{ 'sections.cart.gift_change' | t }}{% render 'fc-icon', icon: 'chevron-down', size: 16 %}</summary>
+              <summary id="{{ change_id }}-label">{{ 'sections.cart.gift_change' | t }}{% render 'ui-icon', icon: 'chevron-down', size: 16 %}</summary>
               {%- assign labelled_by = change_id | append: '-label' -%}
               {% render 'cart-gift-options', tier: tier, key: key, context: context, labelled_by: labelled_by, layout: 'list' %}
             </details>

@@ -244,7 +244,7 @@
   transform: translateY(0.1rem);
 }
 
-.ui-kbd .fc-icon {
+.ui-kbd .ui-icon {
   display: block;
   width: 1.2rem;
   height: 1.2rem;
@@ -422,7 +422,7 @@
   text-decoration: none;
 }
 
-.ui-category-link-card .fc-icon {
+.ui-category-link-card .ui-icon {
   color: var(--muted-foreground);
 }
 
@@ -436,15 +436,15 @@
 :is(.ui-page-link-card, .ui-category-link-card) {
   transition: background-color 160ms ease, border-color 160ms ease, transform 120ms ease;
 }
-:is(.ui-page-link-card, .ui-category-link-card) .fc-icon { transition: transform 160ms ease; }
+:is(.ui-page-link-card, .ui-category-link-card) .ui-icon { transition: transform 160ms ease; }
 @media (hover: hover) {
   :is(.ui-page-link-card, .ui-category-link-card):hover { background-color: var(--accent); border-color: #a7a7a4; }
-  .ui-category-link-card:hover .fc-icon { transform: translateX(2px); }
-  .ui-page-link-card:hover .fc-icon { transform: translate(2px, -2px); }
+  .ui-category-link-card:hover .ui-icon { transform: translateX(2px); }
+  .ui-page-link-card:hover .ui-icon { transform: translate(2px, -2px); }
 }
 :is(.ui-page-link-card, .ui-category-link-card):active { transform: translateY(1px); }
 @media (prefers-reduced-motion: reduce) {
-  :is(.ui-page-link-card, .ui-category-link-card), :is(.ui-page-link-card, .ui-category-link-card) .fc-icon { transition: none; transform: none !important; }
+  :is(.ui-page-link-card, .ui-category-link-card), :is(.ui-page-link-card, .ui-category-link-card) .ui-icon { transition: none; transform: none !important; }
 }
 
 .shop-contact-details {
@@ -825,7 +825,7 @@
   transition: border-color 160ms ease;
 }
 
-.ui-select__control > .fc-icon {
+.ui-select__control > .ui-icon {
   position: absolute;
   top: 50%;
   right: 1.4rem;
@@ -927,7 +927,7 @@
   color: var(--muted-foreground);
 }
 
-.ui-search-form__icon .fc-icon {
+.ui-search-form__icon .ui-icon {
   width: 100%;
   height: 100%;
 }
@@ -984,7 +984,7 @@
   outline-offset: 0.1rem;
 }
 
-.ui-search-form__clear .fc-icon {
+.ui-search-form__clear .ui-icon {
   width: 1.6rem;
   height: 1.6rem;
 }
@@ -1044,7 +1044,8 @@
   }
 }
 
-.ui-icon {
+/* Icons take their size from ui-icon's size attribute; buttons and links set their own. */
+:is(.ui-button, .ui-link) .ui-icon {
   width: 1.5rem;
   height: 1.5rem;
 }
@@ -1269,7 +1270,7 @@ input:disabled + .ui-checkbox-field__copy {
   clip-path: inset(50%);
   pointer-events: none;
 }
-.ui-select[data-enhanced] .ui-select__control > .fc-icon { display: none; }
+.ui-select[data-enhanced] .ui-select__control > .ui-icon { display: none; }
 .ui-select:has(.ui-select__menu:not([hidden])) { z-index: 5; }
 
 .ui-select__trigger {
@@ -1281,7 +1282,7 @@ input:disabled + .ui-checkbox-field__copy {
 }
 .ui-select__prefix { flex: 0 0 auto; }
 .ui-select__trigger:has(.ui-select__prefix) { gap: 0.4rem; }
-.ui-select__trigger:has(.ui-select__prefix) > .fc-icon { margin-inline-start: 0.8rem; }
+.ui-select__trigger:has(.ui-select__prefix) > .ui-icon { margin-inline-start: 0.8rem; }
 .ui-select__control:has(.dropdown-swatch) .ui-select__trigger { padding-inline-start: calc(2.4rem + var(--swatch-input--size)); }
 
 .ui-select__current {
@@ -1292,14 +1293,14 @@ input:disabled + .ui-checkbox-field__copy {
   white-space: nowrap;
 }
 
-.ui-select__trigger > .fc-icon {
+.ui-select__trigger > .ui-icon {
   flex: 0 0 1.6rem;
   width: 1.6rem;
   height: 1.6rem;
   transition: transform 150ms ease;
 }
 
-.ui-select__trigger[aria-expanded='true'] > .fc-icon {
+.ui-select__trigger[aria-expanded='true'] > .ui-icon {
   transform: rotate(180deg);
 }
 
@@ -1367,7 +1368,7 @@ input:disabled + .ui-checkbox-field__copy {
   visibility: visible;
 }
 
-@media (prefers-reduced-motion: reduce) { .ui-select__trigger > .fc-icon { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .ui-select__trigger > .ui-icon { transition: none; } }
 @media (forced-colors: active) {
   .ui-select__option[data-active] { outline-color: Highlight; }
   .ui-select__option[aria-selected='true'] { border: 1px solid Highlight; }

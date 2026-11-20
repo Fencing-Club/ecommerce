@@ -20,7 +20,7 @@
     >
       <span>
         <span class="svg-wrapper header__icon-open">
-          {% render 'fc-icon', icon: 'search', size: 22 %}
+          {% render 'ui-icon', icon: 'search', size: 22 %}
         </span>
         <span class="svg-wrapper header__icon-close">
           {{- 'icon-close.svg' | inline_asset_content -}}
@@ -43,7 +43,7 @@
         <form action="{{ routes.search_url }}" method="get" role="search" class="search-panel__form">
           <div class="search-panel__bar">
             <span class="search-panel__icon">
-              {%- render 'fc-icon', icon: 'search', size: 22 -%}
+              {%- render 'ui-icon', icon: 'search', size: 22 -%}
             </span>
             <label class="visually-hidden" for="{{ input_id }}">{{ 'general.search.search' | t }}</label>
             <input
@@ -63,14 +63,14 @@
             >
             <input type="hidden" name="options[prefix]" value="last">
             <span class="search-panel__spinner" aria-hidden="true">
-              {%- render 'fc-icon', icon: 'loader-circle', size: 18 -%}
+              {%- render 'ui-icon', icon: 'loader-circle', size: 18 -%}
             </span>
             <button
               type="button"
               class="search-panel__close modal__close-button focus-inset"
               aria-label="{{ 'accessibility.close' | t }}"
             >
-              {%- render 'fc-icon', icon: 'x', size: 20 -%}
+              {%- render 'ui-icon', icon: 'x', size: 20 -%}
             </button>
           </div>
 

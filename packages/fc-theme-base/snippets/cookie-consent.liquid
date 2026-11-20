@@ -41,7 +41,7 @@
       {%- render 'ui-button',
         label: 'Manage preferences',
         variant: 'ghost',
-        icon: 'sliders',
+        icon: 'sliders-horizontal',
         action: 'consent-manage'
       -%}
     </div>
@@ -53,7 +53,7 @@
         <h2 class="cookie-consent__heading" id="CookieConsentTitle">Cookie preferences</h2>
         <p class="cookie-consent__body">Choose which cookies we can use. You can change this anytime.</p>
       </div>
-      {%- render 'ui-button', aria_label: 'Close', variant: 'icon', icon: 'close', action: 'consent-close' -%}
+      {%- render 'ui-button', aria_label: 'Close', variant: 'icon', icon: 'x', action: 'consent-close' -%}
     </div>
 
     <ul class="cookie-consent__categories" role="list">
