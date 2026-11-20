@@ -4,7 +4,7 @@
 
 .article-template {
   background: #ffffff;
-  color: #101012;
+  color: var(--foreground);
 }
 
 .article-template__header,
@@ -29,12 +29,12 @@
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: 0.15rem;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .article-template__hero-container {
   overflow: hidden;
-  border-radius: 1.4rem;
+  border-radius: var(--radius-xl);
 }
 
 .article-template__hero {
@@ -68,7 +68,7 @@
   font-size: 1.4rem;
   line-height: 1.25;
   letter-spacing: 0;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .article-template__avatar {
@@ -78,14 +78,14 @@
   width: 4rem;
   height: 4rem;
   border-radius: 50%;
-  background: #101012;
+  background: var(--foreground);
   font-weight: 700;
   color: #ffffff;
 }
 
 .article-template__author {
   font-weight: 600;
-  color: #101012;
+  color: var(--foreground);
 }
 
 .article-template__link {
@@ -110,7 +110,7 @@
   font-size: 1.7rem;
   line-height: 1.7;
   letter-spacing: 0;
-  color: #101012;
+  color: var(--foreground);
 }
 
 .article-template__content > p:first-child {
@@ -143,17 +143,17 @@
 .article-template__content blockquote {
   margin: 3.2rem 0;
   padding: 0.4rem 0 0.4rem 2.4rem;
-  border-left: 0.3rem solid #101012;
+  border-left: 0.3rem solid var(--foreground);
   font-family: var(--font-heading-family);
   font-size: 2.4rem;
   font-weight: 500;
   line-height: 1.4;
   font-style: italic;
-  color: #101012;
+  color: var(--foreground);
 }
 
 .article-template__content img {
-  border-radius: 1.4rem;
+  border-radius: var(--radius-xl);
 }
 
 .article-template__social-sharing {
@@ -194,7 +194,7 @@
   font-weight: 600;
   letter-spacing: 0.15rem;
   text-transform: uppercase;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .article-template__discovery h2 {
@@ -209,7 +209,7 @@
 .article-template__discovery-header p:not(.article-template__discovery-kicker) {
   margin: 0;
   font-size: 1.6rem;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .article-template__discovery-tiles {

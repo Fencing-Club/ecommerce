@@ -138,7 +138,7 @@ template-owned hooks, never customer-supplied HTML. Callers must provide unique 
 
 ## Motion And Geometry
 
-- `ui-button` uses 15px text, a 6px radius and a 44px minimum height, including search and support-band actions.
+- `ui-button` uses 15px text, a 6px radius and a 36px minimum height (shadcn's h-9), including search and support-band actions.
   Icon buttons have 44px square targets. Disabled/busy semantics live in the shared snippet, and inverted support-band
   colors remain owned by that component.
 - Production `--ui-motion-fast`, `--ui-motion-enter` and `--ui-motion-ease` tokens provide 120ms feedback,

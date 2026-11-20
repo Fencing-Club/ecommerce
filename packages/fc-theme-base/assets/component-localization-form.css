@@ -453,9 +453,9 @@
 
 .localization-form__select { font-size: 1.5rem; }
 .localization-form__select:focus-visible, .disclosure__link:focus-visible {
-  outline: 2px solid var(--ui-focus-outer);
+  outline: 2px solid var(--ring);
   outline-offset: 3px;
-  box-shadow: 0 0 0 3px var(--ui-focus-inner);
+  box-shadow: 0 0 0 3px var(--background);
 }
 .localization-form__select:not(:disabled):active, .disclosure__link:active { transform: translateY(1px); }
 @media (prefers-reduced-motion: reduce) {

@@ -1,9 +1,9 @@
 .size-charts-page,
 .size-chart {
-  --chart-ink: #101012;
-  --chart-muted: #5a5a60;
-  --chart-line: #e3e3e0;
-  --chart-surface: #f4f4f2;
+  --chart-ink: var(--foreground);
+  --chart-muted: var(--muted-foreground);
+  --chart-line: var(--border);
+  --chart-surface: var(--muted);
   color: var(--chart-ink);
   font-family: var(--font-body-family);
   font-size: 1.4rem;

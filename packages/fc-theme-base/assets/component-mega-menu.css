@@ -167,16 +167,16 @@
    --------------------------------------------------------------------------- */
 
 .fc-mega {
-  --fc-mega-ink: #101012;
-  --fc-mega-ink-soft: #5a5a60;
-  --fc-mega-line: #e3e3e0;
-  --fc-mega-surface: #f4f4f2;
+  --fc-mega-ink: var(--foreground);
+  --fc-mega-ink-soft: var(--muted-foreground);
+  --fc-mega-line: var(--border);
+  --fc-mega-surface: var(--muted);
   --fc-mega-tool-ink: #f7f7f5;
   --fc-mega-tool-ink-soft: #a0a0a6;
-  --fc-mega-tool-surface: #101012;
+  --fc-mega-tool-surface: var(--foreground);
   --fc-mega-tool-button: #ffffff;
-  --fc-mega-tool-button-ink: #101012;
-  --fc-mega-tool-button-hover: #e3e3e0;
+  --fc-mega-tool-button-ink: var(--foreground);
+  --fc-mega-tool-button-hover: var(--border);
   --fc-mega-radius: 1.4rem;
   /* Panel chrome is 119px, so this pins every variant to a 349px panel. */
   --fc-mega-body-min: 23rem;
@@ -202,16 +202,16 @@
 }
 
 .header-wrapper--translucent .fc-mega {
-  --fc-mega-ink: #101012;
-  --fc-mega-ink-soft: #5a5a60;
-  --fc-mega-line: #e3e3e0;
-  --fc-mega-surface: #f4f4f2;
+  --fc-mega-ink: var(--foreground);
+  --fc-mega-ink-soft: var(--muted-foreground);
+  --fc-mega-line: var(--border);
+  --fc-mega-surface: var(--muted);
   --fc-mega-tool-ink: #f7f7f5;
   --fc-mega-tool-ink-soft: #a0a0a6;
-  --fc-mega-tool-surface: #101012;
+  --fc-mega-tool-surface: var(--foreground);
   --fc-mega-tool-button: #ffffff;
-  --fc-mega-tool-button-ink: #101012;
-  --fc-mega-tool-button-hover: #e3e3e0;
+  --fc-mega-tool-button-ink: var(--foreground);
+  --fc-mega-tool-button-hover: var(--border);
 }
 
 .header-wrapper--inverted .fc-mega {
@@ -219,10 +219,10 @@
   --fc-mega-ink-soft: #a0a0a6;
   --fc-mega-line: #ffffff1a;
   --fc-mega-surface: #1b1b1d;
-  --fc-mega-tool-ink: #101012;
-  --fc-mega-tool-ink-soft: #5a5a60;
+  --fc-mega-tool-ink: var(--foreground);
+  --fc-mega-tool-ink-soft: var(--muted-foreground);
   --fc-mega-tool-surface: #f7f7f5;
-  --fc-mega-tool-button: #101012;
+  --fc-mega-tool-button: var(--foreground);
   --fc-mega-tool-button-ink: #f7f7f5;
   --fc-mega-tool-button-hover: #29292c;
 }

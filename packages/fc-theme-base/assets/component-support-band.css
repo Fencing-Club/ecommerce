@@ -8,7 +8,7 @@
   width: 100%;
   min-height: 12.8rem;
   padding: 3.6rem 4rem;
-  border-radius: 1.4rem;
+  border-radius: var(--radius-xl);
   background: #0b0b0c;
   color: #f7f7f5;
 }
@@ -48,7 +48,7 @@
 .ui-support-band__primary.ui-button {
   border-color: #f7f7f5;
   background: #f7f7f5;
-  color: #101012;
+  color: var(--foreground);
 }
 
 .ui-support-band__secondary.ui-button {

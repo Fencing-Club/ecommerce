@@ -152,7 +152,7 @@
   min-height: 5rem;
   padding: 0 2rem;
   border: 0.1rem solid #ffffff26;
-  border-radius: 1.4rem;
+  border-radius: var(--radius-xl);
   background: #ffffff14;
   box-shadow: none;
   font-family: var(--font-body-family);
@@ -178,13 +178,13 @@
   width: auto;
   min-height: 5rem;
   padding-inline: 3.2rem;
-  border-radius: 1.4rem;
+  border-radius: var(--radius-xl);
   background: #f7f7f5;
   font-family: var(--font-heading-family);
   font-size: 1.6rem;
   font-weight: 600;
   letter-spacing: 0;
-  color: #101012;
+  color: var(--foreground);
 }
 
 .newsletter--split .newsletter__disclaimer {
