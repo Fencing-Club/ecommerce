@@ -155,6 +155,8 @@ function contentSpans(section, contentWidth) {
   const add = (element, rect, label) => {
     if (rect.width < 2 || rect.height < 2) return;
     if (!element.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return;
+    // Screen reader text, and skip links, which only show while focused, over the page.
+    if (element.closest('.visually-hidden')) return;
     const span = visibleSpan(element, rect);
     if (span) spans.push({ ...span, label });
   };
@@ -218,8 +220,6 @@ export default {
       else frame.addEventListener('load', resolve, { once: true });
     });
     await frame.contentDocument.fonts.ready;
-    // A focused skip link shows on purpose, over the page; measure the page as it rests.
-    frame.contentDocument.activeElement?.blur();
     await expect(frame.contentDocument.querySelectorAll('[data-gutter-section]').length).toBeGreaterThan(0);
     await expect(gutterProblems(frame.contentDocument)).toEqual([]);
   },
