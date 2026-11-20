@@ -198,6 +198,12 @@ export function registerShopifyLiquid(engine, { locale = {}, readAsset, readBloc
     return `<img${id} src="${escapeAttribute(url)}" alt="${escapeAttribute(options.alt ?? '')}" class="${escapeAttribute(options.class ?? '')}" loading="${options.loading ?? 'lazy'}">`;
   });
   engine.registerFilter('placeholder_svg_tag', () => '');
+  // Shopify prints `%Z` as the zone's abbreviation, such as PST; liquidjs prints its full name.
+  const date = engine.filters.date;
+  engine.registerFilter('date', function (value, format, ...rest) {
+    const zone = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(new Date()).find((part) => part.type === 'timeZoneName').value;
+    return date.call(this, value, typeof format === 'string' ? format.replaceAll('%Z', zone) : format, ...rest);
+  });
   // A plain card titled with the method's name, where Shopify draws the payment method's mark.
   engine.registerFilter('payment_type_svg_tag', (type, ...attributes) => {
     const name = paymentNames[type] ?? type;
