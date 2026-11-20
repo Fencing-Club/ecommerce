@@ -15,7 +15,7 @@
     {%- if validity != 'true' -%}{%- continue -%}{%- endif -%}
     {%- if current_chart.system.handle == item.system.handle -%}{%- assign contains_current = true -%}{%- endif -%}
     <li><a href="{{ item.system.url }}"{% if current_chart.system.handle == item.system.handle %} aria-current="page"{% endif %}>
-      <span>{{ item.navigation_label.value | default: item.title.value | escape }}</span>{% unless is_navigation %}{% render 'fc-icon', icon: 'arrow-right', size: 16 %}{% endunless %}
+      <span>{{ item.navigation_label.value | default: item.title.value | escape }}</span>{% unless is_navigation %}{% render 'ui-icon', icon: 'arrow-right', size: 16 %}{% endunless %}
     </a></li>
   {%- endfor -%}
 {%- endcapture -%}
@@ -23,7 +23,7 @@
 {%- if heading != blank and group_links != blank -%}
   {%- if is_navigation -%}
     <details class="size-chart-directory__group"{% if contains_current %} open{% endif %}>
-      <summary><span>{{ heading | escape }}</span>{% render 'fc-icon', icon: 'chevron-down', size: 16 %}</summary>
+      <summary><span>{{ heading | escape }}</span>{% render 'ui-icon', icon: 'chevron-down', size: 16 %}</summary>
   {%- else -%}
     <section class="size-chart-directory__group"><h2>{{ heading | escape }}</h2>
   {%- endif -%}

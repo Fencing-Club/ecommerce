@@ -20,10 +20,10 @@
   {% if contextual %}data-contextual-breadcrumbs{% endif %}
 >
   <a href="{{ root_url }}">{{ root_label | escape }}</a>
-  {%- render 'fc-icon', icon: 'chevron-right', size: 14 -%}
+  {%- render 'ui-icon', icon: 'chevron-right', size: 14 -%}
   {%- if parent_label != blank and parent_url != blank -%}
     <a href="{{ parent_url }}">{{ parent_label | escape }}</a>
-    {%- render 'fc-icon', icon: 'chevron-right', size: 14 -%}
+    {%- render 'ui-icon', icon: 'chevron-right', size: 14 -%}
   {%- endif -%}
   <span aria-current="page"{% if contextual %} data-breadcrumb-current{% endif %}>{{ current_label | escape }}</span>
 </nav>

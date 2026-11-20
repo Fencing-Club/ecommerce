@@ -67,7 +67,7 @@
             >
               <a href="{{ query.url }}" class="predictive-search__item">
                 <span class="predictive-search__item-icon">
-                  {%- render 'fc-icon', icon: 'search', size: 15 -%}
+                  {%- render 'ui-icon', icon: 'search', size: 15 -%}
                 </span>
                 <span class="predictive-search__item-query-result" aria-label="{{ query.text }}">
                   {{- query.styled_text -}}
@@ -95,7 +95,7 @@
             >
               <a href="{{ collection.url }}" class="predictive-search__item">
                 <span class="predictive-search__item-icon">
-                  {%- render 'fc-icon', icon: 'layout-grid', size: 15 -%}
+                  {%- render 'ui-icon', icon: 'layout-grid', size: 15 -%}
                 </span>
                 <span class="predictive-search__item-title">{{ collection.title | escape }}</span>
                 {%- if collection.products_count > 0 -%}
@@ -166,7 +166,7 @@
                 >
                   <a href="{{ article.url }}" class="predictive-search__item">
                     <span class="predictive-search__item-icon">
-                      {%- render 'fc-icon', icon: 'book-open', size: 15 -%}
+                      {%- render 'ui-icon', icon: 'book-open', size: 15 -%}
                     </span>
                     <span class="predictive-search__item-title predictive-search__item-title--guide">
                       {{- article.title | escape -}}
@@ -183,7 +183,7 @@
                 >
                   <a href="{{ page.url }}" class="predictive-search__item">
                     <span class="predictive-search__item-icon">
-                      {%- render 'fc-icon', icon: 'life-buoy', size: 15 -%}
+                      {%- render 'ui-icon', icon: 'life-buoy', size: 15 -%}
                     </span>
                     <span class="predictive-search__item-title predictive-search__item-title--guide">
                       {{- page.title | escape -}}
@@ -209,7 +209,7 @@
     {%- else -%}
       <div id="predictive-search-results-groups-wrapper" class="predictive-search__empty" data-search-results-groups>
         <span class="predictive-search__empty-icon">
-          {%- render 'fc-icon', icon: 'search-x', size: 26 -%}
+          {%- render 'ui-icon', icon: 'search-x', size: 26 -%}
         </span>
         <p class="predictive-search__empty-heading">
           {{- 'templates.search.no_results_heading' | t: terms: predictive_search.terms -}}

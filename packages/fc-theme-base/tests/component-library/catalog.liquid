@@ -2,7 +2,7 @@
   <aside aria-labelledby="LabFilterHeading">
     {% render 'collection-filter-header', heading_id: 'LabFilterHeading', heading_tag: 'h3', heading: 'Filters', clear_label: 'Clear all', clear_url: '/lab/catalog' %}
     <details class="lab-filter-disclosure" open>
-      <summary>Filters {% render 'fc-icon', icon: 'chevron-down', size: 16 %}</summary>
+      <summary>Filters {% render 'ui-icon', icon: 'chevron-down', size: 16 %}</summary>
       <div class="collection-filter-panel">
       <div class="lab-filter-actions"><a class="ui-link" href="/lab/catalog">Clear all</a></div>
       {% render 'collection-facet-filters', results: catalog, section_id: 'lab-catalog' %}

@@ -1,4 +1,5 @@
 import { expect, fn } from 'storybook/test';
+import iconNames from '../../scripts/icons.json';
 import { snippet } from '../liquid.js';
 
 /** `snippets/ui-button.liquid`: the theme's one button. */
@@ -8,7 +9,7 @@ export default {
   args: { label: 'Add to cart', variant: 'primary' },
   argTypes: {
     variant: { control: 'inline-radio', options: ['primary', 'secondary', 'ghost', 'icon'] },
-    icon: { control: 'select', options: [undefined, 'arrow-right', 'chevron-down', 'close', 'sliders', 'shield-check'] },
+    icon: { control: 'select', options: [undefined, ...iconNames] },
   },
 };
 
@@ -39,7 +40,7 @@ export const Ghost = {
 };
 
 export const IconOnly = {
-  args: { label: undefined, aria_label: 'Close', variant: 'icon', icon: 'close' },
+  args: { label: undefined, aria_label: 'Close', variant: 'icon', icon: 'x' },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('button', { name: 'Close' })).toBeEnabled();
   },

@@ -163,7 +163,7 @@
   text-decoration: none;
 }
 
-.search-results__controls .facets__summary .fc-icon {
+.search-results__controls .facets__summary .ui-icon {
   flex: 0 0 auto;
 }
 
@@ -291,7 +291,7 @@
 }
 
 /* Dawn reveals the tick with a rule keyed to its own icon class. */
-.search-results__controls .facet-checkbox > input[type='checkbox']:checked ~ .svg-wrapper > .fc-icon {
+.search-results__controls .facet-checkbox > input[type='checkbox']:checked ~ .svg-wrapper > .ui-icon {
   visibility: visible;
 }
 

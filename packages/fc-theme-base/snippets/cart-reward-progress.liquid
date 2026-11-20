@@ -55,18 +55,18 @@
     <div class="fc-progress__head">
       <p class="fc-progress__message">
         {%- if next_amount == 0 -%}
-          {% render 'fc-icon', icon: 'gift', size: 16 %}<strong>{{ 'sections.cart.rewards_unlocked' | t }}</strong>
+          {% render 'ui-icon', icon: 'gift', size: 16 %}<strong>{{ 'sections.cart.rewards_unlocked' | t }}</strong>
         {%- elsif next_kind == 'shipping' -%}
-          {% render 'fc-icon', icon: 'truck', size: 16 %}<span>{{ 'sections.cart.free_shipping_remaining_html' | t: amount: remaining_money }}</span>
+          {% render 'ui-icon', icon: 'truck', size: 16 %}<span>{{ 'sections.cart.free_shipping_remaining_html' | t: amount: remaining_money }}</span>
         {%- elsif gifts_reached > 0 -%}
-          {% render 'fc-icon', icon: 'gift', size: 16 %}<span>{{ 'sections.cart.another_gift_remaining_html' | t: amount: remaining_money }}</span>
+          {% render 'ui-icon', icon: 'gift', size: 16 %}<span>{{ 'sections.cart.another_gift_remaining_html' | t: amount: remaining_money }}</span>
         {%- else -%}
-          {% render 'fc-icon', icon: 'gift', size: 16 %}<span>{{ 'sections.cart.gift_remaining_html' | t: amount: remaining_money }}</span>
+          {% render 'ui-icon', icon: 'gift', size: 16 %}<span>{{ 'sections.cart.gift_remaining_html' | t: amount: remaining_money }}</span>
         {%- endif -%}
       </p>
       {%- if next_amount > 0 and reached_kind != '' -%}
         <p class="fc-progress__note">
-          {% render 'fc-icon', icon: 'check', size: 14 %}
+          {% render 'ui-icon', icon: 'check', size: 14 %}
           {%- if reached_kind == 'shipping' -%}
             <span class="fc-progress__note-long">{{ 'sections.cart.free_shipping_unlocked' | t }}</span><span class="fc-progress__note-short">{{ 'sections.cart.free_shipping_unlocked_short' | t }}</span>
           {%- else -%}
@@ -88,7 +88,7 @@
           endif
         -%}
         <span class="fc-progress__stop" style="--at: {{ at }}%"{% if total >= amount %} data-reached{% endif %}>
-          <span class="fc-progress__marker">{% render 'fc-icon', icon: icon, size: 16 %}</span>
+          <span class="fc-progress__marker">{% render 'ui-icon', icon: icon, size: 16 %}</span>
           <span class="fc-progress__label">{{ amount | money_without_trailing_zeros }}</span>
         </span>
       {%- endfor -%}
