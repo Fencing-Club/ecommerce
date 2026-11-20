@@ -65,23 +65,28 @@
     text-underline-offset: 0.3rem;
   }
 
-  /* Desktop: brand on the left; the menus and contact columns on the right. */
+  /* Desktop: brand on the left; the menus and contact columns on the right. On narrower desktops the gaps close
+     from 72px towards 40px and the brand and contact columns narrow, so the row still fits. */
   .footer__main {
+    --footer-column-gap: clamp(var(--spacing-10), 6vw, calc(var(--spacing) * 18));
     display: flex;
-    gap: calc(var(--spacing) * 18);
+    gap: var(--footer-column-gap);
     align-items: flex-start;
   }
   .footer__brand {
     flex: 0 1 32rem;
+    min-width: 0;
     margin-inline-end: auto;
   }
   .footer__menus {
     display: flex;
-    gap: calc(var(--spacing) * 18);
+    gap: var(--footer-column-gap);
     white-space: nowrap;
   }
+  /* 19rem holds the widest contact line ("Mon–Fri, 9am–6pm PST") beside its icon. */
   .footer__contact {
-    flex: 0 0 24rem;
+    flex: 0 1 24rem;
+    min-width: 19rem;
   }
 
   .footer__bottom {
@@ -112,7 +117,7 @@
   }
 
   /* Tablet: the menus across the top, then contact beside the brand, each group under a rule. */
-  @media (max-width: 1199px) {
+  @media (max-width: 989px) {
     .footer {
       --footer-gap: var(--spacing-7);
       padding-block: var(--spacing-12) var(--spacing-8);
