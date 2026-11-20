@@ -218,6 +218,8 @@ export default {
       else frame.addEventListener('load', resolve, { once: true });
     });
     await frame.contentDocument.fonts.ready;
+    // A focused skip link shows on purpose, over the page; measure the page as it rests.
+    frame.contentDocument.activeElement?.blur();
     await expect(frame.contentDocument.querySelectorAll('[data-gutter-section]').length).toBeGreaterThan(0);
     await expect(gutterProblems(frame.contentDocument)).toEqual([]);
   },
