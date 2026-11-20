@@ -17,7 +17,7 @@
   --muted-foreground: #5a5a60;
   --accent: #f7f7f5;
   --accent-foreground: #101012;
-  --destructive: #b42318;
+  --destructive: #e7000b; /* red-600 */
   --border: #e3e3e0;
   --input: #c9c9c4;
   --ring: #101012;

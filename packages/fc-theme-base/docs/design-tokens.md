@@ -7,7 +7,7 @@ top of `assets/base.css`, which every layout loads, and components use them inst
 ## Rules
 
 - Prefer alignment with shadcn over custom values. A custom value or a token shadcn doesn't have needs a before and
-  after, shown with the real components in Storybook (`Foundations/Token choices`), before it's added.
+  after, shown with the real components in Storybook side by side with the shadcn value, before it's added.
 - Use the role, not the look: `--primary` for the main action, `--muted-foreground` for secondary text, `--border`
   for dividers and card edges, `--input` for field borders, `--ring` for the focus ring, `--destructive` for errors.
 - Use the radius scale: `--radius-sm` for small marks, `--radius-md` for controls, `--radius-lg` for notices and

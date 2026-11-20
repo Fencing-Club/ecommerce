@@ -1,7 +1,7 @@
 /* Cart flyout and cart page. Measurements follow the Cart flyout and Cart page lanes in FencingClubWebsite.pen. */
 :root {
-  --cart-benefit: #216b43;
-  --cart-benefit-surface: #eff6f1;
+  --cart-benefit: #008236; /* green-700 */
+  --cart-benefit-surface: #f0fdf4; /* green-50 */
   --cart-alert: #a6192e;
   --cart-alert-soft: #f7e8ea;
   --cart-display: var(--font-heading-family);

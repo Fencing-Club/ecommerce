@@ -33,10 +33,9 @@ const globals = { settings, routes: { root_url: '/', search_url: '/search', cart
  *
  * @param {string} name The file name without `.liquid`.
  * @param {Record<string, unknown>} [variables]
- * @param {Record<string, unknown>} [extraGlobals] Store objects a nested `render` reads, such as `cart` or `shop`.
  */
-export function renderLiquid(name, variables = {}, extraGlobals = {}) {
-  return engine.renderFileSync(name, variables, { globals: { ...globals, ...extraGlobals } });
+export function renderLiquid(name, variables = {}) {
+  return engine.renderFileSync(name, variables, { globals });
 }
 
 /** The CSS variables layout/theme.liquid writes in its `{% style %}` block. */
