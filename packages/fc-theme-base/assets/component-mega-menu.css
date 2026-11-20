@@ -600,12 +600,13 @@
 :is(.fc-mega-tool__button, .fc-mega-card, .fc-mega-panel__option) {
   transition: background-color var(--default-transition-duration) var(--ease-out), color var(--default-transition-duration) var(--ease-out), border-color var(--default-transition-duration) var(--ease-out), transform var(--default-transition-duration) var(--ease-out);
 }
+/* Like the menu's other links: an underline, and the arrow nudges toward where it goes. */
 @media (hover: hover) {
-  .fc-mega-panel__option:hover { background: rgba(var(--color-foreground), 0.07); }
+  .fc-mega-panel__option:hover .icon { transform: translateX(0.2rem); }
 }
 .fc-mega a:active { transform: translateY(1px); }
 @media (prefers-reduced-motion: reduce) {
-  :is(.fc-mega-tool__button, .fc-mega-card, .fc-mega-panel__option) { transition: none; }
+  :is(.fc-mega-tool__button, .fc-mega-card, .fc-mega-panel__option, .fc-mega-panel__option .icon) { transition: none; }
   .fc-mega a:active { transform: none; }
 }
 
@@ -613,6 +614,7 @@
   flex: 0 0 auto;
   width: 1.4rem;
   height: 1.4rem;
+  transition: transform var(--default-transition-duration) var(--ease-out);
 }
 
 @media screen and (max-width: 1199px) {
