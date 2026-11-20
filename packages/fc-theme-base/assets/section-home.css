@@ -228,10 +228,10 @@
   height: 100%;
 }
 
-/* The photo reaches 24rem past the content on each side, then stops widening, which
+/* The photo reaches 28rem past the content on each side, then stops widening, which
    would only crop it harder. */
 .fc-home__hero-image {
-  max-width: calc(var(--content-max) + 48rem);
+  max-width: calc(var(--content-max) + 56rem);
   margin-inline: auto;
   object-fit: cover;
   /* The crop takes from the top and bottom; people sit in the upper part of these photos.
@@ -241,13 +241,13 @@
 
 /* Once the photo is narrower than the screen, its sides dissolve into the hero's dark
    background. The mask is an eased fade warped by fractal noise and lightly blurred, so
-   the edge drifts in and out like mist instead of running as a straight ramp. The fade
-   stays in the 24rem past the content and settles about 6rem inside it; it starts 5% in,
-   past the warp's 85px reach, so no hard photo edge shows. Its viewBox is the photo's
-   1728x720, the size it has whenever the mask applies. */
-@media screen and (min-width: 1760px) {
+   the edge drifts in and out like mist instead of running as a straight ramp. A
+   smootherstep ramp runs through the 28rem past the content and settles about 7rem
+   inside it; it starts 3% in, past the warp's 70px reach, so no hard photo edge shows.
+   Its viewBox is the photo's 1808x720, the size it has whenever the mask applies. */
+@media screen and (min-width: 1840px) {
   .fc-home__hero-image {
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1728 720' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='f'%3E%3Cstop offset='0' stop-color='white' stop-opacity='0'/%3E%3Cstop offset='0.05' stop-color='white' stop-opacity='0'/%3E%3Cstop offset='0.075' stop-color='white' stop-opacity='0.14'/%3E%3Cstop offset='0.1' stop-color='white' stop-opacity='0.38'/%3E%3Cstop offset='0.125' stop-color='white' stop-opacity='0.66'/%3E%3Cstop offset='0.15' stop-color='white' stop-opacity='0.88'/%3E%3Cstop offset='0.175' stop-color='white' stop-opacity='1'/%3E%3Cstop offset='0.825' stop-color='white' stop-opacity='1'/%3E%3Cstop offset='0.85' stop-color='white' stop-opacity='0.88'/%3E%3Cstop offset='0.875' stop-color='white' stop-opacity='0.66'/%3E%3Cstop offset='0.9' stop-color='white' stop-opacity='0.38'/%3E%3Cstop offset='0.925' stop-color='white' stop-opacity='0.14'/%3E%3Cstop offset='0.95' stop-color='white' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='white' stop-opacity='0'/%3E%3C/linearGradient%3E%3Cfilter id='m' x='-20%' y='-20%' width='140%' height='140%'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0045 0.008' numOctaves='4' seed='4'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='170' xChannelSelector='R' yChannelSelector='G'/%3E%3CfeGaussianBlur stdDeviation='12'/%3E%3C/filter%3E%3C/defs%3E%3Crect x='0' y='-160' width='1728' height='1040' fill='url(%23f)' filter='url(%23m)'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1808 720' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='f'%3E%3Cstop offset='0' stop-color='white' stop-opacity='0'/%3E%3Cstop offset='0.03' stop-color='white' stop-opacity='0'/%3E%3Cstop offset='0.0465' stop-color='white' stop-opacity='0.009'/%3E%3Cstop offset='0.063' stop-color='white' stop-opacity='0.058'/%3E%3Cstop offset='0.0795' stop-color='white' stop-opacity='0.163'/%3E%3Cstop offset='0.096' stop-color='white' stop-opacity='0.317'/%3E%3Cstop offset='0.1125' stop-color='white' stop-opacity='0.5'/%3E%3Cstop offset='0.129' stop-color='white' stop-opacity='0.683'/%3E%3Cstop offset='0.1455' stop-color='white' stop-opacity='0.837'/%3E%3Cstop offset='0.162' stop-color='white' stop-opacity='0.942'/%3E%3Cstop offset='0.1785' stop-color='white' stop-opacity='0.991'/%3E%3Cstop offset='0.195' stop-color='white' stop-opacity='1.0'/%3E%3Cstop offset='0.805' stop-color='white' stop-opacity='1.0'/%3E%3Cstop offset='0.8215' stop-color='white' stop-opacity='0.991'/%3E%3Cstop offset='0.838' stop-color='white' stop-opacity='0.942'/%3E%3Cstop offset='0.8545' stop-color='white' stop-opacity='0.837'/%3E%3Cstop offset='0.871' stop-color='white' stop-opacity='0.683'/%3E%3Cstop offset='0.8875' stop-color='white' stop-opacity='0.5'/%3E%3Cstop offset='0.904' stop-color='white' stop-opacity='0.317'/%3E%3Cstop offset='0.9205' stop-color='white' stop-opacity='0.163'/%3E%3Cstop offset='0.937' stop-color='white' stop-opacity='0.058'/%3E%3Cstop offset='0.9535' stop-color='white' stop-opacity='0.009'/%3E%3Cstop offset='0.97' stop-color='white' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='white' stop-opacity='0'/%3E%3C/linearGradient%3E%3Cfilter id='m' x='-20%' y='-20%' width='140%' height='140%'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.007' numOctaves='4' seed='4'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='140' xChannelSelector='R' yChannelSelector='G'/%3E%3CfeGaussianBlur stdDeviation='22'/%3E%3C/filter%3E%3C/defs%3E%3Crect x='0' y='-160' width='1808' height='1040' fill='url(%23f)' filter='url(%23m)'/%3E%3C/svg%3E");
     mask-size: 100% 100%;
     mask-repeat: no-repeat;
   }
