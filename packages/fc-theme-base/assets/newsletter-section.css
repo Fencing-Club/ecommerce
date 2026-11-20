@@ -76,7 +76,7 @@
   flex-direction: column;
   gap: 2.4rem;
   align-items: stretch;
-  padding-inline: 2rem;
+  padding-inline: var(--page-gutter);
   background: #0b0b0c;
   text-align: left;
 }
@@ -202,17 +202,9 @@
   margin: 0;
 }
 
-/* Matches the tablet footer's 32px gutter so the two sections align. */
-@media screen and (min-width: 750px) and (max-width: 1199px) {
-  .newsletter--split .newsletter__wrapper {
-    padding-inline: 3.2rem;
-  }
-}
-
 @media screen and (min-width: 1200px) {
   .newsletter--split .newsletter__wrapper {
     height: 22.8rem;
-    padding-inline: max(9.6rem, calc((100% - 124.8rem) / 2));
   }
 }
 

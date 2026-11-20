@@ -9,9 +9,7 @@
 
 .article-template__header,
 .article-template__hero-container {
-  width: calc(100% - 4rem);
-  max-width: 124.8rem;
-  margin-inline: auto;
+  margin-inline: var(--page-gutter);
 }
 
 .article-template__header {
@@ -173,7 +171,7 @@
 }
 
 .article-template__discovery {
-  padding: 6.4rem max(2rem, calc((100% - 124.8rem) / 2));
+  padding: 6.4rem var(--page-gutter);
   background: #ffffff;
 }
 
@@ -238,7 +236,7 @@
 }
 
 .article-template__related {
-  padding: 5.6rem max(2rem, calc((100% - 124.8rem) / 2)) 6rem;
+  padding: 5.6rem var(--page-gutter) 6rem;
 }
 
 .article-template__related > h2 {
@@ -268,11 +266,6 @@
 }
 
 @media screen and (max-width: 989px) {
-  .article-template__header,
-  .article-template__hero-container {
-    width: calc(100% - 8rem);
-  }
-
   .article-template__hero {
     height: 36rem;
   }
@@ -285,11 +278,6 @@
 }
 
 @media screen and (max-width: 749px) {
-  .article-template__header,
-  .article-template__hero-container {
-    width: calc(100% - 4rem);
-  }
-
   .article-template__header {
     gap: 1.8rem;
     padding-top: 3.2rem;

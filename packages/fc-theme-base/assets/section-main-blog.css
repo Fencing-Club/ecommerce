@@ -6,7 +6,7 @@
 .journal-hero,
 .journal-featured,
 .journal-archive {
-  padding-inline: max(2rem, calc((100% - 124.8rem) / 2));
+  padding-inline: var(--page-gutter);
 }
 
 .journal-hero {
@@ -157,12 +157,6 @@
 }
 
 @media screen and (max-width: 989px) {
-  .journal-hero,
-  .journal-featured,
-  .journal-archive {
-    padding-inline: 4rem;
-  }
-
   .journal-feature {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 3.2rem;
@@ -180,12 +174,6 @@
 }
 
 @media screen and (max-width: 749px) {
-  .journal-hero,
-  .journal-featured,
-  .journal-archive {
-    padding-inline: 2rem;
-  }
-
   .journal-hero {
     gap: 1.6rem;
     padding-top: 3.6rem;
@@ -202,8 +190,8 @@
 
   .journal-filters {
     flex-wrap: nowrap;
-    margin-inline: -2rem;
-    padding-inline: 2rem;
+    margin-inline: calc(-1 * var(--gutter));
+    padding-inline: var(--gutter);
     overflow-x: auto;
     scrollbar-width: none;
   }

@@ -29,9 +29,7 @@
     align-items: center;
     justify-content: space-between;
     height: 3.4rem;
-    max-width: none;
     padding-block: 0;
-    padding-inline: max(9.6rem, calc((100% - 124.8rem) / 2));
     border-bottom: 0.1rem solid rgba(var(--color-foreground), 0.12);
     background: rgb(var(--color-background));
   }
@@ -41,6 +39,12 @@
     display: flex;
     gap: 2.2rem;
     align-items: center;
+  }
+
+  /* The controls' 6px padding holds their hover fill; pulling the row out by it puts
+     the caret on the gutter, over the cart icon's edge. */
+  .header-utility__localization {
+    margin-inline-end: -0.6rem;
   }
 
   .header-utility__link {
@@ -177,19 +181,18 @@
 }
 
 @media screen and (min-width: 990px) {
-  /* Matches base.css's .header:not(.drawer-menu).page-width, which sets 5rem gutters. */
   .header:not(.drawer-menu).page-width {
     height: 14rem;
     min-height: 14rem;
-    max-width: none;
     grid-template-columns: 11rem minmax(0, 1fr) auto;
     column-gap: 2.4rem;
-    padding-inline: max(9.6rem, calc((100% - 124.8rem) / 2));
   }
 
+  /* Dawn pads the link 7.5px; the logo starts on the gutter instead. */
   .header--middle-left .header__heading-link,
   .header--top-left .header__heading-link {
     margin-left: 0;
+    padding: 0;
   }
 
   .header__heading-logo-wrapper {
@@ -200,6 +203,8 @@
     width: 11rem;
     max-height: 10rem;
     object-fit: contain;
+    /* The badge is narrower than its slot; it sits on the gutter, not centered in it. */
+    object-position: left center;
   }
 
   .header__inline-menu {
@@ -288,9 +293,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    max-width: none;
     padding-block: 0;
-    padding-inline: 1.6rem;
     border-bottom: 0.1rem solid rgba(var(--color-foreground), 0.12);
     background: rgb(var(--color-background));
   }
@@ -305,6 +308,9 @@
     flex: 1 1 auto;
     align-items: center;
     justify-content: space-between;
+    /* The controls' 6px padding holds their hover fill; pulling the row out by it puts
+       the globe and the caret on the gutter. */
+    margin-inline: -0.6rem;
   }
 
   /* Language sits on the left gutter here, so its panel opens rightward; Dawn
@@ -320,12 +326,11 @@
     display: none;
   }
 
-  /* The section prints an inline `.header { padding: ... 3rem }` after this file, so
-     the extra class is needed to win. */
+  /* The section prints an inline `.header { padding-block }` after this file, so the
+     extra class is needed to win. */
   .header.page-width {
     min-height: 6.4rem;
     padding-block: 0;
-    padding-inline: 1.6rem;
   }
 
   /* The designs group search with the account and cart icons; Dawn parks it beside
@@ -410,14 +415,6 @@
 }
 
 @media screen and (min-width: 750px) and (max-width: 989px) {
-  .header-utility.page-width {
-    padding-inline: 3.2rem;
-  }
-
-  .header.page-width {
-    padding-inline: 3.2rem;
-  }
-
   /* The tablet design sits the whole 44px button against the gutter. */
   .header > header-drawer {
     margin-left: 0;
@@ -425,8 +422,7 @@
 }
 
 /* Below the design's 1248 content width the navigation needs the room more than the
-   logo does, so the logo slot collapses the way the sticky design already shows it
-   and the gutters narrow to give the menu its full width. */
+   logo does, so the logo slot collapses the way the sticky design already shows it. */
 @media screen and (min-width: 990px) and (max-width: 1249px) {
   .header__heading,
   .header > .header__heading-link {
@@ -450,11 +446,6 @@
     /* 16.4rem is sized around the 110px logo; without it the sticky design's 82px row
        is the right height for a 42px nav. */
     min-height: 8.2rem;
-    padding-inline: 5rem;
-  }
-
-  .header-utility.page-width {
-    padding-inline: 5rem;
   }
 }
 
@@ -603,29 +594,34 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-.header-group--overlay {
-  display: block;
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  z-index: 4;
-}
+/* Only wide screens float the homepage header over the hero. Below 990 the header is
+   solid, so floating it would only hide the top of the photo; it stays in the page flow
+   as on every other page. */
+@media screen and (min-width: 990px) {
+  .header-group--overlay {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 4;
+  }
 
-.header-group--overlay .shopify-section-header-sticky {
-  position: fixed;
-  right: 0;
-  left: 0;
-}
+  .header-group--overlay .shopify-section-header-sticky {
+    position: fixed;
+    right: 0;
+    left: 0;
+  }
 
-.header-group--overlay .shopify-section-header-sticky .header-wrapper,
-.header-group--overlay .shopify-section-header-sticky .header,
-.header-group--overlay .shopify-section-header-sticky .header-utility {
-  background: rgb(var(--color-background));
-}
+  .header-group--overlay .shopify-section-header-sticky .header-wrapper,
+  .header-group--overlay .shopify-section-header-sticky .header,
+  .header-group--overlay .shopify-section-header-sticky .header-utility {
+    background: rgb(var(--color-background));
+  }
 
-.header-group--overlay .shopify-section-header-sticky .header-utility {
-  border-bottom-color: rgba(var(--color-foreground), 0.12);
+  .header-group--overlay .shopify-section-header-sticky .header-utility {
+    border-bottom-color: rgba(var(--color-foreground), 0.12);
+  }
 }
 
 /* Dawn's bubble is near-black, which vanishes against the hero's dark header. The bubble is a
