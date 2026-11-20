@@ -1,4 +1,4 @@
-import { expect } from 'storybook/test';
+import { expect, waitFor } from 'storybook/test';
 
 // Page layout: every full-width band lines its content up on one gutter (docs/shopify-page-layout.md). The gutter
 // depends on the screen width, so each page size renders in its own frame: the muted band is the page, the dark box is
@@ -57,16 +57,15 @@ export const PageGutter = {
     const frames = [...canvasElement.querySelectorAll('iframe')];
     await expect(frames).toHaveLength(sizes.length);
     for (const frame of frames) {
-      await new Promise((resolve) => {
-        if (frame.contentDocument?.querySelector('[data-gutter-content]')) resolve();
-        else frame.addEventListener('load', resolve, { once: true });
-      });
       const width = Number(frame.dataset.width);
-      const content = frame.contentDocument.querySelector('[data-gutter-content]').getBoundingClientRect();
-      await expect({ width, left: content.left, right: width - content.right }).toEqual({
-        width,
-        left: expectedGutter(width),
-        right: expectedGutter(width),
+      // Each frame loads the theme's stylesheets on its own, so wait until they apply.
+      await waitFor(() => {
+        const content = frame.contentDocument?.querySelector('[data-gutter-content]')?.getBoundingClientRect();
+        expect({ width, left: content?.left, right: content && width - content.right }).toEqual({
+          width,
+          left: expectedGutter(width),
+          right: expectedGutter(width),
+        });
       });
     }
   },
