@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "check:theme": "shopify theme check --path .",
+    "lint": "shopify theme check --path . --fail-level error",
     "dev": "shopify theme dev --path .",
     "package": "shopify theme package --path .",
     "pull": "shopify theme pull --path .",
