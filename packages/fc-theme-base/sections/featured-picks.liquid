@@ -16,6 +16,13 @@
     grid-column: 2;
     grid-row: 1 / span 2;
   }
+  /* Each card fills its grid cell, so the tall card ends level with the stacked pair. */
+  .picks-grid > * {
+    display: flex;
+  }
+  .picks-grid > * > * {
+    flex: 1 1 auto;
+  }
   @media (max-width: 749px) {
     .picks-grid { grid-template-columns: minmax(0, 1fr); }
     .picks-grid > :nth-child(3) {
