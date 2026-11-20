@@ -41,14 +41,6 @@ the footer. The rule matches the Layout section of the Tokens board in `FencingC
 - a stylesheet hardcodes the content width or centers a box on the page with its own math;
 - a `.page-width` rule outside `base.css` sets an inline padding other than zero or the tokens.
 
-The `Layout/Page gutter` stories render every section the templates and section groups place, at 390, 768, 1100,
-1440 and 1920, and measure the visible text, icons and images. A section added to a template is measured with no
-extra work. A story fails when, in any section:
-
-- content crosses the gutter, except an image wider than the content, such as the homepage hero, and content cut
-  off at the edge of a scrolling row;
-- the leftmost content isn't on the gutter.
-
-A section that centers its content on purpose goes in the story's `centered` list, with the widths it applies to and
-the reason. The stories render through the Storybook stand-ins, so they don't cover what only the store renders, such
-as product media from the admin. See [Storybook](storybook.md).
+The `Foundations/Layout` story shows a `.page-width` band at 390, 768, 1100, 1440 and 1920, each in its own frame, with
+the content area colored. Its play test checks that the content sits on the gutter at each size. Check whole pages on
+the contosocamp store. See [Storybook](storybook.md).

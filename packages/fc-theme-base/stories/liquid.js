@@ -35,19 +35,6 @@ export function renderLiquid(name, variables = {}) {
   return engine.renderFileSync(name, variables, { globals });
 }
 
-/**
- * Renders a section the way a template or section group places it: `section` and the page's resources (`product`,
- * `collection` and the rest) are Liquid globals.
- *
- * @param {string} type The section file name without `.liquid`.
- * @param {object} section The section's `id`, `settings` and `blocks`. `{% content_for 'blocks' %}` renders the blocks from
- *   `blocks/<type>.liquid`; see `registerShopifyLiquid`.
- * @param {Record<string, unknown>} [resources]
- */
-export function renderSection(type, section, resources = {}) {
-  return engine.renderFileSync(type, {}, { globals: { ...globals, ...resources, section } });
-}
-
 /** The CSS variables layout/theme.liquid writes in its `{% style %}` block. */
 export function themeCss() {
   return `${colorSchemeCss(settings.color_schemes)}\n${engine.renderFileSync('theme-tokens', {}, { globals })}`;
