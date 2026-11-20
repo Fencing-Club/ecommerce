@@ -31,7 +31,7 @@ function menuLink(item) {
 function labSettings() {
   const data = JSON.parse(readFileSync(resolve(themeRoot, 'config/settings_data.json'), 'utf8'));
   const schema = JSON.parse(readFileSync(resolve(themeRoot, 'config/settings_schema.json'), 'utf8'));
-  return { ...themeSettings({ schema, data }), popular_categories_menu: popularCategoriesMenu, social_instagram_link: '#utilities', social_facebook_link: '#utilities', predictive_search_enabled: true, predictive_search_show_price: true, size_chart_index_page: { url: '#disclosures' }, type_body_font: { family: 'Inter', fallback_families: 'sans-serif', style: 'normal', weight: 400 }, type_header_font: { family: 'Archivo', fallback_families: 'sans-serif', style: 'normal', weight: 400 } };
+  return { ...themeSettings({ schema, data }), popular_categories_menu: popularCategoriesMenu, social_instagram_link: '#utilities', social_facebook_link: '#utilities', predictive_search_enabled: true, predictive_search_show_price: true, size_chart_index_page: { url: '#disclosures' } };
 }
 
 // Account links stay on the lab page; the account menu reads them from the routes global.
