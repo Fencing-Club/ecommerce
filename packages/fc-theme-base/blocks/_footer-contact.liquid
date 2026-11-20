@@ -1,0 +1,51 @@
+{%- comment -%}
+  The footer's contact column: a heading over the store's address, email, phone and hours.
+{%- endcomment -%}
+<div class="footer-contact" {{ block.shopify_attributes }}>
+  {%- if block.settings.heading != blank -%}
+    <h2 class="footer__heading">{{ block.settings.heading | escape }}</h2>
+  {%- endif -%}
+  {%- render 'shop-contact-details', show_address: true, class: 'footer-contact__details' -%}
+</div>
+
+{% stylesheet %}
+  .footer-contact {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+  .footer-contact__details {
+    gap: var(--spacing-4);
+    font-size: var(--text-sm);
+    color: var(--muted-foreground);
+  }
+  .footer-contact__details a:hover,
+  .footer-contact__details a:focus-visible {
+    color: var(--foreground);
+  }
+  @media (max-width: 1199px) {
+    .footer-contact,
+    .footer-contact__details {
+      gap: var(--spacing-3-5);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.footer_contact.name",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:blocks.footer_contact.settings.paragraph.content"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:blocks.footer_contact.settings.heading.label",
+      "default": "Contact"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.footer_contact.name" }]
+}
+{% endschema %}

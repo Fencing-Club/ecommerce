@@ -425,6 +425,8 @@
       "gift_change_error": "We couldn't switch to [gift]."
     },
     "footer": {
+      "menus": "Footer",
+      "copyright": "© {{ year }} {{ name }}. All rights reserved.",
       "payment": "Payment methods"
     },
     "featured_blog": {

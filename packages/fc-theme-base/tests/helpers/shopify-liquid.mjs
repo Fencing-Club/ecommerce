@@ -9,6 +9,16 @@ const escapeAttribute = (value) =>
 
 const money = (amount) => `$${(amount / 100).toFixed(2)}`;
 
+// The titles Shopify gives the marks `payment_type_svg_tag` draws.
+const paymentNames = {
+  american_express: 'American Express',
+  diners_club: 'Diners Club',
+  discover: 'Discover',
+  master: 'Mastercard',
+  paypal: 'PayPal',
+  visa: 'Visa',
+};
+
 // Block tags whose body Shopify handles itself. `stylesheet` keeps its CSS inline; the others render nothing.
 function registerBlockTag(engine, name, render) {
   engine.registerTag(name, {
@@ -188,6 +198,12 @@ export function registerShopifyLiquid(engine, { locale = {}, readAsset, readBloc
     return `<img${id} src="${escapeAttribute(url)}" alt="${escapeAttribute(options.alt ?? '')}" class="${escapeAttribute(options.class ?? '')}" loading="${options.loading ?? 'lazy'}">`;
   });
   engine.registerFilter('placeholder_svg_tag', () => '');
+  // A plain card titled with the method's name, where Shopify draws the payment method's mark.
+  engine.registerFilter('payment_type_svg_tag', (type, ...attributes) => {
+    const name = paymentNames[type] ?? type;
+    const options = Object.fromEntries(attributes);
+    return `<svg class="${escapeAttribute(options.class ?? '')}" viewBox="0 0 38 24" role="img" aria-labelledby="pi-${type}"><title id="pi-${type}">${escapeAttribute(name)}</title><rect width="37" height="23" x="0.5" y="0.5" rx="3" fill="#fff" stroke="#d4d4d8"/></svg>`;
+  });
   engine.registerFilter('money', money);
   engine.registerFilter('money_without_currency', (amount) => (amount / 100).toFixed(2));
   engine.registerFilter('money_with_currency', (amount) => `${money(amount)} USD`);

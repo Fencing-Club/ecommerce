@@ -46,6 +46,11 @@ only settings that belong to the whole section, such as a carousel's timing. Eve
 The homepage sections are built this way: Hero, Featured picks, Category grid, Best sellers, Why us, Testimonials,
 Brand logos and Journal highlights. Their shared shell and carousel dots are in `assets/section-home.css`.
 
+So are the announcement bar in the header group and the newsletter band and footer in the footer group. The footer's
+brand and contact columns are the static `_footer-brand` and `_footer-contact` blocks, and its menu columns are
+`_footer-menu` blocks between them. Brand reads the logo and tagline from the theme's brand settings, and contact reads
+Shopify's store details.
+
 ## Rules
 
 - Keep each block small: one element and the settings real sections need. Reach for a group before adding layout

@@ -18,7 +18,9 @@ It runs at `http://localhost:6107`.
   args the snippet's variables, as `{% render name, ... %}` would. `block(type, { blocks })` makes them a theme block's
   settings and renders it as a section's `{% content_for 'blocks' %}` would, with `blocks` nested inside it.
   `section(name, { blocks, staticBlocks, variables })` makes them a section's settings, with its theme blocks, the
-  static blocks its `{% content_for 'block' %}` tags render, and extra globals such as `blogs`.
+  static blocks its `{% content_for 'block' %}` tags render, and extra globals such as `blogs`. Every render gets the
+  theme settings from `config/settings_data.json` and a sample `shop` with the store's address, email, phone and
+  payment methods.
 - `tests/helpers/shopify-liquid.mjs` holds the stand-ins for Shopify's own tags and filters (`t`, `money`,
   `image_url`, `asset_url`, `form` and the rest). The unit tests and the component lab register the same ones.
 - `.storybook/preview.js` writes the CSS variables `layout/theme.liquid` writes: the color schemes from

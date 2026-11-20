@@ -1,0 +1,73 @@
+{%- comment -%}
+  One column of footer links: a heading over a menu's links.
+{%- endcomment -%}
+<div class="footer-menu" {{ block.shopify_attributes }}>
+  {%- if block.settings.heading != blank -%}
+    <h2 class="footer__heading">{{ block.settings.heading | escape }}</h2>
+  {%- endif -%}
+  {%- if block.settings.menu != blank -%}
+    <ul class="footer-menu__links" role="list">
+      {%- for link in block.settings.menu.links -%}
+        <li>
+          <a
+            class="footer__link"
+            href="{{ link.url }}"
+            {% if link.current %}
+              aria-current="page"
+            {% endif %}
+            {% if link.url contains '#cookie-preferences' %}
+              data-cookie-preferences
+            {% endif %}
+          >
+            {{- link.title | escape -}}
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  .footer-menu {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+  .footer-menu__links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-sm);
+    line-height: 1.2;
+    list-style: none;
+  }
+  @media (max-width: 1199px) {
+    .footer-menu,
+    .footer-menu__links {
+      gap: var(--spacing-3-5);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.footer_menu.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:blocks.footer_menu.settings.heading.label",
+      "default": "Shop"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "t:blocks.footer_menu.settings.menu.label",
+      "default": "footer"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.footer_menu.name" }]
+}
+{% endschema %}

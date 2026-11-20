@@ -518,85 +518,13 @@
     },
     "footer": {
       "name": "Footer",
-      "blocks": {
-        "link_list": {
-          "name": "Menu",
-          "settings": {
-            "heading": {
-              "label": "Heading",
-              "default": "Quick links"
-            },
-            "menu": {
-              "label": "Menu"
-            }
-          }
-        },
-        "brand_information": {
-          "name": "Brand information",
-          "settings": {
-            "paragraph": {
-              "content": "Manage brand info in [theme settings](/editor?context=theme&category=brand%20information)"
-            },
-            "show_social": {
-              "label": "Social media icons",
-              "info": "[Manage social accounts](/editor?context=theme&category=social%20media)"
-            }
-          }
-        },
-        "text": {
-          "name": "Text",
-          "settings": {
-            "heading": {
-              "label": "Heading",
-              "default": "Heading"
-            },
-            "subtext": {
-              "label": "Subtext",
-              "default": "<p>Share contact information, store details, and brand content with your customers.</p>"
-            }
-          }
-        }
-      },
       "settings": {
-        "newsletter_enable": {
-          "label": "Email signup"
-        },
-        "newsletter_heading": {
-          "label": "Heading",
-          "default": "Subscribe to our emails"
-        },
-        "header__1": {
-          "content": "Email signup",
-          "info": "Signups add [customer profiles](https://help.shopify.com/manual/customers/manage-customers)"
-        },
-        "show_social": {
-          "label": "Social media icons",
-          "info": "[Manage social accounts](/editor?context=theme&category=social%20media)"
-        },
-        "enable_country_selector": {
-          "label": "Country/region selector",
-          "info": "[Manage countries/regions](/admin/settings/markets)"
-        },
-        "enable_language_selector": {
-          "label": "Language selector",
-          "info": "[Manage languages](/admin/settings/languages)"
+        "copyright_name": {
+          "label": "Copyright name",
+          "info": "Uses the store name when empty."
         },
         "payment_enable": {
           "label": "Payment method icons"
-        },
-        "show_policy": {
-          "label": "Policy links",
-          "info": "[Manage policies](/admin/settings/legal)"
-        },
-        "margin_top": {
-          "label": "Top margin"
-        },
-        "header__9": {
-          "content": "Utilities"
-        },
-        "enable_follow_on_shop": {
-          "label": "Follow on Shop",
-          "info": "Shop Pay must be enabled. [Learn more](https://help.shopify.com/manual/online-store/themes/customizing-themes/follow-on-shop)"
         }
       }
     },
@@ -1859,6 +1787,40 @@
         },
         "disclaimer": {
           "label": "Privacy text"
+        }
+      }
+    },
+    "footer_menu": {
+      "name": "Menu",
+      "settings": {
+        "heading": {
+          "label": "Heading"
+        },
+        "menu": {
+          "label": "Menu"
+        }
+      }
+    },
+    "footer_contact": {
+      "name": "Contact",
+      "settings": {
+        "paragraph": {
+          "content": "Address, email and phone come from [store details](/admin/settings/general). Hours come from Theme settings > Store contact details."
+        },
+        "heading": {
+          "label": "Heading"
+        }
+      }
+    },
+    "footer_brand": {
+      "name": "Brand",
+      "settings": {
+        "paragraph": {
+          "content": "Manage the logo and tagline in [brand information](/editor?context=theme&category=brand%20information)"
+        },
+        "show_social": {
+          "label": "Social links",
+          "info": "[Manage social accounts](/editor?context=theme&category=social%20media)"
         }
       }
     }

@@ -23,7 +23,16 @@ export const assetUrl = (name) => `/theme-assets/${name}`;
 
 export const settings = themeSettings({ schema, data });
 
-const globals = { settings, routes: { root_url: '/', search_url: '/search', cart_url: '/cart' }, cart: { currency: { symbol: '$' } } };
+// The store's details from Settings > Store details, which the footer and contact page show.
+const shop = {
+  name: 'Fencing Club',
+  email: 'support@fencing.club',
+  phone: '4252602501',
+  address: { street: '17190 128th Pl NE', city: 'Woodinville', province_code: 'WA', zip: '98072' },
+  enabled_payment_types: ['visa', 'master', 'american_express', 'paypal', 'diners_club', 'discover'],
+};
+
+const globals = { settings, shop, routes: { root_url: '/', search_url: '/search', cart_url: '/cart' }, cart: { currency: { symbol: '$' } } };
 
 /**
  * Renders a snippet or section with the given variables, as `{% render name, ...variables %}` would.
