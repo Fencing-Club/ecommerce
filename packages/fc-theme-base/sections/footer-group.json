@@ -9,26 +9,33 @@
           "type": "heading",
           "settings": {
             "heading": "Get first access to new gear & restocks",
-            "heading_size": "h2"
+            "tag": "h2",
+            "size": "lg"
           }
         },
-        "paragraph": {
-          "type": "paragraph",
+        "text": {
+          "type": "text",
           "settings": {
-            "text": "<p>Join the list for early drops, limited restocks, and fitting guides. No noise, just the essentials.</p>"
+            "text": "<p>Join the list for early drops, limited restocks, and fitting guides. No noise, just the essentials.</p>",
+            "style": "subtle"
           }
         },
-        "email_form": {
-          "type": "email_form"
+        "signup": {
+          "type": "email-signup",
+          "static": true,
+          "settings": {
+            "label": "Enter your email",
+            "button_label": "Subscribe",
+            "disclaimer": "We respect your privacy. Unsubscribe anytime."
+          }
         }
       },
-      "block_order": ["heading", "paragraph", "email_form"],
+      "block_order": [
+        "heading",
+        "text"
+      ],
       "settings": {
-        "color_scheme": "scheme-footer",
-        "full_width": true,
-        "layout": "split",
-        "padding_top": 52,
-        "padding_bottom": 52
+        "layout": "split"
       }
     },
     "footer": {

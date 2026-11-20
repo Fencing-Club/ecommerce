@@ -1449,174 +1449,11 @@
     "newsletter": {
       "name": "Email signup",
       "settings": {
-        "full_width": {
-          "label": "Full width"
-        },
-        "paragraph": {
-          "content": "Signups add [customer profiles](https://help.shopify.com/manual/customers/manage-customers)"
+        "layout": {
+          "label": "Layout",
+          "options__split": "Side by side",
+          "options__stacked": "Stacked and centered"
         }
-      },
-      "blocks": {
-        "heading": {
-          "name": "Heading",
-          "settings": {
-            "heading": {
-              "label": "Heading",
-              "default": "Subscribe to our emails"
-            }
-          }
-        },
-        "paragraph": {
-          "name": "Text",
-          "settings": {
-            "paragraph": {
-              "label": "Text",
-              "default": "<p>Be the first to know about new collections and exclusive offers.</p>"
-            }
-          }
-        },
-        "email_form": {
-          "name": "Email form"
-        }
-      },
-      "presets": {
-        "name": "Email signup"
-      }
-    },
-    "email-signup-banner": {
-      "name": "Email signup banner",
-      "settings": {
-        "paragraph": {
-          "content": "Signups add [customer profiles](https://help.shopify.com/manual/customers/manage-customers)"
-        },
-        "image": {
-          "label": "Background image"
-        },
-        "image_overlay_opacity": {
-          "label": "Overlay opacity"
-        },
-        "show_background_image": {
-          "label": "Show background image"
-        },
-        "show_text_box": {
-          "label": "Container"
-        },
-        "desktop_content_position": {
-          "options__1": {
-            "label": "Top Left"
-          },
-          "options__2": {
-            "label": "Top Center"
-          },
-          "options__3": {
-            "label": "Top Right"
-          },
-          "options__4": {
-            "label": "Middle Left"
-          },
-          "options__5": {
-            "label": "Middle Center"
-          },
-          "options__6": {
-            "label": "Middle Right"
-          },
-          "options__7": {
-            "label": "Bottom Left"
-          },
-          "options__8": {
-            "label": "Bottom Center"
-          },
-          "options__9": {
-            "label": "Bottom Right"
-          },
-          "label": "Position"
-        },
-        "color_scheme": {
-          "info": "Visible when container displayed."
-        },
-        "image_height": {
-          "label": "Height",
-          "options__1": {
-            "label": "Adapt to image"
-          },
-          "options__2": {
-            "label": "Small"
-          },
-          "options__3": {
-            "label": "Medium"
-          },
-          "options__4": {
-            "label": "Large"
-          }
-        },
-        "content_header": {
-          "content": "Content"
-        },
-        "desktop_content_alignment": {
-          "options__1": {
-            "label": "Left"
-          },
-          "options__2": {
-            "label": "Center"
-          },
-          "options__3": {
-            "label": "Right"
-          },
-          "label": "Alignment"
-        },
-        "header": {
-          "content": "Mobile layout"
-        },
-        "mobile_content_alignment": {
-          "options__1": {
-            "label": "Left"
-          },
-          "options__2": {
-            "label": "Center"
-          },
-          "options__3": {
-            "label": "Right"
-          },
-          "label": "Alignment"
-        },
-        "show_text_below": {
-          "label": "Stack text below image"
-        }
-      },
-      "blocks": {
-        "heading": {
-          "name": "Heading",
-          "settings": {
-            "heading": {
-              "label": "Heading",
-              "default": "Opening soon"
-            }
-          }
-        },
-        "paragraph": {
-          "name": "Text",
-          "settings": {
-            "paragraph": {
-              "label": "Text",
-              "default": "<p>Be the first to know when we launch.</p>"
-            },
-            "text_style": {
-              "options__1": {
-                "label": "Body"
-              },
-              "options__2": {
-                "label": "Subtitle"
-              },
-              "label": "Style"
-            }
-          }
-        },
-        "email_form": {
-          "name": "Email form"
-        }
-      },
-      "presets": {
-        "name": "Email signup banner"
       }
     },
     "related-products": {
@@ -2008,6 +1845,20 @@
         "link_label": {
           "label": "Link label",
           "info": "Shown after the message when a link is set."
+        }
+      }
+    },
+    "email_signup": {
+      "name": "Email signup",
+      "settings": {
+        "label": {
+          "label": "Field label"
+        },
+        "button_label": {
+          "label": "Button label"
+        },
+        "disclaimer": {
+          "label": "Privacy text"
         }
       }
     }

@@ -53,7 +53,8 @@ These files were included in the audit rather than silently omitted or represent
 
 - Shared fields, enhanced dropdowns, product/chart choice pills and product/collection swatches are now implemented and
   adopted by the touched consumers. See [Shared Controls](shopify-interaction-states.md#shared-controls) for ownership
-  and APIs. Search retains its specialized composite field. Newsletter/account forms are not yet migrated.
+  and APIs. Search retains its specialized composite field. The newsletter band and password page use `ui-newsletter-signup`
+  through the `email-signup` block; account forms are not yet migrated.
 - One quantity primitive for PDP and cart contexts. The circular hover treatment is shared; dimensions
   and commerce ownership are not yet consolidated. Do not describe that earlier proposal as implemented.
 - A shared inline status/error wrapper, with polite status versus assertive error semantics and optional retry.

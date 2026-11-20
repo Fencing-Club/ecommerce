@@ -1,0 +1,49 @@
+{% doc %}
+  An email signup form: an email field and a subscribe button, the error or thanks after it's sent, and an optional
+  privacy line. It adds the address to the store's customers with the newsletter tag. The band around it sets its
+  colours.
+
+  @param {string} id - Unique id for the form and its field.
+  @param {string} [label] - The field's accessible name and placeholder. Default: Email.
+  @param {string} [button_label] - The button's text. Default: Subscribe.
+  @param {string} [disclaimer] - A short privacy line under the form.
+{% enddoc %}
+{%- liquid
+  assign field_label = label
+  if field_label == blank
+    assign field_label = 'newsletter.label' | t
+  endif
+  assign submit_label = button_label
+  if submit_label == blank
+    assign submit_label = 'newsletter.button_label' | t
+  endif
+  assign field_id = id | append: '-Email'
+  assign message_id = id | append: '-Message'
+-%}
+{%- form 'customer', id: id, class: 'ui-newsletter-signup' -%}
+  <input type="hidden" name="contact[tags]" value="newsletter">
+  <div class="ui-newsletter-signup__row">
+    {%- liquid
+      assign described_by = ''
+      if form.errors or form.posted_successfully?
+        assign described_by = message_id
+      endif
+      render 'ui-text-field', id: field_id, name: 'contact[email]', type: 'email', label: field_label, hide_label: true, placeholder: field_label, autocomplete: 'email', autocapitalize: 'off', required: true, value: form.email, invalid: form.errors, described_by: described_by
+      render 'ui-button', label: submit_label, type: 'submit', variant: 'primary', size: 'md', class: 'ui-newsletter-signup__submit'
+    -%}
+  </div>
+  {%- if form.errors -%}
+    <p class="ui-newsletter-signup__message" id="{{ message_id }}" role="alert">
+      {%- render 'ui-icon', icon: 'circle-alert', size: 14 -%}
+      <span>{{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}</span>
+    </p>
+  {%- elsif form.posted_successfully? -%}
+    <p class="ui-newsletter-signup__message" id="{{ message_id }}" role="status">
+      {%- render 'ui-icon', icon: 'check', size: 14 -%}
+      <span>{{ 'newsletter.success' | t }}</span>
+    </p>
+  {%- endif -%}
+  {%- if disclaimer != blank -%}
+    <p class="ui-newsletter-signup__disclaimer">{{ disclaimer | escape }}</p>
+  {%- endif -%}
+{%- endform -%}
