@@ -36,7 +36,8 @@
     <textarea class="fc-input fc-note__input" id="{{ field_id }}" name="note" form="{{ form_id }}" rows="3" maxlength="{{ note_max }}" aria-describedby="{{ count_id }} {{ status_id }}">{{ cart.note | escape }}</textarea>
     <div class="fc-note__foot">
       <span class="fc-note__count" id="{{ count_id }}" data-note-count>{{ 'sections.cart.note_length' | t: count: note_length, max: note_max }}</span>
-      <button type="button" class="fc-button fc-button--primary" data-save-note>{{ 'sections.cart.save_note' | t }}</button>
+      {%- assign save_label = 'sections.cart.save_note' | t -%}
+      {%- render 'ui-button', label: save_label, variant: 'primary', size: 'md', additional_props: 'data-save-note' -%}
     </div>
     {%- render 'cart-feedback', id: status_id -%}
   </div>

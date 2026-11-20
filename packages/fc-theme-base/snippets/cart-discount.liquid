@@ -23,7 +23,8 @@
   </div>
   <div class="fc-discount__row">
     <input class="fc-input" id="{{ field_id }}" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" aria-describedby="{{ status_id }}">
-    <button type="button" class="fc-button fc-button--primary" data-apply-discount>{{ 'sections.cart.apply' | t }}</button>
+    {%- assign apply_label = 'sections.cart.apply' | t -%}
+    {%- render 'ui-button', label: apply_label, variant: 'primary', size: 'md', additional_props: 'data-apply-discount' -%}
   </div>
   {%- render 'cart-feedback', id: status_id -%}
 </cart-discount>

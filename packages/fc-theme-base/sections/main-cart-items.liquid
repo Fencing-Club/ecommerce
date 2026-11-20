@@ -26,7 +26,10 @@
       </section>
     </form>
     <p class="visually-hidden" id="cart-live-region-text" role="status"></p>
-    <noscript><button type="submit" name="update" class="fc-button fc-button--outline" form="cart">{{ 'sections.cart.update' | t }}</button></noscript>
+    <noscript>
+      {%- assign update_label = 'sections.cart.update' | t -%}
+      {%- render 'ui-button', label: update_label, variant: 'outline', size: 'md', type: 'submit', additional_props: 'name="update" form="cart"' -%}
+    </noscript>
   </div>
   <div class="fc-cart-page__empty">
     {% render 'cart-message', kind: 'empty', context: 'page' %}

@@ -16,7 +16,7 @@
 <section id="search-components" class="lab-section"><h2>Search <code>ui-search-form / predictive-search</code></h2>
   <div class="lab-state-row"><label for="search-response">Response</label><select id="search-response"><option value="results">Matching results</option><option value="empty">No results</option><option value="slow">Slow response</option><option value="error">Failed request</option></select><output id="search-fixture-status" role="status">Local search</output></div>
   <div class="specimen lab-search-surface">{% render 'ui-search-form', input_id: 'LabSearch', label: 'Search products', button_label: 'Search' %}
-    <div id="search-error" hidden><p role="alert">Unable to load search results. Try again.</p><button type="button" class="ui-button ui-button--secondary" id="search-retry">Retry</button></div>
+    <div id="search-error" hidden><p role="alert">Unable to load search results. Try again.</p><button type="button" class="ui-button ui-button--outline" id="search-retry">Retry</button></div>
   </div>
   <div class="specimen lab-search-loading" role="group" aria-label="Search loading example">{% render 'predictive-search-skeleton' %}</div>
 </section>
