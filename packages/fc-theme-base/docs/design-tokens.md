@@ -32,6 +32,9 @@ built on, with Tailwind's values. Storybook's Foundations stories show each scal
 
 ## Not tokens yet
 
-The `ui-*` components in `assets/component-ui.css` use the spacing and type scales. Section CSS, the dark bands
-(newsletter, support band, inverted header) and a few one-off colors still use raw values; they move to tokens as
-their components are restyled. Sizes off the scale, such as 13px and 15px text, move onto it in the restyle.
+The `ui-*` components in `assets/component-ui.css` use only the color, spacing and type tokens, never Dawn's
+`--color-foreground` channels or raw colors. A scope that changes color, such as the hero's light text, sets the
+shadcn tokens (`--foreground`, `--muted-foreground`) and the components follow. Where the Pen uses a size off the
+scale, such as 13px or 11px text, the component takes the nearest token. Section CSS, the dark bands (newsletter,
+support band, inverted header) and a few one-off colors still use raw values; they move to tokens as their components
+are restyled.

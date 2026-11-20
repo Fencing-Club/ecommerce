@@ -1,0 +1,42 @@
+{% doc %}
+  A short message in a tinted box: an icon, a title and optional body text, with an optional dismiss button.
+
+  @param {string} title - The message.
+  @param {string} [body] - Supporting text under the title.
+  @param {string} [icon] - A ui-icon name. Default: info, or circle-alert for the destructive tone.
+  @param {string} [tone] - default, or destructive for errors.
+  @param {string} [role] - status for updates a screen reader should announce, alert for errors.
+  @param {string} [dismiss_label] - Shows a dismiss button with this accessible name. The button removes the notice and fires notice:dismiss.
+  @param {string} [additional_props] - Extra attributes, such as an id or data hooks.
+{% enddoc %}
+{%- liquid
+  assign notice_icon = icon
+  if notice_icon == blank
+    if tone == 'destructive'
+      assign notice_icon = 'circle-alert'
+    else
+      assign notice_icon = 'info'
+    endif
+  endif
+-%}
+{%- if dismiss_label != blank -%}
+  <script src="{{ 'ui-notice.js' | asset_url }}" defer="defer"></script>
+{%- endif -%}
+<ui-notice
+  class="ui-notice{% if tone == 'destructive' %} ui-notice--destructive{% endif %}"
+  {% if role != blank %}
+    role="{{ role }}"
+  {% endif %}
+  {{ additional_props }}
+>
+  {%- render 'ui-icon', icon: notice_icon, size: 18 -%}
+  <div class="ui-notice__content">
+    <p class="ui-notice__title">{{ title | escape }}</p>
+    {%- if body != blank -%}
+      <p class="ui-notice__body">{{ body | escape }}</p>
+    {%- endif -%}
+  </div>
+  {%- if dismiss_label != blank -%}
+    {%- render 'ui-button', aria_label: dismiss_label, variant: 'icon', icon: 'x', class: 'ui-notice__dismiss', additional_props: 'data-notice-dismiss' -%}
+  {%- endif -%}
+</ui-notice>

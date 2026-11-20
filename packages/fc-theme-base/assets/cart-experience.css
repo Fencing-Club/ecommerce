@@ -18,9 +18,6 @@
 @keyframes fc-cart-pulse { 50% { opacity: 0.55; } }
 
 /* Icon buttons */
-.fc-icon-button { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--muted-foreground); cursor: pointer; }
-.fc-icon-button--small { width: 32px; height: 32px; }
-@media (hover: hover) { .fc-icon-button:hover { background: var(--muted); color: var(--foreground); } }
 
 /* Line items */
 .fc-lines { list-style: none; margin: 0; padding: 0; }

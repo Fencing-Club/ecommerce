@@ -1,0 +1,57 @@
+{% doc %}
+  A quantity field with minus and plus buttons. It runs on the theme's quantity-input element (assets/global.js), which
+  steps the field and fires its change event.
+
+  @param {string} id - The field's id.
+  @param {string} name - The field's name, such as quantity or updates[].
+  @param {number} [value] - The starting quantity. Default: 1.
+  @param {number} [min] - The lowest quantity. Default: 1.
+  @param {number} [max] - The highest quantity, when there is one.
+  @param {number} [step] - The increment. Default: 1.
+  @param {string} [product_title] - Names the field and buttons, as in "Quantity for Fencing glove".
+  @param {string} [form_id] - The form the field belongs to, when it sits outside it.
+  @param {boolean} [disabled] - Disables the field and both buttons.
+{% enddoc %}
+{%- liquid
+  assign quantity_value = value | default: 1
+  assign quantity_min = min | default: 1
+  assign quantity_step = step | default: 1
+  if product_title != blank
+    assign field_label = 'products.product.quantity.input_label' | t: product: product_title
+    assign decrease_label = 'products.product.quantity.decrease' | t: product: product_title
+    assign increase_label = 'products.product.quantity.increase' | t: product: product_title
+  else
+    assign field_label = 'products.product.quantity.label' | t
+    assign decrease_label = 'products.product.quantity.decrease' | t: product: field_label
+    assign increase_label = 'products.product.quantity.increase' | t: product: field_label
+  endif
+-%}
+<quantity-input class="ui-quantity-stepper{% if disabled %} ui-quantity-stepper--disabled{% endif %}">
+  <button class="ui-quantity-stepper__button" name="minus" type="button" aria-label="{{ decrease_label | escape }}" {% if disabled %}disabled{% endif %}>
+    {%- render 'ui-icon', icon: 'minus', size: 16 -%}
+  </button>
+  <input
+    class="ui-quantity-stepper__input"
+    type="number"
+    id="{{ id | escape }}"
+    name="{{ name | escape }}"
+    value="{{ quantity_value }}"
+    min="{{ quantity_min }}"
+    data-min="{{ quantity_min }}"
+    {% if max != blank %}
+      max="{{ max }}"
+    {% endif %}
+    step="{{ quantity_step }}"
+    inputmode="numeric"
+    aria-label="{{ field_label | escape }}"
+    {% if form_id != blank %}
+      form="{{ form_id | escape }}"
+    {% endif %}
+    {% if disabled %}
+      disabled
+    {% endif %}
+  >
+  <button class="ui-quantity-stepper__button" name="plus" type="button" aria-label="{{ increase_label | escape }}" {% if disabled %}disabled{% endif %}>
+    {%- render 'ui-icon', icon: 'plus', size: 16 -%}
+  </button>
+</quantity-input>

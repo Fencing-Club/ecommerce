@@ -1,0 +1,62 @@
+{% doc %}
+  One product option, such as Size or Colour, as a group of choices under a legend. Text options render ui-choice and
+  colour options ui-swatch. Unavailable values are disabled and struck through.
+
+  @param {object} option - A product_option: name, position and values, each with name, available, selected and swatch.
+  @param {string} [id_prefix] - Makes the input ids unique when the picker appears more than once. Default: VariantPicker.
+  @param {string} [name] - The radio group's name. Default: options[option name].
+  @param {string} [style] - choice (default) or swatch.
+  @param {string} [form_id] - The product form the inputs belong to.
+{% enddoc %}
+{%- liquid
+  assign prefix = id_prefix | default: 'VariantPicker'
+  assign group_name = name
+  if group_name == blank
+    assign group_name = 'options[' | append: option.name | append: ']'
+  endif
+  for value in option.values
+    if value.selected
+      assign selected_name = value.name
+    endif
+  endfor
+-%}
+<fieldset class="ui-variant-picker{% if style == 'swatch' %} ui-variant-picker--swatch{% endif %}">
+  <legend class="ui-variant-picker__legend">
+    {{- option.name | escape }}
+    {%- if style == 'swatch' and selected_name != blank %}
+      <span class="ui-variant-picker__selected">{{ selected_name | escape }}</span>
+    {%- endif -%}
+  </legend>
+  <div class="ui-variant-picker__options">
+    {%- for value in option.values -%}
+      {%- capture input_id %}{{ prefix }}-{{ option.position }}-{{ forloop.index0 }}{% endcapture -%}
+      {%- assign unavailable = false -%}
+      {%- unless value.available -%}
+        {%- assign unavailable = true -%}
+      {%- endunless -%}
+      {%- if style == 'swatch' -%}
+        {%- render 'ui-swatch',
+          id: input_id,
+          name: group_name,
+          value: value.name,
+          label: value.name,
+          color: value.swatch.color,
+          image: value.swatch.image,
+          checked: value.selected,
+          disabled: unavailable,
+          form_id: form_id
+        -%}
+      {%- else -%}
+        {%- render 'ui-choice',
+          id: input_id,
+          name: group_name,
+          value: value.name,
+          label: value.name,
+          checked: value.selected,
+          disabled: unavailable,
+          form_id: form_id
+        -%}
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+</fieldset>

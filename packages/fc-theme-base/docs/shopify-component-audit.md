@@ -9,7 +9,7 @@ The component lab renders the approved production appearance directly. No compar
 | Family | Production owners | Lab coverage |
 | --- | --- | --- |
 | Commands and focus | `ui-button`, `ui-link`, `ui-icon`, `fc-icon` | Button/link/icon variants; hover, press, keyboard focus, disabled, busy, success/failure |
-| Options | `product-variant-options`, `swatch-input`, `swatch`, `ui-pill`, `ui-checkbox-field`, `quantity-input` | Pills, dropdowns, swatches, native checkboxes and grouped radios, unavailable values, hover/press/focus, quantity boundaries |
+| Options | `product-variant-options`, `swatch-input`, `swatch`, `ui-pill`, `ui-checkbox-field`, `quantity-input`; the shared `ui-variant-picker`, `ui-swatch` and `ui-quantity-stepper` replace them on the product page rebuild | Pills, dropdowns, swatches, native checkboxes and grouped radios, unavailable values, hover/press/focus, quantity boundaries |
 | Navigation | `ui-breadcrumbs`, `ui-pagination`, `journal-tag-filter` | Short/long trails, current page, previous/next, page selection, next-only pagination, tag selection |
 | Catalog controls | `collection-filter-header`, `collection-facet-filters`, `ui-checkbox-field`, `price-facet`, `collection-toolbar`, `ui-sort-dropdown`, `ui-select`, `ui-select.js` | Aligned filter/results headers, shared checkbox/swatch inputs and dropdown popup, unavailable options, price limits, selected-filter removal, clear, mobile disclosure, local counts/results/pagination |
 | Catalog feedback | `ui-product-card`, `ui-product-card-skeleton` | Matching products, no results, busy, failed request/retry; most recent local request wins |
@@ -19,16 +19,16 @@ The component lab renders the approved production appearance directly. No compar
 | Announcements | `announcement-bar`, `slideshow-component`, slider/slideshow CSS | Single message, four-message manual carousel, announcement/sale/event/vacation tones; copy explicitly identifies promotion-tone examples |
 | Localization | `country-localization`, `language-localization`, `localization-form.js`, flag sprite | Country or region with currency code/symbol, language, selected item, keyboard arrows, Escape/focus return; no actual market or locale change |
 | Contact fields | `ui-text-field`, `ui-select`, `ui-select.js`, `contact-form` | Shared dropdown popup, empty/filled/required/invalid, textarea, disabled, readonly, optional checkbox, busy, success/failure with retained input |
-| Product pricing | `price`, `unit-price` when configured | Regular, comparison/sale, sold-out price and badges; fixture amounts, not offers |
+| Product pricing | `price`, `unit-price` when configured; the shared `ui-price` replaces them on the product page rebuild | Regular, comparison/sale, sold-out price and badges; fixture amounts, not offers |
 | Cart (`/lab/cart`) | `cart-drawer`, `main-cart-items`, the `cart-` snippets, `cart.js`, `cart-drawer.js`, `cart-controls.js` | Every flyout and cart page state at tablet, phone and desktop widths with the production controllers; cart reads come from a fixture and every cart change fails ([shopify-cart.md](shopify-cart.md)) |
 | Images and zoom | `product-media-gallery`, `product-thumbnail`, `product-media`, `product-media-modal`, `media-gallery.js`, `product-modal.js` | Image selection, thumbnails, modal zoom, dismissal/focus return; real local image assets |
 | Sizing | `size-chart-content`, `size-chart-validity`, `measuring-tape-downloads`, `size-chart.js` | Actual approved chart data/illustration, cm/in, compared sizes, empty selection, measurement help, PDF links |
 | Reading | `main-policy`, `policy-page.js` | Contents links, mobile contents disclosure, responsive semantic table, back to top; sample text is not a legal policy |
-| Disclosures and overlays | `ui-faq-item`, `ui-drawer`, `ui-drawer.js` | Native expanded content, modal focus, backdrop/Escape, interruptible motion, reduced motion |
+| Disclosures and overlays | `ui-faq-item`, `ui-drawer`, `ui-drawer.js`, `ui-dialog`, `ui-dialog.js` | Native expanded content, modal focus, backdrop/Escape, interruptible motion, reduced motion |
 | Linked cards | `ui-product-card`, `ui-article-card`, `ui-category-link-card`, `ui-page-link-card`, `ui-contact-intent-card`, `ui-contact-quick-answer`, `ui-page-result-row` | Product/home/search, skeleton, article dates, category/page/contact cards, static quick answers, independent link actions |
 | Sections | Homepage section shells on theme blocks (see [theme blocks](theme-blocks.md)), `ui-support-band` | Image-led merchandise/editorial sections, carousels, inverted action states |
 | Privacy | `cookie-consent`, `cookie-consent.js` | Banner, required/optional preferences, accept/reject/manage, saving/failure/retry/reopen using an in-memory API |
-| Utilities | `social-icons`, `share-button`, `ui-kbd`, `ui-badge`, `loading-spinner` | Social accessible names, share/copy disclosure, keycaps, badges/spinners via consumers; OS share/clipboard remain browser capabilities |
+| Utilities | `social-icons`, `share-button`, `ui-kbd`, `ui-badge`, `ui-notice`, `loading-spinner` | Social accessible names, share/copy disclosure, keycaps, badges/spinners via consumers; OS share/clipboard remain browser capabilities |
 
 ## Remaining Source Dispositions
 

@@ -1,0 +1,42 @@
+{% doc %}
+  A round colour option: a radio input with a colour or image circle. A disabled swatch, for an unavailable value, shows a strike.
+
+  @param {string} id - The input's id.
+  @param {string} name - The radio group's name.
+  @param {string} value - The option value.
+  @param {string} label - The option's name, such as Black. It names the swatch for screen readers.
+  @param {string} [color] - A CSS colour for the circle.
+  @param {object} [image] - An image for the circle, used instead of color.
+  @param {boolean} [checked] - Selects the option.
+  @param {boolean} [disabled] - Disables the option and shows the strike.
+  @param {string} [form_id] - The form the input belongs to, when it sits outside it.
+  @param {string} [additional_props] - Extra attributes for the input.
+{% enddoc %}
+<input
+  type="radio"
+  class="ui-swatch__input"
+  id="{{ id | escape }}"
+  name="{{ name | escape }}"
+  value="{{ value | escape }}"
+  {% if form_id != blank %}
+    form="{{ form_id | escape }}"
+  {% endif %}
+  {% if checked %}
+    checked
+  {% endif %}
+  {% if disabled %}
+    disabled
+  {% endif %}
+  {{ additional_props }}
+>
+<label class="ui-swatch" for="{{ id | escape }}" title="{{ label | escape }}">
+  <span
+    class="ui-swatch__color"
+    {% if image %}
+      style="background-image: url({{ image | image_url: width: 80 }});"
+    {% elsif color != blank %}
+      style="background-color: {{ color }};"
+    {% endif %}
+  ></span>
+  <span class="visually-hidden">{{ label | escape }}</span>
+</label>
