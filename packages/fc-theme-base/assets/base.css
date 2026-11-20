@@ -1437,6 +1437,12 @@ details[open] > .share-button__fallback {
   min-width: 1.3rem;
 }
 
+/* Sized to the icon and its margin, so the icon starts where the button does rather than
+   overflowing a 20px box on both sides. */
+.share-button__button .svg-wrapper {
+  width: auto;
+}
+
 .share-button__fallback {
   display: flex;
   align-items: center;

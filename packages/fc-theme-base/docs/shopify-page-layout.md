@@ -30,14 +30,25 @@ the footer. The rule matches the Layout section of the Tokens board in `FencingC
 - Something that bleeds to the screen edge inside a band, such as a scrolling row of pills, uses
   `margin-inline: calc(-1 * var(--gutter))` and `padding-inline: var(--gutter)`.
 - Rows inside a band add no gutter of their own.
+- Icons count as content. When a control's tap target is wider than its icon, as with the menu button or the
+  announcement arrows, the icon sits on the gutter and the tap target reaches past it.
 
-## The check
+## The checks
 
-`tests/page-gutter.test.js` fails when:
+`tests/page-gutter.test.js` reads the CSS and fails when:
 
 - a file other than `base.css` defines `--gutter`, `--content-max` or `--page-gutter`;
 - a stylesheet hardcodes the content width or centers a box on the page with its own math;
 - a `.page-width` rule outside `base.css` sets an inline padding other than zero or the tokens.
 
-It reads the CSS, not the rendered page, so a section that sets a fixed inline padding on its own class still gets
-past it. Check new sections against the gutter in the browser at 390, 768, 1100 and 1440.
+The `Layout/Page gutter` stories render every section the templates and section groups place, at 390, 768, 1100,
+1440 and 1920, and measure the visible text, icons and images. A section added to a template is measured with no
+extra work. A story fails when, in any section:
+
+- content crosses the gutter, except an image wider than the content, such as the homepage hero, and content cut
+  off at the edge of a scrolling row;
+- the leftmost content isn't on the gutter.
+
+A section that centers its content on purpose goes in the story's `centered` list, with the widths it applies to and
+the reason. The stories render through the Storybook stand-ins, so they don't cover what only the store renders, such
+as product media from the admin. See [Storybook](storybook.md).

@@ -385,12 +385,14 @@
   }
 }
 
-@media screen and (max-width: 749px) {
+@media screen and (max-width: 989px) {
   /* The section sets -1.2rem inline; -1rem lands the 24px glyph on the 16px gutter. */
   .header > header-drawer {
     margin-left: -1rem;
   }
+}
 
+@media screen and (max-width: 749px) {
   /* Dawn opens the country list as a bottom sheet here, but its `.header-localization`
      rule forces `top: 100%`, which resolves against the viewport once the sheet is
      fixed and drops it below the fold. Anchor it to the header instead. */
@@ -411,13 +413,6 @@
   .section-header.menu-open .header-utility,
   .header-group:has(.section-header.menu-open) .announcement-bar-section {
     display: none;
-  }
-}
-
-@media screen and (min-width: 750px) and (max-width: 989px) {
-  /* The tablet design sits the whole 44px button against the gutter. */
-  .header > header-drawer {
-    margin-left: 0;
   }
 }
 
