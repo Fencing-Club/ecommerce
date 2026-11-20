@@ -14,8 +14,9 @@ preference; the user must still verify the printed calibration line. File geomet
 
 ## Regenerate
 
-Requires Python and PyMuPDF, already available in the design environment. Bundled Archivo and Inter fonts match the
-theme typography and are embedded in each PDF. Their licenses and provenance are in [fonts/README.md](fonts/README.md).
+Requires Python and PyMuPDF, already available in the design environment. Bundled Inter Regular and SemiBold are embedded in
+each PDF: a PDF can't use the device's font the way the site does, so print uses Inter alone. Colors come from the
+theme's tokens. Their licenses and provenance are in [fonts/README.md](fonts/README.md).
 The generator, fonts, and logo are self-contained in this directory. Matching editable print artboards remain in
 [FencingClubWebsite.pen](../../fc-theme/FencingClubWebsite.pen).
 

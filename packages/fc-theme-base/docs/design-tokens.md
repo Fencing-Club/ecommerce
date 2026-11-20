@@ -13,10 +13,13 @@ built on, with Tailwind's values. Storybook's Foundations stories show each scal
   for dividers and card edges, `--input` for field borders, `--ring` for the focus ring, `--destructive` for errors.
 - Use the radius scale: `--radius-sm` for small marks, `--radius-md` for controls, `--radius-lg` for notices and
   fields, `--radius-xl` for cards and media. Pills and swatches stay fully rounded.
-- Space with `calc(var(--spacing) * n)`, Tailwind's 4px steps, including half steps such as 1.5.
+- Space with the step tokens, `--spacing-0-5` to `--spacing-24`, named after Tailwind's steps (its `p-4` is
+  `--spacing-4`, 16px). Half steps use a hyphen: `--spacing-1-5`.
 - Size text with `--text-xs` to `--text-5xl` and their `--text-*--line-height` pairs, and weight it with
   `--font-weight-*`. One family, `--font-sans`, the device's own font: SF Pro on Apple devices, Segoe UI Variable on Windows 11,
   Roboto on Android. Nothing downloads. `--font-body-family` and `--font-heading-family` point at it.
+- Printables use Inter Regular and SemiBold, embedded in the PDF, because a PDF can't use the device's font. Their
+  colors are the same tokens, copied into the generator ([printables](../printables/README.md)).
 - Raise with the shadow scale: `--shadow-lg` for menus and popovers, `--shadow-xl` for panels and banners,
   `--shadow-2xl` for dialogs.
 - Animate with `--default-transition-duration` (150ms) or `--duration-enter` (200ms) and `--ease-out`.

@@ -98,7 +98,6 @@ class MeasuringTapeTest(unittest.TestCase):
                 self.assertEqual(sum(page.get_text().count("TAB") for page in document), 7)
                 self.assertIn("Make your measuring tape.", document[0].get_text())
                 fonts = document[0].get_fonts()
-                self.assertTrue(any("Archivo" in font[3] for font in fonts))
                 self.assertTrue(any("Inter" in font[3] for font in fonts))
                 for font in fonts:
                     self.assertTrue(document.extract_font(font[0])[3])
