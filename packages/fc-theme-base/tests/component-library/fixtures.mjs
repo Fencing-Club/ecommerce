@@ -26,17 +26,6 @@ export const languages = [
   { iso_code: 'fr', endonym_name: 'Fran\u00e7ais' },
 ];
 export const localization = { country: countries[0], language: languages[0], available_countries: countries, available_languages: languages };
-export const announcements = [
-  section('announcement-single', { color_scheme: 'scheme-1', show_line_separator: true }, [
-    block('information', { text: 'Equipment advice', message: 'Find the right size before ordering.', tone: 'announcement', link: '#selection', link_label: 'Size guides' }),
-  ]),
-  section('announcement-carousel', { color_scheme: 'scheme-1', auto_rotate: false, change_slides_speed: 5 }, [
-    block('sizing', { text: 'Size guides', message: 'Compare your measurements.', tone: 'announcement', link: '#selection', link_label: 'View guides' }),
-    block('event', { text: 'Event banner example', message: 'Event details appear here.', tone: 'event', link: '#cards', link_label: 'View details' }),
-    block('sale', { text: 'Sale banner example', message: 'Offer details appear here.', tone: 'sale', link: '#cards', link_label: 'View details' }),
-    block('vacation', { text: 'Vacation banner example', message: 'Service updates appear here.', tone: 'vacation', link: '#forms', link_label: 'Contact us' }),
-  ]),
-];
 export const catalogProducts = [
   ...products,
   product(804, 'Training pants', 'Pants', 'collection-knicker-pants-350n.jpg', 5495),

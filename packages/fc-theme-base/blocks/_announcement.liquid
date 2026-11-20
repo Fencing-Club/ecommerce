@@ -1,0 +1,91 @@
+{%- comment -%}
+  One announcement in the announcement bar: a ui-banner in the announcement's tone. The bar fades between them.
+{%- endcomment -%}
+<div
+  class="announcement"
+  data-carousel-slide
+  role="group"
+  aria-roledescription="{{ 'sections.announcement_bar.slide' | t }}"
+  {{ block.shopify_attributes }}
+>
+  {%- render 'ui-banner',
+    title: block.settings.title,
+    message: block.settings.message,
+    link_label: block.settings.link_label,
+    url: block.settings.link,
+    tone: block.settings.tone
+  -%}
+</div>
+
+{% stylesheet %}
+  .announcement {
+    display: flex;
+    flex: 1 1 auto;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity var(--duration-enter) var(--ease-in-out),
+      visibility 0s linear var(--duration-enter);
+  }
+  .announcement.is-active,
+  fc-carousel:not(:defined) > [data-carousel-track] > :first-child .announcement,
+  [data-carousel-track] > :only-child .announcement {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity var(--duration-enter) var(--ease-in-out),
+      visibility 0s;
+  }
+  .announcement > .ui-banner {
+    flex: 1 1 auto;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .announcement,
+    .announcement.is-active { transition: none; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.announcement.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:blocks.announcement.settings.title.label",
+      "default": "Free US shipping"
+    },
+    {
+      "type": "text",
+      "id": "message",
+      "label": "t:blocks.announcement.settings.message.label",
+      "default": "On orders over $375"
+    },
+    {
+      "type": "select",
+      "id": "tone",
+      "label": "t:blocks.announcement.settings.tone.label",
+      "info": "t:blocks.announcement.settings.tone.info",
+      "default": "default",
+      "options": [
+        { "value": "default", "label": "t:blocks.announcement.settings.tone.options__default" },
+        { "value": "sale", "label": "t:blocks.announcement.settings.tone.options__sale" },
+        { "value": "event", "label": "t:blocks.announcement.settings.tone.options__event" },
+        { "value": "vacation", "label": "t:blocks.announcement.settings.tone.options__vacation" }
+      ]
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:blocks.announcement.settings.link.label"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:blocks.announcement.settings.link_label.label",
+      "info": "t:blocks.announcement.settings.link_label.info"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.announcement.name" }]
+}
+{% endschema %}

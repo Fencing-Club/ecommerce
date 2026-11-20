@@ -1,0 +1,27 @@
+{% doc %}
+  A full-width strip with one short message: an optional icon, a bold title, the message and a link. The tone sets
+  its colour.
+
+  @param {string} [title] - A short lead-in, shown bold and in capitals.
+  @param {string} [message] - The message.
+  @param {string} [link_label] - The link's text. Shown only with url.
+  @param {string} [url] - The link's destination.
+  @param {string} [icon] - A ui-icon name before the text.
+  @param {string} [tone] - default, sale, event or vacation.
+{% enddoc %}
+<div class="ui-banner{% if tone != blank and tone != 'default' %} ui-banner--{{ tone }}{% endif %}">
+  <p class="ui-banner__message">
+    {%- if icon != blank -%}
+      {%- render 'ui-icon', icon: icon, size: 16 -%}
+    {%- endif -%}
+    {%- if title != blank -%}
+      <span class="ui-banner__title">{{ title | escape }}</span>
+    {%- endif -%}
+    {%- if message != blank -%}
+      <span class="ui-banner__body">{{ message | escape }}</span>
+    {%- endif -%}
+    {%- if url != blank and link_label != blank -%}
+      {%- render 'ui-link', label: link_label, url: url, icon: 'arrow-right', class: 'ui-banner__link' -%}
+    {%- endif -%}
+  </p>
+</div>

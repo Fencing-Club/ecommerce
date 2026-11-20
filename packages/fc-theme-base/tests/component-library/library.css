@@ -77,11 +77,6 @@ output { display: block; margin-top: 12px; font-size: 14px; color: var(--cp-text
 .lab-search-surface .predictive-search--search-template { width: 100%; max-width: 100%; }
 .lab-search-loading .predictive-search__skeleton { display: block; position: static; }
 .lab-search-loading { max-width: 100%; }
-.lab-announcement.specimen { --color-foreground: 247,247,245; --color-background: 16,16,18; padding: 0; }
-.lab-announcement .utility-bar { background-color: rgb(var(--color-background)); }
-.lab-announcement .utility-bar:has([data-tone='sale'][aria-hidden='false']) { background-color: #b91c1c; }
-.lab-announcement .utility-bar:has([data-tone='event'][aria-hidden='false']) { background-color: #1d4ed8; }
-.lab-announcement .utility-bar:has([data-tone='vacation'][aria-hidden='false']) { background-color: #b45309; }
 .lab-localization { min-height: 350px; align-items: flex-start; }
 .lab-localization localization-form { max-width: 100%; }
 .lab-localization .disclosure__list-wrapper { position: absolute; top: 100%; bottom: auto; left: 0; height: auto; transform: none; max-width: min(320px,80vw); }

@@ -5,71 +5,56 @@
     "announcement-bar": {
       "type": "announcement-bar",
       "settings": {
-        "color_scheme": "scheme-footer",
-        "show_line_separator": false,
-        "show_social": false,
-        "auto_rotate": true,
-        "change_slides_speed": 5,
-        "enable_country_selector": false,
-        "enable_language_selector": false
+        "autoplay": true,
+        "autoplay_speed": 5
       },
       "blocks": {
         "announcement-bar-0": {
-          "type": "announcement",
+          "type": "_announcement",
           "settings": {
-            "text": "Free US shipping",
+            "title": "Free US shipping",
             "message": "On orders over $375",
-            "tone": "announcement",
-            "text_alignment": "center",
-            "color_scheme": "scheme-footer",
+            "tone": "default",
             "link": "shopify://collections/all",
             "link_label": "Shop now"
           }
         },
         "announcement-bar-1": {
-          "type": "announcement",
+          "type": "_announcement",
           "settings": {
-            "text": "Hassle-free returns",
+            "title": "Hassle-free returns",
             "message": "30-day postage paid returns",
-            "tone": "announcement",
-            "text_alignment": "center",
-            "color_scheme": "scheme-footer",
+            "tone": "default",
             "link": "shopify://policies/refund-policy",
             "link_label": "See policy"
           }
         },
         "announcement-bar-3": {
-          "type": "announcement",
+          "type": "_announcement",
           "settings": {
-            "text": "New athletic season",
+            "title": "New athletic season",
             "message": "Up to 30% off",
             "tone": "sale",
-            "text_alignment": "center",
-            "color_scheme": "scheme-footer",
             "link": "shopify://collections/all",
             "link_label": "Shop the sale"
           }
         },
         "announcement-bar-4": {
-          "type": "announcement",
+          "type": "_announcement",
           "settings": {
-            "text": "Summer nationals",
+            "title": "Summer nationals",
             "message": "Visit us at booth 14",
             "tone": "event",
-            "text_alignment": "center",
-            "color_scheme": "scheme-footer",
             "link": "shopify://pages/about",
             "link_label": "Event details"
           }
         },
         "announcement-bar-5": {
-          "type": "announcement",
+          "type": "_announcement",
           "settings": {
-            "text": "Traveling to our factories",
+            "title": "Traveling to our factories",
             "message": "Orders ship from July 20",
             "tone": "vacation",
-            "text_alignment": "center",
-            "color_scheme": "scheme-footer",
             "link": "shopify://policies/shipping-policy",
             "link_label": "Learn more"
           }

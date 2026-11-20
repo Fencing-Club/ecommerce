@@ -351,17 +351,33 @@
         },
         "cart_trust": {
           "header": "Cart reassurance",
-          "returns": { "label": "Returns note" },
-          "checkout": { "label": "Checkout note" }
+          "returns": {
+            "label": "Returns note"
+          },
+          "checkout": {
+            "label": "Checkout note"
+          }
         },
         "cart_empty": {
           "header": "Empty cart",
-          "link_label": { "label": "Primary link label" },
-          "link": { "label": "Primary link" },
-          "popular_heading": { "label": "Collections heading" },
-          "popular_collection_1": { "label": "Collection 1" },
-          "popular_collection_2": { "label": "Collection 2" },
-          "popular_collection_3": { "label": "Collection 3" }
+          "link_label": {
+            "label": "Primary link label"
+          },
+          "link": {
+            "label": "Primary link"
+          },
+          "popular_heading": {
+            "label": "Collections heading"
+          },
+          "popular_collection_1": {
+            "label": "Collection 1"
+          },
+          "popular_collection_2": {
+            "label": "Collection 2"
+          },
+          "popular_collection_3": {
+            "label": "Collection 3"
+          }
         }
       }
     },
@@ -463,64 +479,6 @@
           "label": "Round"
         },
         "label": "Image shape"
-      }
-    },
-    "announcement-bar": {
-      "name": "Announcement bar",
-      "settings": {
-        "auto_rotate": {
-          "label": "Auto rotate announcements"
-        },
-        "change_slides_speed": {
-          "label": "Change every"
-        },
-        "heading_utilities": {
-         "content": "Utilities"
-        },
-        "paragraph": {
-          "content": "Appear only on large screens"
-        },                     
-        "show_social": {
-          "label": "Social media icons",
-          "info": "[Manage social accounts](/editor?context=theme&category=social%20media)"
-        },
-        "enable_country_selector": {
-          "label": "Country/region selector",
-          "info": "[Manage countries/regions](/admin/settings/markets)"
-        },
-        "enable_language_selector": {
-          "label": "Language selector",
-          "info": "[Manage languages](/admin/settings/languages)"
-        }
-      },
-      "blocks": {
-        "announcement": {
-          "name": "Announcement",
-          "settings": {
-            "text": {
-              "label": "Text",
-              "default": "Welcome to our store"
-            },
-            "text_alignment": {
-              "label": "Text alignment",
-              "options__1": {
-                "label": "Left"
-              },
-              "options__2": {
-                "label": "Center"
-              },
-              "options__3": {
-                "label": "Right"
-              }
-            },
-            "link": {
-              "label": "Link"
-            }
-          }
-        }
-      },
-      "presets": {
-        "name": "Announcement bar"
       }
     },
     "apps": {
@@ -1323,7 +1281,7 @@
             },
             "pairing_2": {
               "label": "Pairing 2"
-            },            
+            },
             "icon_2": {
               "label": "Icon"
             },
@@ -1335,8 +1293,8 @@
               "default": "Heading"
             },
             "pairing_3": {
-            "label": "Pairing 3"
-            },             
+              "label": "Pairing 3"
+            },
             "icon_3": {
               "label": "Icon"
             },
@@ -1451,7 +1409,7 @@
           "options__2": {
             "label": "2"
           }
-        },        
+        },
         "image_ratio": {
           "label": "Image ratio",
           "options__1": {
@@ -1593,7 +1551,7 @@
         },
         "content_header": {
           "content": "Content"
-        },        
+        },
         "desktop_content_alignment": {
           "options__1": {
             "label": "Left"
@@ -1742,6 +1700,17 @@
     },
     "brand_logos": {
       "name": "Brand logos"
+    },
+    "announcement_bar": {
+      "name": "Announcement bar",
+      "settings": {
+        "autoplay": {
+          "label": "Rotate announcements"
+        },
+        "autoplay_speed": {
+          "label": "Change every"
+        }
+      }
     }
   },
   "blocks": {
@@ -2013,6 +1982,32 @@
         "image": {
           "label": "Image",
           "info": "Set a focal point on the image to choose how it crops."
+        }
+      }
+    },
+    "announcement": {
+      "name": "Announcement",
+      "settings": {
+        "title": {
+          "label": "Title"
+        },
+        "message": {
+          "label": "Message"
+        },
+        "tone": {
+          "label": "Type",
+          "info": "Sets the bar colour while this announcement shows.",
+          "options__default": "Announcement",
+          "options__sale": "Sale",
+          "options__event": "Event",
+          "options__vacation": "Vacation"
+        },
+        "link": {
+          "label": "Link"
+        },
+        "link_label": {
+          "label": "Link label",
+          "info": "Shown after the message when a link is set."
         }
       }
     }

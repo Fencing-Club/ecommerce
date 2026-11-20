@@ -1555,3 +1555,37 @@ input:disabled + .ui-checkbox-field__copy {
   .ui-dialog__body { padding: 0 var(--spacing-5); }
   .ui-dialog__footer { padding: var(--spacing-4) var(--spacing-5) var(--spacing-5); }
 }
+
+/* UI/Banner. The strip sets the light-on-dark roles, so the link and icons inside follow. */
+.ui-banner {
+  --foreground: var(--primary-foreground);
+  --muted-foreground: var(--primary-foreground);
+  --ring: var(--primary-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--spacing-10);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--primary);
+  color: var(--foreground);
+}
+.ui-banner--sale { background: #b91c1c; /* red-700 */ }
+.ui-banner--event { background: #1d4ed8; /* blue-700 */ }
+.ui-banner--vacation { background: #b45309; /* amber-700 */ }
+.ui-banner__message {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1) var(--spacing-3);
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  text-align: center;
+}
+.ui-banner__title {
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+}
+.ui-banner__link { color: inherit; }
