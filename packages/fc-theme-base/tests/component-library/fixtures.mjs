@@ -10,28 +10,9 @@ export const articles = [
   { title: 'Taking care of your equipment', url: '#cards', published_at: '2026-08-17', excerpt: 'Prepare your bag and keep equipment ready for practice.', image: image('mega-bags-carry.jpg', 'Fencing bag') },
   { title: 'Finding the right fit', url: '#cards', published_at: '2026-08-24', excerpt: 'Measure before choosing your next uniform.', image: image('collection-knicker-pants-350n.jpg', 'Fencing pants') },
 ];
+
 const block = (id, settings) => ({ id, settings });
 const section = (id, settings, blocks = []) => ({ id: `lab-${id}`, settings, blocks });
-export const sections = {
-  products: section('products', { eyebrow: 'FIXTURE CATALOG', heading: 'Featured products', link_label: 'View all', show_add: true, add_label: 'Choose options' }, products.map(product => block(`product-${product.id}`, { product }))),
-  categories: section('categories', { heading: 'Shop by category', show_count: true, link_label: 'Shop' }, products.map(product => block(`category-${product.id}`, { collection: { title: product.type, url: '#cards', featured_image: product.featured_image, all_products_count: 12 } }))),
-  picks: section('picks', { heading: 'Featured picks' }, [
-    block('kit', { title: 'Training equipment', description: 'Prepare for your next club session.', image: image('mega-sizing-guide.jpg', 'Fencing clothing'), link_1_label: 'Clothing', link_1_url: '#cards', link_2_label: 'Footwear', link_2_url: '#cards' }),
-    block('gloves', { title: 'Gloves', description: 'Compare fit and coverage.', image: products[1].featured_image, link_1_label: 'Browse gloves', link_1_url: '#cards' }),
-    block('bags', { title: 'Equipment bags', description: 'Carry your training essentials.', image: image('mega-bags-wheel.jpg', 'Wheeled fencing bag'), link_1_label: 'Wheel bags', link_1_url: '#cards', link_2_label: 'Carry bags', link_2_url: '#cards' }),
-  ]),
-  story: section('story', { heading: 'Find equipment that fits your training', eyebrow: 'FIXTURE CONTENT', body: 'Choose equipment for your weapon, training level, and fit.', image: image('mega-sizing-guide.jpg', 'Fencing clothing') }, [
-    block('help', { icon: 'badge-check', label: 'Equipment advice', detail: 'Product selection and sizing', link_label: 'Contact us', link_url: '#cards' }),
-    block('shipping', { icon: 'truck', label: 'Shipping', detail: 'Review delivery information', link_label: 'Shipping policy', link_url: '#cards' }),
-  ]),
-  testimonials: section('testimonials', { heading: 'Fixture testimonials', eyebrow: 'SAMPLE COPY' }, [
-    block('quote-1', { quote: 'This is sample text for checking the short testimonial layout.', name: 'Short-copy fixture', role: 'Not a customer endorsement', rating: 5 }),
-    block('quote-2', { quote: 'This longer fixture exercises wrapping, spacing, navigation, and the way the carousel behaves when adjacent testimonials have different lengths.', name: 'Long-copy fixture', role: 'Not a customer endorsement', rating: 4 }),
-    block('quote-3', { quote: 'A third example for the next and previous controls.', name: 'Third fixture', role: 'Not a customer endorsement', rating: 5 }),
-  ]),
-  journal: section('journal', { heading: 'From the Journal', blog: 'lab-journal', link_label: 'View all posts', read_label: 'Read more' }),
-};
-export const blogs = { 'lab-journal': { url: '#cards', articles_count: articles.length, articles } };
 
 export const countries = [
   { iso_code: 'US', name: 'United States', currency: { iso_code: 'USD', symbol: '$' } },

@@ -1,0 +1,55 @@
+{%- comment -%}
+  One product, shown as the theme's product card.
+{%- endcomment -%}
+{%- assign card_product = block.settings.product -%}
+{%- if card_product != blank -%}
+  {%- liquid
+    assign card_id = 'ProductCardTitle-' | append: block.id
+    assign add_label = 'blocks.product_card.add' | t
+  -%}
+  {%- if block.settings.show_add -%}
+    <script src="{{ 'product-form.js' | asset_url }}" defer="defer"></script>
+  {%- endif -%}
+  {%- render 'ui-product-card',
+    product: card_product,
+    card_id: card_id,
+    block_attributes: block.shopify_attributes,
+    badge_label: block.settings.badge,
+    show_type: true,
+    show_price: true,
+    show_add: block.settings.show_add,
+    add_label: add_label,
+    section_id: section.id
+  -%}
+{%- elsif request.design_mode -%}
+  {%- comment -%} An empty card in the theme editor, so the merchant can select it and choose a product. {%- endcomment -%}
+  {%- assign placeholder_title = 'blocks.product_card.placeholder' | t -%}
+  {%- render 'ui-product-card', card_id: block.id, block_attributes: block.shopify_attributes, title: placeholder_title, url: '#' -%}
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.product_card.name",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "t:blocks.product_card.settings.product.label"
+    },
+    {
+      "type": "text",
+      "id": "badge",
+      "label": "t:blocks.product_card.settings.badge.label",
+      "info": "t:blocks.product_card.settings.badge.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_add",
+      "label": "t:blocks.product_card.settings.show_add.label",
+      "info": "t:blocks.product_card.settings.show_add.info",
+      "default": true
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_card.name" }]
+}
+{% endschema %}

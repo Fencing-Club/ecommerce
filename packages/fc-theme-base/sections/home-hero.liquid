@@ -1,194 +1,119 @@
 {{ 'section-home.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'fc-carousel.js' | asset_url }}" defer="defer"></script>
 
-<div class="fc-home">
-  <fc-carousel
-    class="fc-home__hero"
-    aria-roledescription="carousel"
-    aria-label="{{ section.settings.aria_label | escape }}"
-    {% if section.settings.autoplay %}
-      data-autoplay="{{ section.settings.autoplay_speed | times: 1000 }}"
-    {% endif %}
-  >
-    <div class="fc-home__hero-track" data-carousel-track>
-      {%- for block in section.blocks -%}
-        <div
-          class="fc-home__slide{% if forloop.first %} is-active{% endif %}"
-          data-carousel-slide
-          role="group"
-          aria-roledescription="slide"
-          aria-label="{{ forloop.index }} of {{ forloop.length }}"
-          {% unless forloop.first %}
-            aria-hidden="true"
-          {% endunless %}
-          {{ block.shopify_attributes }}
-        >
-          {%- if block.settings.image -%}
-            {%- liquid
-              assign slide_loading = 'lazy'
-              if forloop.first
-                assign slide_loading = 'eager'
-              endif
-              # A focal point set in admin decides the crop; without one, CSS keeps the upper part.
-              assign focal_point = block.settings.image.presentation.focal_point
-              assign focal_style = nil
-              if focal_point != blank and focal_point != '50.0% 50.0%'
-                assign focal_style = 'object-position: ' | append: focal_point
-              endif
-            -%}
-            {{
-              block.settings.image
-              | image_url: width: 2880
-              | image_tag:
-                class: 'fc-home__hero-image',
-                widths: '750, 1100, 1440, 2160, 2880',
-                sizes: '100vw',
-                alt: block.settings.image.alt,
-                loading: slide_loading,
-                style: focal_style
-            }}
-          {%- else -%}
-            <span class="fc-home__hero-image fc-home__hero-image--placeholder"></span>
-          {%- endif -%}
-          <span class="fc-home__hero-overlay"></span>
-          <div class="fc-home__hero-content">
-            <div class="fc-home__inner">
-              <div class="fc-home__hero-inner">
-                <span class="fc-home__accent-bar"></span>
-                {%- if block.settings.eyebrow != blank -%}
-                  <p class="fc-home__eyebrow fc-home__eyebrow--light">{{ block.settings.eyebrow | escape }}</p>
-                {%- endif -%}
-                {%- if block.settings.heading != blank -%}
-                  {%- if forloop.first -%}
-                    <h1 class="fc-home__hero-headline">{{ block.settings.heading | escape }}</h1>
-                  {%- else -%}
-                    <p class="fc-home__hero-headline">{{ block.settings.heading | escape }}</p>
-                  {%- endif -%}
-                {%- endif -%}
-                {%- if block.settings.subheading != blank -%}
-                  <p class="fc-home__hero-subline">{{ block.settings.subheading | escape }}</p>
-                {%- endif -%}
-                {%- if block.settings.button_label != blank or block.settings.link_label != blank -%}
-                  <div class="fc-home__hero-buttons">
-                    {%- if block.settings.button_label != blank -%}
-                      <a class="fc-home__btn fc-home__btn--primary" href="{{ block.settings.button_url | default: '#' }}">
-                        {{- block.settings.button_label | escape -}}
-                      </a>
-                    {%- endif -%}
-                    {%- if block.settings.link_label != blank -%}
-                      <a class="fc-home__hero-textlink" href="{{ block.settings.link_url | default: '#' }}">
-                        {{ block.settings.link_label | escape }}
-                        {%- render 'ui-icon', icon: 'arrow-right', size: 16 -%}
-                      </a>
-                    {%- endif -%}
-                  </div>
-                {%- endif -%}
-              </div>
-            </div>
-          </div>
-        </div>
-      {%- endfor -%}
-    </div>
+{%- liquid
+  assign slide_label = 'sections.home_hero.slide_label' | t: index: '[index]', count: '[count]'
+-%}
+<fc-carousel
+  class="home-hero"
+  data-carousel="fade"
+  data-slide-label="{{ slide_label | escape }}"
+  aria-roledescription="carousel"
+  aria-label="{{ 'sections.home_hero.label' | t }}"
+  {% if section.settings.autoplay %}
+    data-autoplay="{{ section.settings.autoplay_speed | times: 1000 }}"
+  {% endif %}
+>
+  <div class="home-hero__track" data-carousel-track>{%- content_for 'blocks' -%}</div>
 
-    {%- if section.blocks.size > 1 -%}
-      <div class="fc-home__hero-controls">
-        <button class="fc-home__arrow fc-home__arrow--prev" type="button" data-carousel-prev aria-label="Previous slide">
-          <span class="fc-home__arrow-icon svg-wrapper">
-            {{- 'icon-caret.svg' | inline_asset_content -}}
-          </span>
-        </button>
-        <div class="fc-home__hero-dots" role="tablist" aria-label="Choose slide">
-          {%- for block in section.blocks -%}
-            <button
-              class="fc-home__dot{% if forloop.first %} fc-home__dot--active{% endif %}"
-              type="button"
-              role="tab"
-              data-carousel-dot
-              aria-label="Slide {{ forloop.index }}"
-              aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
-            ></button>
-          {%- endfor -%}
-        </div>
-        <button class="fc-home__arrow fc-home__arrow--next" type="button" data-carousel-next aria-label="Next slide">
-          <span class="fc-home__arrow-icon svg-wrapper">
-            {{- 'icon-caret.svg' | inline_asset_content -}}
-          </span>
-        </button>
+  {%- if section.blocks.size > 1 -%}
+    <div class="home-hero__controls">
+      {%- assign previous_label = 'sections.home_hero.previous' | t -%}
+      {%- render 'ui-button', aria_label: previous_label, variant: 'icon', icon: 'chevron-left', additional_props: 'data-carousel-prev' -%}
+      <div class="carousel-dots" role="tablist" aria-label="{{ 'sections.home_hero.choose' | t }}">
+        {%- for slide in section.blocks -%}
+          <button
+            class="carousel-dot"
+            type="button"
+            role="tab"
+            data-carousel-dot
+            aria-label="{{ 'sections.home_hero.go_to' | t: index: forloop.index }}"
+            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+          ></button>
+        {%- endfor -%}
       </div>
-    {%- endif -%}
-  </fc-carousel>
-</div>
+      {%- assign next_label = 'sections.home_hero.next' | t -%}
+      {%- render 'ui-button', aria_label: next_label, variant: 'icon', icon: 'chevron-right', additional_props: 'data-carousel-next' -%}
+    </div>
+  {%- endif -%}
+</fc-carousel>
+
+{% stylesheet %}
+  .home-hero {
+    position: relative;
+    display: block;
+    height: calc(var(--spacing) * 180);
+    overflow: hidden;
+    background: var(--primary);
+  }
+  .home-hero__track {
+    position: absolute;
+    inset: 0;
+  }
+  /* Light controls over the photo. ui-button reads Dawn's color channels, so they are set here too. */
+  .home-hero__controls {
+    position: absolute;
+    right: 0;
+    bottom: var(--spacing-6);
+    left: 0;
+    z-index: 1;
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    justify-content: center;
+    --foreground: var(--primary-foreground);
+    --color-foreground: 255, 255, 255;
+  }
+  @media (max-width: 989px) {
+    .home-hero { height: calc(var(--spacing) * 150); }
+  }
+  @media (max-width: 749px) {
+    .home-hero { height: calc(var(--spacing) * 130); }
+  }
+{% endstylesheet %}
 
 {% schema %}
 {
-  "name": "Home hero",
+  "name": "t:sections.home_hero.name",
   "tag": "section",
-  "max_blocks": 6,
+  "blocks": [{ "type": "_hero-slide" }],
   "settings": [
-    {
-      "type": "text",
-      "id": "aria_label",
-      "label": "Accessible label",
-      "default": "Featured",
-      "info": "Describes the carousel to screen readers."
-    },
     {
       "type": "checkbox",
       "id": "autoplay",
-      "label": "Rotate slides automatically",
+      "label": "t:sections.home_hero.settings.autoplay.label",
       "default": true
     },
     {
       "type": "range",
       "id": "autoplay_speed",
+      "label": "t:sections.home_hero.settings.autoplay_speed.label",
       "min": 3,
-      "max": 12,
+      "max": 10,
       "step": 1,
       "unit": "s",
-      "label": "Seconds between slides",
       "default": 6
-    }
-  ],
-  "blocks": [
-    {
-      "type": "slide",
-      "name": "Slide",
-      "settings": [
-        { "type": "image_picker", "id": "image", "label": "Image" },
-        { "type": "text", "id": "eyebrow", "label": "Eyebrow" },
-        { "type": "text", "id": "heading", "label": "Heading" },
-        { "type": "text", "id": "subheading", "label": "Subheading" },
-        { "type": "header", "content": "Primary button" },
-        { "type": "text", "id": "button_label", "label": "Button label" },
-        { "type": "url", "id": "button_url", "label": "Button link" },
-        { "type": "header", "content": "Text link" },
-        { "type": "text", "id": "link_label", "label": "Link label" },
-        { "type": "url", "id": "link_url", "label": "Link" }
-      ]
     }
   ],
   "presets": [
     {
-      "name": "Home hero",
+      "name": "t:sections.home_hero.name",
       "blocks": [
         {
-          "type": "slide",
-          "settings": {
-            "eyebrow": "OLYMPIC FENCING GEAR",
-            "heading": "Shop",
-            "subheading": "Gear at competitive prices for competitive athletes",
-            "button_label": "Shop Now"
-          }
-        },
-        {
-          "type": "slide",
-          "settings": {
-            "eyebrow": "BEST-PRICED BLADES",
-            "heading": "Get a blade",
-            "subheading": "Best priced blades for beginners to elite athletes",
-            "button_label": "Weapons",
-            "link_label": "Blades"
-          }
+          "type": "_hero-slide",
+          "blocks": [
+            { "type": "text", "settings": { "text": "<p>Olympic fencing gear</p>", "style": "eyebrow" } },
+            { "type": "heading", "settings": { "heading": "Gear for every bout", "tag": "h1", "size": "xl" } },
+            { "type": "text", "settings": { "text": "<p>Competition equipment for fencers at every level.</p>" } },
+            {
+              "type": "group",
+              "settings": { "direction": "row", "gap": "lg", "align": "center" },
+              "blocks": [
+                { "type": "button", "settings": { "label": "Shop now", "style": "secondary", "size": "lg" } },
+                { "type": "link", "settings": { "label": "Starter kits" } }
+              ]
+            }
+          ]
         }
       ]
     }

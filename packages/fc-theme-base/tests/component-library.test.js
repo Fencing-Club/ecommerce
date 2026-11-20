@@ -35,7 +35,7 @@ describe('local component library', () => {
     expect(html).not.toContain('src="https://');
     for (const stylesheet of ['section-contact-form.css', 'section-main-search.css']) expect(html).toContain(`/assets/${stylesheet}`);
     for (const token of ['--inputs-border-width: 1px', '--buttons-radius: 14px', '--font-heading-family: var(--font-body-family)', '--popup-border-width: 1px']) expect(html).toContain(token);
-    for (const token of ['cookie-consent', 'ui-product-card--search', 'ui-article-card', 'ui-page-link-card', 'ui-contact-intent-card', 'data-section-example="journal"', 'data-section-example="support"', 'aria-disabled="true"', 'role="img"']) expect(html).toContain(token);
+    for (const token of ['cookie-consent', 'ui-product-card--search', 'ui-article-card', 'ui-page-link-card', 'ui-contact-intent-card', 'data-section-example="support"', 'aria-disabled="true"']) expect(html).toContain(token);
     for (const token of ['<ui-select', '<price-range', '<localization-form', '<predictive-search', '<header-drawer', '<media-gallery', '<product-modal', '<size-chart', '<policy-page', '<share-button', 'href="/lab/cart"', 'data-tone="sale"', 'data-tone="event"', 'data-tone="vacation"']) expect(html).toContain(token);
     expect(html).toContain('LabCountry-country-results');
     expect(html).toContain('LabLanguageList');

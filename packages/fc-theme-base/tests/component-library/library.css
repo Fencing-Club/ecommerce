@@ -128,7 +128,6 @@ output { display: block; margin-top: 12px; font-size: 14px; color: var(--cp-text
 .lab-card-grid .ui-product-card--search { max-width: 320px; }
 .lab-result-list { padding: 0; list-style: none; }
 .lab-section-specimen { padding: 0; margin-block: 24px; }
-.lab-section-specimen > .fc-home { width: 100%; }
 .lab-command { min-height: 44px; padding: 8px 16px; border: 1px solid var(--cp-border-strong); border-radius: 4px; background: var(--cp-surface); color: var(--cp-text); font: inherit; cursor: pointer; }
 .lab-privacy { padding: 0; }
 .lab-skip { position: fixed; z-index: 100; top: 8px; left: 8px; transform: translateY(-200%); padding: 12px; background: var(--cp-surface); color: var(--cp-text); }

@@ -51,8 +51,9 @@ function registerRenderedBlockTag(engine, name, { open = '', close = '', scope }
   });
 }
 
-// The defaults a block's {% schema %} declares, so `block.settings` reads as it would on a store before a merchant edits it.
-function schemaDefaults(source) {
+// The defaults a section's or block's {% schema %} declares, so its settings read as they would on a store before a
+// merchant edits them.
+export function schemaDefaults(source) {
   const schema = source.match(/{%-?\s*schema\s*-?%}([\s\S]*?){%-?\s*endschema\s*-?%}/)?.[1];
   if (!schema) return {};
   const settings = JSON.parse(schema).settings ?? [];
@@ -60,9 +61,10 @@ function schemaDefaults(source) {
 }
 
 // `{% content_for 'blocks' %}` renders the theme blocks of the section or block it sits in, each from
-// `blocks/<type>.liquid` with `block` set. `{% content_for 'block', type: 'x', id: 'y' %}` renders one static block,
-// taking its settings from the parent's blocks when one has that id; other arguments become variables of the block.
-// Blocks are an array of `{ id, type, settings, blocks, static }`.
+// `blocks/<type>.liquid` with `block` set, inside the `shopify-block` wrapper Shopify adds.
+// `{% content_for 'block', type: 'x', id: 'y' %}` renders one static block, taking its settings from the parent's
+// `static_blocks` when one has that id; other arguments become variables of the block. As on a store, a section's
+// `blocks` leaves its static blocks out. Blocks are arrays of `{ id, type, settings, blocks, static_blocks }`.
 function registerContentFor(engine, readBlock) {
   const parsed = new Map();
   const load = (type) => {
@@ -87,18 +89,19 @@ function registerContentFor(engine, readBlock) {
         const kind = yield evalToken(this.kind, context);
         const { type, id, ...variables } = yield this.arguments.render(context);
         const parent = context.getSync(['content_for_parent']) ?? context.getSync(['section']) ?? {};
-        const children = parent.blocks ?? [];
         let blocks;
-        if (kind === 'blocks') blocks = children.filter((block) => !block.static);
-        else if (kind === 'block') blocks = [children.find((block) => block.static && block.id === id) ?? { id, type, static: true }];
+        if (kind === 'blocks') blocks = parent.blocks ?? [];
+        else if (kind === 'block') blocks = [(parent.static_blocks ?? []).find((block) => block.id === id) ?? { id, type }];
         else throw new Error(`content_for '${kind}' is not supported`);
 
         for (const block of blocks) {
           const { templates, defaults } = load(block.type);
           const resolved = { shopify_attributes: '', blocks: [], ...block, settings: { ...defaults, ...block.settings } };
+          emitter.write(`<div id="shopify-block-${block.id}" class="shopify-block">`);
           context.push({ ...variables, block: resolved, content_for_parent: resolved });
           yield this.liquid.renderer.renderTemplates(templates, context, emitter);
           context.pop();
+          emitter.write('</div>');
         }
       }
     },

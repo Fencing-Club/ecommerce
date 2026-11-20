@@ -1,0 +1,133 @@
+{%- comment -%}
+  One collection in Shop by category: its photo, name, product count and a shop link.
+{%- endcomment -%}
+{%- liquid
+  assign category = block.settings.collection
+  assign category_name = block.settings.title | default: category.title
+  assign category_url = category.url | default: routes.collections_url
+  assign category_image = block.settings.image | default: category.featured_image
+  assign category_count = category.all_products_count | default: 0
+-%}
+<article class="category-card" {{ block.shopify_attributes }}>
+  <a class="category-card__media" href="{{ category_url }}" tabindex="-1" aria-hidden="true">
+    {%- if category_image -%}
+      {{
+        category_image
+        | image_url: width: 800
+        | image_tag:
+          class: 'category-card__image',
+          widths: '400, 600, 800',
+          sizes: '(min-width: 990px) 400px, (min-width: 750px) 50vw, 100vw',
+          alt: '',
+          loading: 'lazy'
+      }}
+    {%- endif -%}
+  </a>
+  <div class="category-card__info">
+    <div class="category-card__text">
+      <h3 class="category-card__name"><a href="{{ category_url }}">{{ category_name | escape }}</a></h3>
+      {%- if block.settings.show_count -%}
+        <p class="category-card__count">{{ 'blocks.category_card.count' | t: count: category_count }}</p>
+      {%- endif -%}
+    </div>
+    {%- if block.settings.link_label != blank -%}
+      {%- assign shop_name = block.settings.link_label | append: ' ' | append: category_name -%}
+      {%- render 'ui-link', label: block.settings.link_label, url: category_url, icon: 'arrow-right', aria_label: shop_name -%}
+    {%- endif -%}
+  </div>
+</article>
+
+{% stylesheet %}
+  .category-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+    min-width: 0;
+    color: var(--foreground);
+  }
+  .category-card__media {
+    display: block;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    background: var(--muted);
+  }
+  .category-card__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .category-card__info {
+    display: flex;
+    gap: var(--spacing-4);
+    align-items: center;
+    justify-content: space-between;
+  }
+  .category-card__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-0-5);
+    min-width: 0;
+  }
+  .category-card__name {
+    margin: 0;
+    font-family: var(--font-heading-family);
+    font-size: var(--text-xl);
+    line-height: var(--text-xl--line-height);
+    font-weight: var(--font-weight-semibold);
+  }
+  .category-card__name a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .category-card__name a:hover,
+  .category-card__name a:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: var(--spacing-0-5);
+  }
+  .category-card__count {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+    color: var(--muted-foreground);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.category_card.name",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "t:blocks.category_card.settings.collection.label"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:blocks.category_card.settings.title.label",
+      "info": "t:blocks.category_card.settings.title.info"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:blocks.category_card.settings.image.label",
+      "info": "t:blocks.category_card.settings.image.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_count",
+      "label": "t:blocks.category_card.settings.show_count.label",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:blocks.category_card.settings.link_label.label",
+      "default": "t:blocks.category_card.settings.link_label.default"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.category_card.name" }]
+}
+{% endschema %}

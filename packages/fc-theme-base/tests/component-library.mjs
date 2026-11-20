@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Liquid } from 'liquidjs';
-import { products, articles, sections, blogs, localization, announcements, catalogProducts, catalogFixture, commerce, gallery, policy } from './component-library/fixtures.mjs';
+import { products, articles, localization, announcements, catalogProducts, catalogFixture, commerce, gallery, policy } from './component-library/fixtures.mjs';
 import { chartFixtures } from './helpers/sizing-liquid.mjs';
 import { registerShopifyLiquid, themeSettings } from './helpers/shopify-liquid.mjs';
 import { cartGifts, cartPageStates, cartSettings, cartState, cartStates } from './component-library/cart-states.mjs';
@@ -47,10 +47,10 @@ export async function renderLibrary() {
     return value;
   });
   return engine.renderFileSync('page', {
-    section, settings, products, articles, examples: sections, search_page: { title: 'Size guides', url: '#cards', content: 'Measure before selecting your equipment.' }, option: { name: 'Size', position: 1, values },
+    section, settings, products, articles, search_page: { title: 'Size guides', url: '#cards', content: 'Measure before selecting your equipment.' }, option: { name: 'Size', position: 1, values },
     variant: { id: 'lab-quantity', title: 'Practice glove', quantity_rule: { min: 1, max: 5, increment: 1 } },
     cart: { currency: { symbol: '$' } }, localization, announcements, commerce, gallery, policy, dropdown_section: { id: 'lab-dropdown' }, share_block: { id: 'lab-share', settings: { share_label: 'Share' } }, chart: chartFixtures()[0], catalog: catalogFixture(), routes: labRoutes, account_customer: accountCustomer,
-  }, { globals: { section, settings, linklists, localization, cart: { currency: { symbol: '$' } }, routes: labRoutes, pages: {}, collections: {}, blogs, shop: { privacy_policy: { url: '#privacy' } } } });
+  }, { globals: { section, settings, linklists, localization, cart: { currency: { symbol: '$' } }, routes: labRoutes, pages: {}, collections: {}, shop: { privacy_policy: { url: '#privacy' } } } });
 }
 
 export function renderCartIndex() {
