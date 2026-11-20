@@ -18,7 +18,7 @@ Requires Python and PyMuPDF, already available in the design environment. Bundle
 each PDF: a PDF can't use the device's font the way the site does, so print uses Inter alone. Colors come from the
 theme's tokens. Their licenses and provenance are in [fonts/README.md](fonts/README.md).
 The generator, fonts, and logo are self-contained in this directory. Matching editable print artboards remain in
-[FencingClubWebsite.pen](../../fc-theme/FencingClubWebsite.pen).
+`FencingClubWebsite.pen`.
 
 ```powershell
 python packages/fc-theme-base/printables/generate_measuring_tape.py
