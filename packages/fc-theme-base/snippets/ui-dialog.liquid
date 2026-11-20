@@ -1,0 +1,42 @@
+{% doc %}
+  A centred modal dialog: title, optional description, close button, body and an optional footer. Content and trigger
+  are caller-rendered HTML.
+
+  @param {string} id - Unique dialog id.
+  @param {string} title - The dialog's title, which names it.
+  @param {string} content - Body HTML.
+  @param {string} [trigger] - HTML with data-dialog-open and aria-controls matching id.
+  @param {string} [description] - Plain-text line under the title.
+  @param {string} [footer] - Footer HTML, such as a link and buttons.
+  @param {string} [close_label] - The close button's accessible name. Default: Close.
+{% enddoc %}
+<script src="{{ 'ui-dialog.js' | asset_url }}" defer="defer"></script>
+<ui-dialog>
+  {{ trigger }}
+  <dialog
+    id="{{ id | escape }}"
+    class="ui-dialog"
+    aria-labelledby="{{ id | escape }}-Title"
+    {% if description != blank %}
+      aria-describedby="{{ id | escape }}-Description"
+    {% endif %}
+  >
+    <header class="ui-dialog__header">
+      <div class="ui-dialog__heading">
+        <h2 class="ui-dialog__title" id="{{ id | escape }}-Title">{{ title | escape }}</h2>
+        {%- if description != blank -%}
+          <p class="ui-dialog__description" id="{{ id | escape }}-Description">{{ description | escape }}</p>
+        {%- endif -%}
+      </div>
+      {%- assign dialog_close_label = close_label -%}
+      {%- if dialog_close_label == blank -%}
+        {%- assign dialog_close_label = 'accessibility.close' | t -%}
+      {%- endif -%}
+      {%- render 'ui-button', aria_label: dialog_close_label, variant: 'icon', icon: 'x', class: 'ui-dialog__close', additional_props: 'data-dialog-close' -%}
+    </header>
+    <div class="ui-dialog__body">{{ content }}</div>
+    {%- if footer != blank -%}
+      <footer class="ui-dialog__footer">{{ footer }}</footer>
+    {%- endif -%}
+  </dialog>
+</ui-dialog>

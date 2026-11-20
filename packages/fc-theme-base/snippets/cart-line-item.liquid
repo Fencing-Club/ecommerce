@@ -114,7 +114,7 @@
         </quantity-input>
         <div class="fc-line__actions">
           {%- if can_remove -%}
-            <cart-remove-button data-index="{{ line }}"><a href="{{ item.url_to_remove }}" class="fc-icon-button" aria-label="{{ 'sections.cart.remove_title' | t: title: item.product.title | escape }}" title="{{ 'sections.cart.remove_title' | t: title: item.product.title | escape }}">{% render 'ui-icon', icon: 'trash-2', size: 18 %}</a></cart-remove-button>
+            <cart-remove-button data-index="{{ line }}">{%- assign remove_label = 'sections.cart.remove_title' | t: title: item.product.title -%}{%- capture remove_props -%}title="{{ remove_label | escape }}"{%- endcapture -%}{%- render 'ui-button', aria_label: remove_label, url: item.url_to_remove, variant: 'icon', icon: 'trash-2', additional_props: remove_props -%}</cart-remove-button>
           {%- endif -%}
         </div>
       {%- endif -%}

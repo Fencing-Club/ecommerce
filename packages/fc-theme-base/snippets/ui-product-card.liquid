@@ -126,25 +126,20 @@
               data-type: 'add-to-cart-form'
             -%}
               <input type="hidden" name="id" value="{{ add_variant.id }}" class="product-variant-id">
-              <button
-                id="{{ add_form_id }}-submit"
-                class="ui-product-card__add"
-                type="submit"
-                name="add"
-                aria-labelledby="{{ add_form_id }}-submit {{ title_id }}"
-                aria-live="polite"
-              >
-                {%- render 'ui-icon', icon: 'plus', size: 15 -%}
-                <span>{{ add_label | escape }}</span>
-                {%- render 'loading-spinner' -%}
-              </button>
+              {%- capture add_props -%}id="{{ add_form_id }}-submit" name="add" aria-labelledby="{{ add_form_id }}-submit {{ title_id }}" aria-live="polite"{%- endcapture -%}
+              {%- render 'ui-button',
+                label: add_label,
+                variant: 'secondary',
+                type: 'submit',
+                icon: 'plus',
+                spinner: true,
+                class: 'ui-product-card__add',
+                additional_props: add_props
+              -%}
             {%- endform -%}
           </product-form>
         {%- else -%}
-          <a class="ui-product-card__add" href="{{ card_url }}">
-            {%- render 'ui-icon', icon: 'plus', size: 15 -%}
-            <span>{{ add_label | escape }}</span>
-          </a>
+          {%- render 'ui-button', label: add_label, url: card_url, variant: 'secondary', icon: 'plus', class: 'ui-product-card__add' -%}
         {%- endif -%}
       {%- endif -%}
     </div>

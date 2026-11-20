@@ -1,0 +1,40 @@
+{% doc %}
+  A price, with the compare-at price struck through when it's higher, an optional badge and an optional unit price.
+
+  @param {number} price - The price in cents.
+  @param {number} [compare_at_price] - The regular price in cents. Shown struck through only when higher than price.
+  @param {string} [badge_label] - A short badge after the price, such as Sale.
+  @param {string} [unit_price] - A formatted unit price, such as $2.50/100g.
+  @param {string} [size] - sm for cards and lines, md (default) for the product page.
+{% enddoc %}
+{%- liquid
+  assign on_sale = false
+  if compare_at_price > price
+    assign on_sale = true
+  endif
+-%}
+<div class="ui-price{% if size == 'sm' %} ui-price--sm{% endif %}">
+  <div class="ui-price__row">
+    {%- if on_sale -%}
+      <s class="ui-price__compare">
+        <span class="visually-hidden">{{ 'products.product.price.regular_price' | t }}</span>
+        {{- compare_at_price | money -}}
+      </s>
+      <span class="ui-price__amount">
+        <span class="visually-hidden">{{ 'products.product.price.sale_price' | t }}</span>
+        {{- price | money -}}
+      </span>
+    {%- else -%}
+      <span class="ui-price__amount">{{ price | money }}</span>
+    {%- endif -%}
+    {%- if badge_label != blank -%}
+      {%- render 'ui-badge', label: badge_label -%}
+    {%- endif -%}
+  </div>
+  {%- if unit_price != blank -%}
+    <p class="ui-price__unit">
+      <span class="visually-hidden">{{ 'products.product.price.unit_price' | t }}</span>
+      {{- unit_price | escape -}}
+    </p>
+  {%- endif -%}
+</div>

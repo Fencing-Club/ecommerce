@@ -14,6 +14,7 @@
   - full_width: {Boolean} Stretch to fill the container.
   - disabled: {Boolean} Prevent activation and show the disabled state.
   - busy: {Boolean} Prevent activation and announce a pending action.
+  - spinner: {Boolean} Include the loading spinner that product-form.js shows while it adds to the cart.
   - class: {String} Optional extra classes.
   - additional_props: {String} Optional extra attributes, such as data hooks or form and name.
 {% endcomment %}
@@ -59,10 +60,13 @@
     {%- render 'ui-icon', icon: icon -%}
   {%- endif -%}
   {%- if label -%}
-    {{ label | escape }}
+    <span class="ui-button__label">{{ label | escape }}</span>
   {%- endif -%}
   {%- if trailing_icon -%}
     {%- render 'ui-icon', icon: trailing_icon -%}
+  {%- endif -%}
+  {%- if spinner -%}
+    {%- render 'loading-spinner' -%}
   {%- endif -%}
 {%- if url != blank -%}
   </a>

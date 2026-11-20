@@ -19,7 +19,8 @@
 >
   <div class="fc-editor__head">
     <label class="fc-editor__label" for="{{ field_id }}">{% render 'ui-icon', icon: 'tag', size: 16 %}{{ 'sections.cart.discount_code' | t }}</label>
-    <button type="button" class="fc-icon-button fc-icon-button--small" data-close-editor aria-label="{{ 'sections.cart.close_discount' | t }}">{% render 'ui-icon', icon: 'x', size: 16 %}</button>
+    {%- assign close_label = 'sections.cart.close_discount' | t -%}
+    {%- render 'ui-button', aria_label: close_label, variant: 'icon', icon: 'x', additional_props: 'data-close-editor' -%}
   </div>
   <div class="fc-discount__row">
     <input class="fc-input" id="{{ field_id }}" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" aria-describedby="{{ status_id }}">

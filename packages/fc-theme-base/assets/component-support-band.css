@@ -1,6 +1,9 @@
 .ui-support-band {
-  --color-foreground: 247, 247, 245;
-  --color-background: 11, 11, 12;
+  /* The band is dark, so the buttons inside it read light-on-dark tokens. */
+  --foreground: #f7f7f5;
+  --background: #0b0b0c;
+  --accent: color-mix(in srgb, #f7f7f5 7%, transparent);
+  --accent-foreground: #f7f7f5;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -48,7 +51,7 @@
 .ui-support-band__primary.ui-button {
   border-color: #f7f7f5;
   background: #f7f7f5;
-  color: var(--foreground);
+  color: #0b0b0c;
 }
 
 .ui-support-band__secondary.ui-button {
@@ -58,11 +61,11 @@
 
 @media (hover: hover) {
   .ui-support-band__primary.ui-button:not(:disabled):not([aria-disabled='true']):hover {
-    background-color: rgba(var(--color-foreground), 0.84);
+    background-color: color-mix(in srgb, #f7f7f5 84%, transparent);
     border-color: transparent;
   }
   .ui-support-band__secondary.ui-button:not(:disabled):not([aria-disabled='true']):hover {
-    background-color: rgba(var(--color-foreground), 0.07);
+    background-color: var(--accent);
     border-color: #f7f7f5;
   }
 }

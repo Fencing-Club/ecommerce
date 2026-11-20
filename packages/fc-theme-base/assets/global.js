@@ -237,7 +237,7 @@ class QuantityInput extends HTMLElement {
     event.preventDefault();
     const previousValue = this.input.value;
 
-    if (event.target.name === 'plus') {
+    if (event.currentTarget.name === 'plus') {
       if (parseInt(this.input.dataset.min) > parseInt(this.input.step) && this.input.value == 0) {
         this.input.value = this.input.dataset.min;
       } else {
@@ -249,15 +249,15 @@ class QuantityInput extends HTMLElement {
 
     if (previousValue !== this.input.value) this.input.dispatchEvent(this.changeEvent);
 
-    if (this.input.dataset.min === previousValue && event.target.name === 'minus') {
+    if (this.input.dataset.min === previousValue && event.currentTarget.name === 'minus') {
       this.input.value = parseInt(this.input.min);
     }
   }
 
   validateQtyRules() {
     const value = parseInt(this.input.value);
-    const buttonMinus = this.querySelector(".quantity__button[name='minus']");
-    const buttonPlus = this.querySelector(".quantity__button[name='plus']");
+    const buttonMinus = this.querySelector("button[name='minus']");
+    const buttonPlus = this.querySelector("button[name='plus']");
     const atMinimum = this.input.min !== '' && value <= parseInt(this.input.min);
     const atMaximum = this.input.max !== '' && value >= parseInt(this.input.max);
     buttonMinus.disabled = this.input.disabled || atMinimum;
