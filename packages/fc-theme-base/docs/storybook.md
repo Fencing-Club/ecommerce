@@ -24,6 +24,11 @@ It runs at `http://localhost:6107`.
 - Theme assets are served at `/theme-assets/`, and `asset_url` points there. They can't use `/assets/`, because Vite
   serves the SVGs that stories inline from that path.
 
+- `{% content_for 'blocks' %}` renders the theme blocks of the section or block it sits in, each from
+  `blocks/<type>.liquid` with `block` set and its settings filled from the block's schema defaults. `{% content_for
+  'block', type: 'x', id: 'y' %}` renders one static block. A story passes blocks as an array of
+  `{ id, type, settings, blocks, static }` in the section it gives `renderSection()`.
+
 The stand-ins only approximate Shopify. `{% form %}` renders nothing, images ignore their sizes, and there are no
 section rendering or store requests. Check sections on the contosocamp store before release.
 
