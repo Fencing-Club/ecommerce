@@ -78,12 +78,13 @@ the full-bleed header's 96px desktop gutters are scoped to the header rather tha
   control with a sliding selected segment; sizing uses it for cm/in and honors reduced motion.
 - The desktop filter sidebar is permanently open. Only the mobile filter panel has a disclosure. Mobile-menu list
   resets belong to `component-menu-drawer.css`, not the surrounding header; its accordion layout retains the design's
-  32px/48px/64px nesting insets. Announcement arrows retain 44px targets inside the banner gutters.
+  32px/48px/64px nesting insets.
   Expandable mobile categories are full-row disclosures, not links; only leaf items navigate. A child that repeats
   both its parent's name and URL is flattened into its children, avoiding redundant Weapons/Masks levels while
-  preserving destinations. Mobile announcements use the design's 11px
-  vertical padding and a separate CTA line, with no additional lab specimen padding. Longer copy may wrap and the
-  carousel reserves the tallest slide's height to prevent layout jumps.
+  preserving destinations.
+- The announcement bar is `_announcement` blocks on `ui-banner`. Each announcement's tone colours the whole bar while
+  it shows. Longer copy wraps, and every announcement sits in the same grid cell, so the bar keeps the tallest one's
+  height and never jumps. Autoplay pauses on hover and focus.
 - `collection-filter-header` is rendered by both the storefront and lab. Filters and Clear all share one row; its
   69px minimum height and 12px vertical padding match the collection toolbar, align their bottom rules, and keep
   the sort control clear of the divider. The first facet group adds no
@@ -201,8 +202,7 @@ tested without writing consent to Shopify. Required cookies remain checked and d
 state. The lab never loads the live Customer Privacy API.
 
 The expanded lab also includes breadcrumbs, Journal filters, pagination, collection checkbox/swatch filters, price
-limits, sorting, sidebar filter deselection, search idle/results/skeleton/empty/error states, announcement tones and
-carousel controls, country/currency and language selectors, contact-field patterns, price/swatch/dropdown variants,
+limits, sorting, sidebar filter deselection, search idle/results/skeleton/empty/error states, country/currency and language selectors, contact-field patterns, price/swatch/dropdown variants,
 cart bundle/note/discount details, mobile nested navigation, product thumbnails/zoom, source-backed sizing controls,
 downloads, policy contents/responsive tables, and footer utilities.
 

@@ -213,7 +213,6 @@ document.querySelector('#product-details').addEventListener('change', () => {
   const color = document.querySelector('[name="lab-color"]:checked').value;
   document.querySelector('#product-details-status').textContent = `${color}, size ${document.querySelector('#LabVariantDropdown').value}`;
 });
-document.querySelectorAll('#announcements a').forEach(link => link.addEventListener('click', event => event.preventDefault()));
 document.querySelector('#mobile-navigation').addEventListener('click', event => {
   const link = event.target.closest('a');
   if (!link) return;

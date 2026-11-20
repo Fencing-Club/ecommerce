@@ -20,9 +20,6 @@
   </div>
   <div class="specimen lab-search-loading" role="group" aria-label="Search loading example">{% render 'predictive-search-skeleton' %}</div>
 </section>
-<section id="announcements" class="lab-section"><h2>Announcement banners <code>announcement-bar / slideshow-component</code></h2>
-  {% for announcement in announcements %}<div class="specimen lab-section-specimen lab-announcement">{% render 'announcement-bar', section: announcement %}</div>{% endfor %}
-</section>
 <section id="localization" class="lab-section"><h2>Language and currency <code>language-localization / country-localization</code></h2>
   <div class="specimen lab-row lab-localization">
     <localization-form><form class="localization-form" data-localization-form><div><h3 id="LabCountryLabel">Country or region</h3>{% render 'country-localization', localPosition: 'LabCountry' %}</div></form></localization-form>
