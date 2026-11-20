@@ -108,6 +108,45 @@ function registerContentFor(engine, readBlock) {
   );
 }
 
+// `{% form 'customer', id: 'x', class: 'y' %}` renders a <form> around its body, with `form` set to a fresh form: no
+// errors and not yet posted. A `form_state` variable, such as `{ errors: ..., 'posted_successfully?': true }`, stands
+// in for a submitted one.
+function registerForm(engine) {
+  engine.registerTag(
+    'form',
+    class extends Tag {
+      constructor(token, remainTokens, liquid) {
+        super(token, remainTokens, liquid);
+        this.kind = this.tokenizer.readValue();
+        this.arguments = new Hash(this.tokenizer);
+        this.templates = [];
+        const stream = liquid.parser.parseStream(remainTokens);
+        stream
+          .on('tag:endform', () => stream.stop())
+          .on('template', (template) => this.templates.push(template))
+          .on('end', () => {
+            throw new Error(`tag ${token.getText()} not closed`);
+          });
+        stream.start();
+      }
+
+      *render(context, emitter) {
+        const kind = yield evalToken(this.kind, context);
+        const { id, class: className } = yield this.arguments.render(context);
+        const attributes = [`method="post"`, `action="/${kind === 'customer' || kind === 'contact' ? 'contact' : kind}"`];
+        if (id) attributes.push(`id="${escapeAttribute(id)}"`);
+        if (className) attributes.push(`class="${escapeAttribute(className)}"`);
+        emitter.write(`<form ${attributes.join(' ')}><input type="hidden" name="form_type" value="${escapeAttribute(kind)}">`);
+        const state = context.getSync(['form_state']) ?? {};
+        context.push({ form: { errors: null, 'posted_successfully?': false, email: '', ...state } });
+        yield this.liquid.renderer.renderTemplates(this.templates, context, emitter);
+        context.pop();
+        emitter.write('</form>');
+      }
+    },
+  );
+}
+
 /**
  * Registers the Shopify tags and filters on a liquidjs engine.
  *
@@ -119,7 +158,8 @@ function registerContentFor(engine, readBlock) {
  */
 export function registerShopifyLiquid(engine, { locale = {}, readAsset, readBlock } = {}) {
   registerContentFor(engine, readBlock);
-  for (const name of ['doc', 'schema', 'form', 'javascript']) registerBlockTag(engine, name, () => '');
+  for (const name of ['doc', 'schema', 'javascript']) registerBlockTag(engine, name, () => '');
+  registerForm(engine);
   registerBlockTag(engine, 'stylesheet', (content) => `<style>${content}</style>`);
   // `style` renders its Liquid body inside a <style> element; `paginate` renders its body as a single page.
   registerRenderedBlockTag(engine, 'style', { open: '<style>', close: '</style>' });

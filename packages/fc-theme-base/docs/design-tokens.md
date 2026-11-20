@@ -34,7 +34,8 @@ built on, with Tailwind's values. Storybook's Foundations stories show each scal
 
 The `ui-*` components in `assets/component-ui.css` use only the color, spacing and type tokens, never Dawn's
 `--color-foreground` channels or raw colors. A scope that changes color, such as the hero's light text, sets the
-shadcn tokens (`--foreground`, `--muted-foreground`) and the components follow. Where the Pen uses a size off the
-scale, such as 13px or 11px text, the component takes the nearest token. Section CSS, the dark bands (newsletter,
-support band, inverted header) and a few one-off colors still use raw values; they move to tokens as their components
-are restyled.
+shadcn tokens (`--foreground`, `--muted-foreground`) and the components follow. A custom property reads the values
+set on its own element, so a scope that swaps roles, such as the newsletter band making `--primary` light, sets them
+on nested elements, each reading only roles set further out. Where the Pen uses a size off the scale, such as 13px or
+11px text, the component takes the nearest token. Section CSS, the inverted header and a few one-off colors still use
+raw values; they move to tokens as their components are restyled.

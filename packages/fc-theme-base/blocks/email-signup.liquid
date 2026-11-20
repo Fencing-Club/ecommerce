@@ -1,0 +1,38 @@
+{%- comment -%}
+  An email signup form on ui-newsletter-signup. It takes its colours from the section around it.
+{%- endcomment -%}
+<div class="email-signup" {{ block.shopify_attributes }}>
+  {%- render 'ui-newsletter-signup',
+    id: block.id,
+    label: block.settings.label,
+    button_label: block.settings.button_label,
+    disclaimer: block.settings.disclaimer
+  -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.email_signup.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:blocks.email_signup.settings.label.label",
+      "default": "Enter your email"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "t:blocks.email_signup.settings.button_label.label",
+      "default": "Subscribe"
+    },
+    {
+      "type": "text",
+      "id": "disclaimer",
+      "label": "t:blocks.email_signup.settings.disclaimer.label",
+      "default": "We respect your privacy. Unsubscribe anytime."
+    }
+  ],
+  "presets": [{ "name": "t:blocks.email_signup.name" }]
+}
+{% endschema %}
