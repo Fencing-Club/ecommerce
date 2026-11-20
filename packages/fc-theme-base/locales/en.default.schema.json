@@ -193,9 +193,6 @@
         "header__2": {
           "content": "Body"
         },
-        "type_body_font": {
-          "label": "Font"
-        },
         "body_scale": {
           "label": "Scale"
         }

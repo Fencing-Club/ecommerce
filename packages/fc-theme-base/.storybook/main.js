@@ -8,8 +8,5 @@ export default {
   core: { disableTelemetry: true },
   // The theme's CSS, scripts and images, which asset_url points at. Not /assets/: Vite serves the SVGs that
   // stories/liquid.js inlines from that path.
-  staticDirs: [
-    { from: '../assets', to: '/theme-assets' },
-    { from: '../tests/component-library/fonts', to: '/fonts' },
-  ],
+  staticDirs: [{ from: '../assets', to: '/theme-assets' }],
 };

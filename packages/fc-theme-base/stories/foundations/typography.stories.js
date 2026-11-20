@@ -15,7 +15,7 @@ const page = (items) => `
   </style>
   <ul class="type-list">${items}</ul>`;
 
-/** Type: Tailwind's size scale and weights. Inter sets everything, from the theme's font setting. */
+/** Type: Tailwind's size scale and weights, set in the device's own font (`--font-sans`). */
 export default { title: 'Foundations/Typography' };
 
 export const Sizes = {

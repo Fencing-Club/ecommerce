@@ -55,13 +55,13 @@
   color: var(--foreground);
 }
 
-/* Brands heading: Inter 30 w700 ls -0.5. */
+/* Brands heading: 30 w700 ls -0.5. */
 .fc-home__h30 {
   font-size: 3rem;
   letter-spacing: -0.05rem;
 }
 
-/* Featured picks heading: Inter 36 w700 ls -1. */
+/* Featured picks heading: 36 w700 ls -1. */
 .fc-home__h36 {
   font-size: 3.6rem;
   letter-spacing: -0.1rem;
@@ -72,13 +72,13 @@
   line-height: 1.1;
 }
 
-/* Journal heading: Inter 40 w700 ls -1. */
+/* Journal heading: 40 w700 ls -1. */
 .fc-home__h40 {
   font-size: 4rem;
   letter-spacing: -0.1rem;
 }
 
-/* Shop by Category heading: Inter 44 w700 ls 0. */
+/* Shop by Category heading: 44 w700 ls 0. */
 .fc-home__h44 {
   font-size: 4.4rem;
   letter-spacing: 0;

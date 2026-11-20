@@ -30,7 +30,13 @@
   /* Spacing: Tailwind's 4px unit. Use calc(var(--spacing) * n) for n steps. */
   --spacing: 0.4rem;
 
-  /* Type scale, from Tailwind. Families come from the theme settings (--font-body-family, --font-heading-family). */
+  /* The device's own font, so pages render without a font download: SF Pro on Apple devices, Segoe UI Variable
+     (Fluent) on Windows 11, Segoe UI on older Windows, Roboto on Android. Tailwind's name; --font-body-family and
+     --font-heading-family point at it. */
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, Roboto,
+    'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+  /* Type scale, from Tailwind. */
   --text-xs: 1.2rem;
   --text-xs--line-height: calc(1 / 0.75);
   --text-sm: 1.4rem;
