@@ -1,10 +1,10 @@
 import { expect } from 'storybook/test';
-import { products, sectionHeader } from '../fixtures.js';
-import { loadScript, section } from '../liquid.js';
+import { products, sectionHeader } from '../../fixtures.js';
+import { loadScript, section } from '../../liquid.js';
 
 /** `sections/best-sellers.liquid`: chosen products in a row of four. Each card is a `product-card` block. */
 export default {
-  title: 'Sections/Best sellers',
+  title: 'Sections/Home/Best sellers',
   parameters: { layout: 'fullscreen' },
   loaders: [loadScript('product-form.js')],
   render: section('best-sellers', {

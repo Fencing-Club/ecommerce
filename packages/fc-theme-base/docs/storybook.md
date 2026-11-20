@@ -39,7 +39,7 @@ section rendering or store requests. Check sections on the contosocamp store bef
 
 - Stories live in `stories/`, grouped as `foundations/` (the design tokens and the
   [page gutter](shopify-page-layout.md#the-checks)), `elements/`, `inputs/`, `components/`, `blocks/` (the
-  [theme blocks](theme-blocks.md)) and `sections/`. They can't sit beside
+  [theme blocks](theme-blocks.md)) and `sections/`, which has a folder per page (`sections/home/`). They can't sit beside
   the Liquid, because Shopify only accepts Liquid and JSON in the theme's folders.
 - Name the story file after the component (`button.stories.js` for `ui-button.liquid`) and title it by group
   (`Elements/Button`). Give each state its own story.

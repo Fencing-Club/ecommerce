@@ -1,10 +1,10 @@
 import { expect } from 'storybook/test';
-import { articles, sectionHeader } from '../fixtures.js';
-import { section } from '../liquid.js';
+import { articles, sectionHeader } from '../../fixtures.js';
+import { section } from '../../liquid.js';
 
 /** `sections/journal-highlights.liquid`: the latest posts from the chosen blog. */
 export default {
-  title: 'Sections/Journal highlights',
+  title: 'Sections/Home/Journal highlights',
   parameters: { layout: 'fullscreen' },
   args: { blog: 'journal' },
   render: section('journal-highlights', {

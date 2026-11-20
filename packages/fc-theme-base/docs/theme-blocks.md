@@ -61,7 +61,7 @@ Brand logos and Journal highlights. Their shared shell and carousel dots are in 
 
 ## Stories
 
-Each public block has stories in `stories/blocks/`, titled `Blocks/<name>`, and each section in `stories/sections/`,
-titled `Sections/<name>`, which covers its private blocks. `block(type, { blocks })` and
+Each public block has stories in `stories/blocks/`, titled `Blocks/<name>`, and each section in a folder for its page
+under `stories/sections/`, titled `Sections/<page>/<name>` (`Sections/Home/Hero`), which covers its private blocks. `block(type, { blocks })` and
 `section(name, { blocks, staticBlocks })` from `stories/liquid.js` are their `render` functions. See
 [Storybook](storybook.md).
