@@ -1,0 +1,54 @@
+{%- comment -%}
+  One brand logo, optionally linked to the brand's collection.
+{%- endcomment -%}
+{%- capture logo_image -%}
+  {%- if block.settings.image -%}
+    {{
+      block.settings.image
+      | image_url: width: 560
+      | image_tag: class: 'brand-logo__image', widths: '280, 420, 560', sizes: '280px', alt: block.settings.image.alt, loading: 'lazy'
+    }}
+  {%- endif -%}
+{%- endcapture -%}
+{%- if block.settings.link != blank -%}
+  <a class="brand-logo" href="{{ block.settings.link }}" {{ block.shopify_attributes }}>{{ logo_image }}</a>
+{%- else -%}
+  <span class="brand-logo" {{ block.shopify_attributes }}>{{ logo_image }}</span>
+{%- endif -%}
+
+{% stylesheet %}
+  .brand-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--spacing-16);
+    min-width: 0;
+  }
+  .brand-logo__image {
+    display: block;
+    width: 100%;
+    max-width: calc(var(--spacing) * 69);
+    height: 100%;
+    object-fit: contain;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.logo.name",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:blocks.logo.settings.image.label",
+      "info": "t:blocks.logo.settings.image.info"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:blocks.logo.settings.link.label"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.logo.name" }]
+}
+{% endschema %}

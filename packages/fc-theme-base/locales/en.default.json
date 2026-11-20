@@ -474,6 +474,22 @@
       "min_error": "This item has a minimum of {{ min }}",
       "max_error": "This item has a maximum of {{ max }}",
       "step_error": "You can only add this item in increments of {{ step }}"
+    },
+    "home_hero": {
+      "label": "Featured",
+      "slide_label": "{{ index }} of {{ count }}",
+      "previous": "Previous slide",
+      "next": "Next slide",
+      "choose": "Choose slide",
+      "go_to": "Slide {{ index }}"
+    },
+    "testimonials": {
+      "label": "Testimonials",
+      "slide_label": "{{ index }} of {{ count }}",
+      "previous": "Previous testimonial",
+      "next": "Next testimonial",
+      "choose": "Choose testimonial",
+      "go_to": "Testimonial {{ index }}"
     }
   },
   "localization": {
@@ -635,6 +651,21 @@
       "max_characters": "{{ max_chars }} characters max",
       "send_on": "YYYY-MM-DD",
       "send_on_label": "Send on (optional)"
+    }
+  },
+  "blocks": {
+    "product_card": {
+      "add": "Add",
+      "placeholder": "Choose a product"
+    },
+    "category_card": {
+      "count": {
+        "one": "{{ count }} item",
+        "other": "{{ count }} items"
+      }
+    },
+    "testimonial": {
+      "rating": "{{ rating }} out of 5 stars"
     }
   }
 }

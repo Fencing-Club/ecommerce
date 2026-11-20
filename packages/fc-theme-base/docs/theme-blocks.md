@@ -19,6 +19,33 @@ Shared blocks live in `blocks/`. A section lists the blocks it accepts in its sc
   axes. Rows wrap when they run out of room. Groups nest, so a section header is a column group holding a text
   eyebrow, a heading and a row group of buttons.
 
+- **Link** (`link.liquid`): a text link, such as "View all", with an optional trailing arrow. It renders through
+  `ui-link`.
+- **Feature** (`feature.liquid`): a short selling point: an icon, a label, a line of detail and an optional link.
+- **Product card** (`product-card.liquid`): one chosen product, shown through `ui-product-card`, with an optional
+  badge and add button.
+
+## Section shells
+
+A section built on blocks is a thin shell. It puts its content on the page gutter, lays out its blocks and holds
+only settings that belong to the whole section, such as a carousel's timing. Everything a merchant reads is a block.
+
+- A fixed part of the layout, like the header above a grid, is a static block:
+  `{% content_for 'block', type: 'group', id: 'header' %}`. Merchants edit what's inside it but can't remove it.
+  The section's preset and template list it with `"static": true`.
+- The repeating items render with `{% content_for 'blocks' %}`. An item only that section uses is a private block,
+  such as `_category-card` in Category grid or `_hero-slide` in Hero.
+- Every section has a preset whose blocks show the design, so a merchant who adds it starts from the real layout.
+- Shopify wraps each block in its own `<div class="shopify-block">`. Layout CSS targets the section's direct children
+  (`.picks-grid > :nth-child(3)`), not the block's own root element.
+- In a section, `section.blocks` lists only its theme blocks, without the static ones, and each one's `type` reads as
+  `@theme`. Count items with `section.blocks.size`; don't filter by type.
+- A section's `{% stylesheet %}` loads before the CSS files it links, so a rule that overrides a shared class repeats
+  that class in its selector (`.home-section.why-us`).
+
+The homepage sections are built this way: Hero, Featured picks, Category grid, Best sellers, Why us, Testimonials,
+Brand logos and Journal highlights. Their shared shell and carousel dots are in `assets/section-home.css`.
+
 ## Rules
 
 - Keep each block small: one element and the settings real sections need. Reach for a group before adding layout
@@ -34,6 +61,7 @@ Shared blocks live in `blocks/`. A section lists the blocks it accepts in its sc
 
 ## Stories
 
-Each block has stories in `stories/blocks/`, titled `Blocks/<name>`. `block(type, { blocks })` from
-`stories/liquid.js` is the story's `render`: its args become the block's settings, and `blocks` are the blocks nested
-inside it. See [Storybook](storybook.md).
+Each public block has stories in `stories/blocks/`, titled `Blocks/<name>`, and each section in `stories/sections/`,
+titled `Sections/<name>`, which covers its private blocks. `block(type, { blocks })` and
+`section(name, { blocks, staticBlocks })` from `stories/liquid.js` are their `render` functions. See
+[Storybook](storybook.md).

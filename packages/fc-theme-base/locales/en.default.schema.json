@@ -1701,6 +1701,47 @@
           "label": "Open by default"
         }
       }
+    },
+    "home_hero": {
+      "name": "Hero",
+      "settings": {
+        "autoplay": {
+          "label": "Change slides automatically"
+        },
+        "autoplay_speed": {
+          "label": "Time per slide"
+        }
+      }
+    },
+    "featured_picks": {
+      "name": "Featured picks"
+    },
+    "category_grid": {
+      "name": "Category grid"
+    },
+    "best_sellers": {
+      "name": "Best sellers"
+    },
+    "why_us": {
+      "name": "Why us"
+    },
+    "testimonials": {
+      "name": "Testimonials"
+    },
+    "journal_highlights": {
+      "name": "Journal highlights",
+      "settings": {
+        "blog": {
+          "label": "Blog"
+        },
+        "read_label": {
+          "label": "Read more label",
+          "default": "Read more"
+        }
+      }
+    },
+    "brand_logos": {
+      "name": "Brand logos"
     }
   },
   "blocks": {
@@ -1822,6 +1863,156 @@
           "end": "End",
           "stretch": "Stretch",
           "between": "Space between"
+        }
+      }
+    },
+    "link": {
+      "name": "Link",
+      "settings": {
+        "label": {
+          "label": "Label",
+          "default": "View all"
+        },
+        "link": {
+          "label": "Link"
+        },
+        "show_arrow": {
+          "label": "Show arrow"
+        }
+      }
+    },
+    "feature": {
+      "name": "Feature",
+      "settings": {
+        "icon": {
+          "label": "Icon",
+          "options": {
+            "badge_check": "Badge",
+            "truck": "Truck",
+            "returns": "Returns",
+            "star": "Star"
+          }
+        },
+        "label": {
+          "label": "Label",
+          "default": "Fast shipping"
+        },
+        "detail": {
+          "label": "Detail",
+          "default": "Ships in 1 business day"
+        },
+        "link_label": {
+          "label": "Link label"
+        },
+        "link": {
+          "label": "Link"
+        }
+      }
+    },
+    "product_card": {
+      "name": "Product card",
+      "settings": {
+        "product": {
+          "label": "Product"
+        },
+        "badge": {
+          "label": "Badge",
+          "info": "Shows on the photo, for example Best seller."
+        },
+        "show_add": {
+          "label": "Show add button",
+          "info": "Shows only for products with one variant."
+        }
+      }
+    },
+    "category_card": {
+      "name": "Category card",
+      "settings": {
+        "collection": {
+          "label": "Collection"
+        },
+        "title": {
+          "label": "Title",
+          "info": "Leave blank to use the collection's title."
+        },
+        "image": {
+          "label": "Image",
+          "info": "Leave blank to use the collection's image."
+        },
+        "show_count": {
+          "label": "Show product count"
+        },
+        "link_label": {
+          "label": "Link label",
+          "default": "Shop"
+        }
+      }
+    },
+    "pick_card": {
+      "name": "Featured pick",
+      "settings": {
+        "image": {
+          "label": "Image"
+        },
+        "title": {
+          "label": "Title",
+          "default": "Featured pick"
+        },
+        "description": {
+          "label": "Description"
+        }
+      }
+    },
+    "pick_link": {
+      "name": "Pill link",
+      "settings": {
+        "label": {
+          "label": "Label",
+          "default": "Shop"
+        },
+        "link": {
+          "label": "Link"
+        }
+      }
+    },
+    "testimonial": {
+      "name": "Testimonial",
+      "settings": {
+        "quote": {
+          "label": "Quote",
+          "default": "Great gear and fast shipping."
+        },
+        "name": {
+          "label": "Name",
+          "default": "Customer name"
+        },
+        "role": {
+          "label": "Role"
+        },
+        "rating": {
+          "label": "Rating",
+          "info": "Set to 0 to hide the stars."
+        }
+      }
+    },
+    "logo": {
+      "name": "Logo",
+      "settings": {
+        "image": {
+          "label": "Image",
+          "info": "Give the image alt text, such as the brand's name."
+        },
+        "link": {
+          "label": "Link"
+        }
+      }
+    },
+    "hero_slide": {
+      "name": "Slide",
+      "settings": {
+        "image": {
+          "label": "Image",
+          "info": "Set a focal point on the image to choose how it crops."
         }
       }
     }

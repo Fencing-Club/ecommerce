@@ -4,44 +4,183 @@
       "type": "home-hero",
       "blocks": {
         "slide-1": {
-          "type": "slide",
+          "type": "_hero-slide",
           "settings": {
-            "image": "shopify://shop_images/Hero_3_4a58194c-13bf-4a23-91c0-3a3bcec534b4.jpg",
-            "eyebrow": "",
-            "heading": "Shop",
-            "subheading": "Gear at competitive prices for competitive athletes",
-            "button_label": "Shop Now",
-            "button_url": "shopify://collections/all"
-          }
+            "image": "shopify://shop_images/Hero_3_4a58194c-13bf-4a23-91c0-3a3bcec534b4.jpg"
+          },
+          "blocks": {
+            "slide-1-heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "Shop",
+                "tag": "h1",
+                "size": "xl"
+              }
+            },
+            "slide-1-subheading": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Gear at competitive prices for competitive athletes</p>"
+              }
+            },
+            "slide-1-actions": {
+              "type": "group",
+              "settings": {
+                "direction": "row",
+                "gap": "lg",
+                "align": "center"
+              },
+              "blocks": {
+                "slide-1-actions-button": {
+                  "type": "button",
+                  "settings": {
+                    "label": "Shop Now",
+                    "link": "shopify://collections/all",
+                    "style": "secondary",
+                    "size": "lg"
+                  }
+                }
+              },
+              "block_order": [
+                "slide-1-actions-button"
+              ]
+            }
+          },
+          "block_order": [
+            "slide-1-heading",
+            "slide-1-subheading",
+            "slide-1-actions"
+          ]
         },
         "slide-2": {
-          "type": "slide",
+          "type": "_hero-slide",
           "settings": {
-            "image": "shopify://shop_images/Hero_Fencing_Field_908d0b99-1d56-45c9-a5b5-eb059014e962.jpg",
-            "eyebrow": "SPECIAL",
-            "heading": "Get a blade",
-            "subheading": "Best priced blades for beginners to elite athletes",
-            "button_label": "Weapons",
-            "button_url": "shopify://collections/weapons",
-            "link_label": "Blades",
-            "link_url": "shopify://collections/blades"
-          }
+            "image": "shopify://shop_images/Hero_Fencing_Field_908d0b99-1d56-45c9-a5b5-eb059014e962.jpg"
+          },
+          "blocks": {
+            "slide-2-eyebrow": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Special</p>",
+                "style": "eyebrow"
+              }
+            },
+            "slide-2-heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "Get a blade",
+                "tag": "h2",
+                "size": "xl"
+              }
+            },
+            "slide-2-subheading": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Best priced blades for beginners to elite athletes</p>"
+              }
+            },
+            "slide-2-actions": {
+              "type": "group",
+              "settings": {
+                "direction": "row",
+                "gap": "lg",
+                "align": "center"
+              },
+              "blocks": {
+                "slide-2-actions-button": {
+                  "type": "button",
+                  "settings": {
+                    "label": "Weapons",
+                    "link": "shopify://collections/weapons",
+                    "style": "secondary",
+                    "size": "lg"
+                  }
+                },
+                "slide-2-actions-link": {
+                  "type": "link",
+                  "settings": {
+                    "label": "Blades",
+                    "link": "shopify://collections/blades"
+                  }
+                }
+              },
+              "block_order": [
+                "slide-2-actions-button",
+                "slide-2-actions-link"
+              ]
+            }
+          },
+          "block_order": [
+            "slide-2-eyebrow",
+            "slide-2-heading",
+            "slide-2-subheading",
+            "slide-2-actions"
+          ]
         },
         "slide-3": {
-          "type": "slide",
+          "type": "_hero-slide",
           "settings": {
-            "image": "shopify://shop_images/novus-uniform-rack.jpg",
-            "eyebrow": "NEW RELEASE",
-            "heading": "Meet Novus",
-            "subheading": "The 350N uniform that works as hard as you do",
-            "button_label": "Shop Novus",
-            "button_url": "shopify://collections/clothing"
-          }
+            "image": "shopify://shop_images/novus-uniform-rack.jpg"
+          },
+          "blocks": {
+            "slide-3-eyebrow": {
+              "type": "text",
+              "settings": {
+                "text": "<p>New release</p>",
+                "style": "eyebrow"
+              }
+            },
+            "slide-3-heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "Meet Novus",
+                "tag": "h2",
+                "size": "xl"
+              }
+            },
+            "slide-3-subheading": {
+              "type": "text",
+              "settings": {
+                "text": "<p>The 350N uniform that works as hard as you do</p>"
+              }
+            },
+            "slide-3-actions": {
+              "type": "group",
+              "settings": {
+                "direction": "row",
+                "gap": "lg",
+                "align": "center"
+              },
+              "blocks": {
+                "slide-3-actions-button": {
+                  "type": "button",
+                  "settings": {
+                    "label": "Shop Novus",
+                    "link": "shopify://collections/clothing",
+                    "style": "secondary",
+                    "size": "lg"
+                  }
+                }
+              },
+              "block_order": [
+                "slide-3-actions-button"
+              ]
+            }
+          },
+          "block_order": [
+            "slide-3-eyebrow",
+            "slide-3-heading",
+            "slide-3-subheading",
+            "slide-3-actions"
+          ]
         }
       },
-      "block_order": ["slide-1", "slide-2", "slide-3"],
+      "block_order": [
+        "slide-1",
+        "slide-2",
+        "slide-3"
+      ],
       "settings": {
-        "aria_label": "Featured",
         "autoplay": true,
         "autoplay_speed": 6
       }
@@ -49,136 +188,450 @@
     "featured_picks": {
       "type": "featured-picks",
       "blocks": {
+        "header": {
+          "type": "group",
+          "static": true,
+          "settings": {
+            "direction": "column",
+            "gap": "md",
+            "align": "start"
+          },
+          "blocks": {
+            "header-eyebrow": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Gear up your way</p>",
+                "style": "eyebrow"
+              }
+            },
+            "header-heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "Featured picks",
+                "tag": "h2",
+                "size": "lg"
+              }
+            }
+          },
+          "block_order": [
+            "header-eyebrow",
+            "header-heading"
+          ]
+        },
         "card-1": {
-          "type": "card",
+          "type": "_pick-card",
           "settings": {
             "image": "shopify://shop_images/starter-kits-featured-pick.jpg",
             "title": "Build Your Own Kit",
-            "description": "Everything to get on the strip: uniform, blade, and mask bundled together.",
-            "link_1_label": "Foil Kits",
-            "link_1_url": "shopify://collections/foil-kits",
-            "link_2_label": "Épée Kits",
-            "link_2_url": "shopify://collections/epee-kits",
-            "link_3_label": "Sabre Kits",
-            "link_3_url": "shopify://collections/saber-kits"
-          }
+            "description": "Everything to get on the strip: uniform, blade, and mask bundled together."
+          },
+          "blocks": {
+            "card-1-link-1": {
+              "type": "_pick-link",
+              "settings": {
+                "label": "Foil Kits",
+                "link": "shopify://collections/foil-kits"
+              }
+            },
+            "card-1-link-2": {
+              "type": "_pick-link",
+              "settings": {
+                "label": "Épée Kits",
+                "link": "shopify://collections/epee-kits"
+              }
+            },
+            "card-1-link-3": {
+              "type": "_pick-link",
+              "settings": {
+                "label": "Sabre Kits",
+                "link": "shopify://collections/saber-kits"
+              }
+            }
+          },
+          "block_order": [
+            "card-1-link-1",
+            "card-1-link-2",
+            "card-1-link-3"
+          ]
         },
         "card-2": {
-          "type": "card",
+          "type": "_pick-card",
           "settings": {
             "image": "shopify://shop_images/weapon-builder-home.jpg",
             "title": "Weapon Builder",
-            "description": "Assemble a competition-ready blade part by part, tuned exactly how you like it.",
-            "link_1_label": "Foil Weapon",
-            "link_1_url": "shopify://collections/foil-weapons",
-            "link_2_label": "Épée Weapon",
-            "link_2_url": "shopify://collections/epee-weapons",
-            "link_3_label": "Sabre Weapon",
-            "link_3_url": "shopify://collections/saber-weapons"
-          }
+            "description": "Assemble a competition-ready blade part by part, tuned exactly how you like it."
+          },
+          "blocks": {
+            "card-2-link-1": {
+              "type": "_pick-link",
+              "settings": {
+                "label": "Foil Weapon",
+                "link": "shopify://collections/foil-weapons"
+              }
+            },
+            "card-2-link-2": {
+              "type": "_pick-link",
+              "settings": {
+                "label": "Épée Weapon",
+                "link": "shopify://collections/epee-weapons"
+              }
+            },
+            "card-2-link-3": {
+              "type": "_pick-link",
+              "settings": {
+                "label": "Sabre Weapon",
+                "link": "shopify://collections/saber-weapons"
+              }
+            }
+          },
+          "block_order": [
+            "card-2-link-1",
+            "card-2-link-2",
+            "card-2-link-3"
+          ]
         },
         "card-3": {
-          "type": "card",
+          "type": "_pick-card",
           "settings": {
             "image": "shopify://shop_images/team-fencing-bag-full-bleed-v2.jpg",
             "title": "Team Fencing Bag",
-            "description": "Roomy, durable bags to haul your whole setup, from the club to the competition.",
-            "link_1_label": "Wheel Bags",
-            "link_1_url": "shopify://collections/wheel-bags",
-            "link_2_label": "Carry Bags",
-            "link_2_url": "shopify://collections/carry-bags"
-          }
+            "description": "Roomy, durable bags to haul your whole setup, from the club to the competition."
+          },
+          "blocks": {
+            "card-3-link-1": {
+              "type": "_pick-link",
+              "settings": {
+                "label": "Wheel Bags",
+                "link": "shopify://collections/wheel-bags"
+              }
+            },
+            "card-3-link-2": {
+              "type": "_pick-link",
+              "settings": {
+                "label": "Carry Bags",
+                "link": "shopify://collections/carry-bags"
+              }
+            }
+          },
+          "block_order": [
+            "card-3-link-1",
+            "card-3-link-2"
+          ]
         }
       },
-      "block_order": ["card-1", "card-2", "card-3"],
-      "settings": {
-        "eyebrow": "GEAR UP YOUR WAY",
-        "heading": "Featured picks"
-      }
+      "block_order": [
+        "card-1",
+        "card-2",
+        "card-3"
+      ]
     },
     "category_grid": {
       "type": "category-grid",
       "blocks": {
-        "cat-1": { "type": "category", "settings": { "collection": "masks" } },
-        "cat-2": { "type": "category", "settings": { "collection": "jackets" } },
-        "cat-3": { "type": "category", "settings": { "collection": "weapons" } },
-        "cat-4": { "type": "category", "settings": { "collection": "blades" } },
-        "cat-5": { "type": "category", "settings": { "collection": "gloves" } },
-        "cat-6": { "type": "category", "settings": { "collection": "footwear" } }
+        "header": {
+          "type": "group",
+          "static": true,
+          "settings": {
+            "direction": "column",
+            "gap": "md",
+            "align": "start"
+          },
+          "blocks": {
+            "header-eyebrow": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Browse the range</p>",
+                "style": "eyebrow"
+              }
+            },
+            "header-heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "Shop by category",
+                "tag": "h2",
+                "size": "xl"
+              }
+            }
+          },
+          "block_order": [
+            "header-eyebrow",
+            "header-heading"
+          ]
+        },
+        "cat-1": {
+          "type": "_category-card",
+          "settings": {
+            "collection": "masks",
+            "show_count": true,
+            "link_label": "Shop"
+          }
+        },
+        "cat-2": {
+          "type": "_category-card",
+          "settings": {
+            "collection": "jackets",
+            "show_count": true,
+            "link_label": "Shop"
+          }
+        },
+        "cat-3": {
+          "type": "_category-card",
+          "settings": {
+            "collection": "weapons",
+            "show_count": true,
+            "link_label": "Shop"
+          }
+        },
+        "cat-4": {
+          "type": "_category-card",
+          "settings": {
+            "collection": "blades",
+            "show_count": true,
+            "link_label": "Shop"
+          }
+        },
+        "cat-5": {
+          "type": "_category-card",
+          "settings": {
+            "collection": "gloves",
+            "show_count": true,
+            "link_label": "Shop"
+          }
+        },
+        "cat-6": {
+          "type": "_category-card",
+          "settings": {
+            "collection": "footwear",
+            "show_count": true,
+            "link_label": "Shop"
+          }
+        }
       },
-      "block_order": ["cat-1", "cat-2", "cat-3", "cat-4", "cat-5", "cat-6"],
-      "settings": {
-        "eyebrow": "BROWSE THE RANGE",
-        "heading": "Shop by Category",
-        "show_count": true,
-        "link_label": "Shop"
-      }
+      "block_order": [
+        "cat-1",
+        "cat-2",
+        "cat-3",
+        "cat-4",
+        "cat-5",
+        "cat-6"
+      ]
     },
     "best_sellers": {
       "type": "best-sellers",
       "blocks": {
-        "product-1": { "type": "product", "settings": { "product": "standard-electric-foil-french" } },
-        "product-2": { "type": "product", "settings": { "product": "novus-epee-fencing-mask-350n" } },
-        "product-3": { "type": "product", "settings": { "product": "novus-mens-fencing-jacket-350n" } },
-        "product-4": { "type": "product", "settings": { "product": "standard-foil-saber-body-cord" } }
+        "header": {
+          "type": "group",
+          "static": true,
+          "settings": {
+            "direction": "row",
+            "gap": "lg",
+            "align": "end",
+            "justify": "between"
+          },
+          "blocks": {
+            "header-title": {
+              "type": "group",
+              "settings": {
+                "direction": "column",
+                "gap": "sm",
+                "align": "start"
+              },
+              "blocks": {
+                "header-title-eyebrow": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>Featured products</p>",
+                    "style": "eyebrow"
+                  }
+                },
+                "header-title-heading": {
+                  "type": "heading",
+                  "settings": {
+                    "heading": "Best sellers",
+                    "tag": "h2",
+                    "size": "xl"
+                  }
+                }
+              },
+              "block_order": [
+                "header-title-eyebrow",
+                "header-title-heading"
+              ]
+            },
+            "header-link": {
+              "type": "link",
+              "settings": {
+                "label": "View all",
+                "link": "shopify://collections/all"
+              }
+            }
+          },
+          "block_order": [
+            "header-title",
+            "header-link"
+          ]
+        },
+        "product-1": {
+          "type": "product-card",
+          "settings": {
+            "product": "standard-electric-foil-french",
+            "badge": "Best seller",
+            "show_add": true
+          }
+        },
+        "product-2": {
+          "type": "product-card",
+          "settings": {
+            "product": "novus-epee-fencing-mask-350n",
+            "badge": "Best seller",
+            "show_add": true
+          }
+        },
+        "product-3": {
+          "type": "product-card",
+          "settings": {
+            "product": "novus-mens-fencing-jacket-350n",
+            "badge": "Best seller",
+            "show_add": true
+          }
+        },
+        "product-4": {
+          "type": "product-card",
+          "settings": {
+            "product": "standard-foil-saber-body-cord",
+            "badge": "Best seller",
+            "show_add": true
+          }
+        }
       },
-      "block_order": ["product-1", "product-2", "product-3", "product-4"],
-      "settings": {
-        "eyebrow": "FEATURED PRODUCTS",
-        "heading": "Best sellers",
-        "badge_label": "BEST SELLER",
-        "link_label": "View all",
-        "show_add": true,
-        "add_label": "Add"
-      }
+      "block_order": [
+        "product-1",
+        "product-2",
+        "product-3",
+        "product-4"
+      ]
     },
     "why_us": {
       "type": "why-us",
       "blocks": {
-        "point-1": {
-          "type": "point",
+        "image": {
+          "type": "image",
+          "static": true,
           "settings": {
-            "icon": "badge-check",
-            "label": "Expert Knowledge",
-            "detail": "National-level guidance",
-            "link_label": "Get advice",
-            "link_url": "shopify://pages/contact"
+            "image": "shopify://shop_images/generated-1783898170501.jpg",
+            "aspect_ratio": "landscape"
           }
         },
-        "point-2": {
-          "type": "point",
+        "eyebrow": {
+          "type": "text",
           "settings": {
-            "icon": "truck",
-            "label": "Fast Shipping",
-            "detail": "Ships in 1 business day",
-            "link_label": "Shipping policy",
-            "link_url": "shopify://policies/shipping-policy"
+            "text": "<p>Why Fencing Club</p>",
+            "style": "eyebrow"
           }
         },
-        "point-3": {
-          "type": "point",
+        "heading": {
+          "type": "heading",
           "settings": {
-            "icon": "rotate-ccw",
-            "label": "Hassle-Free Returns",
-            "detail": "30-day, postage-paid",
-            "link_label": "Returns policy",
-            "link_url": "shopify://policies/refund-policy"
+            "heading": "Trusted by competitive fencers, clubs, and coaches nationwide",
+            "tag": "h2",
+            "size": "lg"
           }
+        },
+        "body": {
+          "type": "text",
+          "settings": {
+            "text": "<p>We build and source competition-grade foil, épée, and sabre equipment for athletes at every level, tested by national-team fencers and trusted by clubs from first lesson to finals.</p>",
+            "style": "subtle"
+          }
+        },
+        "features": {
+          "type": "group",
+          "settings": {
+            "direction": "row",
+            "gap": "md",
+            "align": "start"
+          },
+          "blocks": {
+            "features-point-1": {
+              "type": "feature",
+              "settings": {
+                "icon": "badge-check",
+                "label": "Expert Knowledge",
+                "detail": "National-level guidance",
+                "link_label": "Get advice",
+                "link": "shopify://pages/contact"
+              }
+            },
+            "features-point-2": {
+              "type": "feature",
+              "settings": {
+                "icon": "truck",
+                "label": "Fast Shipping",
+                "detail": "Ships in 1 business day",
+                "link_label": "Shipping policy",
+                "link": "shopify://policies/shipping-policy"
+              }
+            },
+            "features-point-3": {
+              "type": "feature",
+              "settings": {
+                "icon": "rotate-ccw",
+                "label": "Hassle-Free Returns",
+                "detail": "30-day, postage-paid",
+                "link_label": "Returns policy",
+                "link": "shopify://policies/refund-policy"
+              }
+            }
+          },
+          "block_order": [
+            "features-point-1",
+            "features-point-2",
+            "features-point-3"
+          ]
         }
       },
-      "block_order": ["point-1", "point-2", "point-3"],
-      "settings": {
-        "image": "shopify://shop_images/generated-1783898170501.jpg",
-        "eyebrow": "WHY FENCING CLUB",
-        "heading": "Trusted by competitive fencers, clubs, and coaches nationwide",
-        "body": "We build and source competition-grade foil, épée, and sabre equipment for athletes at every level, tested by national-team fencers and trusted by clubs from first lesson to finals."
-      }
+      "block_order": [
+        "eyebrow",
+        "heading",
+        "body",
+        "features"
+      ]
     },
     "testimonials": {
       "type": "testimonials",
       "blocks": {
+        "header": {
+          "type": "group",
+          "static": true,
+          "settings": {
+            "direction": "column",
+            "gap": "md",
+            "align": "start"
+          },
+          "blocks": {
+            "header-eyebrow": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Testimonials</p>",
+                "style": "eyebrow"
+              }
+            },
+            "header-heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "Loved by the fencing community",
+                "tag": "h2",
+                "size": "xl"
+              }
+            }
+          },
+          "block_order": [
+            "header-eyebrow",
+            "header-heading"
+          ]
+        },
         "quote-1": {
-          "type": "quote",
+          "type": "_testimonial",
           "settings": {
             "quote": "The blade balance is exceptional and the kit arrived faster than any supplier I've used. My whole club switched over.",
             "name": "Marguerite Lavoie",
@@ -187,7 +640,7 @@
           }
         },
         "quote-2": {
-          "type": "quote",
+          "type": "_testimonial",
           "settings": {
             "quote": "Impeccable finishing on every mask and lamé. This is the first gear I trust for national-level competition.",
             "name": "Daniel Osei",
@@ -196,7 +649,7 @@
           }
         },
         "quote-3": {
-          "type": "quote",
+          "type": "_testimonial",
           "settings": {
             "quote": "Minimal, precise, and built to last. Restocks are quick and the fit guidance is spot on for beginners and veterans.",
             "name": "Yuki Tanaka",
@@ -205,7 +658,7 @@
           }
         },
         "quote-4": {
-          "type": "quote",
+          "type": "_testimonial",
           "settings": {
             "quote": "Ordering for a whole squad used to be a nightmare. Now it is one call and everything arrives sized and ready.",
             "name": "Priya Raman",
@@ -214,37 +667,165 @@
           }
         }
       },
-      "block_order": ["quote-1", "quote-2", "quote-3", "quote-4"],
-      "settings": {
-        "eyebrow": "TESTIMONIALS",
-        "heading": "Loved by the fencing community"
-      }
+      "block_order": [
+        "quote-1",
+        "quote-2",
+        "quote-3",
+        "quote-4"
+      ]
     },
     "brand_logos": {
       "type": "brand-logos",
       "blocks": {
-        "logo-1": { "type": "logo", "settings": { "image": "shopify://shop_images/fwf.png" } },
-        "logo-2": { "type": "logo", "settings": { "image": "shopify://shop_images/unic.png" } },
-        "logo-3": { "type": "logo", "settings": { "image": "shopify://shop_images/blaise.png" } },
-        "logo-4": { "type": "logo", "settings": { "image": "shopify://shop_images/favero.png" } },
-        "logo-5": { "type": "logo", "settings": { "image": "shopify://shop_images/neps.png" } },
-        "logo-6": { "type": "logo", "settings": { "image": "shopify://shop_images/asics.png" } },
-        "logo-7": { "type": "logo", "settings": { "image": "shopify://shop_images/yonex.png" } },
-        "logo-8": { "type": "logo", "settings": { "image": "shopify://shop_images/bsi.png" } }
+        "header": {
+          "type": "group",
+          "static": true,
+          "settings": {
+            "direction": "column",
+            "gap": "md",
+            "align": "start"
+          },
+          "blocks": {
+            "header-eyebrow": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Authorized seller</p>",
+                "style": "eyebrow"
+              }
+            },
+            "header-heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "Official dealer for the sport’s best brands",
+                "tag": "h2",
+                "size": "md"
+              }
+            }
+          },
+          "block_order": [
+            "header-eyebrow",
+            "header-heading"
+          ]
+        },
+        "logo-1": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/fwf.png"
+          }
+        },
+        "logo-2": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/unic.png"
+          }
+        },
+        "logo-3": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/blaise.png"
+          }
+        },
+        "logo-4": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/favero.png"
+          }
+        },
+        "logo-5": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/neps.png"
+          }
+        },
+        "logo-6": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/asics.png"
+          }
+        },
+        "logo-7": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/yonex.png"
+          }
+        },
+        "logo-8": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/bsi.png"
+          }
+        }
       },
-      "block_order": ["logo-1", "logo-2", "logo-3", "logo-4", "logo-5", "logo-6", "logo-7", "logo-8"],
-      "settings": {
-        "eyebrow": "AUTHORIZED SELLER",
-        "heading": "Official dealer for the sport’s best brands"
-      }
+      "block_order": [
+        "logo-1",
+        "logo-2",
+        "logo-3",
+        "logo-4",
+        "logo-5",
+        "logo-6",
+        "logo-7",
+        "logo-8"
+      ]
     },
     "journal": {
       "type": "journal-highlights",
+      "blocks": {
+        "header": {
+          "type": "group",
+          "static": true,
+          "settings": {
+            "direction": "row",
+            "gap": "lg",
+            "align": "end",
+            "justify": "between"
+          },
+          "blocks": {
+            "header-title": {
+              "type": "group",
+              "settings": {
+                "direction": "column",
+                "gap": "sm",
+                "align": "start"
+              },
+              "blocks": {
+                "header-title-eyebrow": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>The journal</p>",
+                    "style": "eyebrow"
+                  }
+                },
+                "header-title-heading": {
+                  "type": "heading",
+                  "settings": {
+                    "heading": "From the journal",
+                    "tag": "h2",
+                    "size": "xl"
+                  }
+                }
+              },
+              "block_order": [
+                "header-title-eyebrow",
+                "header-title-heading"
+              ]
+            },
+            "header-link": {
+              "type": "link",
+              "settings": {
+                "label": "View all posts",
+                "link": "shopify://blogs/journal"
+              }
+            }
+          },
+          "block_order": [
+            "header-title",
+            "header-link"
+          ]
+        }
+      },
+      "block_order": [],
       "settings": {
-        "eyebrow": "THE JOURNAL",
-        "heading": "From the Journal",
         "blog": "journal",
-        "link_label": "View all posts",
         "read_label": "Read more"
       }
     }

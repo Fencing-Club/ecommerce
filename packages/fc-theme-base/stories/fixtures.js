@@ -2,7 +2,7 @@ import { assetUrl } from './liquid.js';
 
 // Shopify image and resource objects for stories, using the theme's own sample images.
 
-const image = (file, alt) => ({ src: assetUrl(file), alt, width: 800, height: 800, aspect_ratio: 1 });
+export const image = (file, alt) => ({ src: assetUrl(file), alt, width: 800, height: 800, aspect_ratio: 1 });
 
 const product = (id, title, type, file, price) => ({
   id,
@@ -38,3 +38,29 @@ export const articles = [
     image: null,
   },
 ];
+
+export const brandLogos = ['fwf', 'favero', 'blaise', 'asics'].map((name) => image(`${name}.png`, name.toUpperCase()));
+
+/**
+ * The static header group a homepage section opens with: an eyebrow and a heading, and a link beside them when given.
+ *
+ * @param {string} eyebrow
+ * @param {string} heading
+ * @param {{ label: string, link: string }} [link]
+ */
+export function sectionHeader(eyebrow, heading, link) {
+  const title = [
+    { id: 'eyebrow', type: 'text', settings: { text: `<p>${eyebrow}</p>`, style: 'eyebrow' } },
+    { id: 'heading', type: 'heading', settings: { heading, size: 'xl' } },
+  ];
+  if (!link) return { id: 'header', type: 'group', settings: { direction: 'column', gap: 'md', align: 'start' }, blocks: title };
+  return {
+    id: 'header',
+    type: 'group',
+    settings: { direction: 'row', gap: 'lg', align: 'end', justify: 'between' },
+    blocks: [
+      { id: 'title', type: 'group', settings: { direction: 'column', gap: 'sm', align: 'start' }, blocks: title },
+      { id: 'link', type: 'link', settings: link },
+    ],
+  };
+}

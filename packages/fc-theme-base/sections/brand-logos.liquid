@@ -1,77 +1,54 @@
 {{ 'section-home.css' | asset_url | stylesheet_tag }}
 
-<div class="fc-home">
-  <section class="fc-home__brands-section" aria-labelledby="BrandLogos-{{ section.id }}">
-    <div class="fc-home__inner">
-      {%- if section.settings.eyebrow != blank or section.settings.heading != blank -%}
-        <header class="fc-home__head">
-          {%- if section.settings.eyebrow != blank -%}
-            <p class="fc-home__eyebrow fc-home__eyebrow--soft">{{ section.settings.eyebrow | escape }}</p>
-          {%- endif -%}
-          {%- if section.settings.heading != blank -%}
-            <h2 class="fc-home__h30" id="BrandLogos-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
-          {%- endif -%}
-        </header>
-      {%- endif -%}
-      <div class="fc-home__brands">
-        {%- for block in section.blocks -%}
-          {%- capture logo -%}
-            {%- if block.settings.image -%}
-              {{
-                block.settings.image
-                | image_url: width: 552
-                | image_tag:
-                  class: 'fc-home__brand',
-                  widths: '276, 414, 552',
-                  alt: block.settings.image.alt,
-                  loading: 'lazy'
-              }}
-            {%- else -%}
-              <span class="fc-home__brand fc-home__brand--placeholder"></span>
-            {%- endif -%}
-          {%- endcapture -%}
-          {%- if block.settings.link != blank -%}
-            <a href="{{ block.settings.link }}" {{ block.shopify_attributes }}>{{ logo }}</a>
-          {%- else -%}
-            <span {{ block.shopify_attributes }}>{{ logo }}</span>
-          {%- endif -%}
-        {%- endfor -%}
-      </div>
-    </div>
-  </section>
+<div class="home-section brand-logos">
+  {%- content_for 'block', type: 'group', id: 'header' -%}
+  <div class="brand-logos__grid">{%- content_for 'blocks' -%}</div>
 </div>
+
+{% stylesheet %}
+  .home-section.brand-logos {
+    padding-block: var(--spacing-20);
+  }
+  .brand-logos__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--spacing-10) var(--spacing-12);
+    align-items: center;
+    padding-block: var(--spacing-10);
+  }
+  @media (max-width: 749px) {
+    .home-section.brand-logos { padding-block: var(--spacing-14); }
+    .brand-logos__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--spacing-8);
+      padding-block: var(--spacing-8);
+    }
+  }
+{% endstylesheet %}
 
 {% schema %}
 {
-  "name": "Brand logos",
+  "name": "t:sections.brand_logos.name",
   "tag": "section",
-  "max_blocks": 16,
-  "settings": [
-    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "AUTHORIZED SELLER" },
-    { "type": "text", "id": "heading", "label": "Heading", "default": "Official dealer for the sport’s best brands" }
-  ],
-  "blocks": [
-    {
-      "type": "logo",
-      "name": "Logo",
-      "settings": [
-        { "type": "image_picker", "id": "image", "label": "Logo" },
-        { "type": "url", "id": "link", "label": "Link" }
-      ]
-    }
-  ],
+  "blocks": [{ "type": "_logo" }],
   "presets": [
     {
-      "name": "Brand logos",
+      "name": "t:sections.brand_logos.name",
       "blocks": [
-        { "type": "logo" },
-        { "type": "logo" },
-        { "type": "logo" },
-        { "type": "logo" },
-        { "type": "logo" },
-        { "type": "logo" },
-        { "type": "logo" },
-        { "type": "logo" }
+        {
+          "type": "group",
+          "id": "header",
+          "static": true,
+          "settings": { "direction": "column", "gap": "md", "align": "start" },
+          "blocks": [
+            { "type": "text", "settings": { "text": "<p>Authorized seller</p>", "style": "eyebrow" } },
+            { "type": "heading", "settings": { "heading": "Official dealer for the sport's best brands", "size": "md" } }
+          ]
+        },
+        { "type": "_logo" },
+        { "type": "_logo" },
+        { "type": "_logo" },
+        { "type": "_logo" }
       ]
     }
   ]

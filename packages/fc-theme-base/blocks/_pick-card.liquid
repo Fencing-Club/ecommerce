@@ -1,0 +1,113 @@
+{%- comment -%}
+  One featured pick: a photo, a title, a description and pill links to its collections.
+{%- endcomment -%}
+<article class="pick-card" {{ block.shopify_attributes }}>
+  <div class="pick-card__media">
+    {%- if block.settings.image -%}
+      {{
+        block.settings.image
+        | image_url: width: 1240
+        | image_tag:
+          class: 'pick-card__image',
+          widths: '620, 930, 1240',
+          sizes: '(min-width: 750px) 50vw, 100vw',
+          alt: block.settings.image.alt,
+          loading: 'lazy'
+      }}
+    {%- endif -%}
+  </div>
+  <div class="pick-card__body">
+    <div class="pick-card__text">
+      {%- if block.settings.title != blank -%}
+        <h3 class="pick-card__title">{{ block.settings.title | escape }}</h3>
+      {%- endif -%}
+      {%- if block.settings.description != blank -%}
+        <p class="pick-card__description">{{ block.settings.description | escape }}</p>
+      {%- endif -%}
+    </div>
+    <div class="ui-pills">{%- content_for 'blocks' -%}</div>
+  </div>
+</article>
+
+{% stylesheet %}
+  .pick-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--card);
+  }
+  .pick-card__media {
+    flex: 1 0 auto;
+    aspect-ratio: 2 / 1;
+    background: var(--muted);
+  }
+  .pick-card__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .pick-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3-5);
+    padding: var(--spacing-6);
+  }
+  .pick-card__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+  .pick-card__title {
+    margin: 0;
+    font-family: var(--font-heading-family);
+    font-size: var(--text-2xl);
+    line-height: var(--text-2xl--line-height);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--tracking-tight);
+    color: var(--foreground);
+  }
+  .pick-card__description {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--muted-foreground);
+  }
+  .ui-pills:empty {
+    display: none;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.pick_card.name",
+  "blocks": [{ "type": "_pick-link" }],
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:blocks.pick_card.settings.image.label"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:blocks.pick_card.settings.title.label",
+      "default": "t:blocks.pick_card.settings.title.default"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "t:blocks.pick_card.settings.description.label"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.pick_card.name",
+      "blocks": [{ "type": "_pick-link" }, { "type": "_pick-link" }]
+    }
+  ]
+}
+{% endschema %}

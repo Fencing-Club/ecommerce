@@ -1,0 +1,95 @@
+{%- comment -%}
+  A short selling point: an icon, a label, a line of detail and an optional link.
+{%- endcomment -%}
+<div class="block-feature" {{ block.shopify_attributes }}>
+  {%- if block.settings.icon != blank -%}
+    {%- render 'ui-icon', icon: block.settings.icon, size: 20 -%}
+  {%- endif -%}
+  <div class="block-feature__text">
+    {%- if block.settings.label != blank -%}
+      <p class="block-feature__label">{{ block.settings.label | escape }}</p>
+    {%- endif -%}
+    {%- if block.settings.detail != blank -%}
+      <p class="block-feature__detail">{{ block.settings.detail | escape }}</p>
+    {%- endif -%}
+    {%- if block.settings.link_label != blank -%}
+      {%- render 'ui-link', label: block.settings.link_label, url: block.settings.link, icon: 'arrow-right', class: 'block-feature__link' -%}
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .block-feature {
+    display: flex;
+    flex: 1 1 calc(var(--spacing) * 44);
+    gap: var(--spacing-3);
+    align-items: flex-start;
+    min-width: 0;
+    color: var(--foreground);
+  }
+  .block-feature__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    min-width: 0;
+  }
+  .block-feature__label {
+    margin: 0;
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    font-weight: var(--font-weight-semibold);
+  }
+  .block-feature__detail {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+    color: var(--muted-foreground);
+  }
+  .block-feature__link {
+    align-self: flex-start;
+    margin-top: var(--spacing-0-5);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.feature.name",
+  "settings": [
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "t:blocks.feature.settings.icon.label",
+      "default": "badge-check",
+      "options": [
+        { "value": "badge-check", "label": "t:blocks.feature.settings.icon.options.badge_check" },
+        { "value": "truck", "label": "t:blocks.feature.settings.icon.options.truck" },
+        { "value": "rotate-ccw", "label": "t:blocks.feature.settings.icon.options.returns" },
+        { "value": "star", "label": "t:blocks.feature.settings.icon.options.star" }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:blocks.feature.settings.label.label",
+      "default": "t:blocks.feature.settings.label.default"
+    },
+    {
+      "type": "text",
+      "id": "detail",
+      "label": "t:blocks.feature.settings.detail.label",
+      "default": "t:blocks.feature.settings.detail.default"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:blocks.feature.settings.link_label.label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:blocks.feature.settings.link.label"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.feature.name" }]
+}
+{% endschema %}

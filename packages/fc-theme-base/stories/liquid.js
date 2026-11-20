@@ -1,5 +1,5 @@
 import { Liquid } from 'liquidjs';
-import { colorSchemeCss, registerShopifyLiquid, themeSettings } from '../tests/helpers/shopify-liquid.mjs';
+import { colorSchemeCss, registerShopifyLiquid, schemaDefaults, themeSettings } from '../tests/helpers/shopify-liquid.mjs';
 import locale from '../locales/en.default.json';
 import data from '../config/settings_data.json';
 import schema from '../config/settings_schema.json';
@@ -63,6 +63,22 @@ export const block =
   (type, { blocks = [] } = {}) =>
   (settings) =>
     engine.parseAndRenderSync("{% content_for 'blocks' %}", { section: { id: 'story', blocks: [{ id: type, type, settings, blocks }] } }, { globals });
+
+/**
+ * A story `render` function for a section built on theme blocks: its args become the section's settings, over its
+ * schema defaults. `blocks` are its theme blocks and `staticBlocks` the static ones its `{% content_for 'block' %}`
+ * tags render, each `{ id, type, settings, blocks }`. `variables` adds globals such as `blogs`.
+ *
+ * @param {string} name The section's file name in `sections/`, without `.liquid`.
+ * @param {{ blocks?: object[], staticBlocks?: object[], variables?: Record<string, unknown> }} [options]
+ */
+export const section =
+  (name, { blocks = [], staticBlocks = [], variables = {} } = {}) =>
+  (settings) =>
+    renderLiquid(name, {
+      ...variables,
+      section: { id: 'story', settings: { ...schemaDefaults(templates[`${name}.liquid`]), ...settings }, blocks, static_blocks: staticBlocks },
+    });
 
 /**
  * A story loader that runs a theme script once, as the section that renders a snippet would load it. Markup a story
