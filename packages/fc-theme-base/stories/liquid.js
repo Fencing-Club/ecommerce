@@ -54,3 +54,21 @@ export const snippet =
   (name, { stylesheets = [] } = {}) =>
   (args) =>
     stylesheets.map((file) => `<link rel="stylesheet" href="${assetUrl(file)}">`).join('') + renderLiquid(name, args);
+
+/**
+ * A story loader that runs a theme script once, as the section that renders a snippet would load it. Markup a story
+ * renders can't run its own script tags.
+ *
+ * @param {string} file A file in the theme's assets.
+ */
+export const loadScript = (file) => () =>
+  document.querySelector(`script[data-theme-script="${file}"]`)
+    ? Promise.resolve()
+    : new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = assetUrl(file);
+        script.dataset.themeScript = file;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.append(script);
+      });
