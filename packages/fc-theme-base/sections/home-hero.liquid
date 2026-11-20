@@ -29,6 +29,12 @@
               if forloop.first
                 assign slide_loading = 'eager'
               endif
+              # A focal point set in admin decides the crop; without one, CSS keeps the upper part.
+              assign focal_point = block.settings.image.presentation.focal_point
+              assign focal_style = nil
+              if focal_point != blank and focal_point != '50.0% 50.0%'
+                assign focal_style = 'object-position: ' | append: focal_point
+              endif
             -%}
             {{
               block.settings.image
@@ -38,7 +44,8 @@
                 widths: '750, 1100, 1440, 2160, 2880',
                 sizes: '100vw',
                 alt: block.settings.image.alt,
-                loading: slide_loading
+                loading: slide_loading,
+                style: focal_style
             }}
           {%- else -%}
             <span class="fc-home__hero-image fc-home__hero-image--placeholder"></span>

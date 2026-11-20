@@ -114,19 +114,14 @@
   background: #b45309;
 }
 
-@media screen and (min-width: 990px) {
-  .utility-bar > .utility-bar__grid.page-width {
-    max-width: none;
-    padding-inline: 1.6rem;
-  }
+/* The arrows are 44px tap targets around a 14px glyph; pulling the row out by the
+   glyph's 15px inset puts each chevron on the page gutter. */
+.utility-bar > .utility-bar__grid.page-width {
+  padding-inline: calc(var(--page-gutter) - 1.5rem);
 }
 
 @media screen and (max-width: 749px) {
   .utility-bar {
-    padding-inline: 0;
-  }
-
-  .utility-bar > .utility-bar__grid.page-width {
     padding-inline: 0;
   }
 

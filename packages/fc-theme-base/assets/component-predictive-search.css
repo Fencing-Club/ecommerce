@@ -363,7 +363,6 @@ predictive-search[idle] .predictive-search--search-template[data-predictive-sear
   .search-panel .predictive-search__skeleton,
   .search-panel .predictive-search__footer,
   .search-panel .predictive-search__empty {
-    --ps-pad: 9.6rem;
     --ps-gap: 4.4rem;
   }
 
@@ -805,4 +804,14 @@ predictive-search[loading] [data-search-results-groups] ~ .predictive-search__fo
   to {
     transform: rotate(360deg);
   }
+}
+
+/* The header panel spans the page, so its rows sit on the page gutter at every width.
+   Declared last so it outranks the container steps above. */
+.search-panel__bar,
+.search-panel .predictive-search__results-groups-wrapper,
+.search-panel .predictive-search__skeleton,
+.search-panel .predictive-search__footer,
+.search-panel .predictive-search__empty {
+  --ps-pad: var(--page-gutter);
 }
