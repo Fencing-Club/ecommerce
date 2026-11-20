@@ -24,14 +24,19 @@ It runs at `http://localhost:6107`.
 - Theme assets are served at `/theme-assets/`, and `asset_url` points there. They can't use `/assets/`, because Vite
   serves the SVGs that stories inline from that path.
 
+- `{% content_for 'blocks' %}` renders the theme blocks of the section or block it sits in, each from
+  `blocks/<type>.liquid` with `block` set and its settings filled from the block's schema defaults. `{% content_for
+  'block', type: 'x', id: 'y' %}` renders one static block. Blocks are an array of
+  `{ id, type, settings, blocks, static }` on the `section` global.
+
 The stand-ins only approximate Shopify. `{% form %}` renders nothing, images ignore their sizes, and there are no
 section rendering or store requests. Check sections on the contosocamp store before release.
 
 ## Writing stories
 
-- Stories live in `stories/`, grouped as `foundations/` (the design tokens), `elements/`, `inputs/` and `components/`,
-  plus `layout/` for checks that render whole templates, such as the [page gutter](shopify-page-layout.md#the-checks).
-  They can't sit beside the Liquid, because Shopify only accepts Liquid and JSON in the theme's folders.
+- Stories live in `stories/`, grouped as `foundations/` (the design tokens and the
+  [page gutter](shopify-page-layout.md#the-checks)), `elements/`, `inputs/` and `components/`. They can't sit beside
+  the Liquid, because Shopify only accepts Liquid and JSON in the theme's folders.
 - Name the story file after the component (`button.stories.js` for `ui-button.liquid`) and title it by group
   (`Elements/Button`). Give each state its own story.
 - Every story has a `play` function that checks behavior, text, roles and attributes, never colors. Each story's

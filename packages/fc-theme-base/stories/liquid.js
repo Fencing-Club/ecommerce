@@ -12,9 +12,11 @@ const templates = byName(
   import.meta.glob(['../snippets/*.liquid', '../sections/*.liquid'], { query: '?raw', import: 'default', eager: true }),
 );
 const icons = byName(import.meta.glob('../assets/*.svg', { query: '?raw', import: 'default', eager: true }));
+// Theme blocks, which `content_for` renders by type.
+const blocks = byName(import.meta.glob('../blocks/*.liquid', { query: '?raw', import: 'default', eager: true }));
 
 const engine = new Liquid({ templates, extname: '.liquid' });
-registerShopifyLiquid(engine, { locale, readAsset: (name) => icons[name] });
+registerShopifyLiquid(engine, { locale, readAsset: (name) => icons[name], readBlock: (type) => blocks[`${type}.liquid`] });
 // Where .storybook/main.js serves the theme's assets.
 engine.registerFilter('asset_url', (name) => `/theme-assets/${name}`);
 export const assetUrl = (name) => `/theme-assets/${name}`;
@@ -31,18 +33,6 @@ const globals = { settings, routes: { root_url: '/', search_url: '/search', cart
  */
 export function renderLiquid(name, variables = {}) {
   return engine.renderFileSync(name, variables, { globals });
-}
-
-/**
- * Renders a section the way a template or section group places it: `section` and the page's resources (`product`,
- * `collection` and the rest) are Liquid globals.
- *
- * @param {string} type The section file name without `.liquid`.
- * @param {object} section The section's `id`, `settings` and `blocks`.
- * @param {Record<string, unknown>} [resources]
- */
-export function renderSection(type, section, resources = {}) {
-  return engine.renderFileSync(type, {}, { globals: { ...globals, ...resources, section } });
 }
 
 /** The CSS variables layout/theme.liquid writes in its `{% style %}` block. */

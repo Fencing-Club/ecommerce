@@ -2,6 +2,8 @@
 // The unit tests, the component lab and Storybook all register them from here. They approximate Shopify's output:
 // enough to render and test markup, not a replacement for checking the theme on a store.
 
+import { Hash, Tag, evalToken } from 'liquidjs';
+
 const escapeAttribute = (value) =>
   String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
@@ -49,6 +51,60 @@ function registerRenderedBlockTag(engine, name, { open = '', close = '', scope }
   });
 }
 
+// The defaults a block's {% schema %} declares, so `block.settings` reads as it would on a store before a merchant edits it.
+function schemaDefaults(source) {
+  const schema = source.match(/{%-?\s*schema\s*-?%}([\s\S]*?){%-?\s*endschema\s*-?%}/)?.[1];
+  if (!schema) return {};
+  const settings = JSON.parse(schema).settings ?? [];
+  return Object.fromEntries(settings.filter((setting) => setting.id && setting.default !== undefined).map((setting) => [setting.id, setting.default]));
+}
+
+// `{% content_for 'blocks' %}` renders the theme blocks of the section or block it sits in, each from
+// `blocks/<type>.liquid` with `block` set. `{% content_for 'block', type: 'x', id: 'y' %}` renders one static block,
+// taking its settings from the parent's blocks when one has that id; other arguments become variables of the block.
+// Blocks are an array of `{ id, type, settings, blocks, static }`.
+function registerContentFor(engine, readBlock) {
+  const parsed = new Map();
+  const load = (type) => {
+    if (!parsed.has(type)) {
+      const source = readBlock?.(type);
+      if (source === undefined) throw new Error(`No block file blocks/${type}.liquid`);
+      parsed.set(type, { templates: engine.parse(source), defaults: schemaDefaults(source) });
+    }
+    return parsed.get(type);
+  };
+
+  engine.registerTag(
+    'content_for',
+    class extends Tag {
+      constructor(token, remainTokens, liquid) {
+        super(token, remainTokens, liquid);
+        this.kind = this.tokenizer.readValue();
+        this.arguments = new Hash(this.tokenizer);
+      }
+
+      *render(context, emitter) {
+        const kind = yield evalToken(this.kind, context);
+        const { type, id, ...variables } = yield this.arguments.render(context);
+        const parent = context.getSync(['content_for_parent']) ?? context.getSync(['section']) ?? {};
+        const children = parent.blocks ?? [];
+        let blocks;
+        if (kind === 'blocks') blocks = children.filter((block) => !block.static);
+        else if (kind === 'block') blocks = [children.find((block) => block.static && block.id === id) ?? { id, type, static: true }];
+        else throw new Error(`content_for '${kind}' is not supported`);
+
+        for (const block of blocks) {
+          const { templates, defaults } = load(block.type);
+          const resolved = { shopify_attributes: '', blocks: [], ...block, settings: { ...defaults, ...block.settings } };
+          context.push({ ...variables, block: resolved, content_for_parent: resolved });
+          yield this.liquid.renderer.renderTemplates(templates, context, emitter);
+          context.pop();
+        }
+      }
+    },
+  );
+}
+
 /**
  * Registers the Shopify tags and filters on a liquidjs engine.
  *
@@ -56,8 +112,10 @@ function registerRenderedBlockTag(engine, name, { open = '', close = '', scope }
  * @param {object} options
  * @param {object} [options.locale] The parsed `locales/en.default.json`, for the `t` filter.
  * @param {(name: string) => string} [options.readAsset] Returns an asset's text, for `inline_asset_content`.
+ * @param {(type: string) => string | undefined} [options.readBlock] Returns `blocks/<type>.liquid`, for `content_for`.
  */
-export function registerShopifyLiquid(engine, { locale = {}, readAsset } = {}) {
+export function registerShopifyLiquid(engine, { locale = {}, readAsset, readBlock } = {}) {
+  registerContentFor(engine, readBlock);
   for (const name of ['doc', 'schema', 'form', 'javascript']) registerBlockTag(engine, name, () => '');
   registerBlockTag(engine, 'stylesheet', (content) => `<style>${content}</style>`);
   // `style` renders its Liquid body inside a <style> element; `paginate` renders its body as a single page.
