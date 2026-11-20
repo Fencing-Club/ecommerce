@@ -1,3 +1,33 @@
+/*
+  Design tokens. Names follow shadcn/ui; values are Fencing Club's (docs/design-tokens.md). Components use these
+  instead of raw colors and radii.
+*/
+:root {
+  --background: #ffffff;
+  --foreground: #101012;
+  --card: #ffffff;
+  --card-foreground: #101012;
+  --popover: #ffffff;
+  --popover-foreground: #101012;
+  --primary: #101012;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f2;
+  --secondary-foreground: #101012;
+  --muted: #f4f4f2;
+  --muted-foreground: #5a5a60;
+  --accent: #f7f7f5;
+  --accent-foreground: #101012;
+  --destructive: #b42318;
+  --border: #e3e3e0;
+  --input: #c9c9c4;
+  --ring: #101012;
+  --radius: 1rem;
+  --radius-sm: calc(var(--radius) - 0.4rem);
+  --radius-md: calc(var(--radius) - 0.2rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.4rem);
+}
+
 product-component,
 collection-component {
   display: block;

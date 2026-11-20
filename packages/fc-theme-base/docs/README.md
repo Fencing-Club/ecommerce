@@ -4,6 +4,7 @@ The new Fencing Club Shopify theme, built on Dawn.
 
 ## Development
 
+- [Design tokens](design-tokens.md): the shadcn-named colors and radii every component uses.
 - [Storybook](storybook.md): the component library, how stories render Liquid, and how they're tested.
 
 ## Store features

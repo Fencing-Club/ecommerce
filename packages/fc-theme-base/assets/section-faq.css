@@ -1,6 +1,6 @@
 .faq-page {
   background: #ffffff;
-  color: #101012;
+  color: var(--foreground);
 }
 
 .faq-page__breadcrumb {
@@ -27,7 +27,7 @@
   line-height: 1.25;
   letter-spacing: 0.2rem;
   text-transform: uppercase;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .faq-page__hero h1 {
@@ -44,7 +44,7 @@
   margin: 0;
   font-size: 1.6rem;
   line-height: 1.55;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .faq-page__topics {
@@ -77,7 +77,7 @@
 }
 
 .ui-faq-item {
-  border-bottom: 0.1rem solid #e3e3e0;
+  border-bottom: 0.1rem solid var(--border);
 }
 
 .ui-faq-item__question {
@@ -115,19 +115,19 @@
 }
 
 .ui-faq-item__badge--question {
-  background: #101012;
+  background: var(--foreground);
   color: #ffffff;
 }
 
 .ui-faq-item__badge--answer {
-  border: 0.15rem solid #e3e3e0;
-  color: #5a5a60;
+  border: 0.15rem solid var(--border);
+  color: var(--muted-foreground);
 }
 
 .ui-faq-item__chevron {
   display: inline-flex;
   margin-top: 0;
-  color: #5a5a60;
+  color: var(--muted-foreground);
   transition: transform 150ms ease;
 }
 
@@ -164,7 +164,7 @@
   margin: 0;
   font-size: 1.5rem;
   line-height: 1.6;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .ui-faq-item__answer-text p + p {
@@ -172,9 +172,9 @@
 }
 
 .ui-faq-item__question:focus-visible {
-  outline: 0.2rem solid var(--ui-focus-outer, #101012);
+  outline: 0.2rem solid var(--ring);
   outline-offset: 0.3rem;
-  box-shadow: 0 0 0 0.3rem var(--ui-focus-inner, #ffffff);
+  box-shadow: 0 0 0 0.3rem var(--background);
 }
 
 .faq-page__contact {

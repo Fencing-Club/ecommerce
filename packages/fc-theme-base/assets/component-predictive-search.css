@@ -1,6 +1,6 @@
 /* Search panel — mirrors Docs/Search in packages/fc-theme/FencingClubWebsite.pen.
    Design tokens map onto the active colour scheme: ink is the foreground, and the
-   soft/line/surface alphas reproduce #5A5A60, #E3E3E0 and #F4F4F2 on the light scheme. */
+   soft/line/surface alphas reproduce var(--muted-foreground), var(--border) and var(--muted) on the light scheme. */
 
 .search-panel,
 .predictive-search {
@@ -212,7 +212,7 @@ predictive-search[loading] .search-panel__spinner {
   container-type: inline-size;
   background-color: var(--ps-bg);
   border: 0.1rem solid var(--ps-line);
-  border-radius: 1.4rem;
+  border-radius: var(--radius-xl);
   box-shadow: 0 1.8rem 4.4rem rgba(0, 0, 0, 0.12);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -473,7 +473,7 @@ predictive-search[idle] .predictive-search--search-template[data-predictive-sear
   width: auto;
   margin: 0 -1rem;
   padding: 0.7rem 1rem;
-  border-radius: 0.8rem;
+  border-radius: var(--radius-md);
   color: var(--ps-ink);
   font-size: 1.4rem;
   text-align: left;
@@ -763,7 +763,7 @@ predictive-search[loading] [data-search-results-groups] ~ .predictive-search__fo
 .predictive-search__skeleton-image {
   display: block;
   width: 100%;
-  border-radius: 0.6rem;
+  border-radius: var(--radius-sm);
   background-color: var(--ps-surface);
 }
 

@@ -1,5 +1,5 @@
 .search-results {
-  color: #101012;
+  color: var(--foreground);
 }
 
 .search-results__band {
@@ -7,7 +7,7 @@
   flex-direction: column;
   gap: 1.8rem;
   padding: 5.6rem 9.6rem 3rem;
-  border-bottom: 0.1rem solid #e3e3e0;
+  border-bottom: 0.1rem solid var(--border);
 }
 
 .search-results__title {
@@ -17,7 +17,7 @@
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.1rem;
-  color: #101012;
+  color: var(--foreground);
 }
 
 .search-results__form {
@@ -27,7 +27,7 @@
 .search-results__summary {
   margin: 0;
   font-size: 1.5rem;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .search-results__section {
@@ -54,7 +54,7 @@
   font-weight: 600;
   letter-spacing: 0.2rem;
   text-transform: uppercase;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .search-results__heading {
@@ -64,7 +64,7 @@
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: -0.1rem;
-  color: #101012;
+  color: var(--foreground);
 }
 
 .search-results__controls {
@@ -75,7 +75,7 @@
   justify-content: space-between;
   margin-top: 2.6rem;
   padding-bottom: 2rem;
-  border-bottom: 0.1rem solid #e3e3e0;
+  border-bottom: 0.1rem solid var(--border);
 }
 
 /* Dawn pads the container 10px on top and the form 5px underneath, which pushes the
@@ -124,7 +124,7 @@
   min-height: 4rem;
   padding: 0 1.4rem;
   border: 0.1rem solid #767676;
-  border-radius: 1.4rem;
+  border-radius: var(--radius-xl);
 }
 
 .search-results__controls .mobile-facets__open-label {
@@ -142,7 +142,7 @@
 .search-results__controls .facets__summary {
   padding: 0;
   margin-bottom: 0;
-  color: #101012;
+  color: var(--foreground);
 }
 
 .search-results__controls .facets__summary > div {
@@ -152,11 +152,11 @@
   min-height: 3.5rem;
   padding: 0.9rem 1.4rem;
   border: 0.1rem solid #767676;
-  border-radius: 1.4rem;
+  border-radius: var(--radius-xl);
 }
 
 .search-results__controls .facets__summary:hover > div {
-  border-color: #101012;
+  border-color: var(--foreground);
 }
 
 .search-results__controls .facets__summary:hover .facets__summary-label {
@@ -180,8 +180,8 @@
   left: 0;
   width: 28rem;
   padding: 0.8rem;
-  border: 0.1rem solid #e3e3e0;
-  border-radius: 1.4rem;
+  border: 0.1rem solid var(--border);
+  border-radius: var(--radius-xl);
   box-shadow: 0 1.4rem 3.2rem rgba(16, 16, 18, 0.14);
   transform: none;
 }
@@ -193,7 +193,7 @@
   position: static;
   justify-content: flex-start;
   padding: 1rem;
-  border-top: 0.1rem solid #e3e3e0;
+  border-top: 0.1rem solid var(--border);
   border-bottom: 0;
   font-size: 1.4rem;
 }
@@ -212,16 +212,16 @@
 .search-results__controls .facets__display:has(price-range) .facets__selected {
   display: block;
   font-size: 1.3rem;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .search-results__controls .facets__reset {
-  color: #5a5a60;
+  color: var(--muted-foreground);
   text-decoration: none;
 }
 
 .search-results__controls .facets__reset:hover {
-  color: #101012;
+  color: var(--foreground);
   text-decoration: underline;
 }
 
@@ -233,13 +233,13 @@
   gap: 1.2rem;
   align-items: center;
   padding: 1rem;
-  border-radius: 0.8rem;
+  border-radius: var(--radius-md);
   font-size: 1.4rem;
 }
 
 .search-results__controls .facets__item:hover .facet-checkbox,
 .search-results__controls .facet-checkbox.active {
-  background: #f4f4f2;
+  background: var(--muted);
 }
 
 .search-results__controls .facets-layout-list .facets__label:hover .facet-checkbox__text-label,
@@ -255,7 +255,7 @@
 }
 
 .search-results__controls .facet-checkbox__count {
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 /* Dawn draws the box with an inline square.svg and hides the real input behind it.
@@ -275,8 +275,8 @@
 }
 
 .search-results__controls .facets-layout-list--text input[type='checkbox']:checked {
-  border-color: #101012;
-  background: #101012;
+  border-color: var(--foreground);
+  background: var(--foreground);
 }
 
 .search-results__controls .facet-checkbox > .svg-wrapper {
@@ -321,20 +321,20 @@
 .search-results__controls .facets__price .field-currency {
   align-self: flex-end;
   margin: 0 0 1.2rem;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .search-results__controls .facets__price .field__input {
   height: 4rem;
   padding: 0 1.2rem;
   border: 0.1rem solid #767676;
-  border-radius: 1rem;
+  border-radius: var(--radius-lg);
 }
 
 .search-results__controls .facets__price .field__label {
   position: static;
   font-size: 1.3rem;
-  color: #5a5a60;
+  color: var(--muted-foreground);
   transform: none;
 }
 
@@ -359,7 +359,7 @@
 .search-results__controls .mobile-facets__header {
   align-items: flex-start;
   padding: 2rem 2rem 1.8rem;
-  border-bottom: 0.1rem solid #e3e3e0;
+  border-bottom: 0.1rem solid var(--border);
   text-align: left;
 }
 
@@ -377,7 +377,7 @@
 .search-results__controls .mobile-facets__count {
   flex-grow: 0;
   font-size: 1.4rem;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 /* Dawn keeps this button in the trigger summary and toggles it with .menu-opening,
@@ -388,7 +388,7 @@
   width: 3.6rem;
   height: 3.6rem;
   border-radius: 50%;
-  background: #f4f4f2;
+  background: var(--muted);
 }
 
 .search-results__controls .mobile-facets__close .svg-wrapper {
@@ -411,7 +411,7 @@
 }
 
 .search-results__controls .mobile-facets__details + .mobile-facets__details {
-  border-top: 0.1rem solid #e3e3e0;
+  border-top: 0.1rem solid var(--border);
 }
 
 .search-results__controls .mobile-facets__summary {
@@ -423,7 +423,7 @@
 .search-results__controls .mobile-facets__arrow {
   display: flex;
   align-items: center;
-  color: #5a5a60;
+  color: var(--muted-foreground);
   transition: transform 150ms ease;
 }
 
@@ -445,12 +445,12 @@
   gap: 1.2rem;
   align-items: center;
   padding: 1rem;
-  border-radius: 0.8rem;
+  border-radius: var(--radius-md);
   font-size: 1.4rem;
 }
 
 .search-results__controls .mobile-facets__label.active {
-  background: #f4f4f2;
+  background: var(--muted);
 }
 
 /* Same treatment as the desktop popover: drop the drawn square and the separate
@@ -473,15 +473,15 @@
 }
 
 .search-results__controls .mobile-facets__checkbox:checked {
-  border-color: #101012;
-  background: #101012 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 9' fill='none'%3E%3Cpath d='M1 4.5 4 7.5 10 1.5' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+  border-color: var(--foreground);
+  background: var(--foreground) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 9' fill='none'%3E%3Cpath d='M1 4.5 4 7.5 10 1.5' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
     center / 1.1rem 0.9rem no-repeat;
 }
 
 .search-results__controls .mobile-facets__footer {
   gap: 1.2rem;
   padding: 1.6rem 0.8rem 0.8rem;
-  border-top: 0.1rem solid #e3e3e0;
+  border-top: 0.1rem solid var(--border);
 }
 
 .search-results__controls .mobile-facets__footer > * + * {
@@ -502,17 +502,17 @@
   min-height: 4rem;
   padding: 0 1.8rem;
   border: 0.1rem solid #767676;
-  border-radius: 1.4rem;
+  border-radius: var(--radius-xl);
   font-size: 1.4rem;
   font-weight: 600;
-  color: #101012;
+  color: var(--foreground);
   text-decoration: none;
 }
 
 .search-results__controls .mobile-facets__footer .button--primary {
   flex: 1 1 auto;
   min-height: 4rem;
-  border-radius: 1.4rem;
+  border-radius: var(--radius-xl);
   font-size: 1.4rem;
 }
 
@@ -525,7 +525,7 @@
 }
 
 .search-results__controls .facets__summary:has(.facets__summary-value) > div {
-  border-color: #101012;
+  border-color: var(--foreground);
 }
 
 /* The notice already offers Clear filters, so Dawn's duplicate pill row is hidden. */
@@ -555,7 +555,7 @@
 
 .collection.loading .search-results__heading-loading {
   display: inline;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .collection.loading .search-results__skeleton {
@@ -583,8 +583,8 @@
 .ui-card-skeleton .ui-card-skeleton__media {
   display: block;
   height: 30rem;
-  border-radius: 1.4rem;
-  background: #f4f4f2;
+  border-radius: var(--radius-xl);
+  background: var(--muted);
 }
 
 .ui-card-skeleton__info {
@@ -601,8 +601,8 @@
 
 .ui-card-skeleton__bar {
   display: block;
-  border-radius: 0.6rem;
-  background: #f4f4f2;
+  border-radius: var(--radius-sm);
+  background: var(--muted);
 }
 
 .ui-card-skeleton__bar--tag {
@@ -659,16 +659,16 @@
   flex-wrap: wrap;
   gap: 0.8rem;
   padding: 1.6rem 1.8rem;
-  border-radius: 1.4rem;
-  background: #f4f4f2;
+  border-radius: var(--radius-xl);
+  background: var(--muted);
   font-size: 1.4rem;
   line-height: 1.5;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .search-results__notice a {
   font-weight: 600;
-  color: #101012;
+  color: var(--foreground);
   text-underline-offset: 0.3rem;
 }
 
@@ -692,7 +692,7 @@
   font-size: 3rem;
   font-weight: 700;
   letter-spacing: -0.06rem;
-  color: #101012;
+  color: var(--foreground);
 }
 
 .search-results__empty-hint {
@@ -700,7 +700,7 @@
   margin: 0;
   font-size: 1.5rem;
   line-height: 1.55;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .search-results__empty-categories {
@@ -709,7 +709,7 @@
   gap: 1.4rem;
   width: 100%;
   padding-top: 2.6rem;
-  border-top: 0.1rem solid #e3e3e0;
+  border-top: 0.1rem solid var(--border);
 }
 
 .search-results__empty-label {
@@ -718,7 +718,7 @@
   font-weight: 600;
   letter-spacing: 0.15rem;
   text-transform: uppercase;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .search-results__empty-chips {
@@ -738,9 +738,9 @@
   width: 100%;
   margin: 0;
   padding-top: 2.6rem;
-  border-top: 0.1rem solid #e3e3e0;
+  border-top: 0.1rem solid var(--border);
   font-size: 1.5rem;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 /* Page result row */
@@ -751,11 +751,11 @@
   align-items: center;
   gap: 1.6rem;
   padding: 1.8rem 0;
-  border-top: 0.1rem solid #e3e3e0;
+  border-top: 0.1rem solid var(--border);
 }
 
 .ui-page-result-row:last-child {
-  border-bottom: 0.1rem solid #e3e3e0;
+  border-bottom: 0.1rem solid var(--border);
 }
 
 .ui-page-result-row__icon {
@@ -765,9 +765,9 @@
   justify-content: center;
   width: 4rem;
   height: 4rem;
-  border-radius: 0.8rem;
-  background: #f4f4f2;
-  color: #5a5a60;
+  border-radius: var(--radius-md);
+  background: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .ui-page-result-row__body {
@@ -785,7 +785,7 @@
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: 0;
-  color: #101012;
+  color: var(--foreground);
 }
 
 .ui-page-result-row__link {
@@ -805,21 +805,21 @@
 }
 
 .ui-page-result-row__link:focus-visible {
-  outline: 0.2rem solid var(--ui-focus-outer, #101012);
+  outline: 0.2rem solid var(--ring);
   outline-offset: 0.3rem;
-  box-shadow: 0 0 0 0.3rem var(--ui-focus-inner, #fff);
+  box-shadow: 0 0 0 0.3rem var(--background);
 }
 
 .ui-page-result-row__excerpt {
   font-size: 1.35rem;
   line-height: 1.45;
-  color: #5a5a60;
+  color: var(--muted-foreground);
 }
 
 .ui-page-result-row__arrow {
   display: flex;
   flex: 0 0 auto;
-  color: #5a5a60;
+  color: var(--muted-foreground);
   transition: transform 160ms ease;
 }
 

@@ -96,7 +96,7 @@
 }
 
 /*
-  Announcement types, design values: announcement #101012, sale #B91C1C, event #1D4ED8, vacation #B45309.
+  Announcement types, design values: announcement foreground, sale #B91C1C, event #1D4ED8, vacation #B45309.
   The bar paints the background, so the tone of whichever slide is currently visible wins.
 */
 .utility-bar:has(.announcement-bar[data-tone='sale']),

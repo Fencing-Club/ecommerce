@@ -4,9 +4,9 @@ account-menu { display: flex; }
 /* The dialog covers the viewport, so a tap outside the panel lands on the backdrop and closes it. */
 .account-menu {
   --account-menu-duration: 220ms;
-  --account-menu-ink: #101012;
-  --account-menu-ink-soft: #5a5a60;
-  --account-menu-line: #e3e3e0;
+  --account-menu-ink: var(--foreground);
+  --account-menu-ink-soft: var(--muted-foreground);
+  --account-menu-line: var(--border);
   --account-menu-bg: #fff;
   position: fixed;
   inset: 0;
@@ -70,7 +70,7 @@ account-menu { display: flex; }
   height: 4.4rem;
   padding: 0;
   border: 0;
-  border-radius: 0.8rem;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--account-menu-ink);
   cursor: pointer;
@@ -81,7 +81,7 @@ account-menu { display: flex; }
 .account-menu__sign-in.ui-button {
   min-height: 4.8rem;
   border-color: var(--account-menu-ink);
-  border-radius: 0.8rem;
+  border-radius: var(--radius-md);
   background-color: var(--account-menu-ink);
   color: var(--account-menu-bg);
   font-size: 1.5rem;
@@ -124,8 +124,8 @@ account-menu { display: flex; }
 .account-menu__sign-out { margin-top: 0.4rem; }
 
 @media (hover: hover) {
-  .account-menu__close:hover { background: #f4f4f2; }
-  .account-menu__link:hover { background: #f4f4f2; }
+  .account-menu__close:hover { background: var(--muted); }
+  .account-menu__link:hover { background: var(--muted); }
   .account-menu__sign-in.ui-button:hover:not(:disabled):not([aria-disabled='true']) { border-color: #2b2b30; background-color: #2b2b30; }
 }
 
