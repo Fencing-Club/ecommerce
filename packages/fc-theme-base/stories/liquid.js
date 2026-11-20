@@ -30,9 +30,20 @@ const shop = {
   phone: '4252602501',
   address: { street: '17190 128th Pl NE', city: 'Woodinville', province_code: 'WA', zip: '98072' },
   enabled_payment_types: ['visa', 'master', 'american_express', 'paypal', 'diners_club', 'discover'],
+  customer_accounts_enabled: true,
 };
 
-const globals = { settings, shop, routes: { root_url: '/', search_url: '/search', cart_url: '/cart' }, cart: { currency: { symbol: '$' } } };
+// The shopper's market and language, with a second of each so the header's selectors show.
+const unitedStates = { iso_code: 'US', name: 'United States', currency: { iso_code: 'USD', symbol: '$' } };
+const english = { iso_code: 'en', endonym_name: 'English' };
+const localization = {
+  country: unitedStates,
+  language: english,
+  available_countries: [{ iso_code: 'CA', name: 'Canada', currency: { iso_code: 'CAD', symbol: '$' } }, unitedStates],
+  available_languages: [english, { iso_code: 'fr', endonym_name: 'français' }],
+};
+
+const globals = { settings, shop, localization, routes: { root_url: '/', search_url: '/search', cart_url: '/cart' }, cart: { currency: { symbol: '$' } } };
 
 /**
  * Renders a snippet or section with the given variables, as `{% render name, ...variables %}` would.
@@ -83,11 +94,11 @@ export const block =
  */
 export const section =
   (name, { blocks = [], staticBlocks = [], variables = {} } = {}) =>
-  (settings) =>
-    renderLiquid(name, {
-      ...variables,
-      section: { id: 'story', settings: { ...schemaDefaults(templates[`${name}.liquid`]), ...settings }, blocks, static_blocks: staticBlocks },
-    });
+  (settings) => {
+    const current = { id: 'story', settings: { ...schemaDefaults(templates[`${name}.liquid`]), ...settings }, blocks, static_blocks: staticBlocks };
+    // On a store the snippets a section renders can read `section` too, so it is a global for the render.
+    return engine.renderFileSync(name, { ...variables, section: current }, { globals: { ...globals, section: current } });
+  };
 
 /**
  * A story loader that runs a theme script once, as the section that renders a snippet would load it. Markup a story

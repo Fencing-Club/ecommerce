@@ -1,0 +1,28 @@
+{%- comment -%}
+  One link in the header's utility row, such as Contact or Returns.
+{%- endcomment -%}
+{%- if block.settings.label != blank -%}
+  <a class="header-utility__link" href="{{ block.settings.link | default: routes.root_url }}" {{ block.shopify_attributes }}>
+    {{- block.settings.label | escape -}}
+  </a>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.utility_link.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:blocks.utility_link.settings.label.label",
+      "default": "Contact"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:blocks.utility_link.settings.link.label"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.utility_link.name" }]
+}
+{% endschema %}

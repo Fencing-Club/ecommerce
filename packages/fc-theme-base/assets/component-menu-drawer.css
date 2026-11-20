@@ -334,8 +334,46 @@ details[open].menu-opening > .menu-drawer__submenu {
 }
 
 .menu-drawer .list-social {
+  display: flex;
+  flex-wrap: wrap;
   gap: 1.8rem;
-  margin-left: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Language on the left, currency on the right, as in the utility row. */
+.menu-drawer__localization {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.6rem;
+}
+
+.menu-drawer__localization:empty {
+  display: none;
+}
+
+.menu-drawer__localization .localization-form__select {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.6rem 0;
+  font-size: 1.2rem;
+  line-height: 1.25;
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+/* Dawn pins the caret to the right edge; the design places it right after the label. */
+.menu-drawer__localization .localization-form__select .icon-caret {
+  position: static;
+  margin: 0;
+}
+
+.menu-drawer__localization .localization-form__select::before,
+.menu-drawer__localization .localization-form__select::after {
+  content: none;
 }
 
 .menu-drawer .list-social__link {
