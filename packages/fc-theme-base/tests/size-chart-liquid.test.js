@@ -147,13 +147,13 @@ describe('production size-chart Liquid', () => {
     const directory = htmlFragment(await engine.renderFile('size-chart-directory', context));
     expect([...directory.querySelectorAll('a')].map((link) => link.textContent.trim())).toEqual(['Gloves', 'Mens', 'Womens']);
     expect(directory.querySelectorAll('details')).toHaveLength(0);
-    expect(directory.querySelectorAll('a .fc-icon--arrow-right')).toHaveLength(3);
+    expect(directory.querySelectorAll('a .ui-icon--arrow-right')).toHaveLength(3);
     const navigation = htmlFragment(await engine.renderFile('size-chart-directory', { ...context, current_chart: charts[1], is_navigation: true }));
     expect(navigation.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
     expect(navigation.querySelector('[aria-current="page"]').textContent.trim()).toBe('Womens');
     expect(navigation.querySelector('details[open] summary').textContent.trim()).toBe('Jackets');
     expect(navigation.querySelectorAll('a svg')).toHaveLength(0);
-    expect(navigation.querySelectorAll('summary .fc-icon--chevron-down')).toHaveLength(2);
+    expect(navigation.querySelectorAll('summary .ui-icon--chevron-down')).toHaveLength(2);
   });
 
   it('uses editable short navigation labels without changing chart titles or destinations', async () => {

@@ -18,7 +18,7 @@
   <form action="{{ routes.search_url }}" method="get" role="search">
     <div class="ui-search-form__field">
       <span class="ui-search-form__icon" aria-hidden="true">
-        {%- render 'fc-icon', icon: 'search', size: 20 -%}
+        {%- render 'ui-icon', icon: 'search', size: 20 -%}
       </span>
       <label class="visually-hidden" for="{{ input_id }}">{{ label | escape }}</label>
       <input
@@ -46,7 +46,7 @@
         type="reset"
         aria-label="{{ 'general.search.reset' | t }}"
       >
-        {%- render 'fc-icon', icon: 'x', size: 16 -%}
+        {%- render 'ui-icon', icon: 'x', size: 16 -%}
       </button>
       {%- render 'ui-button',
         label: button_label,

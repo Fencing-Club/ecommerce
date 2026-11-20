@@ -18,10 +18,10 @@
             {%- if section.blocks.size > 1 -%}
               <div class="fc-home__quote-nav">
                 <button class="fc-home__navbtn fc-home__navbtn--prev" type="button" data-carousel-prev aria-label="Previous testimonial">
-                  {%- render 'fc-icon', icon: 'chevron-left', size: 22 -%}
+                  {%- render 'ui-icon', icon: 'chevron-left', size: 22 -%}
                 </button>
                 <button class="fc-home__navbtn fc-home__navbtn--next" type="button" data-carousel-next aria-label="Next testimonial">
-                  {%- render 'fc-icon', icon: 'chevron-right', size: 22 -%}
+                  {%- render 'ui-icon', icon: 'chevron-right', size: 22 -%}
                 </button>
               </div>
             {%- endif -%}
@@ -35,7 +35,7 @@
                 {%- if block.settings.rating > 0 -%}
                   <span class="fc-home__stars" role="img" aria-label="{{ block.settings.rating }} out of 5 stars">
                     {%- for i in (1..block.settings.rating) -%}
-                      {%- render 'fc-icon', icon: 'star', size: 16 -%}
+                      {%- render 'ui-icon', icon: 'star', size: 16 -%}
                     {%- endfor -%}
                   </span>
                 {%- endif -%}

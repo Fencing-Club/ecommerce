@@ -120,7 +120,7 @@ account-menu { display: flex; }
   line-height: 1.3;
   text-decoration: none;
 }
-.account-menu__link .fc-icon { flex-shrink: 0; }
+.account-menu__link .ui-icon { flex-shrink: 0; }
 .account-menu__sign-out { margin-top: 0.4rem; }
 
 @media (hover: hover) {

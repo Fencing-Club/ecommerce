@@ -134,7 +134,7 @@
                 aria-labelledby="{{ add_form_id }}-submit {{ title_id }}"
                 aria-live="polite"
               >
-                {%- render 'fc-icon', icon: 'plus', size: 15 -%}
+                {%- render 'ui-icon', icon: 'plus', size: 15 -%}
                 <span>{{ add_label | escape }}</span>
                 {%- render 'loading-spinner' -%}
               </button>
@@ -142,7 +142,7 @@
           </product-form>
         {%- else -%}
           <a class="ui-product-card__add" href="{{ card_url }}">
-            {%- render 'fc-icon', icon: 'plus', size: 15 -%}
+            {%- render 'ui-icon', icon: 'plus', size: 15 -%}
             <span>{{ add_label | escape }}</span>
           </a>
         {%- endif -%}

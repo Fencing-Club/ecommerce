@@ -78,7 +78,7 @@
                     {%- if block.settings.link_label != blank -%}
                       <a class="fc-home__hero-textlink" href="{{ block.settings.link_url | default: '#' }}">
                         {{ block.settings.link_label | escape }}
-                        {%- render 'fc-icon', icon: 'arrow-right', size: 16 -%}
+                        {%- render 'ui-icon', icon: 'arrow-right', size: 16 -%}
                       </a>
                     {%- endif -%}
                   </div>

@@ -492,7 +492,7 @@
   color: var(--muted-foreground);
 }
 
-.fc-icon {
+.ui-icon {
   display: block;
   flex: 0 0 auto;
 }

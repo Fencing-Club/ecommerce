@@ -112,7 +112,7 @@
     -%}
     <section class="fc-gift-choice" aria-labelledby="{{ title_id }}">
       <div class="fc-gift-choice__head">
-        <span class="fc-gift-choice__badge">{% render 'fc-icon', icon: 'gift', size: 18 %}</span>
+        <span class="fc-gift-choice__badge">{% render 'ui-icon', icon: 'gift', size: 18 %}</span>
         <div class="fc-gift-choice__text">
           <h3 class="fc-gift-choice__title" id="{{ title_id }}">{{ title }}</h3>
           <p class="fc-gift-choice__body">{{ 'sections.cart.gift_ready_body' | t }}</p>
@@ -122,7 +122,7 @@
       {%- if next_tier > 0 -%}
         {%- assign next_money = next_tier | money_without_trailing_zeros -%}
         {%- assign next_remaining = next_tier | minus: cart.total_price | money -%}
-        <p class="fc-gift-choice__next">{% render 'fc-icon', icon: 'lock', size: 14 %}<span>{{ 'sections.cart.gift_next' | t: amount: next_money, remaining: next_remaining }}</span></p>
+        <p class="fc-gift-choice__next">{% render 'ui-icon', icon: 'lock', size: 14 %}<span>{{ 'sections.cart.gift_next' | t: amount: next_money, remaining: next_remaining }}</span></p>
       {%- endif -%}
     </section>
   {%- endif -%}

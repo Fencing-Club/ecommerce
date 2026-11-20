@@ -140,9 +140,9 @@
   list-style: none;
 }
 .collection-filter-group__disclosure > summary::-webkit-details-marker { display: none; }
-.collection-filter-group__disclosure > summary .fc-icon { flex: 0 0 auto; }
+.collection-filter-group__disclosure > summary .ui-icon { flex: 0 0 auto; }
 .collection-filter-group__disclosure[open] > summary { margin-bottom: 1.2rem; }
-.collection-filter-group__disclosure[open] > summary .fc-icon { transform: rotate(180deg); }
+.collection-filter-group__disclosure[open] > summary .ui-icon { transform: rotate(180deg); }
 .collection-filter-group__disclosure > summary:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 3px;

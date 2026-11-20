@@ -13,6 +13,6 @@
 <span class="fc-chip" data-discount-chip="{{ label | escape }}">
   <span class="fc-chip__label">{{ label | escape }}</span>
   {%- if removable -%}
-    <button type="button" class="fc-chip__remove" data-remove-code="{{ label | escape }}" aria-label="{{ 'sections.cart.remove_discount' | t: code: label | escape }}">{% render 'fc-icon', icon: 'x', size: 12 %}</button>
+    <button type="button" class="fc-chip__remove" data-remove-code="{{ label | escape }}" aria-label="{{ 'sections.cart.remove_discount' | t: code: label | escape }}">{% render 'ui-icon', icon: 'x', size: 12 %}</button>
   {%- endif -%}
 </span>
