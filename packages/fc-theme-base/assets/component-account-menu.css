@@ -52,7 +52,7 @@ account-menu { display: flex; }
     padding: 0;
     border-radius: 1.2rem;
     /* An inset ring, like the design's inside stroke, so the border takes no space. */
-    box-shadow: inset 0 0 0 1px var(--account-menu-line), 0 1.2rem 2.8rem #0000001a;
+    box-shadow: inset 0 0 0 1px var(--account-menu-line), var(--shadow-lg);
   }
 }
 

@@ -136,7 +136,7 @@
 }
 
 .ui-faq-item[open] .ui-faq-item__answer {
-  animation: faq-answer-enter var(--ui-motion-enter) var(--ui-motion-ease);
+  animation: faq-answer-enter var(--duration-enter) var(--ease-out);
 }
 
 @keyframes faq-answer-enter {

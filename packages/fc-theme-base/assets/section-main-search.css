@@ -182,7 +182,7 @@
   padding: 0.8rem;
   border: 0.1rem solid var(--border);
   border-radius: var(--radius-xl);
-  box-shadow: 0 1.4rem 3.2rem rgba(16, 16, 18, 0.14);
+  box-shadow: var(--shadow-lg);
   transform: none;
 }
 
