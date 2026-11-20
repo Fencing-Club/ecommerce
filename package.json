@@ -35,11 +35,11 @@
     "@betterapps/playbook": "github:betterapps-hq/playbook",
     "@repo/oxlint-config": "workspace:*",
     "beachball": "^2.65.5",
-    "knip": "^6.43.0",
+    "knip": "^6.45.1",
     "npm-run-all2": "^9.0.4",
-    "rulesync": "43.5.0",
-    "skills": "1.7.6",
-    "turbo": "2.11.10",
+    "rulesync": "43.9.0",
+    "skills": "1.9.0",
+    "turbo": "2.11.11",
     "vite-plus": "^1.7.0"
   },
   "packageManager": "pnpm@12.10.1"
