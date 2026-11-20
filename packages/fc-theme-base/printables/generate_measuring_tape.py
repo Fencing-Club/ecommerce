@@ -13,14 +13,15 @@ STRIP_COUNT = 8
 STRIP_TOP_MM = 54
 TAB_LENGTH_MM = 8
 CALIBRATION_TOP_MM = 192
-INK = (0.06, 0.06, 0.07)
-MUTED = (0.35, 0.35, 0.38)
-ACCENT = (0.65, 0.10, 0.18)
+# The theme's color tokens (assets/base.css), as PDF RGB.
+INK = tuple(channel / 255 for channel in (0x10, 0x10, 0x12))  # --foreground and --primary
+MUTED = tuple(channel / 255 for channel in (0x5A, 0x5A, 0x60))  # --muted-foreground
+BORDER = tuple(channel / 255 for channel in (0xE3, 0xE3, 0xE0))  # --border
+SURFACE = tuple(channel / 255 for channel in (0xF4, 0xF4, 0xF2))  # --muted
 BASE = Path(__file__).parent
 FONT_FILES = {
     "body": BASE / "fonts" / "Inter-Regular.ttf",
     "bold": BASE / "fonts" / "Inter-Semibold.ttf",
-    "display": BASE / "fonts" / "Archivo-Semibold.ttf",
 }
 FONTS = {name: pymupdf.Font(fontfile=str(path)) for name, path in FONT_FILES.items()}
 
@@ -65,7 +66,7 @@ def draw_brand(page, paper, page_number, large=False):
         filename=str(BASE / "fencing-club-mark.png"),
     )
     text(page, 40 if large else 33, 15 if large else 13, 150, "FENCING CLUB",
-         size=21 if large else 15, font="display", height_mm=10)
+         size=21 if large else 15, font="bold", height_mm=10)
     text(page, width_mm - 80, 15 if large else 12, 64, f"{paper_label} / LANDSCAPE",
          font="bold", align=pymupdf.TEXT_ALIGN_RIGHT)
     text(page, width_mm - 60, 23 if large else 19, 44, f"{page_number:02d} / 03",
@@ -83,10 +84,10 @@ def draw_instructions(page, paper):
     aside_width = width_mm - aside_left - 16
     body_width = 145 if compact else 157
     draw_brand(page, paper, 1, large=True)
-    page.draw_rect(pymupdf.Rect(point(16, 39), point(34, 40)), color=None, fill=ACCENT)
-    text(page, 16, 46, width_mm - 32, "Make your measuring tape.", size=31, font="display", height_mm=15)
+    page.draw_rect(pymupdf.Rect(point(16, 39), point(34, 40)), color=None, fill=INK)
+    text(page, 16, 46, width_mm - 32, "Make your measuring tape.", size=31, font="bold", height_mm=15)
     text(page, 16, 63, 220, "A 200 cm tape for checking your measurements.", size=12, color=MUTED)
-    text(page, 16, 80, 162, "Print at 100%. Check before cutting.", size=14, font="display")
+    text(page, 16, 80, 162, "Print at 100%. Check before cutting.", size=14, font="bold")
     text(page, 16, 90, body_width,
          f"Use {paper_label} landscape paper and print all three pages single-sided at Actual size (100%). "
          "Turn off Fit to page and Shrink to fit.", size=11, height_mm=18)
@@ -100,15 +101,15 @@ def draw_instructions(page, paper):
     ]
     for index, (heading, instruction) in enumerate(steps):
         top = 136 + index * 20
-        text(page, 16, top, 10, f"{index + 1:02d}", size=13, font="bold", color=ACCENT)
+        text(page, 16, top, 10, f"{index + 1:02d}", size=13, font="bold", color=INK)
         text(page, 30, top, 140, heading, size=11, font="bold")
         text(page, 30, top + 6, 136, instruction, size=9.5, height_mm=12)
-    page.draw_line(point(divider_left, 80), point(divider_left, 189), color=(0.79, 0.79, 0.77), width=0.6)
-    text(page, aside_left, 80, aside_width, "You will need", size=14, font="display")
+    page.draw_line(point(divider_left, 80), point(divider_left, 189), color=BORDER, width=0.6)
+    text(page, aside_left, 80, aside_width, "You will need", size=14, font="bold")
     text(page, aside_left, 91, aside_width, "Printer and paper\nScissors\nClear tape\nA rigid ruler",
          size=11, height_mm=31, lineheight=1.75)
-    text(page, aside_left, 128, aside_width, "One continuous tape", size=14, font="display")
-    text(page, aside_left, 139, aside_width, "200 cm", size=30, font="display", height_mm=14)
+    text(page, aside_left, 128, aside_width, "One continuous tape", size=14, font="bold")
+    text(page, aside_left, 139, aside_width, "200 cm", size=30, font="bold", height_mm=14)
     text(page, aside_left, 154, aside_width, "8 strips / 7 joins\nCentimetres and inches", size=10,
          height_mm=14, color=MUTED, lineheight=1.6)
     text(page, aside_left, 177, aside_width, "10 cm check line on every cutting sheet.", size=9.5,
@@ -144,7 +145,7 @@ def draw_strip(page, left_mm, top_mm, strip_index):
         page.draw_rect(
             pymupdf.Rect(point(end_x, top_mm), point(cut_right, bottom_mm)),
             color=None,
-            fill=(0.93, 0.93, 0.92),
+            fill=SURFACE,
         )
         text(page, end_x + 0.5, top_mm + 9, 7, f"{strip_index + 2:02d}", size=10, font="bold",
              align=pymupdf.TEXT_ALIGN_CENTER)
@@ -199,7 +200,7 @@ def draw_cutting_sheet(page, paper, sheet_index):
     draw_brand(page, paper, sheet_index + 2)
     text(page, 16, 29, 190,
          f"Strips {sheet_index * 4 + 1}-{sheet_index * 4 + 4} / {sheet_index * 100}-{(sheet_index + 1) * 100} cm",
-         size=18, font="display", height_mm=10)
+         size=18, font="bold", height_mm=10)
     text(page, 16, 39, width_mm - 32, "Actual size (100%). Check the line below before cutting.", color=MUTED)
     for row in range(STRIPS_PER_PAGE):
         draw_strip(page, left_mm, STRIP_TOP_MM + row * (STRIP_WIDTH_MM + STRIP_GAP_MM), sheet_index * 4 + row)

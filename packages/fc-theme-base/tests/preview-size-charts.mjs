@@ -7,10 +7,10 @@ const engine = createSizingLiquid();
 const mime = { '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png', '.svg': 'image/svg+xml', '.pdf': 'application/pdf', '.ttf': 'font/ttf' };
 const shell = (content, title) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} | Sizing fixture preview</title>
   <link rel="stylesheet" href="/assets/base.css"><link rel="stylesheet" href="/assets/component-ui.css">
-  <style>@font-face{font-family:Archivo;src:url('/printables/fonts/Archivo-Semibold.ttf')}@font-face{font-family:Inter;src:url('/printables/fonts/Inter-Regular.ttf')}
-  :root{--font-body-family:Inter,sans-serif;--font-heading-family:Archivo,sans-serif;--font-body-weight:400;--font-body-scale:1;--font-heading-scale:1;--color-foreground:16,16,18;--color-background:255,255,255}
+  <style>@font-face{font-family:Inter;src:url('/printables/fonts/Inter-Regular.ttf')}
+  :root{--font-body-family:Inter,sans-serif;--font-heading-family:Inter,sans-serif;--font-body-weight:400;--font-body-scale:1;--font-heading-scale:1;--color-foreground:16,16,18;--color-background:255,255,255}
   html{font-size:62.5%;box-sizing:border-box}*,*::before,*::after{box-sizing:inherit}body{margin:0;background:#fff;color:#101012;font-family:Inter,sans-serif;font-size:1.6rem}
-  .fixture-header{display:flex;align-items:center;gap:24px;min-height:96px;padding:16px 32px;border-bottom:1px solid #e3e3e0}.fixture-header img{width:48px;height:48px;object-fit:contain}.fixture-header a{color:inherit;text-decoration:none}.fixture-header strong{font-family:Archivo,sans-serif}.fixture-product{padding:32px;max-width:800px;margin:auto}.fixture-product h1{font-family:Archivo,sans-serif;font-size:32px}.fixture-product input[name=quantity]{font:inherit;width:80px;padding:8px}.fixture-product>img{width:160px;max-width:100%}
+  .fixture-header{display:flex;align-items:center;gap:24px;min-height:96px;padding:16px 32px;border-bottom:1px solid #e3e3e0}.fixture-header img{width:48px;height:48px;object-fit:contain}.fixture-header a{color:inherit;text-decoration:none}.fixture-product{padding:32px;max-width:800px;margin:auto}.fixture-product h1{font-size:32px}.fixture-product input[name=quantity]{font:inherit;width:80px;padding:8px}.fixture-product>img{width:160px;max-width:100%}
   </style></head><body><header class="fixture-header"><a href="/pages/size-charts"><img src="/assets/fencing-club-logo.png" alt="Fencing Club"></a><a href="/pages/size-charts"><strong>Size charts</strong></a></header><main>${content}</main></body></html>`;
 
 const server = createServer(async (request, response) => {
