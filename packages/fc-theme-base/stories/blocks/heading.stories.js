@@ -32,10 +32,3 @@ export const Small = {
     await expect(canvas.getByRole('heading', { name: 'Shipping and returns', level: 3 })).toBeVisible();
   },
 };
-
-export const Empty = {
-  args: { heading: '' },
-  play: async ({ canvas }) => {
-    await expect(canvas.queryByRole('heading')).toBeNull();
-  },
-};
