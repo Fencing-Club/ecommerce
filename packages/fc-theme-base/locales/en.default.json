@@ -304,6 +304,22 @@
       "cart_count": {
         "one": "{{ count }} item",
         "other": "{{ count }} items"
+      },
+      "mega_menu": {
+        "view": "View",
+        "tool": "Interactive tool",
+        "sizing_title": "Sizing guide",
+        "sizing_description": "Measure once, order the right fit.",
+        "weapon_builder_title": "Weapon Builder",
+        "weapon_builder_description": "Choose your blade, guard, grip and pommel. We build, wire and test it before it ships.",
+        "weapon_builder_action": "Build a weapon",
+        "kits_1_title": "Practice Kits",
+        "kits_1_description": "Everything you need to start training: mask, jacket, glove and a practice weapon.",
+        "kits_2_title": "Electric Kits",
+        "kits_2_description": "Competition-ready electric sets with lamé, body cord and a tested weapon.",
+        "kit_builder_title": "Build Your Own Kit",
+        "kit_builder_description": "Bundle any weapon, mask, jacket and more into one kit.",
+        "kit_builder_action": "Build a kit"
       }
     },
     "cart": {
