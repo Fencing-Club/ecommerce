@@ -3,7 +3,7 @@ import { loadScript, renderLiquid, snippet } from '../liquid.js';
 
 const trigger = renderLiquid('ui-button', {
   label: 'Open drawer',
-  variant: 'secondary',
+  variant: 'outline',
   additional_props: 'data-drawer-open aria-haspopup="dialog" aria-expanded="false" aria-controls="StoryDrawer"',
 });
 

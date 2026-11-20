@@ -98,7 +98,13 @@
       {%- if unavailable -%}
         <p class="fc-line__hint">{{ 'sections.cart.unavailable_hint' | t }}</p>
         {%- if can_remove -%}
-          <cart-remove-button data-index="{{ line }}"><a href="{{ item.url_to_remove }}" class="fc-button fc-button--outline" aria-label="{{ 'sections.cart.remove_title' | t: title: item.product.title | escape }}">{{ 'sections.cart.remove' | t }}</a></cart-remove-button>
+          {%- liquid
+            assign remove_label = 'sections.cart.remove' | t
+            assign remove_name = 'sections.cart.remove_title' | t: title: item.product.title
+          -%}
+          <cart-remove-button data-index="{{ line }}">
+            {%- render 'ui-button', label: remove_label, aria_label: remove_name, url: item.url_to_remove, variant: 'outline', size: 'md' -%}
+          </cart-remove-button>
         {%- endif -%}
       {%- else -%}
         <quantity-input class="quantity fc-stepper">

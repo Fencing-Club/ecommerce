@@ -8,13 +8,15 @@ export default {
   render: snippet('ui-button'),
   args: { label: 'Add to cart', variant: 'primary' },
   argTypes: {
-    variant: { control: 'inline-radio', options: ['primary', 'secondary', 'ghost', 'icon'] },
+    variant: { control: 'inline-radio', options: ['primary', 'secondary', 'outline', 'ghost', 'icon'] },
+    size: { control: 'inline-radio', options: ['sm', 'md', 'lg'] },
     icon: { control: 'select', options: [undefined, ...iconNames] },
+    trailing_icon: { control: 'select', options: [undefined, ...iconNames] },
   },
 };
 
 export const Primary = {
-  args: { icon: 'arrow-right' },
+  args: { icon: 'plus' },
   play: async ({ canvas, userEvent }) => {
     const button = canvas.getByRole('button', { name: 'Add to cart' });
     const clicked = fn();
@@ -32,6 +34,13 @@ export const Secondary = {
   },
 };
 
+export const Outline = {
+  args: { label: 'Continue shopping', variant: 'outline' },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('button', { name: 'Continue shopping' })).toHaveClass('ui-button--outline');
+  },
+};
+
 export const Ghost = {
   args: { label: 'Clear filters', variant: 'ghost' },
   play: async ({ canvas }) => {
@@ -46,8 +55,30 @@ export const IconOnly = {
   },
 };
 
+export const TrailingIcon = {
+  args: { label: 'Shop masks', trailing_icon: 'arrow-right' },
+  play: async ({ canvas }) => {
+    const button = canvas.getByRole('button', { name: 'Shop masks' });
+    await expect(button.lastElementChild).toHaveClass('ui-icon');
+  },
+};
+
+export const Medium = {
+  args: { size: 'md' },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('button', { name: 'Add to cart' })).toHaveClass('ui-button--md');
+  },
+};
+
+export const Large = {
+  args: { label: 'Check out', size: 'lg' },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('button', { name: 'Check out' })).toHaveClass('ui-button--lg');
+  },
+};
+
 export const AsLink = {
-  args: { label: 'Shop clothing', url: '#clothing', variant: 'secondary' },
+  args: { label: 'Shop clothing', url: '#clothing', variant: 'outline' },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('link', { name: 'Shop clothing' })).toHaveAttribute('href', '#clothing');
   },

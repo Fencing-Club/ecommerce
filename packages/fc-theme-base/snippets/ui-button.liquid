@@ -5,14 +5,17 @@
   - label: {String} Visible text. Optional when aria_label is supplied.
   - aria_label: {String} Accessible name for icon-only buttons.
   - url: {String} Optional link destination. Renders an anchor when supplied.
-  - variant: {String} primary | secondary | ghost | icon. Default: secondary.
+  - variant: {String} primary | secondary | outline | ghost | icon. Default: primary.
+  - size: {String} sm (36px) | md (44px) | lg (52px). Default: sm.
   - type: {String} Native button type. Default: button.
-  - icon: {String} Optional icon name passed to ui-icon.
+  - icon: {String} Optional icon before the label, for actions such as plus or search.
+  - trailing_icon: {String} Optional icon after the label, for arrows and chevrons.
   - action: {String} Optional token rendered as data-action for scripts to bind to.
   - full_width: {Boolean} Stretch to fill the container.
   - disabled: {Boolean} Prevent activation and show the disabled state.
   - busy: {Boolean} Prevent activation and announce a pending action.
   - class: {String} Optional extra classes.
+  - additional_props: {String} Optional extra attributes, such as data hooks or form and name.
 {% endcomment %}
 
 {%- liquid
@@ -20,19 +23,31 @@
   if disabled or busy
     assign inactive = true
   endif
+  assign button_variant = variant | default: 'primary'
+  assign classes = 'ui-button ui-button--' | append: button_variant
+  if size == 'md' or size == 'lg'
+    assign classes = classes | append: ' ui-button--' | append: size
+  endif
+  if full_width
+    assign classes = classes | append: ' ui-button--full-width'
+  endif
+  if class
+    assign classes = classes | append: ' ' | append: class
+  endif
 -%}
 {%- if url != blank -%}
   <a
     {% if inactive %}role="link" aria-disabled="true" tabindex="-1"{% else %}href="{{ url }}"{% endif %}
-    class="ui-button ui-button--{{ variant | default: 'secondary' }}{% if full_width %} ui-button--full-width{% endif %}{% if class %} {{ class }}{% endif %}"
+    class="{{ classes }}"
     {% if aria_label %}aria-label="{{ aria_label | escape }}"{% endif %}
     {% if busy %}aria-busy="true"{% endif %}
     {% if action and inactive == false %}data-action="{{ action | escape }}"{% endif %}
+    {{ additional_props }}
   >
 {%- else -%}
   <button
     type="{{ type | default: 'button' }}"
-    class="ui-button ui-button--{{ variant | default: 'secondary' }}{% if full_width %} ui-button--full-width{% endif %}{% if class %} {{ class }}{% endif %}"
+    class="{{ classes }}"
     {% if aria_label %}aria-label="{{ aria_label | escape }}"{% endif %}
     {% if inactive %}disabled{% endif %}
     {% if busy %}aria-busy="true"{% endif %}
@@ -45,6 +60,9 @@
   {%- endif -%}
   {%- if label -%}
     {{ label | escape }}
+  {%- endif -%}
+  {%- if trailing_icon -%}
+    {%- render 'ui-icon', icon: trailing_icon -%}
   {%- endif -%}
 {%- if url != blank -%}
   </a>

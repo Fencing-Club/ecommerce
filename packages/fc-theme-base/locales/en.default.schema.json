@@ -1292,51 +1292,6 @@
             }
           }
         },
-        "complementary_products": {
-          "name": "Complementary products",
-          "settings": {
-            "paragraph": {
-              "content": "Manage complementary products in the [Search & Discovery app](https://help.shopify.com/manual/online-store/search-and-discovery/product-recommendations)"
-            },
-            "heading": {
-              "label": "Heading",
-              "default": "Pairs well with"
-            },
-            "make_collapsible_row": {
-              "label": "Collapsible row"
-            },
-            "icon": {
-              "info": "Shown when collapsible row is selected"
-            },
-            "product_list_limit": {
-              "label": "Product count"
-            },
-            "products_per_page": {
-              "label": "Products per page"
-            },
-            "pagination_style": {
-              "label": "Pagination",
-              "options": {
-                "option_1": "Dots",
-                "option_2": "Counter",
-                "option_3": "Numbers"
-              }
-            },
-            "product_card": {
-              "heading": "Product card"
-            },
-            "image_ratio": {
-              "label": "Image ratio",
-              "options": {
-                "option_1": "Portrait",
-                "option_2": "Square"
-              }
-            },
-            "enable_quick_add": {
-              "label": "Quick add"
-            }
-          }
-        },
         "icon_with_text": {
           "name": "Icon with text",
           "settings": {
@@ -1721,31 +1676,6 @@
         "paragraph__1": {
           "content": "Related products can be managed in the [Search & Discovery app](https://help.shopify.com/manual/online-store/search-and-discovery/product-recommendations)",
           "default": "You may also like"
-        },
-        "header__2": {
-          "content": "Product card"
-        },
-        "image_ratio": {
-          "label": "Image ratio",
-          "options__1": {
-            "label": "Adapt to image"
-          },
-          "options__2": {
-            "label": "Portrait"
-          },
-          "options__3": {
-            "label": "Square"
-          }
-        },
-        "show_secondary_image": {
-          "label": "Show second image on hover"
-        },
-        "show_vendor": {
-          "label": "Vendor"
-        },
-        "show_rating": {
-          "label": "Product rating",
-          "info": "An app is required for product ratings. [Learn more](https://help.shopify.com/manual/online-store/themes/customizing-themes/add-product-recommendations)"
         },
         "columns_mobile": {
           "label": "Mobile columns",

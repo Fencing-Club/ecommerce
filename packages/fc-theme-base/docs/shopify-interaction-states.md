@@ -138,9 +138,10 @@ template-owned hooks, never customer-supplied HTML. Callers must provide unique 
 
 ## Motion And Geometry
 
-- `ui-button` uses 15px text, a 6px radius and a 36px minimum height (shadcn's h-9), including search and support-band actions.
-  Icon buttons have 44px square targets. Disabled/busy semantics live in the shared snippet, and inverted support-band
-  colors remain owned by that component.
+- `ui-button` follows the Button row of the Pen's Components board: primary, secondary (filled), outline, ghost and icon
+  variants; 14px semibold text and an 8px radius; `sm` 36px (the default), `md` 44px and `lg` 52px heights. Arrows and
+  chevrons go after the label (`trailing_icon`); action icons go before it (`icon`). The cart uses it too. Disabled/busy semantics live in the
+  shared snippet, and inverted support-band colors remain owned by that component.
 - Production `--ui-motion-fast`, `--ui-motion-enter` and `--ui-motion-ease` tokens provide 120ms feedback,
   220ms entrance and `cubic-bezier(0.2, 0, 0, 1)` easing. Buttons press by 1px; link arrows move 2px while preserving
   their direction. FAQ answers enter with a 6px fade/slide. Localization and pagination targets are at least 44px high.

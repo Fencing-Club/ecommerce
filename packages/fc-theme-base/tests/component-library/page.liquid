@@ -58,14 +58,15 @@
       <div class="specimen lab-row">
         {% render 'ui-button', label: 'Add to cart', variant: 'primary', action: 'simulate-save', icon: 'arrow-right' %}
         {% render 'ui-button', label: 'Continue shopping', variant: 'secondary', action: 'select-example' %}
+        {% render 'ui-button', label: 'Keep browsing', variant: 'outline', action: 'select-example' %}
         {% render 'ui-button', label: 'Cancel', variant: 'ghost', action: 'select-example' %}
         {% render 'ui-button', aria_label: 'Close example', variant: 'icon', icon: 'x', action: 'select-example' %}
         {% render 'ui-link', label: 'View all products', url: '#selection', icon: 'arrow-right' %}
       </div>
       <div class="specimen lab-row">
         {% render 'ui-button', label: 'Unavailable', variant: 'primary', disabled: true %}
-        {% render 'ui-button', label: 'Unavailable link', url: '#cards', variant: 'secondary', disabled: true %}
-        {% render 'ui-button', label: 'Saving', variant: 'secondary', busy: true %}
+        {% render 'ui-button', label: 'Unavailable link', url: '#cards', variant: 'outline', disabled: true %}
+        {% render 'ui-button', label: 'Saving', variant: 'outline', busy: true %}
       </div>
       <div class="lab-state-row"><label><input type="checkbox" id="disable-command"> Disable primary action</label><label><input type="checkbox" id="fail-command"> Simulate failure</label><output id="command-status" role="status">Ready</output></div>
     </section>
@@ -81,7 +82,7 @@
     <section id="disclosures" class="lab-section"><h2>Disclosures <code>ui-faq-item / ui-drawer</code></h2>
       <div class="specimen">
         {% render 'ui-faq-item', question: 'Which size should I choose?', answer: '<p>Use your measurements to compare the size chart for your product.</p>', link_label: 'View size chart', link_url: '#selection' %}
-        {%- capture drawer_trigger -%}<button type="button" class="ui-button ui-button--secondary" data-drawer-open aria-haspopup="dialog" aria-expanded="false" aria-controls="LabDrawer">Open drawer</button>{%- endcapture -%}
+        {%- capture drawer_trigger -%}<button type="button" class="ui-button ui-button--outline" data-drawer-open aria-haspopup="dialog" aria-expanded="false" aria-controls="LabDrawer">Open drawer</button>{%- endcapture -%}
         {%- capture drawer_options -%}<option>Small</option><option>Medium</option><option>Large</option>{%- endcapture -%}
         {%- capture drawer_content -%}<img class="lab-drawer-image" src="/assets/mega-sizing-guide.jpg" alt="Fencing clothing"><p>Size chart</p>{% render 'ui-select', id: 'lab-drawer-size', name: 'size', label: 'Size', options: drawer_options %}{%- endcapture -%}
         {% render 'ui-drawer', id: 'LabDrawer', title: 'Size chart', close_label: 'Close size chart', trigger: drawer_trigger, content: drawer_content %}

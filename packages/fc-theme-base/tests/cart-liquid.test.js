@@ -291,7 +291,7 @@ describe('whole-cart messages', () => {
     const page = render('page', 'empty');
     expect(page.querySelector('cart-items').dataset.cartState).toBe('empty');
     const empty = page.querySelector('[data-cart-message="empty"]');
-    expect(text(empty.querySelector('.fc-button--primary'))).toBe('Shop starter kits');
+    expect(text(empty.querySelector('.ui-button--primary'))).toBe('Shop starter kits');
     expect([...page.querySelectorAll('.fc-popular__name')].map(text)).toEqual(['Starter kits', 'Uniforms', 'Weapons']);
   });
 
