@@ -20,8 +20,10 @@
         <div class="fc-cart-page__lines" id="main-cart-items" data-cart-region="lines">{% render 'cart-lines', context: 'page' %}</div>
       </div>
       <section class="fc-cart-page__summary" aria-labelledby="CartSummaryHeading">
-        <h2 class="fc-cart-page__summary-title" id="CartSummaryHeading">{{ 'sections.cart.order_summary' | t }}</h2>
-        <div class="fc-cart-page__card">{% render 'cart-summary', context: 'page', form_id: 'cart' %}</div>
+        <div class="fc-cart-page__card">
+          <h2 class="fc-cart-page__summary-title" id="CartSummaryHeading">{{ 'sections.cart.order_summary' | t }}</h2>
+          {%- render 'cart-summary', context: 'page', form_id: 'cart' -%}
+        </div>
         {%- for block in section.blocks -%}{%- if block.type == '@app' -%}{% render block %}{%- endif -%}{%- endfor -%}
       </section>
     </form>
@@ -44,8 +46,10 @@
         <div class="fc-cart-page__lines">{% render 'cart-skeleton', part: 'lines' %}</div>
       </div>
       <div class="fc-cart-page__summary">
-        <p class="fc-cart-page__summary-title">{{ 'sections.cart.order_summary' | t }}</p>
-        <div class="fc-cart-page__card">{% render 'cart-skeleton', part: 'summary' %}</div>
+        <div class="fc-cart-page__card">
+          <p class="fc-cart-page__summary-title">{{ 'sections.cart.order_summary' | t }}</p>
+          {%- render 'cart-skeleton', part: 'summary' -%}
+        </div>
       </div>
     </div>
   </div>

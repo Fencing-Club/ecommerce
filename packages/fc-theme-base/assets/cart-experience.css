@@ -350,8 +350,8 @@ body:has(.fc-cart-page) .header__heading-logo { width: 80px; height: 100px; obje
 .fc-cart-page .fc-line { padding: 20px 0; }
 .fc-cart-page .fc-line__photo { flex-basis: 96px; width: 96px; height: 96px; }
 .fc-cart-page .fc-skeleton-line { padding: 20px 0; }
-.fc-cart-page__summary { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 16px; padding-top: 8px; }
-.fc-cart-page__summary-title { margin: 0; font: 600 20px/1.2 var(--cart-display); }
+.fc-cart-page__summary { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 16px; }
+.fc-cart-page__summary-title { margin: 0 0 16px; font: 600 20px/1.2 var(--cart-display); }
 .fc-cart-page__card { padding: 20px; border: 1px solid var(--border); border-radius: 12px; }
 .fc-cart-page__empty,
 .fc-cart-page__failed,
