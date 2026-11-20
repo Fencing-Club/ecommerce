@@ -9,8 +9,15 @@
 
 .fc-home__inner {
   width: 100%;
-  max-width: 124.8rem;
-  margin-inline: auto;
+}
+
+/* Every homepage band sits on the shared page gutter. */
+.fc-home__section,
+.fc-home__hero-content,
+.fc-home__why,
+.fc-home__brands-section,
+.fc-home__journal-section {
+  padding-inline: var(--page-gutter);
 }
 
 .fc-home__eyebrow {
@@ -88,7 +95,7 @@
 }
 
 .fc-home__section {
-  padding: 9.6rem 9.6rem;
+  padding-block: 9.6rem;
 }
 
 .fc-home__head {
@@ -222,7 +229,20 @@
 }
 
 .fc-home__hero-image {
+  max-width: 144rem;
+  margin-inline: auto;
   object-fit: cover;
+  /* The crop takes from the top and bottom; people sit in the upper part of these photos.
+     A focal point set on the image in admin overrides this inline. */
+  object-position: 50% 30%;
+}
+
+/* Past the design's 1440 the photo stops widening, which would only crop it harder, and
+   its sides fade into the hero's dark background. */
+@media screen and (min-width: 1441px) {
+  .fc-home__hero-image {
+    mask-image: linear-gradient(to right, transparent, #000 16rem, #000 calc(100% - 16rem), transparent);
+  }
 }
 
 /* Top Scrim (1440x250, #000000CC -> transparent) over Overlay (#000000E6 -> #00000066, left to right). */
@@ -237,7 +257,6 @@
   display: flex;
   align-items: center;
   height: 100%;
-  padding: 0 9.6rem;
 }
 
 .fc-home__hero-inner {
@@ -558,7 +577,7 @@
 
 /* Why Fencing Club: 80px band, 520px image, 56px gutter. */
 .fc-home__why {
-  padding: 8rem 9.6rem;
+  padding-block: 8rem;
 }
 
 .fc-home__why-row {
@@ -791,7 +810,7 @@
 
 /* Brands: two rows of four 276x64 marks. */
 .fc-home__brands-section {
-  padding: 8rem 9.6rem;
+  padding-block: 8rem;
 }
 
 .fc-home__brands-section .fc-home__head {
@@ -816,7 +835,7 @@
 
 /* Journal: three 394.67px cards, 32px gutters. */
 .fc-home__journal-section {
-  padding: 10rem 9.6rem;
+  padding-block: 10rem;
 }
 
 .fc-home__journal {
@@ -841,17 +860,6 @@
 }
 
 @media screen and (max-width: 1199px) {
-  .fc-home__section,
-  .fc-home__why,
-  .fc-home__brands-section,
-  .fc-home__journal-section {
-    padding-inline: 5rem;
-  }
-
-  .fc-home__hero-content {
-    padding-inline: 5rem;
-  }
-
   .fc-home__why-row {
     grid-template-columns: 40rem minmax(0, 1fr);
     gap: 4rem;
@@ -904,15 +912,10 @@
   .fc-home__brands-section,
   .fc-home__journal-section {
     padding-block: 5.6rem;
-    padding-inline: 2rem;
   }
 
   .fc-home__hero {
     height: 52rem;
-  }
-
-  .fc-home__hero-content {
-    padding-inline: 2rem;
   }
 
   .fc-home__hero-headline {

@@ -5,9 +5,11 @@ The new Fencing Club Shopify theme, built on Dawn.
 ## Development
 
 - [Storybook](storybook.md): the component library, how stories render Liquid, and how they're tested.
+- [Page layout](shopify-page-layout.md): the one page gutter and content width every row uses.
 
 ## Store features
 
+- [Account menu](shopify-account-menu.md)
 - [Cart](shopify-cart.md)
 - [Collection filters](shopify-collection-filters.md)
 - [Drawers](shopify-drawers.md)

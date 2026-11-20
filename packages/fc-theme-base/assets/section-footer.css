@@ -618,17 +618,21 @@
   margin-top: 5.6rem;
 }
 
+/* The footer is one band on the page gutter, so its dividers stop at the content
+   edges; the rows inside take no gutter of their own. The section's padding rule is
+   a single class printed after this file, so an element selector is needed. */
+footer.footer {
+  padding-inline: var(--page-gutter);
+}
+
+.footer .page-width {
+  padding-inline: 0;
+}
+
 /* Wide desktop: brand and navigation share one row, per the design. */
 @media screen and (min-width: 1200px) {
   footer.footer {
     min-height: 50.5rem;
-    padding-inline: max(9.6rem, calc((100% - 124.8rem) / 2));
-  }
-
-  .footer .page-width {
-    width: 100%;
-    max-width: none;
-    padding-inline: 0;
   }
 
   .footer__content-top {
@@ -778,9 +782,6 @@
     align-items: center;
     justify-content: space-between;
     gap: 2.4rem;
-    max-width: var(--page-width);
-    margin-inline: auto;
-    padding-inline: 5rem;
   }
 
   .footer__content-bottom > .footer__content-bottom-wrapper {
@@ -833,15 +834,10 @@
 /* Mirrors "Component/Footer — Tablet" (768) and "Component/Footer — Mobile" (390).
    Must stay last in this file to win over Dawn's earlier mobile rules. */
 @media screen and (max-width: 1199px) {
-  /* Both designs inset the section by 48/32. The section's own padding rule is a
-     single class printed after this file, so an element selector is needed. */
+  /* Both designs inset the section by 48/32. */
   footer.footer {
     padding-top: 4.8rem;
     padding-bottom: 3.2rem;
-  }
-
-  .footer .page-width {
-    padding-inline: 3.2rem;
   }
 
   .footer__content-top {
@@ -981,7 +977,6 @@
     align-items: center;
     justify-content: space-between;
     gap: 2.4rem;
-    padding-inline: 3.2rem;
   }
 
   .footer__content-bottom > .footer__content-bottom-wrapper {
@@ -1005,12 +1000,7 @@
   }
 }
 
-/* Mobile narrows the gutter; the column grid above handles the rest. */
 @media screen and (max-width: 749px) {
-  .footer .page-width {
-    padding-inline: 2rem;
-  }
-
   .footer__content-bottom-wrapper,
   .footer__content-bottom-wrapper--center {
     align-items: center;

@@ -79,70 +79,42 @@ collection-component {
   --shadow-visible: var(--media-shadow-visible);
 }
 
-/* base */
+/* Page layout. Every full-width band, header included, lines its content up on one
+   gutter: --gutter beside the content, which stops at --content-max and centers.
+   Markup takes `.page-width`; CSS that can't add the class, such as full-width panels,
+   uses var(--page-gutter). No other file sets a page gutter, and
+   tests/page-gutter.test.js holds that. See docs/shopify-page-layout.md. */
+:root {
+  --gutter: 1.6rem;
+  --content-max: 124.8rem;
+  /* 100% resolves where this is used, against that element's containing block. */
+  --page-gutter: max(var(--gutter), calc((100% - var(--content-max)) / 2));
+}
+
+@media screen and (min-width: 990px) {
+  :root {
+    --gutter: 2.4rem;
+  }
+}
 
 .page-width {
-  max-width: var(--page-width);
-  margin: 0 auto;
-  padding: 0 1.5rem;
+  padding-inline: var(--page-gutter);
 }
 
-body:has(.section-header .drawer-menu) .announcement-bar-section .page-width {
-  max-width: 100%;
-}
-
-.page-width.drawer-menu {
-  max-width: 100%;
+/* A reading column inside the page: the gutter on narrow screens, then centered. */
+.page-width--narrow {
+  max-width: calc(72.6rem + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
 }
 
 .page-width-desktop {
   padding: 0;
-  margin: 0 auto;
-}
-
-.utility-bar__grid.page-width {
-  padding-left: 3rem;
-  padding-right: 3rem;
-}
-
-@media screen and (min-width: 750px) {
-  .page-width {
-    padding: 0 5rem;
-  }
-
-  .header.page-width,
-  .utility-bar__grid.page-width {
-    padding-left: 3.2rem;
-    padding-right: 3.2rem;
-  }
-
-  .page-width--narrow {
-    padding: 0 9rem;
-  }
-
-  .page-width-desktop {
-    padding: 0;
-  }
-
-  .page-width-tablet {
-    padding: 0 5rem;
-  }
 }
 
 @media screen and (min-width: 990px) {
-  .header:not(.drawer-menu).page-width {
-    padding-left: 5rem;
-    padding-right: 5rem;
-  }
-
-  .page-width--narrow {
-    max-width: 72.6rem;
-    padding: 0;
-  }
-
   .page-width-desktop {
-    max-width: var(--page-width);
-    padding: 0 5rem;
+    padding-inline: var(--page-gutter);
   }
 }
 
@@ -2267,11 +2239,6 @@ input[type='checkbox'] {
 }
 
 @media screen and (min-width: 990px) {
-  body:has(.section-header .header:not(.drawer-menu)) .utility-bar .page-width {
-    padding-left: 5rem;
-    padding-right: 5rem;
-  }
-
   .announcement-bar-slider {
     width: 60%;
   }

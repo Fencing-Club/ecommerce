@@ -7,7 +7,7 @@
   display: flex;
   flex-direction: column;
   gap: 2.2rem;
-  padding: 5.2rem max(2rem, calc((100% - 124.8rem) / 2)) 2.8rem;
+  padding: 5.2rem var(--page-gutter) 2.8rem;
 }
 
 .collection-intro__title {
@@ -41,7 +41,7 @@
 }
 
 .collection-product-area {
-  padding-inline: max(2rem, calc((100% - 124.8rem) / 2));
+  padding-inline: var(--page-gutter);
 }
 
 .collection-layout.facets-vertical {
@@ -452,13 +452,8 @@
 }
 
 @media screen and (max-width: 989px) {
-  .collection-intro {
-    padding-inline: 4rem;
-  }
-
   .collection-product-area {
     min-height: 0;
-    padding-inline: 4rem;
   }
 
   .collection-layout.facets-vertical {
@@ -565,7 +560,7 @@
 @media screen and (max-width: 749px) {
   .collection-intro {
     min-height: 0;
-    padding: 3.6rem 2rem 2.8rem;
+    padding-block: 3.6rem 2.8rem;
   }
 
   .collection-intro__title {
@@ -578,8 +573,8 @@
 
   .collection-intro__pills {
     flex-wrap: nowrap;
-    margin-inline: -2rem;
-    padding-inline: 2rem;
+    margin-inline: calc(-1 * var(--gutter));
+    padding-inline: var(--gutter);
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -593,7 +588,6 @@
   }
 
   .collection-product-area {
-    padding-inline: 2rem;
     padding-bottom: 5.6rem;
   }
 

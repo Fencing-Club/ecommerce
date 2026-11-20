@@ -184,10 +184,8 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  max-width: 144rem;
-  margin-inline: auto;
   padding-block: 2.4rem 2.8rem;
-  padding-inline: 9.6rem;
+  padding-inline: var(--page-gutter);
   color: var(--fc-mega-ink);
 }
 
@@ -618,10 +616,6 @@
 }
 
 @media screen and (max-width: 1199px) {
-  .fc-mega {
-    padding-inline: 5rem;
-  }
-
   /* The kits grid keeps its own gutter, which the tool card's width is derived from. */
   .fc-mega__body:not(.fc-mega__body--panels) {
     gap: 3.2rem;

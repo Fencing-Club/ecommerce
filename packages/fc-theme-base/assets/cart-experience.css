@@ -350,7 +350,7 @@ body:has(.fc-cart-page) .header-wrapper .header:not(.drawer-menu).page-width { h
 body:has(.fc-cart-page) .header__heading-link { padding: 0; }
 body:has(.fc-cart-page) .header__heading-logo-wrapper { width: 80px; }
 body:has(.fc-cart-page) .header__heading-logo { width: 80px; height: 100px; object-fit: contain; }
-.fc-cart-page { display: block; width: min(1248px, calc(100% - 192px)); margin: 0 auto; padding: 32px 0 48px; }
+.fc-cart-page { display: block; margin: 0 var(--page-gutter); padding: 32px 0 48px; }
 .fc-cart-page__heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 .fc-cart-page__title { display: flex; align-items: baseline; gap: 16px; margin: 0; font: 600 32px/1.15 var(--cart-display); }
 .fc-cart-page__count { color: var(--cart-ink-soft); font: 400 14px/1.2 var(--cart-body); white-space: nowrap; }
@@ -384,7 +384,7 @@ body:has(.fc-cart-page) .header__heading-logo { width: 80px; height: 100px; obje
 
 @media (max-width: 989px) {
   body:has(.fc-cart-page) .header-wrapper .header:not(.drawer-menu).page-width { height: 64px; min-height: 64px; padding-block: 10px; }
-  .fc-cart-page { width: calc(100% - 64px); padding-top: 28px; }
+  .fc-cart-page { padding-top: 28px; }
   .fc-cart-page__heading { margin-bottom: 24px; }
   .fc-cart-page__columns { grid-template-columns: minmax(0, 1fr) 296px; gap: 24px; }
   .fc-cart-page .fc-line__photo { flex-basis: 80px; width: 80px; height: 80px; }
@@ -407,7 +407,7 @@ body:has(.fc-cart-page) .header__heading-logo { width: 80px; height: 100px; obje
   .fc-popular .fc-popular__tiles { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 150px; margin-inline: -16px; padding-inline: 16px; overflow-x: auto; scroll-padding-inline: 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .fc-popular__tiles > li { scroll-snap-align: start; }
   .fc-popular__image { height: 112px; }
-  .fc-cart-page { width: auto; margin: 0 16px; padding: 24px 0 0; }
+  .fc-cart-page { padding: 24px 0 0; }
   .fc-cart-page[data-cart-state='empty'] { padding-bottom: 48px; }
   .fc-cart-page__heading { flex-direction: column; align-items: flex-start; gap: 16px; }
   .fc-cart-page__title { font-size: 28px; }
