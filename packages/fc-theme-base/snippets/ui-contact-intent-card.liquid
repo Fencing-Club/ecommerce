@@ -14,11 +14,11 @@
   data-contact-topic="{{ topic | escape }}"
   {% if block %}{{ block.shopify_attributes }}{% endif %}
 >
-  {%- render 'fc-icon', icon: icon, size: 24 -%}
+  {%- render 'ui-icon', icon: icon, size: 24 -%}
   <strong>{{ title | escape }}</strong>
   <span class="ui-contact-intent-card__description">{{ description | escape }}</span>
   <span class="ui-contact-intent-card__action">
     Go
-    {%- render 'fc-icon', icon: 'arrow-right', size: 14 -%}
+    {%- render 'ui-icon', icon: 'arrow-right', size: 14 -%}
   </span>
 </a>

@@ -19,7 +19,7 @@
         {%- assign cart_title = 'sections.cart.title' | t -%}
         <h2 class="fc-flyout__title" id="CartDrawer-Title">{%- render 'ui-link', label: cart_title, url: routes.cart_url, class: 'fc-flyout__title-link' -%}<span class="fc-flyout__count" data-cart-region="count">{{ 'sections.header.cart_count' | t: count: cart.item_count }}</span></h2>
         <div class="fc-flyout__actions">
-          <button class="drawer__close fc-icon-button" type="button" aria-label="{{ 'sections.cart.close' | t }}">{% render 'fc-icon', icon: 'x', size: 20 %}</button>
+          <button class="drawer__close fc-icon-button" type="button" aria-label="{{ 'sections.cart.close' | t }}">{% render 'ui-icon', icon: 'x', size: 20 %}</button>
         </div>
       </header>
       <cart-drawer-items class="fc-flyout__content" view-event-payload="{{ cart | standard_event_data: 'view', context: 'dialog' | escape }}" view-event-trigger="manual">

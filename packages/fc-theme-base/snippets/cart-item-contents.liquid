@@ -5,11 +5,11 @@
 {% enddoc %}
 {%- if item.item_components.size > 0 -%}
   <details class="fc-line__contents" id="CartContents-{{ context }}-{{ item.key | replace: ':', '-' }}">
-    <summary>{{ 'sections.cart.included_items' | t: count: item.item_components.size }}{% render 'fc-icon', icon: 'chevron-down', size: 16 %}</summary>
+    <summary>{{ 'sections.cart.included_items' | t: count: item.item_components.size }}{% render 'ui-icon', icon: 'chevron-down', size: 16 %}</summary>
     <ul class="fc-kit" role="list">
       {%- for component in item.item_components -%}
         <li>
-          {% render 'fc-icon', icon: 'check', size: 14 %}
+          {% render 'ui-icon', icon: 'check', size: 14 %}
           <span class="fc-kit__name">{% if component.quantity > 1 %}{{ component.quantity }} &times; {% endif %}{{ component.product.title | escape }}</span>
           {%- unless component.product.has_only_default_variant -%}<span class="fc-kit__spec">{{ component.variant.title | escape }}</span>{%- endunless -%}
         </li>

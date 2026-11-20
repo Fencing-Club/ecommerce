@@ -319,7 +319,7 @@ describe('component accessibility contracts', () => {
     expect(select.value).toBe('advice');
     expect(select.required).toBe(true);
     expect(select.options[1].disabled).toBe(true);
-    expect(container.querySelector('.fc-icon').getAttribute('aria-hidden')).toBe('true');
+    expect(container.querySelector('.ui-icon').getAttribute('aria-hidden')).toBe('true');
   });
   it('keeps the price controller bounds and form values on shared text fields', async () => {
     const engine = new Liquid({ root: resolve('snippets'), extname: '.liquid' });

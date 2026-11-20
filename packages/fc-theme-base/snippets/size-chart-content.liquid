@@ -73,7 +73,7 @@
     </div>
     <p class="size-chart__empty" data-chart-empty role="status" hidden>No sizes selected</p>
     <details class="size-chart__help" data-chart-help open>
-      <summary><h2>How to measure</h2>{% render 'fc-icon', icon: 'chevron-down', size: 18 %}</summary>
+      <summary><h2>How to measure</h2>{% render 'ui-icon', icon: 'chevron-down', size: 18 %}</summary>
       <div class="size-chart__guide">
         {%- if guide.image.value != blank -%}
           {{ guide.image.value | image_url: width: 560 | image_tag: widths: '280, 560', sizes: '280px', alt: guide.alt_text.value, loading: 'lazy', class: 'size-chart__illustration' }}

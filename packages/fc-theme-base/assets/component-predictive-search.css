@@ -126,7 +126,7 @@ details-modal.header__search > details[open]::details-content { content-visibili
   color: var(--ps-ink);
 }
 
-.search-panel__icon .fc-icon {
+.search-panel__icon .ui-icon {
   width: 2rem;
   height: 2rem;
 }
@@ -372,7 +372,7 @@ predictive-search[idle] .predictive-search--search-template[data-predictive-sear
     padding-bottom: 2.2rem;
   }
 
-  .search-panel__icon .fc-icon {
+  .search-panel__icon .ui-icon {
     width: 2.2rem;
     height: 2.2rem;
   }

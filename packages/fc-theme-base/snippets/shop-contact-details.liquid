@@ -46,25 +46,25 @@
 <ul class="shop-contact-details{% if class %} {{ class }}{% endif %}" role="list">
   {%- if show_address and contact_address != blank -%}
     <li class="shop-contact-details__item">
-      <span class="shop-contact-details__icon">{%- render 'fc-icon', icon: 'map-pin', size: 16 -%}</span>
+      <span class="shop-contact-details__icon">{%- render 'ui-icon', icon: 'map-pin', size: 16 -%}</span>
       <address><span class="visually-hidden">Address </span>{{ contact_address }}</address>
     </li>
   {%- endif -%}
   {%- if contact_email != blank -%}
     <li class="shop-contact-details__item">
-      <span class="shop-contact-details__icon">{%- render 'fc-icon', icon: 'mail', size: 16 -%}</span>
+      <span class="shop-contact-details__icon">{%- render 'ui-icon', icon: 'mail', size: 16 -%}</span>
       <a href="mailto:{{ contact_email | escape }}"><span class="visually-hidden">Email </span>{{ contact_email | escape }}</a>
     </li>
   {%- endif -%}
   {%- if contact_phone != blank -%}
     <li class="shop-contact-details__item">
-      <span class="shop-contact-details__icon">{%- render 'fc-icon', icon: 'phone', size: 16 -%}</span>
+      <span class="shop-contact-details__icon">{%- render 'ui-icon', icon: 'phone', size: 16 -%}</span>
       <a href="tel:{{ contact_phone_e164 | escape }}"><span class="visually-hidden">Phone </span>{{ contact_phone | escape }}</a>
     </li>
   {%- endif -%}
   {%- if settings.business_hours != blank -%}
     <li class="shop-contact-details__item">
-      <span class="shop-contact-details__icon">{%- render 'fc-icon', icon: 'clock-3', size: 16 -%}</span>
+      <span class="shop-contact-details__icon">{%- render 'ui-icon', icon: 'clock-3', size: 16 -%}</span>
       <span><span class="visually-hidden">Hours </span>{{ settings.business_hours | escape }}{% if shop_timezone != blank %} {{ shop_timezone | escape }}{% endif %}</span>
     </li>
   {%- endif -%}

@@ -23,7 +23,7 @@
           <h2 class="ui-drawer__title" id="{{ id | escape }}-Title">{{ title | escape }}</h2>
           {% if description != blank %}<p class="ui-drawer__description">{{ description | escape }}</p>{% endif %}
         </div>
-        <button class="ui-drawer__close" type="button" data-drawer-close aria-label="{{ close_label | escape }}">{% render 'fc-icon', icon: 'x', size: 20 %}</button>
+        <button class="ui-drawer__close" type="button" data-drawer-close aria-label="{{ close_label | escape }}">{% render 'ui-icon', icon: 'x', size: 20 %}</button>
       </header>
       <div class="ui-drawer__body">{{ content }}</div>
       {% if footer != blank %}<footer class="ui-drawer__footer">{{ footer }}</footer>{% endif %}

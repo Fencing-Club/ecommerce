@@ -90,10 +90,10 @@
   box-shadow: inset 0 0 0 0.1rem var(--foreground);
 }
 
-.ui-contact-intent-card__action .fc-icon { transition: transform 160ms ease; }
+.ui-contact-intent-card__action .ui-icon { transition: transform 160ms ease; }
 @media (hover: hover) {
   .ui-contact-intent-card:hover { background: var(--accent); }
-  .ui-contact-intent-card:hover .ui-contact-intent-card__action .fc-icon { transform: translateX(2px); }
+  .ui-contact-intent-card:hover .ui-contact-intent-card__action .ui-icon { transform: translateX(2px); }
 }
 .ui-contact-intent-card:active { transform: translateY(1px); }
 .ui-contact-intent-card:focus-visible {
@@ -102,7 +102,7 @@
   box-shadow: 0 0 0 3px var(--background), inset 0 0 0 1px var(--foreground);
 }
 @media (prefers-reduced-motion: reduce) {
-  .ui-contact-intent-card, .ui-contact-intent-card__action .fc-icon { transition: none; transform: none !important; }
+  .ui-contact-intent-card, .ui-contact-intent-card__action .ui-icon { transition: none; transform: none !important; }
 }
 
 .contact-page__details {
@@ -294,4 +294,4 @@
   }
 }
 
-.ui-contact-intent-card > .fc-icon { flex-shrink: 0; }
+.ui-contact-intent-card > .ui-icon { flex-shrink: 0; }

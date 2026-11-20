@@ -10,7 +10,7 @@
 <cart-items class="fc-cart-page" id="main-cart" data-id="{{ section.id }}" data-cart-state="{{ cart_state }}" view-event-payload="{{ cart | standard_event_data: 'view', context: 'page' | escape }}">
   <header class="fc-cart-page__heading">
     <h1 class="fc-cart-page__title">{{ 'sections.cart.title' | t }}<span class="fc-cart-page__count" data-cart-region="count">{{ 'sections.header.cart_count' | t: count: cart.item_count }}</span></h1>
-    <a class="fc-cart-page__back" href="{{ routes.all_products_collection_url }}">{% render 'fc-icon', icon: 'arrow-left', size: 16 %}{{ 'general.continue_shopping' | t }}</a>
+    <a class="fc-cart-page__back" href="{{ routes.all_products_collection_url }}">{% render 'ui-icon', icon: 'arrow-left', size: 16 %}{{ 'general.continue_shopping' | t }}</a>
   </header>
   <div class="fc-cart-page__ready">
     <form action="{{ routes.cart_url }}" class="fc-cart-page__columns" method="post" id="cart" novalidate>

@@ -50,7 +50,7 @@
     <img src="/assets/fencing-club-logo.png" alt="Fencing Club" width="40" height="48">
     <div><h1>Component lab</h1><span>Local fixtures</span></div>
     <label class="lab-motion"><input type="checkbox" id="reduce-motion"> Reduce motion</label>
-    <button type="button" id="reset-lab" title="Reset examples" aria-label="Reset examples">{% render 'fc-icon', icon: 'rotate-ccw', size: 20 %}</button>
+    <button type="button" id="reset-lab" title="Reset examples" aria-label="Reset examples">{% render 'ui-icon', icon: 'rotate-ccw', size: 20 %}</button>
   </header>
   <nav class="lab-nav" aria-label="Component sections"><a href="#commands">Commands</a><a href="#selection">Selection</a><a href="#navigation">Navigation</a><a href="#browsing">Filters and sorting</a><a href="#search-components">Search</a><a href="#announcements">Announcements</a><a href="#localization">Language and currency</a><a href="#forms">Forms</a><a href="#product-details">Product details</a><a href="/lab/cart">Cart</a><a href="#disclosures">Disclosures</a><a href="#menu">Mega menu</a><a href="#account">Account menu</a><a href="#cards">Cards</a><a href="#sections">Sections</a><a href="#privacy">Privacy</a><a href="#coverage">Coverage</a></nav>
   <main id="lab-main" tabindex="-1">
@@ -59,7 +59,7 @@
         {% render 'ui-button', label: 'Add to cart', variant: 'primary', action: 'simulate-save', icon: 'arrow-right' %}
         {% render 'ui-button', label: 'Continue shopping', variant: 'secondary', action: 'select-example' %}
         {% render 'ui-button', label: 'Cancel', variant: 'ghost', action: 'select-example' %}
-        {% render 'ui-button', aria_label: 'Close example', variant: 'icon', icon: 'close', action: 'select-example' %}
+        {% render 'ui-button', aria_label: 'Close example', variant: 'icon', icon: 'x', action: 'select-example' %}
         {% render 'ui-link', label: 'View all products', url: '#selection', icon: 'arrow-right' %}
       </div>
       <div class="specimen lab-row">

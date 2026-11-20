@@ -5,13 +5,13 @@
 {% enddoc %}
 <div class="fc-message" data-cart-message="{{ kind }}">
   <span class="fc-message__icon">
-    {%- if kind == 'failed' -%}{% render 'fc-icon', icon: 'cloud-alert', size: 28 %}{%- else -%}{% render 'fc-icon', icon: 'shopping-bag', size: 28 %}{%- endif -%}
+    {%- if kind == 'failed' -%}{% render 'ui-icon', icon: 'cloud-alert', size: 28 %}{%- else -%}{% render 'ui-icon', icon: 'shopping-bag', size: 28 %}{%- endif -%}
   </span>
   {%- if kind == 'failed' -%}
     <h2 class="fc-message__title">{{ 'sections.cart.load_failed' | t }}</h2>
     <p class="fc-message__body">{{ 'sections.cart.load_failed_body' | t }}</p>
     <div class="fc-message__actions">
-      <button type="button" class="fc-button fc-button--primary fc-button--large" data-cart-retry>{{ 'sections.cart.try_again' | t }}{% render 'fc-icon', icon: 'rotate-ccw', size: 16 %}</button>
+      <button type="button" class="fc-button fc-button--primary fc-button--large" data-cart-retry>{{ 'sections.cart.try_again' | t }}{% render 'ui-icon', icon: 'rotate-ccw', size: 16 %}</button>
       {%- if context == 'drawer' -%}
         <a class="fc-button fc-button--outline fc-button--large" href="{{ routes.cart_url }}">{{ 'sections.cart.open_cart_page' | t }}</a>
       {%- else -%}
@@ -23,7 +23,7 @@
     <p class="fc-message__body">{{ 'sections.cart.empty_body' | t }}</p>
     <div class="fc-message__actions">
       {%- if settings.cart_empty_link != blank and settings.cart_empty_link_label != blank -%}
-        <a class="fc-button fc-button--primary fc-button--large" href="{{ settings.cart_empty_link }}">{{ settings.cart_empty_link_label | escape }}{% render 'fc-icon', icon: 'arrow-right', size: 16 %}</a>
+        <a class="fc-button fc-button--primary fc-button--large" href="{{ settings.cart_empty_link }}">{{ settings.cart_empty_link_label | escape }}{% render 'ui-icon', icon: 'arrow-right', size: 16 %}</a>
       {%- endif -%}
       <a class="fc-button fc-button--outline fc-button--large" href="{{ routes.all_products_collection_url }}">{{ 'general.continue_shopping' | t }}</a>
     </div>

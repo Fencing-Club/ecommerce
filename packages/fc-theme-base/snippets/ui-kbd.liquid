@@ -4,7 +4,7 @@
 
   Accepts:
   - label: {String} key name, e.g. "Esc"
-  - icons: {String} comma-separated fc-icon names, used instead of a label for arrow keys
+  - icons: {String} comma-separated ui-icon names, used instead of a label for arrow keys
   - class: {String} extra classes
   - decorative: {Boolean} true to hide the cap from assistive tech
 
@@ -21,7 +21,7 @@
   {%- if icons != blank -%}
     {%- assign icon_names = icons | split: ',' -%}
     {%- for icon_name in icon_names -%}
-      {%- render 'fc-icon', icon: icon_name, size: 12 -%}
+      {%- render 'ui-icon', icon: icon_name, size: 12 -%}
     {%- endfor -%}
   {%- else -%}
     <span class="ui-kbd__label">{{ label | escape }}</span>

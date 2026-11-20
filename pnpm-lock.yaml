@@ -869,6 +869,9 @@ importers:
       liquidjs:
         specifier: ^10.30.0
         version: 10.30.0
+      lucide-static:
+        specifier: ^1.61.0
+        version: 1.61.0
       playwright:
         specifier: 1.64.1
         version: 1.64.1
@@ -7588,6 +7591,9 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  lucide-static@1.61.0:
+    resolution: {integrity: sha512-yLAiQB3MWUJEstsEDAwenSA3m7vr1tdLvgnC16Q/XMxRRma0DWwMs8M2bWlvgShrIs1m2mWMJ+0AiahqQO4GrA==}
 
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
@@ -16171,6 +16177,8 @@ snapshots:
       react: 19.2.7
     optionalDependencies:
       '@types/react': 19.3.0
+
+  lucide-static@1.61.0: {}
 
   lz-string@1.5.0: {}
 

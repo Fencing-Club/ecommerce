@@ -31,7 +31,7 @@
           <div class="fc-home__trust">
             {%- for block in section.blocks -%}
               <div class="fc-home__trust-item" {{ block.shopify_attributes }}>
-                {%- render 'fc-icon', icon: block.settings.icon, size: 20 -%}
+                {%- render 'ui-icon', icon: block.settings.icon, size: 20 -%}
                 <span class="fc-home__trust-text">
                   <span class="fc-home__trust-label">{{ block.settings.label | escape }}</span>
                   <span class="fc-home__trust-detail">{{ block.settings.detail | escape }}</span>

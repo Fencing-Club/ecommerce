@@ -16,7 +16,7 @@
   {%- assign drawer_title = 'Size chart: ' | append: chart.title.value -%}
   {%- capture trigger -%}
     <a class="size-chart__trigger" href="{{ chart.system.url }}" data-drawer-open aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ drawer_id }}">
-      {{ block.settings.label | default: 'Size chart' | escape }}{% render 'fc-icon', icon: 'arrow-right', size: 16 %}
+      {{ block.settings.label | default: 'Size chart' | escape }}{% render 'ui-icon', icon: 'arrow-right', size: 16 %}
     </a>
   {%- endcapture -%}
   {%- capture content -%}
