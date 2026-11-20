@@ -1,6 +1,6 @@
 import { expect, waitFor } from 'storybook/test';
-import { sectionHeader } from '../fixtures.js';
-import { loadScript, section } from '../liquid.js';
+import { sectionHeader } from '../../fixtures.js';
+import { loadScript, section } from '../../liquid.js';
 
 const quote = (id, name, role, rating = 5) => ({
   id,
@@ -17,7 +17,7 @@ const quotes = [
 
 /** `sections/testimonials.liquid`: customer quotes in a carousel, three at a time on desktop. Each is a `_testimonial` block. */
 export default {
-  title: 'Sections/Testimonials',
+  title: 'Sections/Home/Testimonials',
   parameters: { layout: 'fullscreen' },
   loaders: [loadScript('fc-carousel.js')],
   render: section('testimonials', { staticBlocks: [sectionHeader('Testimonials', 'Loved by the fencing community')], blocks: quotes }),

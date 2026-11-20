@@ -1,10 +1,10 @@
 import { expect } from 'storybook/test';
-import { brandLogos, sectionHeader } from '../fixtures.js';
-import { section } from '../liquid.js';
+import { brandLogos, sectionHeader } from '../../fixtures.js';
+import { section } from '../../liquid.js';
 
 /** `sections/brand-logos.liquid`: the brands the shop carries. Each logo is a `_logo` block. */
 export default {
-  title: 'Sections/Brand logos',
+  title: 'Sections/Home/Brand logos',
   parameters: { layout: 'fullscreen' },
   render: section('brand-logos', {
     staticBlocks: [sectionHeader('Authorized seller', "Official dealer for the sport's best brands")],

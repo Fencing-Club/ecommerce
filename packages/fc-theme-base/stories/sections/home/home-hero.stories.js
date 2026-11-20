@@ -1,6 +1,6 @@
 import { expect, waitFor } from 'storybook/test';
-import { image } from '../fixtures.js';
-import { loadScript, section } from '../liquid.js';
+import { image } from '../../fixtures.js';
+import { loadScript, section } from '../../liquid.js';
 
 const slide = (id, file, heading, tag) => ({
   id,
@@ -29,7 +29,7 @@ const slides = [
 
 /** `sections/home-hero.liquid`: full-bleed slides that fade one to the next. Each slide is a `_hero-slide` block. */
 export default {
-  title: 'Sections/Hero',
+  title: 'Sections/Home/Hero',
   args: { autoplay: false },
   loaders: [loadScript('fc-carousel.js')],
   parameters: { layout: 'fullscreen' },

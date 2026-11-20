@@ -1,6 +1,6 @@
 import { expect } from 'storybook/test';
-import { image, sectionHeader } from '../fixtures.js';
-import { section } from '../liquid.js';
+import { image, sectionHeader } from '../../fixtures.js';
+import { section } from '../../liquid.js';
 
 const category = (id, title, file, count) => ({
   id,
@@ -10,7 +10,7 @@ const category = (id, title, file, count) => ({
 
 /** `sections/category-grid.liquid`: collections to shop by. Each card is a `_category-card` block. */
 export default {
-  title: 'Sections/Category grid',
+  title: 'Sections/Home/Category grid',
   parameters: { layout: 'fullscreen' },
   render: section('category-grid', {
     staticBlocks: [sectionHeader('Browse the range', 'Shop by category')],

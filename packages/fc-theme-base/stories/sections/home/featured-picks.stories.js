@@ -1,6 +1,6 @@
 import { expect } from 'storybook/test';
-import { image, sectionHeader } from '../fixtures.js';
-import { section } from '../liquid.js';
+import { image, sectionHeader } from '../../fixtures.js';
+import { section } from '../../liquid.js';
 
 const pick = (id, title, file, links) => ({
   id,
@@ -11,7 +11,7 @@ const pick = (id, title, file, links) => ({
 
 /** `sections/featured-picks.liquid`: three pick cards, two stacked beside one tall. Each card is a `_pick-card` block. */
 export default {
-  title: 'Sections/Featured picks',
+  title: 'Sections/Home/Featured picks',
   parameters: { layout: 'fullscreen' },
   render: section('featured-picks', {
     staticBlocks: [sectionHeader('Gear up your way', 'Featured picks')],
