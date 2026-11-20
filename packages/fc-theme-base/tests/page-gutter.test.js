@@ -18,7 +18,7 @@ const sources = [
   ...readdirSync(join(root, 'assets'))
     .filter(name => name.endsWith('.css'))
     .map(name => [`assets/${name}`, readFileSync(join(root, 'assets', name), 'utf8')]),
-  ...['sections', 'snippets', 'layout'].flatMap(folder =>
+  ...['blocks', 'sections', 'snippets', 'layout'].flatMap(folder =>
     readdirSync(join(root, folder))
       .filter(name => name.endsWith('.liquid'))
       .map(name => [`${folder}/${name}`, liquidStyles(readFileSync(join(root, folder, name), 'utf8'))]),

@@ -1702,5 +1702,128 @@
         }
       }
     }
+  },
+  "blocks": {
+    "all": {
+      "size": {
+        "label": "Size",
+        "options": {
+          "sm": "Small",
+          "md": "Medium",
+          "lg": "Large",
+          "xl": "Extra large"
+        }
+      },
+      "alignment": {
+        "label": "Alignment"
+      }
+    },
+    "heading": {
+      "name": "Heading",
+      "settings": {
+        "heading": {
+          "label": "Heading",
+          "default": "Heading"
+        },
+        "tag": {
+          "label": "Level",
+          "info": "Use one level 1 heading per page, and go down one level at a time.",
+          "options": {
+            "h1": "Level 1",
+            "h2": "Level 2",
+            "h3": "Level 3",
+            "h4": "Level 4"
+          }
+        }
+      }
+    },
+    "text": {
+      "name": "Text",
+      "settings": {
+        "text": {
+          "label": "Text",
+          "default": "<p>Share a detail about your products or your club.</p>"
+        },
+        "style": {
+          "label": "Style",
+          "options": {
+            "body": "Body",
+            "subtle": "Subtle",
+            "eyebrow": "Eyebrow"
+          }
+        }
+      }
+    },
+    "button": {
+      "name": "Button",
+      "settings": {
+        "label": {
+          "label": "Label",
+          "default": "Shop now"
+        },
+        "link": {
+          "label": "Link"
+        },
+        "style": {
+          "label": "Style",
+          "options": {
+            "primary": "Primary",
+            "secondary": "Secondary",
+            "outline": "Outline"
+          }
+        },
+        "show_arrow": {
+          "label": "Show arrow"
+        }
+      }
+    },
+    "image": {
+      "name": "Image",
+      "settings": {
+        "image": {
+          "label": "Image"
+        },
+        "aspect_ratio": {
+          "label": "Aspect ratio",
+          "options": {
+            "adapt": "Fit image",
+            "square": "Square",
+            "portrait": "Portrait",
+            "landscape": "Landscape",
+            "wide": "Wide"
+          }
+        }
+      }
+    },
+    "group": {
+      "name": "Group",
+      "settings": {
+        "direction": {
+          "label": "Direction",
+          "options": {
+            "column": "Column",
+            "row": "Row"
+          }
+        },
+        "gap": {
+          "label": "Spacing"
+        },
+        "align": {
+          "label": "Cross-axis alignment",
+          "info": "Across the direction: horizontal in a column, vertical in a row."
+        },
+        "justify": {
+          "label": "Main-axis alignment",
+          "info": "Along the direction: vertical in a column, horizontal in a row."
+        },
+        "position": {
+          "start": "Start",
+          "center": "Center",
+          "end": "End",
+          "stretch": "Stretch",
+          "between": "Space between"
+        }
+      }
+    }
   }
 }

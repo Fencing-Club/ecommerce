@@ -53,6 +53,18 @@ export const snippet =
     stylesheets.map((file) => `<link rel="stylesheet" href="${assetUrl(file)}">`).join('') + renderLiquid(name, args);
 
 /**
+ * A story `render` function for a theme block: its args become the block's settings, over its schema defaults. The
+ * block renders as a section's `{% content_for 'blocks' %}` would, with `blocks` as the blocks nested inside it.
+ *
+ * @param {string} type The block's file name in `blocks/`, without `.liquid`.
+ * @param {{ blocks?: object[] }} [options] Nested blocks, each `{ id, type, settings, blocks }`.
+ */
+export const block =
+  (type, { blocks = [] } = {}) =>
+  (settings) =>
+    engine.parseAndRenderSync("{% content_for 'blocks' %}", { section: { id: 'story', blocks: [{ id: type, type, settings, blocks }] } }, { globals });
+
+/**
  * A story loader that runs a theme script once, as the section that renders a snippet would load it. Markup a story
  * renders can't run its own script tags.
  *

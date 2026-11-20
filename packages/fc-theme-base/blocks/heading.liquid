@@ -1,0 +1,77 @@
+{%- liquid
+  assign tag = block.settings.tag | default: 'h2'
+  assign classes = 'block-heading block-heading--' | append: block.settings.size | append: ' block-heading--' | append: block.settings.alignment
+-%}
+{%- if block.settings.heading != blank -%}
+  <{{ tag }} class="{{ classes }}" {{ block.shopify_attributes }}>
+    {{- block.settings.heading | escape -}}
+  </{{ tag }}>
+{%- endif -%}
+
+{% stylesheet %}
+  .block-heading {
+    margin: 0;
+    font-family: var(--font-heading-family);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+    color: var(--foreground);
+    overflow-wrap: anywhere;
+  }
+  .block-heading--sm { font-size: var(--text-2xl); }
+  .block-heading--md { font-size: var(--text-3xl); }
+  .block-heading--lg,
+  .block-heading--xl { font-size: var(--text-4xl); }
+  @media (min-width: 990px) {
+    .block-heading--xl { font-size: var(--text-5xl); }
+  }
+  .block-heading--left { text-align: start; }
+  .block-heading--center { text-align: center; }
+  .block-heading--right { text-align: end; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.heading.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:blocks.heading.settings.heading.label",
+      "default": "t:blocks.heading.settings.heading.default"
+    },
+    {
+      "type": "select",
+      "id": "tag",
+      "label": "t:blocks.heading.settings.tag.label",
+      "info": "t:blocks.heading.settings.tag.info",
+      "default": "h2",
+      "options": [
+        { "value": "h1", "label": "t:blocks.heading.settings.tag.options.h1" },
+        { "value": "h2", "label": "t:blocks.heading.settings.tag.options.h2" },
+        { "value": "h3", "label": "t:blocks.heading.settings.tag.options.h3" },
+        { "value": "h4", "label": "t:blocks.heading.settings.tag.options.h4" }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "size",
+      "label": "t:blocks.all.size.label",
+      "default": "lg",
+      "options": [
+        { "value": "sm", "label": "t:blocks.all.size.options.sm" },
+        { "value": "md", "label": "t:blocks.all.size.options.md" },
+        { "value": "lg", "label": "t:blocks.all.size.options.lg" },
+        { "value": "xl", "label": "t:blocks.all.size.options.xl" }
+      ]
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "t:blocks.all.alignment.label",
+      "default": "left"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.heading.name" }]
+}
+{% endschema %}

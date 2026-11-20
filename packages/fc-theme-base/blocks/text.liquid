@@ -1,0 +1,75 @@
+{%- liquid
+  assign classes = 'block-text block-text--' | append: block.settings.style | append: ' block-text--' | append: block.settings.alignment
+-%}
+{%- if block.settings.text != blank -%}
+  <div class="{{ classes }}" {{ block.shopify_attributes }}>
+    {{- block.settings.text -}}
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .block-text {
+    font-family: var(--font-body-family);
+    overflow-wrap: anywhere;
+  }
+  .block-text > * { margin: 0; }
+  .block-text > * + * { margin-top: var(--spacing-3); }
+  .block-text a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: var(--spacing-0-5);
+  }
+  .block-text--body {
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
+    color: var(--foreground);
+  }
+  .block-text--subtle {
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--muted-foreground);
+  }
+  .block-text--eyebrow {
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .block-text--left { text-align: start; }
+  .block-text--center { text-align: center; }
+  .block-text--right { text-align: end; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.text.name",
+  "settings": [
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:blocks.text.settings.text.label",
+      "default": "t:blocks.text.settings.text.default"
+    },
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:blocks.text.settings.style.label",
+      "default": "body",
+      "options": [
+        { "value": "body", "label": "t:blocks.text.settings.style.options.body" },
+        { "value": "subtle", "label": "t:blocks.text.settings.style.options.subtle" },
+        { "value": "eyebrow", "label": "t:blocks.text.settings.style.options.eyebrow" }
+      ]
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "t:blocks.all.alignment.label",
+      "default": "left"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.text.name" }]
+}
+{% endschema %}

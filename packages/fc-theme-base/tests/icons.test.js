@@ -12,7 +12,7 @@ const read = (folder) =>
 // Icon names the theme passes literally: render arguments, assigns, the Why us section's icon choices and template
 // settings. An unknown name renders an empty icon instead of failing, so this is the only check for it.
 function namesInUse() {
-  const sources = [...read('sections'), ...read('snippets'), ...read('templates')].join('\n');
+  const sources = [...read('blocks'), ...read('sections'), ...read('snippets'), ...read('templates')].join('\n');
   const patterns = [
     /\bicon(?:_name)?: '([a-z0-9-]+)'/g,
     /assign icon(?:_name)? = '([a-z0-9-]+)'/g,
