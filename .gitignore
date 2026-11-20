@@ -44,3 +44,6 @@ crash.*.log
 
 # Per-machine junctions the skills CLI makes into .agents/skills.
 /.claude/skills/
+
+# The Fencing Club design file lives outside the repo for now; keep stray saves out of commits
+packages/fc-theme/FencingClubWebsite.pen

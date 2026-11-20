@@ -5,8 +5,9 @@ Fencing Club's Shopify Online Store theme.
 ## Layout
 
 Shopify deploys the files in `assets/`, `blocks/`, `config/`, `layout/`, `locales/`, `sections/`, `snippets/`, and
-`templates/`. The `Fencing Club/`, `images/`, and `FencingClubWebsite.pen` paths contain design source and reference
-assets. `docs/` contains theme-specific research and implementation notes.
+`templates/`. The `Fencing Club/` and `images/` paths contain design source and reference assets. The design file,
+`FencingClubWebsite.pen`, lives outside the repository for now so only one copy is ever edited. `docs/` contains
+theme-specific research and implementation notes.
 
 ## Development
 
