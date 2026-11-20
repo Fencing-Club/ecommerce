@@ -184,9 +184,6 @@
     "typography": {
       "name": "Typography",
       "settings": {
-        "type_header_font": {
-          "label": "Font"
-        },
         "heading_scale": {
           "label": "Scale"
         },
@@ -195,9 +192,6 @@
         },
         "header__2": {
           "content": "Body"
-        },
-        "type_body_font": {
-          "label": "Font"
         },
         "body_scale": {
           "label": "Scale"

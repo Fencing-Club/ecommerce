@@ -19,12 +19,7 @@ registerShopifyLiquid(engine, { locale, readAsset: (name) => icons[name] });
 engine.registerFilter('asset_url', (name) => `/theme-assets/${name}`);
 export const assetUrl = (name) => `/theme-assets/${name}`;
 
-export const settings = {
-  ...themeSettings({ schema, data }),
-  // The store's font pickers; the fonts themselves come from .storybook/preview-head.html.
-  type_body_font: { family: 'Inter', fallback_families: 'sans-serif', style: 'normal', weight: 400 },
-  type_header_font: { family: 'Archivo', fallback_families: 'sans-serif', style: 'normal', weight: 400 },
-};
+export const settings = themeSettings({ schema, data });
 
 const globals = { settings, routes: { root_url: '/', search_url: '/search', cart_url: '/cart' }, cart: { currency: { symbol: '$' } } };
 

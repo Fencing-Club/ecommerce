@@ -54,7 +54,7 @@
   border-left: 0;
   border-radius: 0;
   border-right: 0;
-  box-shadow: 0 1.8rem 4.4rem -1rem rgba(var(--color-foreground), 0.28);
+  box-shadow: var(--shadow-xl);
   left: 0;
   right: 0;
   overflow-y: auto;
@@ -598,7 +598,7 @@
 }
 
 :is(.fc-mega-tool__button, .fc-mega-card, .fc-mega-panel__option) {
-  transition: background-color var(--ui-motion-fast) var(--ui-motion-ease), color var(--ui-motion-fast) var(--ui-motion-ease), border-color var(--ui-motion-fast) var(--ui-motion-ease), transform var(--ui-motion-fast) var(--ui-motion-ease);
+  transition: background-color var(--default-transition-duration) var(--ease-out), color var(--default-transition-duration) var(--ease-out), border-color var(--default-transition-duration) var(--ease-out), transform var(--default-transition-duration) var(--ease-out);
 }
 @media (hover: hover) {
   .fc-mega-panel__option:hover { background: rgba(var(--color-foreground), 0.07); }
