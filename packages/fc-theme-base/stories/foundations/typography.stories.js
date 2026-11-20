@@ -15,24 +15,17 @@ const page = (items) => `
   </style>
   <ul class="type-list">${items}</ul>`;
 
-/** Type: Tailwind's size scale and weights. Archivo sets headings and Inter everything else, from the theme settings. */
+/** Type: Tailwind's size scale and weights. Inter sets everything, from the theme's font setting. */
 export default { title: 'Foundations/Typography' };
 
-export const Body = {
-  name: 'Sizes, Inter',
+export const Sizes = {
+  name: 'Sizes',
   render: () => page(sizes.map((size) => sample(size, '--font-body-family')).join('')),
   play: async ({ canvas }) => {
     await expect(canvas.getAllByRole('listitem')).toHaveLength(sizes.length);
   },
 };
 
-export const Headings = {
-  name: 'Sizes, Archivo',
-  render: () => page(sizes.map((size) => sample(size, '--font-heading-family')).join('')),
-  play: async ({ canvas }) => {
-    await expect(canvas.getAllByRole('listitem')).toHaveLength(sizes.length);
-  },
-};
 
 export const Weights = {
   render: () =>

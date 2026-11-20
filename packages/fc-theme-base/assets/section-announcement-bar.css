@@ -1,7 +1,7 @@
 /*
   Announcement bar — design values: 40px tall, #000000 bar, all three labels Inter 12.5/normal.
   Title 700/ls2 uppercase, message 400/ls0, link 600/ls0. Dawn's `h5` class is deliberately not
-  used on the message: it would impose the Archivo heading family, scale and 1.3 line height.
+  used on the message: it would impose the heading family, scale and 1.3 line height.
 */
 
 .announcement-bar {

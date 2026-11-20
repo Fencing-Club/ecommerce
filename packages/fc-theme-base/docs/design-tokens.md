@@ -15,8 +15,7 @@ built on, with Tailwind's values. Storybook's Foundations stories show each scal
   fields, `--radius-xl` for cards and media. Pills and swatches stay fully rounded.
 - Space with `calc(var(--spacing) * n)`, Tailwind's 4px steps, including half steps such as 1.5.
 - Size text with `--text-xs` to `--text-5xl` and their `--text-*--line-height` pairs, and weight it with
-  `--font-weight-*`. Families stay the theme settings' `--font-heading-family` (Archivo) and `--font-body-family`
-  (Inter).
+  `--font-weight-*`. One family, Inter, comes from the theme's font setting; `--font-heading-family` points at it.
 - Raise with the shadow scale: `--shadow-lg` for menus and popovers, `--shadow-xl` for panels and banners,
   `--shadow-2xl` for dialogs.
 - Animate with `--default-transition-duration` (150ms) or `--duration-enter` (200ms) and `--ease-out`.
