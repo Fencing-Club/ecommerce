@@ -29,14 +29,17 @@ section rendering or store requests. Check sections on the contosocamp store bef
 
 ## Writing stories
 
-- Stories live in `stories/`, grouped as `elements/`, `inputs/` and `components/`, plus `layout/` for checks that
-  render whole templates, such as the [page gutter](shopify-page-layout.md#the-checks). They can't sit beside the Liquid,
-  because Shopify only accepts Liquid and JSON in the theme's folders.
+- Stories live in `stories/`, grouped as `foundations/` (the design tokens), `elements/`, `inputs/` and `components/`,
+  plus `layout/` for checks that render whole templates, such as the [page gutter](shopify-page-layout.md#the-checks).
+  They can't sit beside the Liquid, because Shopify only accepts Liquid and JSON in the theme's folders.
 - Name the story file after the component (`button.stories.js` for `ui-button.liquid`) and title it by group
   (`Elements/Button`). Give each state its own story.
 - Every story has a `play` function that checks behavior, text, roles and attributes, never colors. Each story's
   accessibility check runs too, and a violation fails the test.
 - Shared fixtures (products, articles) live in `stories/fixtures.js` and use the theme's own sample images.
+- A snippet that needs its section's script gets it from a `loaders: [loadScript('file.js')]` entry, because markup
+  a story renders can't run its own `<script>` tags.
+- Foundations stories paint with the live CSS variables, so a token change shows there too.
 
 ## Tests
 

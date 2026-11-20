@@ -36,14 +36,16 @@ export const Filled = {
   },
 };
 
-/** Every icon in the set, labeled with its Lucide name. */
+/** Every icon in the set, in a table with its Lucide name under it. */
 export const All = {
-  render: () =>
-    `<ul style="display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: 1.6rem; padding: 0; list-style: none">${iconNames
-      .map(
-        (icon) =>
-          `<li style="display: flex; gap: 0.8rem; align-items: center">${renderLiquid('ui-icon', { icon, size: 20 })}<code>${icon}</code></li>`,
-      )
+  render: () => `
+    <style>
+      .icon-table { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; list-style: none; }
+      .icon-table li { display: grid; justify-items: center; align-content: center; gap: calc(var(--spacing) * 2); min-height: 10rem; padding: calc(var(--spacing) * 4) calc(var(--spacing) * 2); outline: 1px solid var(--border); color: var(--foreground); }
+      .icon-table code { font-size: var(--text-xs); color: var(--muted-foreground); text-align: center; overflow-wrap: anywhere; }
+    </style>
+    <ul class="icon-table">${iconNames
+      .map((icon) => `<li>${renderLiquid('ui-icon', { icon, size: 24 })}<code>${icon}</code></li>`)
       .join('')}</ul>`,
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getAllByRole('listitem')).toHaveLength(iconNames.length);
