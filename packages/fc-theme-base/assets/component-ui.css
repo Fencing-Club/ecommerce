@@ -114,7 +114,7 @@
   gap: var(--spacing-2);
   font-family: var(--font-body-family);
   font-size: var(--text-sm);
-  line-height: 1.25;
+  line-height: var(--text-sm--line-height);
   letter-spacing: 0;
   color: var(--muted-foreground);
 }
