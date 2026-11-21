@@ -5,7 +5,6 @@
   @param {product[]} [collection_item_list] - Products visible in the current collection page.
   @param {number} [collection_item_count] - Total products in the collection.
   @param {number} [collection_position_offset] - Zero-based offset for absolute list positions.
-  @param {block[]} [faq_blocks] - FAQ item blocks visible in the FAQ page section.
 {% enddoc %}
 
 {% comment %}
@@ -303,8 +302,6 @@
     assign webpage_type = 'AboutPage'
   elsif request.page_type == 'page' and page.handle == 'contact'
     assign webpage_type = 'ContactPage'
-  elsif request.page_type == 'page' and template.suffix == 'faq'
-    assign webpage_type = 'FAQPage'
   endif
 -%}
 
@@ -462,28 +459,7 @@
           {%- unless request.page_type == 'index' -%},
             "breadcrumb": { "@id": {{ breadcrumb_id | json }} }
           {%- endunless -%}
-          {%- if faq_blocks != blank -%},
-            "mainEntity": [
-              {%- assign emitted_faq_count = 0 -%}
-              {%- for faq_block in faq_blocks -%}
-                {%- if faq_block.type == 'faq_item'
-                  and faq_block.settings.question != blank
-                  and faq_block.settings.answer != blank
-                -%}
-                  {%- if emitted_faq_count > 0 -%},{%- endif -%}
-                  {
-                    "@type": "Question",
-                    "name": {{ faq_block.settings.question | json }},
-                    "acceptedAnswer": {
-                      "@type": "Answer",
-                      "text": {{ faq_block.settings.answer | strip_html | json }}
-                    }
-                  }
-                  {%- assign emitted_faq_count = emitted_faq_count | plus: 1 -%}
-                {%- endif -%}
-              {%- endfor -%}
-            ]
-          {%- elsif request.page_type == 'product' -%},
+          {%- if request.page_type == 'product' -%},
             "mainEntity": { "@id": {{ product_schema_id | json }} }
           {%- elsif request.page_type == 'collection' and collection_item_list_enabled -%},
             "mainEntity": { "@id": {{ canonical_url | append: '#item-list' | json }} }

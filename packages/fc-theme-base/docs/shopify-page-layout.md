@@ -30,6 +30,8 @@ the footer. The rule matches the Layout section of the Tokens board in `FencingC
 - Something that bleeds to the screen edge inside a band, such as a scrolling row of pills, uses
   `margin-inline: calc(-1 * var(--gutter))` and `padding-inline: var(--gutter)`.
 - Rows inside a band add no gutter of their own.
+- A page's breadcrumbs are the **Breadcrumbs** section (`page-breadcrumbs`), the template's first section, as in the
+  Breadcrumb Section component in the Pen. It sits on the gutter with 16px above and below, 18px from 990px.
 - Icons count as content. When a control's tap target is wider than its icon, as with the menu button or the
   announcement arrows, the icon sits on the gutter and the tap target reaches past it.
 
