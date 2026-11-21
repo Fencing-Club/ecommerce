@@ -3,11 +3,6 @@
   color: var(--foreground);
 }
 
-.faq-page__breadcrumb {
-  min-height: 5.2rem;
-  padding: 1.8rem var(--page-gutter);
-}
-
 .faq-page__hero {
   display: flex;
   flex-direction: column;

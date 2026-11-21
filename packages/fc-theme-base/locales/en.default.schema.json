@@ -1442,6 +1442,15 @@
           "label": "Button link"
         }
       }
+    },
+    "page_breadcrumbs": {
+      "name": "Breadcrumbs",
+      "settings": {
+        "parent_page": {
+          "label": "Parent page",
+          "info": "Optional. Size chart pages use the shared directory page when empty."
+        }
+      }
     }
   },
   "blocks": {

@@ -58,7 +58,8 @@ The FAQ page's questions are `_faq-item` blocks, shown through `ui-faq-item`, an
 blocks. A topic heads the questions after it, up to the next topic, and each one adds a link to the row under the page
 heading. The section captures the rendered blocks and builds the topic links from each heading's `data-faq-topic`
 title and `id`. With structured data on, the page is a schema.org `FAQPage` in microdata and each question a
-`Question` inside it. The page heading and the contact card stay section settings.
+`Question` inside it. The page heading and the contact card stay section settings. The breadcrumbs above it are the
+shared Breadcrumbs section, the template's first section.
 
 ## Rules
 

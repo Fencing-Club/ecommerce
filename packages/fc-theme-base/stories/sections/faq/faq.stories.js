@@ -21,7 +21,7 @@ const blocks = [
   question('size', 'Which size should I choose?', 'Measure yourself and compare with the size chart on the product page.'),
 ];
 
-const variables = { page: { title: 'FAQ' }, routes: { root_url: '/' }, settings: { ...settings, structured_data_enabled: false } };
+const variables = { page: { title: 'FAQ' }, settings: { ...settings, structured_data_enabled: false } };
 
 /**
  * `sections/faq.liquid`: the FAQ page. `_faq-topic` blocks head the questions after them and fill the topic links;
@@ -31,6 +31,7 @@ export default {
   title: 'Sections/FAQ/FAQ',
   parameters: { layout: 'fullscreen' },
   render: section('faq', { blocks, variables }),
+  args: { contact_url: '/pages/contact' },
 };
 
 export const Default = {
@@ -52,6 +53,6 @@ export const Default = {
     await expect(canvas.getByText(/Orders placed by 1pm/)).toBeVisible();
 
     await expect(canvas.getByRole('heading', { name: 'Questions?' })).toBeVisible();
-    await expect(canvas.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+    await expect(canvas.getByRole('link', { name: 'Contact us' })).toHaveAttribute('href', '/pages/contact');
   },
 };

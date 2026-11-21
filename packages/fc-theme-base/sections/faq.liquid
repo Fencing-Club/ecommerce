@@ -14,11 +14,6 @@
     itemscope itemtype="https://schema.org/FAQPage"
   {% endif %}
 >
-  <div class="faq-page__breadcrumb">
-    {%- assign faq_home_label = 'general.breadcrumb_home' | t -%}
-    {%- render 'ui-breadcrumbs', root_label: faq_home_label, root_url: routes.root_url, current_label: page.title -%}
-  </div>
-
   <header class="faq-page__hero">
     <p class="faq-page__kicker">{{ section.settings.kicker | escape }}</p>
     <h1>{{ section.settings.heading | default: page.title | escape }}</h1>
