@@ -1437,9 +1437,6 @@
         },
         "contact_label": {
           "label": "Button label"
-        },
-        "contact_url": {
-          "label": "Button link"
         }
       }
     },

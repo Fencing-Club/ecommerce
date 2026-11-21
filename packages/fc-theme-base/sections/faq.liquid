@@ -31,12 +31,11 @@
   </div>
 
   <div class="faq-page__contact">
-    {%- assign faq_contact_url = section.settings.contact_url | default: pages.contact.url -%}
     {%- render 'ui-support-band',
       heading: section.settings.contact_heading,
       text: section.settings.contact_text,
       primary_label: section.settings.contact_label,
-      primary_url: faq_contact_url
+      primary_url: pages.contact.url
     -%}
   </div>
 </div>
@@ -80,8 +79,7 @@
       "id": "contact_label",
       "label": "t:sections.faq.settings.contact_label.label",
       "default": "Contact us"
-    },
-    { "type": "url", "id": "contact_url", "label": "t:sections.faq.settings.contact_url.label" }
+    }
   ],
   "presets": [
     {
