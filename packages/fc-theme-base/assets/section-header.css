@@ -99,6 +99,8 @@
   .header-utility .localization-form__select .icon-caret {
     position: static;
     margin: 0;
+    /* Flex centres the caret on the label's line box, but the letters sit low in it. */
+    translate: 0 0.1rem;
   }
 
   .header-utility .localization-form__select span,
