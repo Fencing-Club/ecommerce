@@ -518,85 +518,13 @@
     },
     "footer": {
       "name": "Footer",
-      "blocks": {
-        "link_list": {
-          "name": "Menu",
-          "settings": {
-            "heading": {
-              "label": "Heading",
-              "default": "Quick links"
-            },
-            "menu": {
-              "label": "Menu"
-            }
-          }
-        },
-        "brand_information": {
-          "name": "Brand information",
-          "settings": {
-            "paragraph": {
-              "content": "Manage brand info in [theme settings](/editor?context=theme&category=brand%20information)"
-            },
-            "show_social": {
-              "label": "Social media icons",
-              "info": "[Manage social accounts](/editor?context=theme&category=social%20media)"
-            }
-          }
-        },
-        "text": {
-          "name": "Text",
-          "settings": {
-            "heading": {
-              "label": "Heading",
-              "default": "Heading"
-            },
-            "subtext": {
-              "label": "Subtext",
-              "default": "<p>Share contact information, store details, and brand content with your customers.</p>"
-            }
-          }
-        }
-      },
       "settings": {
-        "newsletter_enable": {
-          "label": "Email signup"
-        },
-        "newsletter_heading": {
-          "label": "Heading",
-          "default": "Subscribe to our emails"
-        },
-        "header__1": {
-          "content": "Email signup",
-          "info": "Signups add [customer profiles](https://help.shopify.com/manual/customers/manage-customers)"
-        },
-        "show_social": {
-          "label": "Social media icons",
-          "info": "[Manage social accounts](/editor?context=theme&category=social%20media)"
-        },
-        "enable_country_selector": {
-          "label": "Country/region selector",
-          "info": "[Manage countries/regions](/admin/settings/markets)"
-        },
-        "enable_language_selector": {
-          "label": "Language selector",
-          "info": "[Manage languages](/admin/settings/languages)"
+        "copyright_name": {
+          "label": "Copyright name",
+          "info": "Uses the store name when empty."
         },
         "payment_enable": {
           "label": "Payment method icons"
-        },
-        "show_policy": {
-          "label": "Policy links",
-          "info": "[Manage policies](/admin/settings/legal)"
-        },
-        "margin_top": {
-          "label": "Top margin"
-        },
-        "header__9": {
-          "content": "Utilities"
-        },
-        "enable_follow_on_shop": {
-          "label": "Follow on Shop",
-          "info": "Shop Pay must be enabled. [Learn more](https://help.shopify.com/manual/online-store/themes/customizing-themes/follow-on-shop)"
         }
       }
     },
@@ -606,59 +534,8 @@
         "logo_help": {
           "content": "Edit your logo in [theme settings](/editor?context=theme&category=logo)"
         },
-        "logo_position": {
-          "label": "Logo position",
-          "options__1": {
-            "label": "Middle left"
-          },
-          "options__2": {
-            "label": "Top left"
-          },
-          "options__3": {
-            "label": "Top center"
-          },
-          "options__4": {
-            "label": "Middle center"
-          }
-        },
         "menu": {
           "label": "Menu"
-        },
-        "menu_type_desktop": {
-          "label": "Menu type",
-          "options__1": {
-            "label": "Dropdown"
-          },
-          "options__2": {
-            "label": "Mega menu"
-          },
-          "options__3": {
-            "label": "Drawer"
-          }
-        },
-        "show_line_separator": {
-          "label": "Separator line"
-        },
-        "header__1": {
-          "content": "Color"
-        },
-        "menu_color_scheme": {
-          "label": "Menu color scheme"
-        },
-        "sticky_header_type": {
-          "label": "Sticky header",
-          "options__1": {
-            "label": "None"
-          },
-          "options__2": {
-            "label": "On scroll up"
-          },
-          "options__3": {
-            "label": "Always"
-          },
-          "options__4": {
-            "label": "Always, reduce logo size"
-          }
         },
         "header__utilities": {
           "content": "Utilities"
@@ -670,18 +547,6 @@
         "enable_language_selector": {
           "label": "Language selector",
           "info": "[Manage languages](/admin/settings/languages)"
-        },
-        "margin_bottom": {
-          "label": "Bottom margin"
-        },
-        "mobile_logo_position": {
-          "label": "Mobile logo position",
-          "options__1": {
-            "label": "Center"
-          },
-          "options__2": {
-            "label": "Left"
-          }
         },
         "customer_account_menu": {
           "content": "Manage customer accounts in [theme settings](/editor?context=theme&category=customer%20accounts)."
@@ -1859,6 +1724,51 @@
         },
         "disclaimer": {
           "label": "Privacy text"
+        }
+      }
+    },
+    "footer_menu": {
+      "name": "Menu",
+      "settings": {
+        "heading": {
+          "label": "Heading"
+        },
+        "menu": {
+          "label": "Menu"
+        }
+      }
+    },
+    "footer_contact": {
+      "name": "Contact",
+      "settings": {
+        "paragraph": {
+          "content": "Address, email and phone come from [store details](/admin/settings/general). Hours come from Theme settings > Store contact details."
+        },
+        "heading": {
+          "label": "Heading"
+        }
+      }
+    },
+    "footer_brand": {
+      "name": "Brand",
+      "settings": {
+        "paragraph": {
+          "content": "Manage the logo and tagline in [brand information](/editor?context=theme&category=brand%20information)"
+        },
+        "show_social": {
+          "label": "Social links",
+          "info": "[Manage social accounts](/editor?context=theme&category=social%20media)"
+        }
+      }
+    },
+    "utility_link": {
+      "name": "Utility link",
+      "settings": {
+        "label": {
+          "label": "Label"
+        },
+        "link": {
+          "label": "Link"
         }
       }
     }
