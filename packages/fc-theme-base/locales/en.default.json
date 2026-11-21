@@ -56,7 +56,8 @@
       "next_slide": "Slide right",
       "previous_slide": "Slide left",
       "name": "Slider"
-    }
+    },
+    "breadcrumb_home": "Home"
   },
   "newsletter": {
     "label": "Email",
@@ -510,6 +511,9 @@
       "slide_label": "{{ index }} of {{ count }}",
       "previous": "Previous announcement",
       "next": "Next announcement"
+    },
+    "faq": {
+      "topics": "FAQ topics"
     }
   },
   "localization": {

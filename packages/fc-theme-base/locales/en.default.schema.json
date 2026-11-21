@@ -1413,6 +1413,35 @@
           "label": "Change every"
         }
       }
+    },
+    "faq": {
+      "name": "FAQ page",
+      "settings": {
+        "kicker": {
+          "label": "Kicker"
+        },
+        "heading": {
+          "label": "Heading"
+        },
+        "subtitle": {
+          "label": "Subtitle"
+        },
+        "contact": {
+          "content": "Contact card"
+        },
+        "contact_heading": {
+          "label": "Heading"
+        },
+        "contact_text": {
+          "label": "Text"
+        },
+        "contact_label": {
+          "label": "Button label"
+        },
+        "contact_url": {
+          "label": "Button link"
+        }
+      }
     }
   },
   "blocks": {
@@ -1769,6 +1798,34 @@
         },
         "link": {
           "label": "Link"
+        }
+      }
+    },
+    "faq_topic": {
+      "name": "Topic",
+      "settings": {
+        "title": {
+          "label": "Title"
+        }
+      }
+    },
+    "faq_item": {
+      "name": "Question",
+      "settings": {
+        "question": {
+          "label": "Question"
+        },
+        "answer": {
+          "label": "Answer"
+        },
+        "open": {
+          "label": "Open by default"
+        },
+        "link_label": {
+          "label": "Related link label"
+        },
+        "link_url": {
+          "label": "Related link"
         }
       }
     }

@@ -38,8 +38,9 @@ only settings that belong to the whole section, such as a carousel's timing. Eve
 - Every section has a preset whose blocks show the design, so a merchant who adds it starts from the real layout.
 - Shopify wraps each block in its own `<div class="shopify-block">`. Layout CSS targets the section's direct children
   (`.picks-grid > :nth-child(3)`), not the block's own root element.
-- In a section, `section.blocks` lists only its theme blocks, without the static ones, and each one's `type` reads as
-  `@theme`. Count items with `section.blocks.size`; don't filter by type.
+- In a section, `section.blocks` lists only its theme blocks, without the static ones. Each one's `type` reads as
+  `@theme` and its `settings` are empty, so a section can count its blocks with `section.blocks.size` but can't read
+  them. What it needs from them comes from their rendered output.
 - A section's `{% stylesheet %}` loads before the CSS files it links, so a rule that overrides a shared class repeats
   that class in its selector (`.home-section.why-us`).
 
@@ -52,6 +53,12 @@ theme's logo, the section's menu and the store. The footer's
 brand and contact columns are the static `_footer-brand` and `_footer-contact` blocks, and its menu columns are
 `_footer-menu` blocks between them. Brand reads the logo and tagline from the theme's brand settings, and contact reads
 Shopify's store details.
+
+The FAQ page's questions are `_faq-item` blocks, shown through `ui-faq-item`, and its topic headings are `_faq-topic`
+blocks. A topic heads the questions after it, up to the next topic, and each one adds a link to the row under the page
+heading. The section captures the rendered blocks and builds the topic links from each heading's `data-faq-topic`
+title and `id`. With structured data on, the page is a schema.org `FAQPage` in microdata and each question a
+`Question` inside it. The page heading and the contact card stay section settings.
 
 ## Rules
 
