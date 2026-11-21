@@ -24,7 +24,7 @@ export default {
   },
 };
 
-export const Choices = {
+export const TextOptions = {
   play: async ({ canvas, userEvent }) => {
     await expect(canvas.getByRole('group', { name: 'Size' })).toBeVisible();
     const medium = canvas.getByRole('radio', { name: 'M' });

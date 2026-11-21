@@ -1,7 +1,7 @@
 {% comment %}
   Renders one mega menu card: image, title, "View" affordance and a short description.
 
-  Prototype content is held here rather than in collections, because most menu entries
+  Prototype images are held here and descriptions in the locale file rather than in collections, because most menu entries
   point at collections that do not exist in the store yet.
 
   Accepts:
@@ -15,7 +15,6 @@
 {%- liquid
   assign card_handles = 'shoes,socks,wheel-bags,carry-bags,kids,scoring-systems,reels-and-floor-cables,repair-tools' | split: ','
   assign card_images = 'mega-footwear-shoes.jpg,mega-footwear-socks.jpg,mega-bags-wheel.jpg,mega-bags-carry.jpg,mega-club-kids.jpg,mega-club-scoring.jpg,mega-club-reels.jpg,mega-club-repair.jpg' | split: ','
-  assign card_copy = 'Grippy soles and lunge support.|Knee-high and moisture-wicking.|Rolling bags for a full kit.|Carry for a single weapon.|Club sets sized for juniors.|FIE machines and repeaters.|Reels and floor cabling.|Testers, tips and spares.' | split: '|'
 
   assign card_index = -1
   for handle in card_handles
@@ -56,13 +55,14 @@
   <span class="fc-mega-card__header">
     <span class="fc-mega-card__title">{{ childlink.title | escape }}</span>
     <span class="fc-mega-card__view">
-      View
+      {{ 'sections.header.mega_menu.view' | t }}
       {{- 'icon-arrow.svg' | inline_asset_content -}}
     </span>
   </span>
 
   {%- if card_index >= 0 -%}
-    <span class="fc-mega-card__desc">{{ card_copy[card_index] }}</span>
+    {%- assign card_copy_key = childlink.handle | replace: '-', '_' | prepend: 'sections.header.mega_menu.cards.' -%}
+    <span class="fc-mega-card__desc">{{ card_copy_key | t }}</span>
   {%- elsif childlink.object.description != blank -%}
     <span class="fc-mega-card__desc">
       {{- childlink.object.description | strip_html | truncatewords: 12 -}}
