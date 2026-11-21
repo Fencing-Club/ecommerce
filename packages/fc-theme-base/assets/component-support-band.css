@@ -70,17 +70,19 @@
   }
 }
 
+/* The Pen's tablet and phone boards stack the actions under the copy. */
 @media screen and (max-width: 989px) {
   .ui-support-band {
     flex-direction: column;
     align-items: flex-start;
+    gap: var(--spacing-5);
+    padding: var(--spacing-8);
   }
 }
 
 @media screen and (max-width: 749px) {
   .ui-support-band {
-    gap: 2rem;
-    padding: 2.8rem 2.4rem;
+    padding: var(--spacing-7) var(--spacing-6);
   }
 
   .ui-support-band__heading {
@@ -90,7 +92,7 @@
   .ui-support-band__actions {
     flex-direction: column;
     width: 100%;
-    gap: 1rem;
+    gap: var(--spacing-2-5);
   }
 
   .ui-support-band .ui-button {
