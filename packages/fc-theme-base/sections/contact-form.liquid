@@ -13,7 +13,7 @@
 
   <section class="contact-page__details" aria-labelledby="ContactDetails-{{ section.id }}">
     <div class="contact-page__details-row">
-      <div class="contact-page__form-card">
+      <div class="contact-page__form-card" id="ContactFormCard">
         <header>
           <h2 id="ContactDetails-{{ section.id }}">{{ section.settings.form_heading | escape }}</h2>
           <p>{{ section.settings.form_note | escape }}</p>
@@ -73,7 +73,7 @@
 
             const topic = this.querySelector('#ContactForm-topic');
             if (topic) topic.value = card.dataset.contactTopic;
-            requestAnimationFrame(() => this.querySelector('#ContactForm-name')?.focus());
+            requestAnimationFrame(() => this.querySelector('#ContactForm-name')?.focus({ preventScroll: true }));
           });
         }
       }

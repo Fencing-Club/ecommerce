@@ -122,6 +122,8 @@
 }
 
 .contact-page__form-card {
+  /* A topic card jumps here. The sticky header can be showing after the jump, so the card clears it. */
+  scroll-margin-top: calc(var(--header-height, 8rem) + var(--spacing-6));
   padding: 2.8rem;
   border-radius: var(--radius-xl);
   background: var(--muted);
