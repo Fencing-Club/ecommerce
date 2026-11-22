@@ -9,7 +9,7 @@ How to choose link and the toolbar's level help point at.
 - **Questions** are section blocks shown as plain FAQ items, with FAQPage structured data for search engines.
 - **Popular** links come from a menu picked in the section, for curated filtered pages.
 - **Brands** are the logos of the brand entries matching this collection's vendors. A vendor without a brand entry or
-  logo is left out.
+  logo is left out. Each logo links to the [brand's page](shopify-brand-pages.md).
 
 Popular links and brands leave their column out when there's nothing to show. On phones the level rows become
 cards.

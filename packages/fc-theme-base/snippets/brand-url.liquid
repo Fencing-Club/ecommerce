@@ -1,0 +1,20 @@
+{% doc %}
+  Outputs the URL of a brand's page: the collection whose handle is the brand's name as a handle, when it has
+  products, else Shopify's vendor page. The vendor page is thin and competes with a real collection in search.
+
+  @param {string} vendor - The brand's name, as products' vendor field has it.
+
+  @example
+  {% capture brand_url %}{% render 'brand-url', vendor: product.vendor %}{% endcapture %}
+{% enddoc %}
+{%- liquid
+  assign brand_handle = vendor | handle
+  assign brand_collection = collections[brand_handle]
+  # A missing collection's count comes back as text, so it's made a number first.
+  assign brand_product_count = brand_collection.products_count | plus: 0
+  if brand_product_count > 0
+    echo brand_collection.url
+  else
+    echo vendor | url_for_vendor
+  endif
+-%}

@@ -222,3 +222,16 @@ describe('social meta tags', () => {
     },
   );
 });
+
+describe('brand links', () => {
+  const brandUrl = (collections) => renderText('brand-url', { collections }, { vendor: 'Leon Paul' });
+
+  it("goes to the brand's collection when it has products", () => {
+    expect(brandUrl({ 'leon-paul': { url: '/collections/leon-paul', products_count: 12 } })).toBe('/collections/leon-paul');
+  });
+
+  it("falls back to Shopify's vendor page without one, or when it's empty", () => {
+    expect(brandUrl({})).toBe('/collections/vendors?q=Leon%20Paul');
+    expect(brandUrl({ 'leon-paul': { url: '/collections/leon-paul', products_count: 0 } })).toBe('/collections/vendors?q=Leon%20Paul');
+  });
+});

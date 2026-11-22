@@ -87,7 +87,8 @@
 
     <div class="product-page__buy">
       <div class="product-page__head">
-        <a class="product-page__brand" href="{{ product.vendor | url_for_vendor }}">
+        {%- capture brand_url -%}{%- render 'brand-url', vendor: product.vendor -%}{%- endcapture -%}
+        <a class="product-page__brand" href="{{ brand_url | strip }}">
           {{- 'products.product.shop_all' | t: brand: product.vendor -}}
         </a>
         <h1 class="product-page__title">{{ product.title | escape }}</h1>
