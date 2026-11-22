@@ -276,9 +276,9 @@ class CartItems extends window.StandardEvents.createViewEventElement(HTMLElement
       return;
     }
     let message = '';
-    if (value > 0 && value < Number(input.dataset.min)) message = window.quickOrderListStrings.min_error.replace('[min]', input.dataset.min);
-    else if (input.max && value > parseInt(input.max)) message = window.quickOrderListStrings.max_error.replace('[max]', input.max);
-    else if (value % parseInt(input.step) !== 0) message = window.quickOrderListStrings.step_error.replace('[step]', input.step);
+    if (value > 0 && value < Number(input.dataset.min)) message = window.cartStrings.minError.replace('[min]', input.dataset.min);
+    else if (input.max && value > parseInt(input.max)) message = window.cartStrings.maxError.replace('[max]', input.max);
+    else if (value % parseInt(input.step) !== 0) message = window.cartStrings.stepError.replace('[step]', input.step);
     if (message) {
       this.setValidity(event, line, message);
       return;

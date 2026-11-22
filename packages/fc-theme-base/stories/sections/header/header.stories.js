@@ -34,16 +34,13 @@ export default {
   title: 'Sections/Header/Header',
   parameters: { layout: 'fullscreen' },
   args: { menu: { links: navigation.menus[0].items.map(menuLink) } },
-  // The layout loads the localization and search styles. The header loads its menu, search, drawer and cart styles
-  // with a print-media swap on load, which never fires for markup a story inserts.
+  // The layout loads the localization and search styles. The header loads its drawer and mega menu styles with a
+  // print-media swap on load, which never fires for markup a story inserts.
   render: (args) =>
     [
       'component-localization-form.css',
       'component-predictive-search.css',
-      'component-list-menu.css',
-      'component-search.css',
       'component-menu-drawer.css',
-      'component-cart-notification.css',
       'component-mega-menu.css',
     ]
       .map((file) => `<link rel="stylesheet" href="${assetUrl(file)}">`)

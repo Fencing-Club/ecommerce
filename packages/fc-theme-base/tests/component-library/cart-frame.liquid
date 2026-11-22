@@ -18,8 +18,10 @@
       blockedUnavailableOne: `{{ 'sections.cart.blocked_unavailable.one' | t: count: '[count]' }}`,
       blockedUnavailableOther: `{{ 'sections.cart.blocked_unavailable.other' | t: count: '[count]' }}`,
       checkoutFailed: `{{ 'sections.cart.checkout_failed' | t }}`,
+      minError: `{{ 'sections.cart.min_error' | t: min: '[min]' }}`,
+      maxError: `{{ 'sections.cart.max_error' | t: max: '[max]' }}`,
+      stepError: `{{ 'sections.cart.step_error' | t: step: '[step]' }}`,
     };
-    window.quickOrderListStrings = { min_error: 'At least [min]', max_error: 'At most [max]', step_error: 'Multiples of [step]' };
   </script>
   <script type="application/json" id="LabCart">{{ cart_json }}</script>
   <script src="/lab/cart-shim.js"></script>

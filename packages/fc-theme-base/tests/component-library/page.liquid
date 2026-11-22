@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="/assets/base.css">
   <link rel="stylesheet" href="/assets/component-ui.css">
   <link rel="stylesheet" href="/assets/component-product-variant-picker.css">
-  <link rel="stylesheet" href="/assets/component-list-menu.css">
   <link rel="stylesheet" href="/assets/component-mega-menu.css">
   <link rel="stylesheet" href="/assets/section-faq.css">
   <link rel="stylesheet" href="/assets/section-contact-form.css">
@@ -19,7 +18,6 @@
   <link rel="stylesheet" href="/assets/section-main-collection.css">
   <link rel="stylesheet" href="/assets/component-localization-form.css">
   <link rel="stylesheet" href="/lab/country-flags.css">
-  <link rel="stylesheet" href="/assets/component-search.css">
   <link rel="stylesheet" href="/assets/component-predictive-search.css">
   <link rel="stylesheet" href="/assets/component-price.css">
   <link rel="stylesheet" href="/assets/component-swatch.css">
@@ -69,10 +67,10 @@
       </div>
       <div class="lab-state-row"><label><input type="checkbox" id="disable-command"> Disable primary action</label><label><input type="checkbox" id="fail-command"> Simulate failure</label><output id="command-status" role="status">Ready</output></div>
     </section>
-    <section id="selection" class="lab-section"><h2>Selection <code>product-variant-options / ui-pill / quantity-input</code></h2>
+    <section id="selection" class="lab-section"><h2>Selection <code>product-variant-options / ui-pill / ui-quantity-stepper</code></h2>
       <div class="specimen lab-selection">
         <form id="product-form-component-lab"><fieldset class="product-form__input product-form__input--pill"><legend>Size</legend>{% render 'product-variant-options', option: option, picker_type: 'button' %}</fieldset></form>
-        <div><h3>Quantity</h3>{% render 'quantity-input', variant: variant, variant_id: variant.id, min: 1 %}</div>
+        <div><h3>Quantity</h3>{% render 'ui-quantity-stepper', id: 'Quantity-lab', name: 'quantity', min: variant.quantity_rule.min, max: variant.quantity_rule.max, step: variant.quantity_rule.increment, product_title: variant.title %}</div>
         <div class="lab-row">{% render 'ui-pill', label: 'All gear', url: '#selection', active: true %}{% render 'ui-pill', label: 'Clothing', url: '#selection' %}{% render 'ui-pill', label: 'Accessories', url: '#selection' %}</div>
         <div class="lab-row">{% render 'ui-checkbox-field', id: 'lab-stock', label: 'In stock', checked: true %}{% render 'ui-checkbox-field', id: 'lab-sale', label: 'On sale' %}{% render 'ui-checkbox-field', id: 'lab-locked', label: 'Unavailable filter', disabled: true %}</div>
       </div>
