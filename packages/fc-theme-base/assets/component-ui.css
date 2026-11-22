@@ -111,10 +111,10 @@
 .ui-breadcrumbs {
   display: flex;
   align-items: center;
-  gap: var(--spacing-1-5);
+  gap: var(--spacing-2);
   font-family: var(--font-body-family);
-  font-size: 1.3rem;
-  line-height: 1.25;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
   letter-spacing: 0;
   color: var(--muted-foreground);
 }
@@ -132,6 +132,7 @@
 }
 
 .ui-breadcrumbs span[aria-current='page'] {
+  font-weight: var(--font-weight-medium);
   color: var(--foreground);
 }
 

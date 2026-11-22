@@ -74,7 +74,8 @@ export function schemaDefaults(source) {
 // `blocks/<type>.liquid` with `block` set, inside the `shopify-block` wrapper Shopify adds.
 // `{% content_for 'block', type: 'x', id: 'y' %}` renders one static block, taking its settings from the parent's
 // `static_blocks` when one has that id; other arguments become variables of the block. As on a store, a section's
-// `blocks` leaves its static blocks out. Blocks are arrays of `{ id, type, settings, blocks, static_blocks }`.
+// `blocks` leaves its static blocks out. Blocks are arrays of `{ id, type, settings, blocks, static_blocks }`. A
+// parent's `theme_blocks`, when set, are the blocks to render, so its `blocks` can hide their settings as a store does.
 function registerContentFor(engine, readBlock) {
   const parsed = new Map();
   const load = (type) => {
@@ -100,7 +101,7 @@ function registerContentFor(engine, readBlock) {
         const { type, id, ...variables } = yield this.arguments.render(context);
         const parent = context.getSync(['content_for_parent']) ?? context.getSync(['section']) ?? {};
         let blocks;
-        if (kind === 'blocks') blocks = parent.blocks ?? [];
+        if (kind === 'blocks') blocks = parent.theme_blocks ?? parent.blocks ?? [];
         else if (kind === 'block') blocks = [(parent.static_blocks ?? []).find((block) => block.id === id) ?? { id, type }];
         else throw new Error(`content_for '${kind}' is not supported`);
 

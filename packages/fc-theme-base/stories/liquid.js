@@ -99,7 +99,14 @@ export const block =
 export const section =
   (name, { blocks = [], staticBlocks = [], variables = {} } = {}) =>
   (settings) => {
-    const current = { id: 'story', settings: { ...schemaDefaults(templates[`${name}.liquid`]), ...settings }, blocks, static_blocks: staticBlocks };
+    // As on a store, the section sees each theme block's id but not its type or settings; `content_for` renders them.
+    const current = {
+      id: 'story',
+      settings: { ...schemaDefaults(templates[`${name}.liquid`]), ...settings },
+      blocks: blocks.map(({ id }) => ({ id, type: '@theme', settings: {} })),
+      theme_blocks: blocks,
+      static_blocks: staticBlocks,
+    };
     // On a store the snippets a section renders can read `section` too, so it is a global for the render.
     return engine.renderFileSync(name, { ...variables, section: current }, { globals: { ...globals, section: current } });
   };

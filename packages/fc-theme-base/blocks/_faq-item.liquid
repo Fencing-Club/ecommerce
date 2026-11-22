@@ -1,0 +1,49 @@
+{%- comment -%}
+  One question on the FAQ page, shown through ui-faq-item. It sits under the topic before it.
+{%- endcomment -%}
+{%- render 'ui-faq-item',
+  question: block.settings.question,
+  answer: block.settings.answer,
+  open: block.settings.open,
+  link_label: block.settings.link_label,
+  link_url: block.settings.link_url,
+  structured_data: settings.structured_data_enabled,
+  block: block
+-%}
+
+{% schema %}
+{
+  "name": "t:blocks.faq_item.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "question",
+      "label": "t:blocks.faq_item.settings.question.label",
+      "default": "How do I track my order?"
+    },
+    {
+      "type": "richtext",
+      "id": "answer",
+      "label": "t:blocks.faq_item.settings.answer.label",
+      "default": "<p>We email you a tracking link as soon as your order ships.</p>"
+    },
+    {
+      "type": "checkbox",
+      "id": "open",
+      "label": "t:blocks.faq_item.settings.open.label",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:blocks.faq_item.settings.link_label.label"
+    },
+    {
+      "type": "url",
+      "id": "link_url",
+      "label": "t:blocks.faq_item.settings.link_url.label"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.faq_item.name" }]
+}
+{% endschema %}

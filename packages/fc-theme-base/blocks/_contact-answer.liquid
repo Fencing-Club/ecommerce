@@ -1,0 +1,25 @@
+{%- comment -%}
+  One quick answer on the Contact page, shown through ui-contact-quick-answer.
+{%- endcomment -%}
+{%- render 'ui-contact-quick-answer', question: block.settings.question, answer: block.settings.answer, block: block -%}
+
+{% schema %}
+{
+  "name": "t:blocks.contact_answer.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "question",
+      "label": "t:blocks.contact_answer.settings.question.label",
+      "default": "Where is my order?"
+    },
+    {
+      "type": "textarea",
+      "id": "answer",
+      "label": "t:blocks.contact_answer.settings.answer.label",
+      "default": "Sign in to view your order history and tracking."
+    }
+  ],
+  "presets": [{ "name": "t:blocks.contact_answer.name" }]
+}
+{% endschema %}

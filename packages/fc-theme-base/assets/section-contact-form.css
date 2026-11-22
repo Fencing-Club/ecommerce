@@ -5,11 +5,6 @@
   line-height: normal;
 }
 
-.contact-page__breadcrumb {
-  min-height: 5.2rem;
-  padding: 1.8rem var(--page-gutter);
-}
-
 .contact-page__hero {
   display: flex;
   flex-direction: column;
@@ -50,6 +45,15 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2.4rem;
   padding: 0.8rem var(--page-gutter) 6.4rem;
+}
+
+/* Each card sits in its block's wrapper, which the grid stretches to the row's height. */
+.contact-page__intents > .shopify-block {
+  display: flex;
+}
+
+.contact-page__intents > .shopify-block > .ui-contact-intent-card {
+  flex: 1;
 }
 
 .ui-contact-intent-card {
@@ -118,6 +122,8 @@
 }
 
 .contact-page__form-card {
+  /* A topic card jumps here. The sticky header can be showing after the jump, so the card clears it. */
+  scroll-margin-top: calc(var(--header-height, 8rem) + var(--spacing-6));
   padding: 2.8rem;
   border-radius: var(--radius-xl);
   background: var(--muted);
