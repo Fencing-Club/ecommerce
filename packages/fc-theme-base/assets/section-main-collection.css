@@ -206,21 +206,20 @@
   overflow-wrap: anywhere;
 }
 
+.collection-filter-group--swatch .swatch-input__label {
+  --swatch-input--size: 4rem;
+  width: 4.4rem;
+}
+
 .collection-filter-group--swatch .collection-filter-group__options {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 0;
+  gap: 1rem 2.2rem;
 }
 
 .collection-filter-option--swatch {
-  width: 3.8rem;
   max-width: 100%;
-}
-
-.collection-filter-option--swatch:has(.ui-choice) {
-  width: auto;
-  margin: 0.3rem;
 }
 
 .collection-filter-option--active {
@@ -434,8 +433,10 @@
   background: var(--muted);
 }
 
+/* Multiplying lets product shots on white take the tile color, so every card shows the same tile. */
 .collection-product-grid .ui-product-card__image {
   object-fit: cover;
+  mix-blend-mode: multiply;
 }
 
 .collection-load-more {
@@ -484,67 +485,33 @@
     display: block;
   }
 
-  .collection-curated-filters-mobile > summary {
+  .collection-filter-trigger {
     display: inline-flex;
     gap: 1rem;
     align-items: center;
-    min-height: 3rem;
-    font-size: 1.4rem;
-    cursor: pointer;
-    list-style: none;
-  }
-
-  .collection-curated-filters-mobile > summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .collection-curated-filters-mobile > summary .svg-wrapper {
-    width: 1.6rem;
-    height: 1.6rem;
-  }
-
-  .collection-curated-filters-mobile__panel {
-    position: fixed;
-    inset: 0;
-    z-index: 5;
-    overflow-y: auto;
-    padding: 3.2rem 2rem;
-    background: #ffffff;
-  }
-
-  .collection-curated-filters-mobile__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2.6rem;
-  }
-
-  .collection-curated-filters-mobile__header strong {
-    font-family: var(--font-heading-family);
-    font-size: 2rem;
-  }
-
-  .collection-curated-filters-mobile__header a {
-    color: var(--muted-foreground);
-  }
-
-  .collection-curated-filters-mobile__actions {
-    display: flex;
-    gap: 2rem;
-    align-items: center;
-  }
-
-  .collection-curated-filters-mobile__actions button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 4.4rem;
-    height: 4.4rem;
+    min-height: 4.4rem;
     padding: 0;
     border: 0;
     background: transparent;
     color: var(--foreground);
+    font: inherit;
+    font-size: 1.4rem;
     cursor: pointer;
+  }
+
+  /* The drawer leaves a strip of the page showing, as the Pen's filter drawer does. */
+  .collection-curated-filters-mobile .ui-drawer {
+    --drawer-width: min(40rem, calc(100vw - 5rem));
+  }
+
+  .collection-curated-filters-mobile .ui-drawer__body {
+    padding-top: 0;
+  }
+
+  .collection-curated-filters-mobile .ui-drawer__footer {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.2rem;
   }
 
   .collection-product-grid {

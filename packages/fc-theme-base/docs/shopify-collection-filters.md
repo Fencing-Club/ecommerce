@@ -39,6 +39,12 @@ are omitted. Selected zero-count options remain visible and enabled so they can 
 pages. Filter choice and ordering come from Shopify, not a hardcoded per-collection allowlist. The source inspection
 used read-only public collection markup; app-only grouping/settings were not changed on the source store.
 
+## Applying filters
+
+On desktop each choice applies straight away. On phones the filters open in the shared [drawer](shopify-drawers.md)
+with the result count, and choices wait until Apply, which builds one URL from every checked value and the price
+fields while keeping the sort order and breadcrumb context. Remove all returns to the unfiltered collection.
+
 ## Classification
 
 The September 12 Contoso rehearsal separated the 12 former `Kids` product types into Weapons, Masks, Training Vests,

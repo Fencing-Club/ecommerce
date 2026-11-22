@@ -1,6 +1,7 @@
 {{ 'component-facets.css' | asset_url | stylesheet_tag }}
 {{ 'section-main-collection.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'facets.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'collection-load-more.js' | asset_url }}" defer="defer"></script>
 {%- unless section.settings.quick_add == 'none' -%}
   <script src="{{ 'product-form.js' | asset_url }}" defer="defer"></script>
 {%- endunless -%}
@@ -49,28 +50,58 @@
             <div class="collection-curated-filters-desktop">
               {%- render 'collection-facet-filters', results: collection, section_id: desktop_filter_id -%}
             </div>
-            <details class="collection-curated-filters-mobile">
-              <summary>
-                <span class="svg-wrapper">{%- render 'ui-icon', icon: 'sliders-horizontal', size: 16 -%}</span>
+            {%- comment -%}
+              Phones pick filters in a drawer and apply them together; collection-breadcrumbs.js builds the URL on Apply.
+            {%- endcomment -%}
+            {%- liquid
+              assign filter_drawer_id = 'CollectionFilterDrawer-' | append: section.id
+              assign filter_close_label = 'accessibility.close' | t
+              assign filter_remove_label = 'products.facets.clear_all' | t
+              assign filter_apply_label = 'products.facets.apply' | t
+              assign filter_count_label = 'products.facets.product_count_simple' | t: count: collection.products_count
+            -%}
+            {%- capture filter_trigger -%}
+              <button
+                type="button"
+                class="collection-filter-trigger"
+                data-drawer-open
+                aria-controls="{{ filter_drawer_id }}"
+                aria-expanded="false"
+                aria-haspopup="dialog"
+              >
+                {%- render 'ui-icon', icon: 'sliders-horizontal', size: 16 -%}
                 <span>{{ section.settings.mobile_filter_label | escape }}</span>
-              </summary>
-              <div class="collection-curated-filters-mobile__panel">
-                <div class="collection-curated-filters-mobile__header">
-                  <strong>{{ section.settings.filter_heading | escape }}</strong>
-                  <div class="collection-curated-filters-mobile__actions">
-                    <a href="{{ collection.url }}" data-clear-collection-filters>{{ section.settings.clear_all_label | escape }}</a>
-                    <button
-                      type="button"
-                      aria-label="{{ 'accessibility.close' | t }}"
-                      onclick="this.closest('details').removeAttribute('open')"
-                    >
-                      {%- render 'ui-icon', icon: 'x', size: 20 -%}
-                    </button>
-                  </div>
-                </div>
-                {%- render 'collection-facet-filters', results: collection, section_id: mobile_filter_id -%}
-              </div>
-            </details>
+              </button>
+            {%- endcapture -%}
+            {%- capture filter_content -%}
+              {%- render 'collection-facet-filters', results: collection, section_id: mobile_filter_id -%}
+            {%- endcapture -%}
+            {%- capture filter_footer -%}
+              {%- render 'ui-button',
+                label: filter_remove_label,
+                url: collection.url,
+                variant: 'outline',
+                size: 'md',
+                additional_props: 'data-clear-collection-filters'
+              -%}
+              {%- render 'ui-button',
+                label: filter_apply_label,
+                variant: 'primary',
+                size: 'md',
+                additional_props: 'data-apply-collection-filters'
+              -%}
+            {%- endcapture -%}
+            <div class="collection-curated-filters-mobile">
+              {%- render 'ui-drawer',
+                id: filter_drawer_id,
+                title: section.settings.filter_heading,
+                description: filter_count_label,
+                close_label: filter_close_label,
+                content: filter_content,
+                footer: filter_footer,
+                trigger: filter_trigger
+              -%}
+            </div>
           </aside>
         {%- endif -%}
 
@@ -122,7 +153,7 @@
                 <div class="collection-empty__actions">
                   {%- if active_filter_count > 0 -%}
                     {%- render 'ui-button',
-                      label: section.settings.clear_all_label,
+                      label: section.settings.empty_clear_label,
                       url: collection.url,
                       additional_props: 'data-clear-collection-filters',
                       variant: 'primary'
@@ -181,13 +212,15 @@
                 {%- endfor -%}
               </ul>
 
-              {%- render 'ui-pagination',
-                paginate: paginate,
-                anchor: 'product-grid',
-                mode: 'next',
-                next_label: section.settings.load_more_label,
-                class: 'collection-load-more'
-              -%}
+              <collection-load-more data-section-id="{{ section.id }}">
+                {%- render 'ui-pagination',
+                  paginate: paginate,
+                  anchor: 'product-grid',
+                  mode: 'next',
+                  next_label: section.settings.load_more_label,
+                  class: 'collection-load-more'
+                -%}
+              </collection-load-more>
             {%- endif -%}
           </div>
         </div>
@@ -289,6 +322,7 @@
       "label": "Hint when the collection is empty",
       "default": "This collection has no products right now. Browse the full range instead."
     },
+    { "type": "text", "id": "empty_clear_label", "label": "Empty state clear label", "default": "Clear all filters" },
     { "type": "text", "id": "empty_browse_label", "label": "Empty state browse label", "default": "Browse all products" },
     {
       "type": "checkbox",
