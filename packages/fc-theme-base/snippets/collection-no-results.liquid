@@ -47,13 +47,8 @@
                 assign high = filter.max_value.value | default: filter.range_max | money_without_trailing_zeros
                 assign chip_label = 'collections.active.price' | t: low: low, high: high
               -%}
-              <li>
-                <a class="collection-no-results__suggestion" href="{{ filter.url_to_remove }}" data-suggestion-url="{{ filter.url_to_remove }}">
-                  {%- render 'ui-icon', icon: 'x', size: 14 -%}
-                  <span class="collection-no-results__label">{{ 'collections.active.remove' | t: label: chip_label }}</span>
-                  <span class="collection-no-results__count" data-suggestion-count></span>
-                </a>
-              </li>
+              {%- capture suggestion_attributes -%}data-suggestion-url="{{ filter.url_to_remove }}"{%- endcapture -%}
+              <li>{% render 'ui-filter-chip', label: chip_label, url: filter.url_to_remove, size: 'md', with_count: true, attributes: suggestion_attributes %}</li>
             {%- endif -%}
           {%- endif -%}
           {%- for value in filter.active_values -%}
@@ -67,13 +62,8 @@
                 assign chip_label = 'collections.filters.in_stock_only' | t
               endif
             -%}
-            <li>
-              <a class="collection-no-results__suggestion" href="{{ value.url_to_remove }}" data-suggestion-url="{{ value.url_to_remove }}">
-                {%- render 'ui-icon', icon: 'x', size: 14 -%}
-                <span class="collection-no-results__label">{{ 'collections.active.remove' | t: label: chip_label }}</span>
-                <span class="collection-no-results__count" data-suggestion-count></span>
-              </a>
-            </li>
+            {%- capture suggestion_attributes -%}data-suggestion-url="{{ value.url_to_remove }}"{%- endcapture -%}
+            <li>{% render 'ui-filter-chip', label: chip_label, url: value.url_to_remove, size: 'md', with_count: true, attributes: suggestion_attributes %}</li>
           {%- endfor -%}
         {%- endfor -%}
       {%- endcapture -%}

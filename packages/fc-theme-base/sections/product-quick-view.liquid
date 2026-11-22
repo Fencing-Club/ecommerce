@@ -10,16 +10,14 @@
   assign title_id = 'QuickViewTitle-' | append: product.id
   assign images = product.media | where: 'media_type', 'image'
   assign image_count = images.size
-  # A complete size chart opens in place of the options, with a Back button, so the dialog stays one layer.
+  # Size guide goes to the product's size chart page, when the chart is complete.
   assign size_chart = product.metafields.custom.size_chart.value
   capture size_chart_ready
     render 'size-chart-validity', chart: size_chart
   endcapture
   assign size_guide_url = ''
-  assign size_guide_id = ''
   if size_chart_ready contains 'true'
     assign size_guide_url = size_chart.system.url
-    assign size_guide_id = 'QuickViewSizeGuide-' | append: product.id
   endif
   assign rating = product.metafields.reviews.rating.value
   assign rating_count = product.metafields.reviews.rating_count.value
@@ -47,7 +45,7 @@
 -%}
 <div class="quick-view__content" data-quick-view-content data-title-id="{{ title_id }}">
   {%- if image_count > 0 -%}
-    <div class="quick-view__gallery" data-quick-view-gallery>
+    <photo-gallery class="quick-view__gallery" data-quick-view-gallery>
       {%- if image_count > 1 -%}
         <div class="quick-view__thumbs">
           {%- for image in images -%}
@@ -105,7 +103,7 @@
           </p>
         {%- endif -%}
       </div>
-    </div>
+    </photo-gallery>
   {%- endif -%}
 
   <div class="quick-view__details">
@@ -142,7 +140,6 @@
             form_id: form_id,
             size_unpicked: size_unpicked,
             size_guide_url: size_guide_url,
-            size_guide_controls: size_guide_id,
             compact: true
           -%}
           <p class="quick-view__option-error" data-option-error hidden></p>
@@ -208,45 +205,6 @@
         ]
       </script>
     </product-options>
-
-    {%- if size_guide_id != blank -%}
-      {%- liquid
-        assign size_guide_title_id = size_guide_id | append: '-Title'
-        assign full_chart_link_id = size_guide_id | append: '-FullChart'
-        assign full_chart_label = 'products.quick_view.full_chart' | t
-      -%}
-      <div
-        class="quick-view__size-guide"
-        id="{{ size_guide_id }}"
-        role="region"
-        aria-labelledby="{{ size_guide_title_id }}"
-        data-size-guide
-        hidden
-      >
-        <div class="quick-view__size-guide-head">
-          <button type="button" class="quick-view__back" data-size-guide-close>
-            {%- render 'ui-icon', icon: 'arrow-left', size: 16 -%}
-            {{- 'products.quick_view.back_to_options' | t -}}
-          </button>
-          <h3 class="quick-view__size-guide-title" id="{{ size_guide_title_id }}" tabindex="-1">
-            {{- 'products.quick_view.size_chart' | t: title: size_chart.title.value -}}
-          </h3>
-        </div>
-        {%- render 'size-chart-content',
-          chart: size_chart,
-          instance_id: size_guide_id,
-          is_flyout: true,
-          full_chart_link_id: full_chart_link_id
-        -%}
-        {%- render 'ui-link',
-          id: full_chart_link_id,
-          label: full_chart_label,
-          url: size_chart.system.url,
-          icon: 'arrow-right',
-          class: 'quick-view__full-chart'
-        -%}
-      </div>
-    {%- endif -%}
 
     <a class="quick-view__full" href="{{ product.url }}">
       {{- 'products.quick_view.full_details' | t -}}

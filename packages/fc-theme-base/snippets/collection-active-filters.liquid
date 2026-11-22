@@ -16,14 +16,8 @@
           assign low = filter.min_value.value | default: 0 | money_without_trailing_zeros
           assign high = filter.max_value.value | default: filter.range_max | money_without_trailing_zeros
           assign chip_label = 'collections.active.price' | t: low: low, high: high
-          assign remove_label = 'collections.active.remove' | t: label: chip_label
         -%}
-        <li>
-          <a class="collection-active-filter" href="{{ filter.url_to_remove }}" aria-label="{{ remove_label | escape }}">
-            {{- chip_label -}}
-            {%- render 'ui-icon', icon: 'x', size: 14 -%}
-          </a>
-        </li>
+        <li>{% render 'ui-filter-chip', label: chip_label, url: filter.url_to_remove %}</li>
       {%- endif -%}
     {%- else -%}
       {%- for value in filter.active_values -%}
@@ -34,14 +28,8 @@
           elsif parameter_name == 'filter.v.availability'
             assign chip_label = 'collections.filters.in_stock_only' | t
           endif
-          assign remove_label = 'collections.active.remove' | t: label: chip_label
         -%}
-        <li>
-          <a class="collection-active-filter" href="{{ value.url_to_remove }}" aria-label="{{ remove_label | escape }}">
-            {{- chip_label | escape -}}
-            {%- render 'ui-icon', icon: 'x', size: 14 -%}
-          </a>
-        </li>
+        <li>{% render 'ui-filter-chip', label: chip_label, url: value.url_to_remove %}</li>
       {%- endfor -%}
     {%- endif -%}
   {%- endfor -%}

@@ -42,17 +42,13 @@ html:has(.quick-view[open]) { overflow: hidden; }
 .quick-view__arrow:focus-visible,
 .quick-view__full:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 
+/* A product that didn't load: the message centered in the space the product would fill. */
 .quick-view__failed {
   display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
   align-items: center;
   justify-content: center;
-  min-height: 30rem;
-  margin: 0;
-  color: var(--muted-foreground);
-  font-size: 1.4rem;
-  text-align: center;
+  min-height: 40rem;
+  padding: 4rem 0;
 }
 
 .quick-view__content { display: flex; gap: 3.2rem; align-items: flex-start; }
@@ -195,30 +191,6 @@ html:has(.quick-view[open]) { overflow: hidden; }
 .quick-view__delivery { display: flex; flex-direction: column; gap: 0.8rem; }
 .quick-view__delivery:empty { display: none; }
 
-/* Size guide: the size chart takes the options' place, under the title and price, until Back. */
-.quick-view__details[data-showing-size-guide] > :not(.quick-view__head, .quick-view__size-guide) { display: none; }
-.quick-view__size-guide { display: flex; flex-direction: column; gap: 1.6rem; min-width: 0; }
-.quick-view__size-guide[hidden] { display: none; }
-.quick-view__size-guide-head { display: flex; flex-direction: column; gap: 1.2rem; align-items: flex-start; }
-
-.quick-view__back {
-  display: inline-flex;
-  gap: 0.6rem;
-  align-items: center;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--foreground);
-  font: 600 1.4rem/1.4 var(--font-body-family);
-  cursor: pointer;
-}
-
-.quick-view__back:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-.quick-view__size-guide-title { margin: 0; font-size: 1.8rem; font-weight: 700; line-height: 1.3; }
-/* The title takes focus when the chart opens, for screen readers; it isn't a control, so it shows no ring. */
-.quick-view__size-guide-title:focus { outline: none; }
-.quick-view__full-chart { align-self: flex-start; }
-
 .quick-view__full {
   display: inline-flex;
   align-self: flex-start;
@@ -322,5 +294,6 @@ html:has(.quick-view[open]) { overflow: hidden; }
   .quick-view__bone--link { align-self: center; }
   .quick-view__add.ui-button { min-height: 5rem; font-size: 1.6rem; }
   .quick-view__full { align-self: center; }
+  .quick-view__failed { min-height: 0; padding: 2.4rem 0 0.8rem; }
 }
 

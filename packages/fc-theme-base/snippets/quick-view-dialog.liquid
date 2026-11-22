@@ -8,10 +8,9 @@
   {% render 'quick-view-dialog' %}
 {% enddoc %}
 {{ 'section-quick-view.css' | asset_url | stylesheet_tag }}
-{{ 'size-chart.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'product-form.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'photo-gallery.js' | asset_url }}" type="module"></script>
 <script src="{{ 'product-options.js' | asset_url }}" type="module"></script>
-<script src="{{ 'size-chart.js' | asset_url }}" type="module"></script>
 <script src="{{ 'quick-view.js' | asset_url }}" type="module"></script>
 <dialog class="quick-view" data-quick-view-dialog aria-label="{{ 'products.quick_view.open' | t }}">
   <button type="button" class="quick-view__close" data-quick-view-close aria-label="{{ 'products.quick_view.close' | t }}">
@@ -69,12 +68,23 @@
     </div>
   </template>
   <template data-quick-view-error>
-    <p class="quick-view__failed" role="alert">
-      {{ 'products.quick_view.error' | t }}
-      <a class="quick-view__full" data-quick-view-fallback href="">
-        {{- 'products.quick_view.full_details' | t -}}
-        {%- render 'ui-icon', icon: 'arrow-right', size: 16 -%}
-      </a>
-    </p>
+    <div class="quick-view__failed" role="alert">
+      {%- capture actions -%}
+        {%- assign retry_label = 'products.quick_view.try_again' | t -%}
+        {%- render 'ui-button', label: retry_label, variant: 'primary', size: 'lg', icon: 'rotate-ccw', additional_props: 'data-quick-view-retry' -%}
+        {%- comment -%} quick-view.js points it at the product. {%- endcomment -%}
+        {%- assign page_label = 'products.quick_view.full_details' | t -%}
+        {%- render 'ui-button', label: page_label, url: '#', variant: 'outline', size: 'lg', additional_props: 'data-quick-view-fallback' -%}
+      {%- endcapture -%}
+      {%- assign error_title = 'products.quick_view.error' | t -%}
+      {%- assign error_body = 'products.quick_view.error_body' | t -%}
+      {%- render 'ui-message',
+        icon: 'cloud-alert',
+        title: error_title,
+        body: error_body,
+        actions: actions,
+        title_id: 'QuickViewError'
+      -%}
+    </div>
   </template>
 </dialog>

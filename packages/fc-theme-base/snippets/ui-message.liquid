@@ -1,0 +1,24 @@
+{% doc %}
+  A whole-area message, centered in the space it fills: an icon in a circle, a heading, a line of text and the next
+  steps. The cart shows one when it's empty or doesn't load; quick view shows one when the product doesn't load.
+
+  @param {string} icon - The icon in the circle.
+  @param {string} title - The heading.
+  @param {string} [body] - A line of text under the heading.
+  @param {string} [actions] - Buttons, as HTML.
+  @param {string} [title_id] - An id for the heading, so a dialog can take its name from it.
+  @param {string} [attributes] - Extra attributes for the message, such as a data hook.
+
+  @example
+  {% render 'ui-message', icon: 'cloud-alert', title: title, body: body, actions: actions %}
+{% enddoc %}
+<div class="ui-message" {{ attributes }}>
+  <span class="ui-message__icon">{% render 'ui-icon', icon: icon, size: 28 %}</span>
+  <h2 class="ui-message__title"{% if title_id != blank %} id="{{ title_id }}"{% endif %}>{{ title }}</h2>
+  {%- if body != blank -%}
+    <p class="ui-message__body">{{ body }}</p>
+  {%- endif -%}
+  {%- if actions != blank -%}
+    <div class="ui-message__actions">{{ actions }}</div>
+  {%- endif -%}
+</div>

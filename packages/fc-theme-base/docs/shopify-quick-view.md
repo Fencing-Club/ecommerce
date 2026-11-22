@@ -19,13 +19,13 @@ button opens it for products with options.
 - Brand, name, rating (when the product has `reviews.rating`), price and a short summary.
 - Size starts unpicked. Add to cart before a size asks for one. Other options start on the first available variant.
 - The stock line and, for US shoppers, free shipping from the cart's minimum (see [cart](shopify-cart.md)).
-- Size guide swaps the options for the product's size chart, with Back to options. Escape goes back first, then
-  closes. A product with no ready chart shows no Size guide.
+- Size guide goes to the product's size chart page. A product with no ready chart shows no Size guide.
 - View full details links to the product page.
 
 ## Loading and errors
 
 The dialog opens straight away at its final size, with skeletons in quick view's own layout, so nothing jumps when the
-product arrives. A request that fails says so and links to the product page.
+product arrives. A request that fails shows a message (`snippets/ui-message.liquid`, as the cart uses) with Try again
+and View full details. The dialog takes its name from the message, and focus returns to Try again if it fails again.
 
 Adding to cart closes quick view and opens the cart drawer. Closing returns focus to the card's button.

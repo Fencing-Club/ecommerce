@@ -3,33 +3,31 @@
   @param {string} kind - empty or failed.
   @param {string} context - page or drawer.
 {% enddoc %}
-<div class="fc-message" data-cart-message="{{ kind }}">
-  <span class="fc-message__icon">
-    {%- if kind == 'failed' -%}{% render 'ui-icon', icon: 'cloud-alert', size: 28 %}{%- else -%}{% render 'ui-icon', icon: 'shopping-bag', size: 28 %}{%- endif -%}
-  </span>
-  {%- if kind == 'failed' -%}
-    <h2 class="fc-message__title">{{ 'sections.cart.load_failed' | t }}</h2>
-    <p class="fc-message__body">{{ 'sections.cart.load_failed_body' | t }}</p>
-    <div class="fc-message__actions">
-      {%- assign retry_label = 'sections.cart.try_again' | t -%}
-      {%- render 'ui-button', label: retry_label, variant: 'primary', size: 'lg', icon: 'rotate-ccw', additional_props: 'data-cart-retry' -%}
-      {%- if context == 'drawer' -%}
-        {%- assign open_label = 'sections.cart.open_cart_page' | t -%}
-        {%- render 'ui-button', label: open_label, url: routes.cart_url, variant: 'outline', size: 'lg' -%}
-      {%- else -%}
-        {%- assign continue_label = 'general.continue_shopping' | t -%}
-        {%- render 'ui-button', label: continue_label, url: routes.all_products_collection_url, variant: 'outline', size: 'lg' -%}
-      {%- endif -%}
-    </div>
-  {%- else -%}
-    <h2 class="fc-message__title">{{ 'sections.cart.empty' | t }}</h2>
-    <p class="fc-message__body">{{ 'sections.cart.empty_body' | t }}</p>
-    <div class="fc-message__actions">
-      {%- if settings.cart_empty_link != blank and settings.cart_empty_link_label != blank -%}
-        {%- render 'ui-button', label: settings.cart_empty_link_label, url: settings.cart_empty_link, variant: 'primary', size: 'lg', trailing_icon: 'arrow-right' -%}
-      {%- endif -%}
+{%- capture message_attributes -%}data-cart-message="{{ kind }}"{%- endcapture -%}
+{%- if kind == 'failed' -%}
+  {%- capture actions -%}
+    {%- assign retry_label = 'sections.cart.try_again' | t -%}
+    {%- render 'ui-button', label: retry_label, variant: 'primary', size: 'lg', icon: 'rotate-ccw', additional_props: 'data-cart-retry' -%}
+    {%- if context == 'drawer' -%}
+      {%- assign open_label = 'sections.cart.open_cart_page' | t -%}
+      {%- render 'ui-button', label: open_label, url: routes.cart_url, variant: 'outline', size: 'lg' -%}
+    {%- else -%}
       {%- assign continue_label = 'general.continue_shopping' | t -%}
       {%- render 'ui-button', label: continue_label, url: routes.all_products_collection_url, variant: 'outline', size: 'lg' -%}
-    </div>
-  {%- endif -%}
-</div>
+    {%- endif -%}
+  {%- endcapture -%}
+  {%- assign title = 'sections.cart.load_failed' | t -%}
+  {%- assign body = 'sections.cart.load_failed_body' | t -%}
+  {%- render 'ui-message', icon: 'cloud-alert', title: title, body: body, actions: actions, attributes: message_attributes -%}
+{%- else -%}
+  {%- capture actions -%}
+    {%- if settings.cart_empty_link != blank and settings.cart_empty_link_label != blank -%}
+      {%- render 'ui-button', label: settings.cart_empty_link_label, url: settings.cart_empty_link, variant: 'primary', size: 'lg', trailing_icon: 'arrow-right' -%}
+    {%- endif -%}
+    {%- assign continue_label = 'general.continue_shopping' | t -%}
+    {%- render 'ui-button', label: continue_label, url: routes.all_products_collection_url, variant: 'outline', size: 'lg' -%}
+  {%- endcapture -%}
+  {%- assign title = 'sections.cart.empty' | t -%}
+  {%- assign body = 'sections.cart.empty_body' | t -%}
+  {%- render 'ui-message', icon: 'shopping-bag', title: title, body: body, actions: actions, attributes: message_attributes -%}
+{%- endif -%}

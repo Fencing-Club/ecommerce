@@ -117,7 +117,7 @@ for (const panel of document.querySelectorAll('.collection-no-results')) {
     loadSection(suggestion.dataset.suggestionUrl, sectionId)
       .then((page) => {
         const count = page.querySelector('#ProductCount');
-        const label = suggestion.querySelector('[data-suggestion-count]');
+        const label = suggestion.querySelector('[data-filter-chip-count]');
         if (count && label) label.textContent = count.textContent.trim();
       })
       .catch(() => {});

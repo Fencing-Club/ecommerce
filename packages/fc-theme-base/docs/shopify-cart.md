@@ -4,7 +4,8 @@ The cart flyout (`snippets/cart-drawer.liquid`) and the cart page (`sections/mai
 the same snippets and follow the Cart flyout and Cart page lanes in `FencingClubWebsite.pen`. The flyout is a 520px
 drawer on tablet and desktop and fills the screen on phones. Its "Your cart" title links to the cart page. The order summary is the footer at every width: it
 sticks to the bottom of the flyout and, on phones, of the cart page. All cart styles live in `cart-experience.css`; the
-Dawn cart stylesheets are gone.
+Dawn cart stylesheets are gone. The theme's cart type setting chooses the flyout or the cart page; Dawn's cart
+notification popup is gone too.
 
 ## Parts
 
@@ -19,7 +20,8 @@ Dawn cart stylesheets are gone.
   with the checkout note under it on the left and the savings on the right, checkout (`cart-checkout`) and the trust
   notes (returns and secure checkout, from the theme's cart settings). The items subtotal shows only when it differs from the total, and the Shipping row only when shipping is free.
   The checkout note says shipping and taxes are calculated at checkout, or only taxes once shipping is free.
-- `cart-message`: the empty cart and the load failed message. `cart-popular` shows collections chosen in the theme's
+- `cart-message`: the empty cart and the load failed message, each a `ui-message` (an icon in a circle, a heading, a
+  line of text and buttons), which quick view also uses when a product doesn't load. `cart-popular` shows collections chosen in the theme's
   cart settings under the empty message. `cart-skeleton` draws the loading state.
 
 ## Behavior
