@@ -32,7 +32,7 @@ export default {
             id: 'actions',
             type: 'group',
             settings: { direction: 'row', gap: 'md', align: 'center' },
-            blocks: [button('contact', 'Get in touch', '/pages/contact', 'primary'), button('shop', 'Shop all gear', '/collections/all', 'outline')],
+            blocks: [button('contact', 'Get in touch', '/pages/contact', 'primary')],
           },
         ],
       },
@@ -46,6 +46,5 @@ export const Closing = {
     await expect(canvas.getByRole('heading', { level: 3, name: 'We are just getting started.' })).toBeVisible();
     await expect(canvas.getByRole('heading', { level: 3, name: 'Building something for fencing? Let’s talk.' })).toBeVisible();
     await expect(canvas.getByRole('link', { name: 'Get in touch' })).toHaveAttribute('href', '/pages/contact');
-    await expect(canvas.getByRole('link', { name: 'Shop all gear' })).toHaveAttribute('href', '/collections/all');
   },
 };

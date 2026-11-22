@@ -638,7 +638,7 @@
         "orders": {
           "type": "_stat",
           "settings": {
-            "number": "8,700+",
+            "number": "9,700+",
             "label": "Orders shipped"
           }
         },
@@ -747,7 +747,7 @@
             "body": {
               "type": "text",
               "settings": {
-                "text": "<p>Sell on our platform, use our distribution, or just say hello. Otherwise, explore the gear we have carefully assembled.</p>",
+                "text": "<p>Sell on our platform, use our distribution, or just say hello.</p>",
                 "style": "lead"
               }
             },
@@ -767,20 +767,10 @@
                     "style": "primary",
                     "size": "lg"
                   }
-                },
-                "shop": {
-                  "type": "button",
-                  "settings": {
-                    "label": "Shop all gear",
-                    "link": "shopify://collections/all",
-                    "style": "outline",
-                    "size": "lg"
-                  }
                 }
               },
               "block_order": [
-                "contact",
-                "shop"
+                "contact"
               ]
             }
           },
