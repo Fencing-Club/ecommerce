@@ -22,7 +22,7 @@ export default {
       text('company', 'Fencing Club is operated by Fencing Club LLC, a Washington limited liability company.', 'subtle'),
     ],
     blocks: [
-      feature('fencing-only', 'target', 'Fencing only', 'Every product is chosen for the piste.'),
+      feature('built-for-clubs', 'users', 'Built for clubs', 'Member pricing, team kits, and club drop-off.'),
       feature('fair-pricing', 'tag', 'Fair pricing', 'Short supply chains keep prices down.'),
       feature('direct-sourcing', 'git-branch', 'Direct sourcing', 'We buy straight from authorized makers.'),
       feature('real-support', 'life-buoy', 'Real support', 'Guidance from people who actually fence.'),
@@ -34,7 +34,7 @@ export const Principles = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('heading', { level: 2, name: 'Prêts' })).toBeVisible();
     await expect(canvas.getByText('Before the bout, you settle into your stance. Here’s ours.')).toBeVisible();
-    for (const label of ['Fencing only', 'Fair pricing', 'Direct sourcing', 'Real support']) await expect(canvas.getByText(label)).toBeVisible();
+    for (const label of ['Built for clubs', 'Fair pricing', 'Direct sourcing', 'Real support']) await expect(canvas.getByText(label)).toBeVisible();
     await expect(canvas.getByRole('heading', { level: 3, name: 'How we operate' })).toBeVisible();
     await expect(canvas.getByText('We hold our own inventory rather than dropship.')).toBeVisible();
     await expect(canvas.getByText('Our own team handles every question, order and return.')).toBeVisible();

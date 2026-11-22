@@ -27,7 +27,7 @@
         "heading": {
           "type": "heading",
           "settings": {
-            "heading": "Everything for fencing, and only fencing.",
+            "heading": "Fencers equipping fencers.",
             "tag": "h1",
             "size": "xl"
           }
@@ -35,7 +35,7 @@
         "mission": {
           "type": "text",
           "settings": {
-            "text": "<p>We're a fencing-only shop in Woodinville, Washington. Since 2023 we've equipped clubs, schools, and fencers at every level, from a first lesson to the finals. We fence too, so we only sell gear we'd trust on the piste.</p>",
+            "text": "<p>We're a team of fencers in Woodinville, Washington. Since 2023 we've bought straight from the makers so clubs, schools, and fencers at every level get dependable gear at fair prices, from a first lesson to the finals.</p>",
             "style": "lead"
           }
         },
@@ -134,7 +134,7 @@
         "paragraph-3": {
           "type": "text",
           "settings": {
-            "text": "<p>So in 2023 we opened Fencing Club in Woodinville, near Seattle: one shop for fencing gear and nothing else, buying direct from the makers and answering every question ourselves. We sold our first 1,000 orders offline, before the web store even opened.</p>",
+            "text": "<p>So in 2023 we opened Fencing Club in Woodinville, near Seattle, buying direct from the makers and answering every question ourselves. We sold our first 1,000 orders offline, before the web store even opened.</p>",
             "style": "lead"
           }
         }
@@ -291,12 +291,12 @@
           },
           "static": true
         },
-        "fencing-only": {
+        "built-for-clubs": {
           "type": "feature",
           "settings": {
-            "icon": "target",
-            "label": "Fencing only",
-            "detail": "We're a specialist shop, not a sporting-goods aisle. We choose every product for the piste."
+            "icon": "users",
+            "label": "Built for clubs",
+            "detail": "Member pricing, team kits, and free drop-off at our home clubs."
           }
         },
         "fair-pricing": {
@@ -325,7 +325,7 @@
         }
       },
       "block_order": [
-        "fencing-only",
+        "built-for-clubs",
         "fair-pricing",
         "direct-sourcing",
         "real-support"
@@ -431,7 +431,7 @@
           "settings": {
             "date": "2023",
             "title": "Fencing Club is founded",
-            "text": "We open in Woodinville, near Seattle, selling fencing gear and nothing else."
+            "text": "We open in Woodinville, near Seattle."
           }
         },
         "online": {

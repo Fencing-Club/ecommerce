@@ -17,7 +17,7 @@ export default {
       { id: 'image', type: 'image', settings: { image: image('collection-fie-800n-jacket.jpg', 'A fencing jacket'), aspect_ratio: 'landscape' } },
     ],
     blocks: [
-      { id: 'heading', type: 'heading', settings: { heading: 'Everything for fencing, and only fencing.', tag: 'h1', size: 'xl' } },
+      { id: 'heading', type: 'heading', settings: { heading: 'Fencers equipping fencers.', tag: 'h1', size: 'xl' } },
       { id: 'mission', type: 'text', settings: { text: '<p>Since 2023, we’ve supplied clubs, schools, and individual fencers with dependable gear at honest prices.</p>', style: 'lead' } },
       {
         id: 'actions',
@@ -31,7 +31,7 @@ export default {
 
 export const Hero = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { level: 1, name: 'Everything for fencing, and only fencing.' })).toBeVisible();
+    await expect(canvas.getByRole('heading', { level: 1, name: 'Fencers equipping fencers.' })).toBeVisible();
     await expect(canvas.getByText('En garde')).toBeVisible();
     await expect(canvas.getByRole('img', { name: 'A fencing jacket' })).toBeVisible();
     await expect(canvas.getByRole('link', { name: 'Shop all gear' })).toHaveAttribute('href', '/collections/all');

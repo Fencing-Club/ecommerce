@@ -1672,7 +1672,8 @@
             "target": "Target",
             "tag": "Price tag",
             "git_branch": "Branches",
-            "life_buoy": "Life buoy"
+            "life_buoy": "Life buoy",
+            "users": "People"
           }
         },
         "label": {

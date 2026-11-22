@@ -14,7 +14,7 @@ export default {
       { id: 'lead', type: 'heading', settings: { heading: 'We haven’t stopped moving since our first allez.', tag: 'h3', size: 'sm' } },
     ],
     blocks: [
-      milestone('founded', '2023', 'Fencing Club is founded', 'A fencing-only retailer launches in Woodinville.'),
+      milestone('founded', '2023', 'Fencing Club is founded', 'We open in Woodinville, near Seattle.'),
       milestone('dealer', '2024', 'Authorized dealer', 'We become an authorized dealer for four leading brands and buy from them direct.'),
       milestone('masks', 'Late 2026', 'Our own certified masks', 'Our own 350N and 1600N masks for foil, épée, and sabre. We’re placing the first orders now.', 'in_progress'),
       milestone('blades', '2027', 'FIE blades from UNIC', 'We start carrying UNIC’s FIE-homologated blades.', 'planned'),
