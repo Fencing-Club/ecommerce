@@ -38,8 +38,6 @@ main { max-width: 1440px; margin: auto; padding: 0 32px 64px; }
 .lab-state-row { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; font-size: 14px; }
 output { display: block; margin-top: 12px; font-size: 14px; color: var(--cp-text-muted); }
 .lab-state-row output { margin: 0; }.lab-drawer-image { width: 100%; height: 160px; object-fit: cover; }
-.lab-selection .product-form__input { max-width: none; margin: 0; }.lab-selection fieldset { padding: 0; border: 0; }
-.lab-selection legend { margin-bottom: 12px; font-size: 14px; }
 .specimen ui-drawer { margin-top: 24px; }.specimen .ui-drawer { text-align: start; }
 .lab-menu { position: relative; min-height: 480px; padding: 16px; }
 .lab-account { display: flex; justify-content: flex-end; padding: 16px; }
@@ -99,10 +97,6 @@ output { display: block; margin-top: 12px; font-size: 14px; color: var(--cp-text
 .lab-mobile-menu details[open] > summary .icon-hamburger { display: none; }
 .lab-mobile-menu .menu-drawer { position: absolute; top: 64px; height: 526px; width: min(390px,100%); max-width: 100%; }
 .lab-mobile-menu header-drawer > details > summary::before { display: none; }
-.lab-gallery { max-width: 680px; }
-.lab-gallery .product__media-wrapper { width: 100%; max-width: 100%; }
-.lab-gallery .product-media-container { width: 100%; }
-.lab-gallery .product { margin: 0; }
 .lab-policy .policy-page__main, .lab-policy .policy-page__breadcrumbs { padding-inline: 0; }
 .lab-policy .policy-page__title { font-size: 28px; }
 .lab-policy .policy-page__columns { grid-template-columns: 180px minmax(0,1fr); }

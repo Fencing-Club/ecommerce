@@ -23,9 +23,6 @@ document.querySelectorAll('[data-action="select-example"]').forEach(button => bu
   status.textContent = `${button.getAttribute('aria-label') || button.textContent.trim()} activated`;
 }));
 document.querySelectorAll('.ui-button--icon').forEach(button => { button.title = button.getAttribute('aria-label'); });
-document.querySelector('#selection').addEventListener('change', event => {
-  if (event.target.type === 'radio') document.querySelector('#selection-status').textContent = event.target.classList.contains('disabled') ? `Size ${event.target.value} unavailable` : `Size ${event.target.value} selected`;
-});
 document.querySelectorAll('#selection .ui-pill[href]').forEach(link => link.addEventListener('click', event => {
   event.preventDefault();
   document.querySelectorAll('#selection .ui-pill').forEach(pill => { pill.classList.remove('ui-pill--active'); pill.removeAttribute('aria-current'); });

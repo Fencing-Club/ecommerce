@@ -112,13 +112,13 @@ template-owned hooks, never customer-supplied HTML. Callers must provide unique 
 
 | Family | Production components | Additional states and transitions |
 | --- | --- | --- |
-| Commands | `ui-button`, Dawn `buy-buttons`, cart checkout, form submit, quick add | Disabled, busy, success, error; retain width while label/spinner changes |
+| Commands | `ui-button`, Add to cart, cart checkout, form submit, quick add | Disabled, busy, success, error; retain width while label/spinner changes |
 | Icon actions | Header menu/search/account/cart, close, remove, share, copy, gallery controls, filter/reset | Tooltip/accessibility name, pressed, disabled; no hover-only meaning |
 | Links | `ui-link`, breadcrumbs, footer/social/contact links, support-band links | Visited where appropriate, current, download feedback; underline/arrow movement without layout shift |
-| Product options | `product-variant-picker`, `product-variant-options`, `swatch-input`, `swatch` | Selected, selected-hover, unavailable, unavailable-selected, focus, variant-loading; compare Dawn pills with a larger softened brand shape |
-| Quantities | `quantity-input`, cart steppers, volume-pricing controls | Min/max, blocked by inventory, busy, rejected/reset; announce accepted quantity and totals |
+| Product options | `ui-variant-picker`, `ui-swatch`, `swatch-input`, `swatch` | Selected, selected-hover, unavailable, unavailable-selected, focus, variant-loading |
+| Quantities | `ui-quantity-stepper`, cart steppers | Min/max, blocked by inventory, busy, rejected/reset; announce accepted quantity and totals |
 | Pills and tabs | `ui-pill`, journal filters, search category tabs, size-chart units/sizes | Selected/current, disabled, keyboard navigation appropriate to semantics; do not make static pills clickable |
-| Checkboxes and fields | `ui-checkbox-field`, cookie preferences, gift-card recipient form | Checked, indeterminate where used, disabled, invalid, required, autofill, validation success |
+| Checkboxes and fields | `ui-checkbox-field`, cookie preferences | Checked, indeterminate where used, disabled, invalid, required, autofill, validation success |
 | Text entry | Search, contact/newsletter, cart note/discount, price range, account forms | Empty, filled, focused, invalid, submitting, saved; errors next to the field, retain input on failure |
 | Sort and filters | `ui-sort-dropdown`, collection toolbar/facets, price facet, show-more | Open/closed, selected, applying, cleared, no results; focus restoration and outside/Escape dismissal |
 | Mega menu | `header-mega-menu`, `mega-menu-body`, columns/cards, weapon/kit panels | Trigger hover/focus/open/current; delayed pointer exit, diagonal travel, sibling switching, Escape, outside click, touch tap; panel fade/short translation and icon rotation |
@@ -202,8 +202,8 @@ tested without writing consent to Shopify. Required cookies remain checked and d
 state. The lab never loads the live Customer Privacy API.
 
 The expanded lab also includes breadcrumbs, Journal filters, pagination, collection checkbox/swatch filters, price
-limits, sorting, sidebar filter deselection, search idle/results/skeleton/empty/error states, country/currency and language selectors, contact-field patterns, price/swatch/dropdown variants,
-cart bundle/note/discount details, mobile nested navigation, product thumbnails/zoom, source-backed sizing controls,
+limits, sorting, sidebar filter deselection, search idle/results/skeleton/empty/error states, country/currency and language selectors, contact-field patterns,
+cart bundle/note/discount details, mobile nested navigation, source-backed sizing controls,
 downloads, policy contents/responsive tables, and footer utilities.
 
 The local search fixture supplies a popular-categories menu through the same `linklists` setting lookup used by the

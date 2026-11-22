@@ -56,15 +56,6 @@
     <output id="lab-form-status" role="status"></output>
   </form></div>
 </section>
-<section id="product-details" class="lab-section"><h2>Product details <code>price / swatch-input / product-variant-options</code></h2>
-  <div class="specimen lab-stack">
-    <div class="lab-row"><div><h3>Regular price</h3>{% render 'price', product: commerce.regular, show_badges: true %}</div><div><h3>Sale price</h3>{% render 'price', product: commerce.sale, show_badges: true %}</div><div><h3>Sold out</h3>{% render 'price', product: commerce.soldOut, show_badges: true %}</div></div>
-    <form id="lab-swatch-form"><fieldset class="product-form__input product-form__input--swatch"><legend>Color</legend>{% for swatch in commerce.swatches %}{% assign swatch_id = 'lab-swatch-' | append: forloop.index %}{% assign unavailable = false %}{% if forloop.last %}{% assign unavailable = true %}{% endif %}{% capture help %}<span class="visually-hidden">{{ swatch.label }}</span>{% endcapture %}{% render 'swatch-input', id: swatch_id, name: 'lab-color', value: swatch.label, swatch: swatch, checked: forloop.first, disabled: unavailable, help_text: help, product_form_id: 'lab-swatch-form' %}{% endfor %}</fieldset></form>
-    {% capture size_options %}{% render 'product-variant-options', option: option, picker_type: 'dropdown', section: dropdown_section %}{% endcapture %}
-    {% render 'ui-select', id: 'LabVariantDropdown', name: 'size', label: 'Size', options: size_options %}
-    <output id="product-details-status" role="status">White, size M</output>
-  </div>
-</section>
 <section id="cart-components" class="lab-section"><h2>Cart <code>cart-drawer / main-cart-items</code></h2>
   <p>The flyout and cart page have their own page with every state at tablet, phone and desktop widths: <a href="/lab/cart">Cart states</a>.</p>
 </section>
