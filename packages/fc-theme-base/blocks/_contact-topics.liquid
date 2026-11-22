@@ -1,0 +1,19 @@
+{%- comment -%}
+  The Contact page's topic cards: `_contact-topic` blocks in a grid. Choosing one sets the form's topic.
+{%- endcomment -%}
+<nav class="contact-page__intents" aria-label="{{ 'sections.contact.topics' | t }}" {{ block.shopify_attributes }}>
+  {%- content_for 'blocks' -%}
+</nav>
+
+{% schema %}
+{
+  "name": "t:blocks.contact_topics.name",
+  "blocks": [{ "type": "_contact-topic" }],
+  "presets": [
+    {
+      "name": "t:blocks.contact_topics.name",
+      "blocks": [{ "type": "_contact-topic" }]
+    }
+  ]
+}
+{% endschema %}

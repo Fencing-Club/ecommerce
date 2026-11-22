@@ -61,6 +61,12 @@ title and `id`. With structured data on, the page is a schema.org `FAQPage` in m
 `Question` inside it. The page heading and the contact card stay section settings. The breadcrumbs above it are the
 shared Breadcrumbs section, the template's first section.
 
+The Contact page has two sets of blocks in different places, so each sits in a static block that renders its own
+children: `_contact-topics` holds the `_contact-topic` cards above the form, shown through `ui-contact-intent-card`,
+and `_contact-answers` holds the `_contact-answer` quick answers below it, shown through `ui-contact-quick-answer`,
+with its heading and the link to the FAQ page. The page heading, the form and the direct contact column stay section
+settings, and its breadcrumbs are the Breadcrumbs section too.
+
 ## Rules
 
 - Keep each block small: one element and the settings real sections need. Reach for a group before adding layout
