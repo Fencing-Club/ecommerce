@@ -1,0 +1,52 @@
+{%- comment -%}
+  One Contact page topic card, shown through ui-contact-intent-card. Its topic is sent with the form.
+{%- endcomment -%}
+{%- render 'ui-contact-intent-card',
+  title: block.settings.title,
+  description: block.settings.description,
+  icon: block.settings.icon,
+  topic: block.settings.topic,
+  block: block
+-%}
+
+{% schema %}
+{
+  "name": "t:blocks.contact_topic.name",
+  "settings": [
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "t:blocks.contact_topic.settings.icon.label",
+      "options": [
+        { "value": "package", "label": "t:blocks.contact_topic.settings.icon.options.package" },
+        { "value": "ruler", "label": "t:blocks.contact_topic.settings.icon.options.ruler" },
+        { "value": "rotate-ccw", "label": "t:blocks.contact_topic.settings.icon.options.rotate_ccw" },
+        { "value": "users", "label": "t:blocks.contact_topic.settings.icon.options.users" },
+        { "value": "mic", "label": "t:blocks.contact_topic.settings.icon.options.mic" },
+        { "value": "message-circle", "label": "t:blocks.contact_topic.settings.icon.options.message_circle" }
+      ],
+      "default": "message-circle"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:blocks.contact_topic.settings.title.label",
+      "default": "Everything else"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "t:blocks.contact_topic.settings.description.label",
+      "default": "General questions. Just ask."
+    },
+    {
+      "type": "text",
+      "id": "topic",
+      "label": "t:blocks.contact_topic.settings.topic.label",
+      "info": "t:blocks.contact_topic.settings.topic.info",
+      "default": "General question"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.contact_topic.name" }]
+}
+{% endschema %}

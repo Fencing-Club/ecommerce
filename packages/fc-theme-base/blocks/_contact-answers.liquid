@@ -1,0 +1,53 @@
+{%- comment -%}
+  The Contact page's quick answers: a heading over `_contact-answer` blocks, then a link to the FAQ page.
+{%- endcomment -%}
+<section class="contact-page__answers" aria-labelledby="ContactAnswers-{{ block.id }}" {{ block.shopify_attributes }}>
+  <p class="contact-page__kicker">{{ block.settings.kicker | escape }}</p>
+  <h2 id="ContactAnswers-{{ block.id }}">{{ block.settings.heading | escape }}</h2>
+  <div class="contact-page__answer-grid">{%- content_for 'blocks' -%}</div>
+  {%- if pages.faq.url != blank -%}
+    <p class="contact-page__faq-link">
+      <span>{{ block.settings.faq_prompt | escape }}</span>
+      {%- render 'ui-link', label: block.settings.faq_label, url: pages.faq.url, icon: 'arrow-right' -%}
+    </p>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "t:blocks.contact_answers.name",
+  "blocks": [{ "type": "_contact-answer" }],
+  "settings": [
+    {
+      "type": "text",
+      "id": "kicker",
+      "label": "t:blocks.contact_answers.settings.kicker.label",
+      "default": "Before you write"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:blocks.contact_answers.settings.heading.label",
+      "default": "A few quick answers"
+    },
+    {
+      "type": "text",
+      "id": "faq_prompt",
+      "label": "t:blocks.contact_answers.settings.faq_prompt.label",
+      "default": "Still have a question?"
+    },
+    {
+      "type": "text",
+      "id": "faq_label",
+      "label": "t:blocks.contact_answers.settings.faq_label.label",
+      "default": "Read our full FAQ"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.contact_answers.name",
+      "blocks": [{ "type": "_contact-answer" }]
+    }
+  ]
+}
+{% endschema %}

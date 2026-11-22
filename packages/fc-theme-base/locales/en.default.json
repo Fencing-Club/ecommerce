@@ -514,6 +514,14 @@
     },
     "faq": {
       "topics": "FAQ topics"
+    },
+    "contact": {
+      "topics": "Contact topics",
+      "go": "Go",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "message": "Anything we should know?"
     }
   },
   "localization": {

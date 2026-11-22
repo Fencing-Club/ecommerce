@@ -1448,6 +1448,53 @@
           "info": "Optional. Size chart pages use the shared directory page when empty."
         }
       }
+    },
+    "contact_form": {
+      "name": "Contact form",
+      "settings": {
+        "kicker": {
+          "label": "Kicker"
+        },
+        "heading": {
+          "label": "Heading"
+        },
+        "subtitle": {
+          "label": "Subtitle"
+        },
+        "form": {
+          "content": "Form"
+        },
+        "form_heading": {
+          "label": "Heading"
+        },
+        "form_note": {
+          "label": "Note"
+        },
+        "name_placeholder": {
+          "label": "Name placeholder"
+        },
+        "email_placeholder": {
+          "label": "Email placeholder"
+        },
+        "phone_placeholder": {
+          "label": "Phone placeholder"
+        },
+        "message_placeholder": {
+          "label": "Message placeholder"
+        },
+        "submit_label": {
+          "label": "Submit label"
+        },
+        "direct_contact": {
+          "content": "Direct contact"
+        },
+        "direct_heading": {
+          "label": "Heading"
+        },
+        "direct_text": {
+          "label": "Text"
+        }
+      }
     }
   },
   "blocks": {
@@ -1832,6 +1879,63 @@
         },
         "link_url": {
           "label": "Related link"
+        }
+      }
+    },
+    "contact_topics": {
+      "name": "Topics"
+    },
+    "contact_topic": {
+      "name": "Topic",
+      "settings": {
+        "icon": {
+          "label": "Icon",
+          "options": {
+            "package": "Package",
+            "ruler": "Ruler",
+            "rotate_ccw": "Returns",
+            "users": "People",
+            "mic": "Microphone",
+            "message_circle": "Message"
+          }
+        },
+        "title": {
+          "label": "Title"
+        },
+        "description": {
+          "label": "Description"
+        },
+        "topic": {
+          "label": "Submitted topic",
+          "info": "Sent with the message so it reaches the right person."
+        }
+      }
+    },
+    "contact_answers": {
+      "name": "Quick answers",
+      "settings": {
+        "kicker": {
+          "label": "Kicker"
+        },
+        "heading": {
+          "label": "Heading"
+        },
+        "faq_prompt": {
+          "label": "FAQ prompt"
+        },
+        "faq_label": {
+          "label": "FAQ link label"
+        }
+      }
+    },
+    "contact_answer": {
+      "name": "Quick answer",
+      "settings": {
+        "question": {
+          "label": "Question"
+        },
+        "answer": {
+          "label": "Answer"
         }
       }
     }
