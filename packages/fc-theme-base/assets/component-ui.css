@@ -1841,6 +1841,13 @@ a.ui-rating__count { text-decoration: underline; text-underline-offset: 0.3rem; 
 /* Product stock line: where the chosen variant ships from, in quick view, quick add and on the product page. */
 .product-stock-line { display: flex; gap: 0.8rem; align-items: center; margin: 0; color: var(--muted-foreground); font-size: 1.3rem; line-height: 1.4; }
 .product-stock-line .ui-icon { flex: none; }
+/* The product page's version: a dot and the stock in bold, then the ships line. */
+.product-stock-line--in,
+.product-stock-line--low,
+.product-stock-line--out { color: var(--foreground); font-size: 1.4rem; font-weight: 600; }
+.product-stock-line__dot { flex: none; width: 0.8rem; height: 0.8rem; border-radius: 999px; background: #008236; /* green-700 */ }
+.product-stock-line--low .product-stock-line__dot { background: #bb4d00; /* amber-700 */ }
+.product-stock-line--out .product-stock-line__dot { background: var(--destructive); }
 
 /* UI/Filter chip: a filter in use, with an x that removes it. The text is trimmed to its capitals and baseline, so it
    sits in the middle of the chip whatever the font's ascent and descent. */
@@ -1982,7 +1989,6 @@ a.ui-rating__count { text-decoration: underline; text-underline-offset: 0.3rem; 
 .ui-variant-picker__name { color: var(--foreground); font-weight: 600; }
 .ui-variant-picker__name::after { content: ':'; }
 .ui-variant-picker__selected { color: var(--muted-foreground); }
-.ui-variant-picker__help { float: left; display: inline-flex; margin: 0.2rem 0 0 0.6rem; }
 .ui-variant-picker__guide {
   float: right;
   display: inline-flex;

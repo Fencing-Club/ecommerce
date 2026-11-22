@@ -1,0 +1,51 @@
+{% doc %}
+  The product page's buy bar, shown once the page's Add to cart scrolls away. On desktop it sits at the top with the
+  photo, name, choice, links to the page's sections, price and Add to cart; on phones it sits at the bottom with the
+  price, choice and Add to cart. Before a size is chosen, the button reads Choose a size and goes back to the sizes.
+  `assets/product-page.js` shows it and adds the section links.
+
+  @param {object} product - The product.
+  @param {object} variant - The chosen variant.
+  @param {string} form_id - The product form its Add to cart submits.
+  @param {string} [selection] - The choice in words, such as Right-handed, size 46, with each part escaped already.
+  @param {boolean} [unpicked] - Size isn't chosen yet.
+
+  @example
+  {% render 'product-sticky-bar', product: product, variant: current, form_id: form_id, selection: selection %}
+{% enddoc %}
+<div class="product-sticky" data-product-sticky inert>
+  <div class="product-sticky__inner">
+    <div class="product-sticky__product">
+      {%- if product.featured_image -%}
+        <span class="product-sticky__photo">
+          {{ product.featured_image | image_url: width: 88 | image_tag: loading: 'lazy', alt: '', width: 44, height: 44 }}
+        </span>
+      {%- endif -%}
+      <div class="product-sticky__text">
+        <p class="product-sticky__title">{{ product.title | escape }}</p>
+        {%- if selection != blank -%}
+          <p class="product-sticky__selection">{{ selection }}</p>
+        {%- endif -%}
+      </div>
+    </div>
+    <nav class="product-sticky__nav" aria-label="{{ 'products.product.on_this_page' | t }}" data-product-sticky-nav hidden></nav>
+    <div class="product-sticky__buy">
+      <div class="product-sticky__price">
+        {%- render 'ui-price', price: variant.price, compare_at_price: variant.compare_at_price, size: 'sm' -%}
+      </div>
+      {%- if unpicked -%}
+        {%- assign choose_label = 'products.product.choose_size' | t -%}
+        {%- render 'ui-button', label: choose_label, variant: 'primary', size: 'md', class: 'product-sticky__button', additional_props: 'data-product-sticky-choose' -%}
+      {%- elsif variant.available -%}
+        {%- liquid
+          assign add_label = 'products.product.add_to_cart' | t
+          assign add_props = 'form="' | append: form_id | append: '" name="add"'
+        -%}
+        {%- render 'ui-button', label: add_label, type: 'submit', variant: 'primary', size: 'md', class: 'product-sticky__button', additional_props: add_props -%}
+      {%- else -%}
+        {%- assign sold_out_label = 'products.product.sold_out' | t -%}
+        {%- render 'ui-button', label: sold_out_label, variant: 'primary', size: 'md', class: 'product-sticky__button', disabled: true -%}
+      {%- endif -%}
+    </div>
+  </div>
+</div>

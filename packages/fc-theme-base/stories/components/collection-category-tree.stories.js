@@ -74,3 +74,22 @@ export const NotInMenu = {
     await expect(canvasElement.querySelector('.collection-tree')).toBeNull();
   },
 };
+
+export const ProductBreadcrumbs = {
+  args: {
+    collection: null,
+    style: 'breadcrumbs',
+    home_label: 'Home',
+    product: {
+      title: 'Novus Mens Jacket 350N',
+      collections: [{ url: '/collections/clothing' }, { url: '/collections/jackets' }, { url: '/collections/mens-jackets' }, { url: '/collections/sale' }],
+    },
+  },
+  play: async ({ canvas }) => {
+    // The deepest menu collection holding the product leads to it.
+    await expect(canvas.getByRole('link', { name: 'Clothing' })).toHaveAttribute('href', '/collections/clothing');
+    await expect(canvas.getByRole('link', { name: 'Jackets' })).toHaveAttribute('href', '/collections/jackets');
+    await expect(canvas.getByRole('link', { name: "Men's" })).toHaveAttribute('href', '/collections/mens-jackets');
+    await expect(canvas.getByText('Novus Mens Jacket 350N')).toHaveAttribute('aria-current', 'page');
+  },
+};

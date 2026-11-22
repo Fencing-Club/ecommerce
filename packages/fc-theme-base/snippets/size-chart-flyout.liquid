@@ -1,8 +1,12 @@
 {% doc %}
-  Displays the product's assigned size chart using the shared content renderer.
-  @param {product} product - Current product.
-  @param {block} block - Theme-editor size_chart block.
-  @param {string} section_id - Section identity for accessible IDs.
+  The product's size chart in a drawer, which the product page's Size guide link opens. Renders nothing when the
+  product has no complete chart.
+
+  @param {product} product - The product.
+  @param {string} id - The drawer's dialog id, which Size guide points at.
+
+  @example
+  {% render 'size-chart-flyout', product: product, id: 'SizeChart-' | append: section.id %}
 {% enddoc %}
 {%- assign chart = product.metafields.custom.size_chart.value -%}
 {%- capture validity -%}{%- render 'size-chart-validity', chart: chart -%}{%- endcapture -%}
@@ -10,24 +14,18 @@
 {%- if validity == 'true' -%}
   {{ 'size-chart.css' | asset_url | stylesheet_tag }}
   <script src="{{ 'size-chart.js' | asset_url }}" defer="defer"></script>
-  {%- assign instance_id = section_id | append: '-' | append: block.id -%}
-  {%- assign drawer_id = 'SizeChartDrawer-' | append: instance_id -%}
-  {%- assign full_chart_link_id = 'FullChartLink-' | append: instance_id -%}
-  {%- assign drawer_title = 'Size chart: ' | append: chart.title.value -%}
-  {%- capture trigger -%}
-    <a class="size-chart__trigger" href="{{ chart.system.url }}" data-drawer-open aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ drawer_id }}">
-      {{ block.settings.label | default: 'Size chart' | escape }}{% render 'ui-icon', icon: 'arrow-right', size: 16 %}
-    </a>
-  {%- endcapture -%}
+  {%- liquid
+    assign full_chart_link_id = id | append: '-FullChart'
+    # The drawer escapes its title, so the chart's name goes in after the translation, which is escaped already.
+    assign drawer_title = 'products.size_chart.title' | t: title: '[title]' | replace: '[title]', chart.title.value
+    assign close_label = 'products.size_chart.close' | t
+    assign full_chart_label = 'products.size_chart.full_chart' | t
+  -%}
   {%- capture content -%}
-    {% render 'size-chart-content', chart: chart, instance_id: instance_id, is_flyout: true, full_chart_link_id: full_chart_link_id %}
+    {% render 'size-chart-content', chart: chart, instance_id: id, is_flyout: true, full_chart_link_id: full_chart_link_id %}
   {%- endcapture -%}
   {%- capture footer -%}
-    {% render 'ui-link', id: full_chart_link_id, label: 'View full chart', url: chart.system.url, icon: 'arrow-right', class: 'size-chart__full-link' %}
+    {% render 'ui-link', id: full_chart_link_id, label: full_chart_label, url: chart.system.url, icon: 'arrow-right', class: 'size-chart__full-link' %}
   {%- endcapture -%}
-  {% render 'ui-drawer', id: drawer_id, title: drawer_title, close_label: 'Close size chart',
-    trigger: trigger, content: content, footer: footer, size: 'wide', attributes: block.shopify_attributes
-  %}
-{%- elsif request.design_mode -%}
-  <p {{ block.shopify_attributes }}>Assign a published, complete size chart in this product's Size chart metafield.</p>
+  {% render 'ui-drawer', id: id, title: drawer_title, close_label: close_label, content: content, footer: footer, size: 'wide' %}
 {%- endif -%}

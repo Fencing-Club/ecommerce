@@ -110,7 +110,20 @@
     },
     "stock": {
       "local": "In stock in {{ place }}",
-      "partner": "Ships from our partner warehouse"
+      "partner": "Ships from our partner warehouse",
+      "partner_stock": "In stock at our partner warehouse",
+      "sold_out": "Sold out",
+      "sold_out_size": "Sold out in size {{ size }}",
+      "low": "Only {{ count }} left",
+      "low_size": "Only {{ count }} left in size {{ size }}",
+      "ships_same_day": "Ships within one business day.",
+      "ships_today": "Order in the next {{ time }} and it ships today.",
+      "time_left": "{{ hours }}h {{ minutes }}m",
+      "minutes_left": "{{ minutes }}m",
+      "ships_on": "Ships {{ day }}.",
+      "tomorrow": "tomorrow",
+      "ships_partner": "Ships in {{ min }} to {{ max }} business days.",
+      "arrives": "Arrives {{ start }} to {{ end }}."
     },
     "rating": {
       "label": "Rated {{ rating }} out of {{ max }}",
@@ -191,7 +204,11 @@
       "taxes_included": "Taxes included.",
       "duties_included": "Duties included.",
       "duties_and_taxes_included": "Duties and taxes included.",
-      "shipping_policy_html": "<a href=\"{{ link }}\">Shipping</a> calculated at checkout."
+      "shipping_policy_html": "<a href=\"{{ link }}\">Shipping</a> calculated at checkout.",
+      "shop_all": "Shop all {{ brand }}",
+      "selected_size": "size {{ size }}",
+      "choose_size": "Choose a size",
+      "on_this_page": "On this page"
     },
     "modal": {
       "label": "Media gallery"
@@ -228,6 +245,22 @@
       "lowest_price": "Lowest price",
       "highest_price": "Highest price",
       "clear_filter": "Remove filter"
+    },
+    "gallery": {
+      "photos": "Photos",
+      "photos_of": "Photos of {{ title }}",
+      "open_photo": "Open photo {{ index }} of {{ count }}",
+      "view_all": "View all {{ count }} photos",
+      "show_photo": "Show photo {{ index }}",
+      "photo_count": "{{ index }} of {{ count }}",
+      "close": "Close photos",
+      "previous": "Previous photo",
+      "next": "Next photo"
+    },
+    "size_chart": {
+      "title": "Size chart: {{ title }}",
+      "close": "Close size chart",
+      "full_chart": "View full chart"
     }
   },
   "templates": {

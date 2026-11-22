@@ -1,0 +1,21 @@
+{% doc %}
+  Whether a product's size starts unpicked, so nobody adds a size they didn't choose: true when the product has a size
+  option with more than one value and the address names no variant. Renders true or false.
+
+  @param {object} product - The product.
+
+  @example
+  {%- capture size_unpicked -%}{% render 'product-size-unpicked', product: product %}{%- endcapture -%}
+{% enddoc %}
+{%- liquid
+  assign unpicked = false
+  if product.selected_variant == blank and product.has_only_default_variant == false
+    for option in product.options_with_values
+      assign option_handle = option.name | handle
+      if option_handle contains 'size' and option.values.size > 1
+        assign unpicked = true
+      endif
+    endfor
+  endif
+  echo unpicked
+-%}

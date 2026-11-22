@@ -3,7 +3,7 @@
  * (`[data-photo-step]`), thumbnails and dots (`[data-photo-index]`) move between them. The counter
  * (`[data-photo-counter]`, its `data-template` holding `[index]`) and the current thumbnail or dot follow the track as
  * it scrolls, swipes included. `show(index)` moves to a photo and `showMedia(id)` to the photo with that
- * `data-media-id`, as when a variant is picked. Quick view's photos use it.
+ * `data-media-id`, as when a variant is picked. Quick view, the product page's gallery and its photo viewer use it.
  */
 class PhotoGallery extends HTMLElement {
   connectedCallback() {

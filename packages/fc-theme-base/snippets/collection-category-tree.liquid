@@ -4,7 +4,8 @@
   as a tree it shows the whole branch, opened down to the collection. As breadcrumbs it shows the menu levels above
   the collection, named as the menu names them; a collection that isn't in the menu gets Home and its title.
 
-  @param {object} collection - The collection on the page.
+  @param {object} [collection] - The collection on the page.
+  @param {object} [product] - A product, for breadcrumbs: they lead through the deepest menu collection holding it.
   @param {string} [menu] - The menu's handle. Default main-menu.
   @param {string} [style] - tiles (default), tree, breadcrumbs, or parent for a Shop all button to the collection one
     level up.
@@ -17,7 +18,40 @@
 {%- liquid
   assign level = 0
   assign menu_handle = menu | default: 'main-menu'
+  if product
+    # A product sits under the deepest menu collection it belongs to.
+    assign product_urls = product.collections | map: 'url' | join: '|' | prepend: '|' | append: '|'
+    for l1 in linklists[menu_handle].links
+      for l2 in l1.links
+        for l3 in l2.links
+          assign needle = '|' | append: l3.url | append: '|'
+          if level < 3 and product_urls contains needle
+            assign level = 3
+            assign branch = l1
+            assign open = l2
+            assign current = l3
+          endif
+        endfor
+        assign needle = '|' | append: l2.url | append: '|'
+        if level < 2 and product_urls contains needle
+          assign level = 2
+          assign branch = l1
+          assign open = l2
+          assign current = l2
+        endif
+      endfor
+      assign needle = '|' | append: l1.url | append: '|'
+      if level < 1 and product_urls contains needle
+        assign level = 1
+        assign branch = l1
+        assign current = l1
+      endif
+    endfor
+  endif
   for l1 in linklists[menu_handle].links
+    if product
+      break
+    endif
     if level > 0
       break
     endif
@@ -60,7 +94,21 @@
     if level > 0
       assign current_label = current.title
     endif
-    if level == 2
+    if product
+      # The product's own collection becomes the last link.
+      assign current_label = product.title
+      if level > 0
+        assign parent_label = current.title
+        assign parent_url = current.url
+      endif
+      if level == 2
+        assign ancestors = linklists[menu_handle].links | where: 'url', branch.url
+      elsif level == 3
+        assign top = linklists[menu_handle].links | where: 'url', branch.url
+        assign middle = branch.links | where: 'url', open.url
+        assign ancestors = top | concat: middle
+      endif
+    elsif level == 2
       assign parent_label = branch.title
       assign parent_url = branch.url
     elsif level == 3
