@@ -7,6 +7,7 @@
   - default_label: {String} Label to show when no sort is applied. Collections pass
     "Featured"; search omits it so the real default option name is used.
   - class: {String} Optional extra classes
+  - leading: {String} Optional HTML, such as an icon, shown before the value
 
   Uses the shared ui-select component.
 {%- endcomment -%}
@@ -31,6 +32,6 @@
             <option value="{{ option.value | escape }}" {% if option.value == sort_by %}selected{% endif %}>{{ option_label | escape }}</option>
           {%- endfor -%}
     {%- endcapture -%}
-    {% render 'ui-select', id: 'SortBy', name: 'sort_by', label: sort_label, prefix: sort_label, hide_label: true, options: sort_options %}
+    {% render 'ui-select', id: 'SortBy', name: 'sort_by', label: sort_label, prefix: sort_label, hide_label: true, options: sort_options, leading: leading %}
   </form>
 </facet-filters-form>

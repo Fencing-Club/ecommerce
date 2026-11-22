@@ -1,0 +1,175 @@
+{{ 'section-collection-buying-guide.css' | asset_url | stylesheet_tag }}
+{{ 'section-faq.css' | asset_url | stylesheet_tag }}
+
+{%- comment -%}
+  Below a collection's grid, so products load first: what the protection levels mean, common questions marked up as
+  an FAQPage, popular filtered pages and the brands the collection carries.
+{%- endcomment -%}
+{%- liquid
+  assign title = collection.title | downcase
+  assign levels = section.blocks | where: 'type', 'level'
+  assign questions = section.blocks | where: 'type', 'question'
+  assign popular = linklists[section.settings.popular_menu].links
+-%}
+<section class="collection-guide" id="{{ section.settings.anchor | escape }}" aria-labelledby="CollectionGuide-{{ section.id }}">
+  <div class="collection-guide__inner page-width">
+    <div class="collection-guide__header">
+      <div class="collection-guide__intro">
+        {%- if section.settings.eyebrow != blank -%}
+          <p class="collection-guide__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+        {%- endif -%}
+        <h2 class="collection-guide__heading" id="CollectionGuide-{{ section.id }}">{{ 'collections.guide.heading' | t: title: title }}</h2>
+        {%- if section.settings.intro != blank -%}
+          <div class="collection-guide__text">{{ section.settings.intro }}</div>
+        {%- endif -%}
+      </div>
+      {%- if section.settings.note != blank -%}
+        <p class="collection-guide__note">
+          {%- render 'ui-icon', icon: 'info', size: 16 -%}
+          <span>{{ section.settings.note | escape }}</span>
+        </p>
+      {%- endif -%}
+    </div>
+
+    {%- if levels.size > 0 -%}
+      <table class="collection-guide__levels">
+        <thead>
+          <tr>
+            <th scope="col">{{ 'collections.guide.level' | t }}</th>
+            <th scope="col">{{ 'collections.guide.meaning' | t }}</th>
+            <th scope="col">{{ 'collections.guide.where' | t }}</th>
+            <th scope="col"><span class="visually-hidden">{{ 'collections.guide.shop' | t }}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {%- for block in levels -%}
+            <tr {{ block.shopify_attributes }}>
+              <th scope="row">{% render 'ui-protection-badge', label: block.settings.label %}</th>
+              <td class="collection-guide__meaning">{{ block.settings.meaning | escape }}</td>
+              <td class="collection-guide__where">{{ block.settings.where | escape }}</td>
+              <td class="collection-guide__shop">
+                {%- liquid
+                  assign level_url = block.settings.link
+                  if level_url == blank
+                    assign level_url = collection.url
+                    assign separator = '?'
+                    assign parts = block.settings.label | split: ' '
+                    for part in parts
+                      if part == 'FIE'
+                        assign level_url = level_url | append: separator | append: 'filter.p.m.custom.fie_status=FIE'
+                      else
+                        assign level_url = level_url | append: separator | append: 'filter.p.m.custom.protection_rating=' | append: part
+                      endif
+                      assign separator = '&'
+                    endfor
+                  endif
+                -%}
+                {%- if level_url != blank -%}
+                  <a href="{{ level_url }}">
+                    <span class="collection-guide__shop-label">{{ 'collections.guide.shop_level' | t: level: block.settings.label }}</span>
+                    {%- render 'ui-icon', icon: 'arrow-right', size: 14 -%}
+                  </a>
+                {%- endif -%}
+              </td>
+            </tr>
+          {%- endfor -%}
+        </tbody>
+      </table>
+    {%- endif -%}
+
+    {%- capture brands -%}
+      {%- for vendor in collection.all_vendors -%}
+        {%- assign vendor_handle = vendor | handle -%}
+        {%- assign brand = shop.metaobjects.brand[vendor_handle] -%}
+        {%- if brand.logo.value != blank -%}
+          <li>
+            <a class="collection-guide__brand" href="{{ vendor | url_for_vendor }}">
+              {{ brand.logo.value | image_url: width: 240 | image_tag: loading: 'lazy', alt: vendor, width: 120, height: 40 }}
+            </a>
+          </li>
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+
+    {%- if questions.size > 0 or popular.size > 0 or brands != blank -%}
+      <div class="collection-guide__more">
+        {%- if questions.size > 0 -%}
+          <div class="collection-guide__faq" itemscope itemtype="https://schema.org/FAQPage">
+            <h2 class="collection-guide__subheading">{{ 'collections.guide.questions' | t: title: title }}</h2>
+            <div class="collection-guide__questions">
+              {%- for block in questions -%}
+                {%- render 'ui-faq-item', question: block.settings.question, answer: block.settings.answer, open: forloop.first, structured_data: true, variant: 'plain', block: block -%}
+              {%- endfor -%}
+            </div>
+          </div>
+        {%- endif -%}
+        {%- if popular.size > 0 or brands != blank -%}
+          <div class="collection-guide__links">
+            {%- if popular.size > 0 -%}
+              <nav class="collection-guide__popular" aria-labelledby="CollectionGuidePopular-{{ section.id }}">
+                <h3 class="collection-guide__links-title" id="CollectionGuidePopular-{{ section.id }}">{{ 'collections.guide.popular' | t: title: title }}</h3>
+                <ul class="collection-guide__chips list-unstyled">
+                  {%- for link in popular -%}
+                    <li>{% render 'ui-pill', label: link.title, url: link.url %}</li>
+                  {%- endfor -%}
+                </ul>
+              </nav>
+            {%- endif -%}
+            {%- if brands != blank -%}
+              <div class="collection-guide__brands">
+                <h3 class="collection-guide__links-title">{{ 'collections.guide.brands' | t: title: title }}</h3>
+                <ul class="collection-guide__logos list-unstyled">{{ brands }}</ul>
+              </div>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Buying guide",
+  "class": "section",
+  "settings": [
+    { "type": "text", "id": "anchor", "label": "Anchor", "info": "The hero's guide link and the levels help link here.", "default": "BuyingGuide" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Buying guide" },
+    {
+      "type": "richtext",
+      "id": "intro",
+      "label": "Introduction",
+      "default": "<p>Every piece of fencing clothing has a protection level. The number is the force, in newtons, the fabric resists before a blade gets through. FIE marks mean the International Fencing Federation has approved the item for its events.</p>"
+    },
+    { "type": "text", "id": "note", "label": "Note", "default": "Rules vary by event. Check yours before you buy." },
+    { "type": "link_list", "id": "popular_menu", "label": "Popular links", "info": "A menu of curated filter pages." }
+  ],
+  "blocks": [
+    {
+      "type": "level",
+      "name": "Protection level",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Level", "default": "350N" },
+        { "type": "text", "id": "meaning", "label": "What it means", "default": "Fabric resists 350 newtons." },
+        { "type": "text", "id": "where", "label": "Where you'll wear it", "default": "Club training and most domestic events." },
+        { "type": "url", "id": "link", "label": "Shop link", "info": "Leave empty to link to this collection filtered by the level." }
+      ]
+    },
+    {
+      "type": "question",
+      "name": "Question",
+      "settings": [
+        { "type": "text", "id": "question", "label": "Question", "default": "What size fencing jacket should I buy?" },
+        {
+          "type": "richtext",
+          "id": "answer",
+          "label": "Answer",
+          "default": "<p>Measure your chest, waist and arm length, then match them to the size chart on the product page. Each product has its own chart.</p>"
+        }
+      ]
+    }
+  ],
+  "presets": [{ "name": "Buying guide" }],
+  "enabled_on": { "templates": ["collection"] }
+}
+{% endschema %}

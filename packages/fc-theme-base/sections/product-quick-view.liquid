@@ -1,0 +1,264 @@
+{%- comment -%}
+  Quick view's content for one product, fetched into the quick view dialog through the section rendering API
+  (`/products/<handle>?section_id=product-quick-view`). Pages never show this section on their own. On desktop it's
+  the photos beside the buy box; on phones it's the quick add sheet: a small photo, the options and Add to cart.
+  Size starts unpicked until the shopper chooses one, so nobody adds a size they didn't pick.
+{%- endcomment -%}
+{%- liquid
+  assign current = product.selected_or_first_available_variant
+  assign form_id = 'QuickViewForm-' | append: product.id
+  assign title_id = 'QuickViewTitle-' | append: product.id
+  assign images = product.media | where: 'media_type', 'image'
+  assign image_count = images.size
+  # A complete size chart opens in place of the options, with a Back button, so the dialog stays one layer.
+  assign size_chart = product.metafields.custom.size_chart.value
+  capture size_chart_ready
+    render 'size-chart-validity', chart: size_chart
+  endcapture
+  assign size_guide_url = ''
+  assign size_guide_id = ''
+  if size_chart_ready contains 'true'
+    assign size_guide_url = size_chart.system.url
+    assign size_guide_id = 'QuickViewSizeGuide-' | append: product.id
+  endif
+  assign rating = product.metafields.reviews.rating.value
+  assign rating_count = product.metafields.reviews.rating_count.value
+
+  assign size_unpicked = false
+  if product.selected_variant == blank and product.has_only_default_variant == false
+    for option in product.options_with_values
+      assign option_handle = option.name | handle
+      if option_handle contains 'size' and option.values.size > 1
+        assign size_unpicked = true
+      endif
+    endfor
+  endif
+
+  assign summary = product.metafields.custom.subtitle.value
+  if summary == blank
+    # Descriptions pasted from elsewhere often carry non-breaking spaces, which would leave wide gaps.
+    assign summary = product.description | strip_html | replace: '&nbsp;', ' ' | replace: ' ', ' ' | split: ' ' | join: ' ' | truncatewords: 22
+  endif
+
+  capture shipping_text
+    render 'cart-free-shipping'
+  endcapture
+  assign shipping = shipping_text | plus: 0
+-%}
+<div class="quick-view__content" data-quick-view-content data-title-id="{{ title_id }}">
+  {%- if image_count > 0 -%}
+    <div class="quick-view__gallery" data-quick-view-gallery>
+      {%- if image_count > 1 -%}
+        <div class="quick-view__thumbs">
+          {%- for image in images -%}
+            <button
+              type="button"
+              class="quick-view__thumb"
+              data-photo-index="{{ forloop.index0 }}"
+              aria-label="{{ 'products.quick_view.show_photo' | t: index: forloop.index }}"
+              {% if forloop.first %}
+                aria-current="true"
+              {% endif %}
+            >
+              {{ image | image_url: width: 160 | image_tag: loading: 'lazy', alt: '', width: 64, height: 80 }}
+            </button>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+      <div class="quick-view__photo">
+        {%- comment -%} Focusable, so keyboards can scroll the photos too. {%- endcomment -%}
+        <div
+          class="quick-view__track"
+          data-photo-track
+          role="group"
+          aria-label="{{ 'products.quick_view.photos' | t }}"
+          tabindex="0"
+        >
+          {%- for image in images -%}
+            <div class="quick-view__slide" data-media-id="{{ image.id }}">
+              {%- liquid
+                assign loading = 'lazy'
+                if forloop.first
+                  assign loading = 'eager'
+                endif
+              -%}
+              {{
+                image
+                | image_url: width: 900
+                | image_tag: loading: loading, widths: '420, 640, 900', sizes: '(min-width: 990px) 420px, 100vw'
+              }}
+            </div>
+          {%- endfor -%}
+        </div>
+        <div class="quick-view__photo-top">{%- render 'ui-protection-badge', product: product -%}</div>
+        {%- if image_count > 1 -%}
+          <div class="quick-view__arrows">
+            <button type="button" class="quick-view__arrow" data-photo-step="-1" aria-label="{{ 'products.product.previous_photo' | t }}">
+              {%- render 'ui-icon', icon: 'chevron-left', size: 18 -%}
+            </button>
+            <button type="button" class="quick-view__arrow" data-photo-step="1" aria-label="{{ 'products.product.next_photo' | t }}">
+              {%- render 'ui-icon', icon: 'chevron-right', size: 18 -%}
+            </button>
+          </div>
+          <p class="quick-view__counter" data-photo-counter data-template="{{ 'products.quick_view.photo_count' | t: index: '[index]', count: image_count | escape }}">
+            {{- 'products.quick_view.photo_count' | t: index: 1, count: image_count -}}
+          </p>
+        {%- endif -%}
+      </div>
+    </div>
+  {%- endif -%}
+
+  <div class="quick-view__details">
+    <div class="quick-view__head">
+      {%- if product.featured_image -%}
+        <span class="quick-view__head-photo">
+          {{ product.featured_image | image_url: width: 160 | image_tag: loading: 'lazy', alt: '', width: 64, height: 64 }}
+        </span>
+      {%- endif -%}
+      <div class="quick-view__title-block">
+        <p class="quick-view__brand">{{ product.vendor | escape }}</p>
+        <h2 class="quick-view__title" id="{{ title_id }}">{{ product.title | escape }}</h2>
+        {%- if rating != blank -%}
+          <div class="quick-view__rating">
+            {%- render 'ui-rating', rating: rating.rating, max: rating.scale_max, count: rating_count -%}
+          </div>
+        {%- endif -%}
+        <div class="quick-view__price">
+          {%- render 'ui-price', price: current.price, compare_at_price: current.compare_at_price, trim: true -%}
+        </div>
+        <div class="quick-view__head-badge">{%- render 'ui-protection-badge', product: product -%}</div>
+      </div>
+    </div>
+    {%- if summary != blank -%}
+      <p class="quick-view__summary">{{ summary | escape }}</p>
+    {%- endif -%}
+
+    <product-options class="quick-view__buy" data-section="product-quick-view" data-url="{{ product.url }}">
+      {%- unless product.has_only_default_variant -%}
+        <div class="quick-view__options">
+          {%- render 'product-option-pickers',
+            product: product,
+            id_prefix: 'QuickView',
+            form_id: form_id,
+            size_unpicked: size_unpicked,
+            size_guide_url: size_guide_url,
+            size_guide_controls: size_guide_id,
+            compact: true
+          -%}
+          <p class="quick-view__option-error" data-option-error hidden></p>
+        </div>
+      {%- endunless -%}
+
+      <product-form class="quick-view__actions" data-section-id="product-quick-view">
+        {%- form 'product', product, id: form_id, novalidate: 'novalidate', data-type: 'add-to-cart-form' -%}
+          <input
+            type="hidden"
+            name="id"
+            value="{% unless size_unpicked %}{{ current.id }}{% endunless %}"
+            class="product-variant-id"
+            data-choose-message="{{ 'products.quick_view.choose_first' | t: option: 'size' | escape }}"
+          >
+          {%- render 'ui-quantity-stepper',
+            id: 'QuickViewQuantity',
+            name: 'quantity',
+            product_title: product.title,
+            form_id: form_id
+          -%}
+          {%- liquid
+            assign add_label = 'products.product.add_to_cart' | t
+            assign add_props = 'name="add"'
+            unless current.available or size_unpicked
+              assign add_label = 'products.product.sold_out' | t
+              assign add_props = 'name="add" aria-disabled="true"'
+            endunless
+          -%}
+          {%- render 'ui-button',
+            label: add_label,
+            type: 'submit',
+            variant: 'primary',
+            size: 'lg',
+            icon: 'shopping-bag',
+            spinner: true,
+            class: 'quick-view__add',
+            additional_props: add_props
+          -%}
+        {%- endform -%}
+        <p class="quick-view__error product-form__error-message-wrapper" role="alert" hidden>
+          {%- render 'ui-icon', icon: 'circle-alert', size: 16 -%}
+          <span class="product-form__error-message"></span>
+        </p>
+      </product-form>
+
+      <div class="quick-view__delivery">
+        {%- render 'product-stock-line', variant: current -%}
+        {%- if shipping > 0 -%}
+          {%- assign shipping_amount = shipping | money_without_trailing_zeros -%}
+          <p class="product-stock-line">
+            {%- render 'ui-icon', icon: 'truck', size: 16 -%}
+            <span>{{ 'general.free_shipping' | t: amount: shipping_amount }}</span>
+          </p>
+        {%- endif -%}
+      </div>
+
+      <script type="application/json" data-product-variants>
+        [
+          {%- for variant in product.variants -%}
+            {"id":{{ variant.id }},"options":{{ variant.options | json }},"available":{{ variant.available | json }},"media":{{ variant.featured_media.id | json }}}{% unless forloop.last %},{% endunless %}
+          {%- endfor -%}
+        ]
+      </script>
+    </product-options>
+
+    {%- if size_guide_id != blank -%}
+      {%- liquid
+        assign size_guide_title_id = size_guide_id | append: '-Title'
+        assign full_chart_link_id = size_guide_id | append: '-FullChart'
+        assign full_chart_label = 'products.quick_view.full_chart' | t
+      -%}
+      <div
+        class="quick-view__size-guide"
+        id="{{ size_guide_id }}"
+        role="region"
+        aria-labelledby="{{ size_guide_title_id }}"
+        data-size-guide
+        hidden
+      >
+        <div class="quick-view__size-guide-head">
+          <button type="button" class="quick-view__back" data-size-guide-close>
+            {%- render 'ui-icon', icon: 'arrow-left', size: 16 -%}
+            {{- 'products.quick_view.back_to_options' | t -}}
+          </button>
+          <h3 class="quick-view__size-guide-title" id="{{ size_guide_title_id }}" tabindex="-1">
+            {{- 'products.quick_view.size_chart' | t: title: size_chart.title.value -}}
+          </h3>
+        </div>
+        {%- render 'size-chart-content',
+          chart: size_chart,
+          instance_id: size_guide_id,
+          is_flyout: true,
+          full_chart_link_id: full_chart_link_id
+        -%}
+        {%- render 'ui-link',
+          id: full_chart_link_id,
+          label: full_chart_label,
+          url: size_chart.system.url,
+          icon: 'arrow-right',
+          class: 'quick-view__full-chart'
+        -%}
+      </div>
+    {%- endif -%}
+
+    <a class="quick-view__full" href="{{ product.url }}">
+      {{- 'products.quick_view.full_details' | t -}}
+      {%- render 'ui-icon', icon: 'arrow-right', size: 16 -%}
+    </a>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Quick view",
+  "class": "quick-view-section",
+  "enabled_on": { "templates": ["product"] }
+}
+{% endschema %}

@@ -1,0 +1,42 @@
+{{ 'section-recently-viewed.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'recently-viewed.js' | asset_url }}" type="module"></script>
+
+{%- comment -%}
+  The products this shopper looked at last, newest first, kept in their browser. The section stays hidden until
+  there's something to show. Product pages add to the list.
+{%- endcomment -%}
+<recently-viewed
+  class="recently-viewed page-width"
+  data-limit="{{ section.settings.limit }}"
+  {% if product %}data-exclude="{{ product.handle | escape }}"{% endif %}
+  hidden
+>
+  <div class="recently-viewed__header">
+    <h2 class="recently-viewed__title" id="RecentlyViewed-{{ section.id }}">{{ 'collections.recent.title' | t }}</h2>
+    <button type="button" class="recently-viewed__clear" data-recently-viewed-clear>{{ 'collections.recent.clear' | t }}</button>
+  </div>
+  <ul class="recently-viewed__items list-unstyled" aria-labelledby="RecentlyViewed-{{ section.id }}" data-recently-viewed-items></ul>
+  <template data-recently-viewed-item>
+    <li>
+      <a class="recently-viewed__item" href="">
+        <span class="recently-viewed__thumb"><img alt="" width="120" height="120" loading="lazy"></span>
+        <span class="recently-viewed__text">
+          <span class="recently-viewed__name"></span>
+          <span class="recently-viewed__price"></span>
+        </span>
+      </a>
+    </li>
+  </template>
+</recently-viewed>
+
+{% schema %}
+{
+  "name": "Recently viewed",
+  "class": "section",
+  "settings": [
+    { "type": "range", "id": "limit", "min": 2, "max": 12, "step": 1, "default": 6, "label": "Products to show" }
+  ],
+  "presets": [{ "name": "Recently viewed" }],
+  "enabled_on": { "templates": ["collection", "product", "search"] }
+}
+{% endschema %}

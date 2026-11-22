@@ -1,12 +1,25 @@
 {% doc %}
-  One product option, such as Size or Colour, as a group of choices under a legend. Text options render ui-choice and
-  colour options ui-swatch. Unavailable values are disabled and struck through.
+  One product option, such as Hand, Size or Color, as a group of choices under a label that names the chosen value.
+  Text options render ui-choice and color options ui-swatch. Hand values read Right-handed and Left-handed. A sold-out
+  value stays selectable, so shoppers can pick it and ask to hear when it's back; it shows muted and struck through.
+  Options with long values, such as shoe sizes in US and cm, lay their choices out as rows that fill the width.
+  Each input carries its Shopify option value id, which `assets/product-options.js` uses to find the variant.
 
-  @param {object} option - A product_option: name, position and values, each with name, available, selected and swatch.
+  @param {object} option - A product_option: name, position and values, each with id, name, available, selected and
+    swatch.
   @param {string} [id_prefix] - Makes the input ids unique when the picker appears more than once. Default: VariantPicker.
   @param {string} [name] - The radio group's name. Default: options[option name].
   @param {string} [style] - choice (default) or swatch.
   @param {string} [form_id] - The product form the inputs belong to.
+  @param {boolean} [unpicked] - Shows no value chosen yet, with a prompt such as Choose a size in the label.
+  @param {string} [size_guide_url] - Adds a Size guide link at the end of the label row.
+  @param {string} [size_guide_controls] - The id of a panel on the page that Size guide opens instead of following its
+    link.
+  @param {string} [help] - HTML after the chosen value, such as a help button.
+  @param {boolean} [compact] - The smaller choices quick view and quick add use.
+
+  @example
+  {% render 'ui-variant-picker', option: option, form_id: 'ProductForm' %}
 {% enddoc %}
 {%- liquid
   assign prefix = id_prefix | default: 'VariantPicker'
@@ -14,47 +27,123 @@
   if group_name == blank
     assign group_name = 'options[' | append: option.name | append: ']'
   endif
-  for value in option.values
-    if value.selected
-      assign selected_name = value.name
+  assign option_handle = option.name | handle
+  assign is_hand = false
+  if option_handle contains 'hand'
+    assign is_hand = true
+  endif
+  assign option_label = option.name
+  if is_hand
+    assign option_label = 'products.option.hand' | t
+  endif
+  assign prompt_name = option_label | downcase
+  assign prompt = 'products.option.choose' | t: option: prompt_name
+  assign selected_name = ''
+  unless unpicked
+    for value in option.values
+      if value.selected
+        assign selected_name = value.name
+        if is_hand
+          assign value_handle = value.name | handle
+          if value_handle == 'right' or value_handle == 'left'
+            assign selected_name = 'products.option.handed' | t: side: value.name
+          endif
+        endif
+      endif
+    endfor
+  endunless
+  assign sold_out_note = 'products.option.sold_out' | t
+  # The longest value sets how narrow the compact grid's columns can get, so no value breaks inside a word.
+  assign has_long_value = false
+  assign longest_value = 2
+  unless style == 'swatch'
+    for value in option.values
+      if value.name.size > longest_value
+        assign longest_value = value.name.size
+      endif
+    endfor
+    if longest_value > 12
+      assign has_long_value = true
     endif
-  endfor
+  endunless
 -%}
-<fieldset class="ui-variant-picker{% if style == 'swatch' %} ui-variant-picker--swatch{% endif %}">
+<fieldset
+  class="ui-variant-picker{% if style == 'swatch' %} ui-variant-picker--swatch{% endif %}{% if is_hand %} ui-variant-picker--hand{% endif %}{% if compact %} ui-variant-picker--compact{% endif %}{% if has_long_value %} ui-variant-picker--long{% endif %}"
+  data-option-position="{{ option.position }}"
+  style="--choice-chars: {{ longest_value }};"
+>
   <legend class="ui-variant-picker__legend">
-    {{- option.name | escape }}
-    {%- if style == 'swatch' and selected_name != blank %}
-      <span class="ui-variant-picker__selected">{{ selected_name | escape }}</span>
-    {%- endif -%}
+    <span class="ui-variant-picker__name">{{ option_label | escape }}</span>
+    <span class="ui-variant-picker__selected" data-option-selected data-prompt="{{ prompt | escape }}">
+      {{- selected_name | default: prompt | escape -}}
+    </span>
   </legend>
+  {%- if help != blank -%}<span class="ui-variant-picker__help">{{ help }}</span>{%- endif -%}
+  {%- if size_guide_url != blank -%}
+    <a
+      class="ui-variant-picker__guide"
+      href="{{ size_guide_url }}"
+      {% if size_guide_controls != blank %}
+        aria-controls="{{ size_guide_controls }}" aria-expanded="false" data-size-guide-open
+      {% endif %}
+    >
+      {%- render 'ui-icon', icon: 'ruler', size: 15 -%}
+      {{- 'products.option.size_guide' | t -}}
+    </a>
+  {%- endif -%}
   <div class="ui-variant-picker__options">
     {%- for value in option.values -%}
-      {%- capture input_id %}{{ prefix }}-{{ option.position }}-{{ forloop.index0 }}{% endcapture -%}
-      {%- assign unavailable = false -%}
-      {%- unless value.available -%}
-        {%- assign unavailable = true -%}
-      {%- endunless -%}
+      {%- liquid
+        capture input_id
+          echo prefix | append: '-' | append: option.position | append: '-' | append: forloop.index0
+        endcapture
+        assign checked = false
+        if value.selected and unpicked != true
+          assign checked = true
+        endif
+        assign value_label = value.name
+        if is_hand
+          assign value_handle = value.name | handle
+          if value_handle == 'right' or value_handle == 'left'
+            assign value_label = 'products.option.handed' | t: side: value.name
+          endif
+        endif
+        assign label_attribute = value_label | escape
+        capture props
+          echo 'data-option-value-id="' | append: value.id | append: '" data-option-label="' | append: label_attribute | append: '"'
+          unless value.available
+            echo ' data-unavailable'
+          endunless
+        endcapture
+        assign note = ''
+        unless value.available
+          assign note = '<span class="visually-hidden">, ' | append: sold_out_note | append: '</span>'
+        endunless
+      -%}
       {%- if style == 'swatch' -%}
+        {%- capture swatch_background -%}
+          {%- render 'swatch-background', swatch: value.swatch, color_name: value.name -%}
+        {%- endcapture -%}
         {%- render 'ui-swatch',
           id: input_id,
           name: group_name,
           value: value.name,
-          label: value.name,
-          color: value.swatch.color,
-          image: value.swatch.image,
-          checked: value.selected,
-          disabled: unavailable,
-          form_id: form_id
+          label: value_label,
+          background: swatch_background,
+          checked: checked,
+          form_id: form_id,
+          additional_props: props
         -%}
       {%- else -%}
         {%- render 'ui-choice',
           id: input_id,
           name: group_name,
           value: value.name,
-          label: value.name,
-          checked: value.selected,
-          disabled: unavailable,
-          form_id: form_id
+          label: value_label,
+          help_text: note,
+          checked: checked,
+          form_id: form_id,
+          additional_props: props
         -%}
       {%- endif -%}
     {%- endfor -%}

@@ -12,8 +12,7 @@
         "announcement-bar-0": {
           "type": "_announcement",
           "settings": {
-            "title": "Free US shipping",
-            "message": "On orders over $375",
+            "content": "free_shipping",
             "tone": "default",
             "link": "shopify://collections/all",
             "link_label": "Shop now"

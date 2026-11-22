@@ -1,0 +1,50 @@
+{% doc %}
+  A product's star rating: five stars filled to the rating, the rating as a number and the review count. The reviews
+  app writes the rating and count to the product's reviews.rating and reviews.rating_count fields.
+
+  @param {number} rating - The average rating, such as 4.7.
+  @param {number} [max] - The top of the scale. Default: 5.
+  @param {number} [count] - How many reviews the rating comes from.
+  @param {string} [url] - Makes the review count a link, such as to the reviews on the page.
+  @param {string} [size] - sm (default) for quick view, md for the product page.
+
+  @example
+  {% render 'ui-rating', rating: product.metafields.reviews.rating.value.rating, count: product.metafields.reviews.rating_count.value %}
+{% enddoc %}
+{%- liquid
+  assign top = max | default: 5
+  assign share = rating | times: 100.0 | divided_by: top | at_most: 100
+  # One decimal place, built by hand so 5 reads 5.0 everywhere.
+  assign tenths = rating | times: 10 | round
+  assign whole = tenths | divided_by: 10 | floor
+  assign decimal = tenths | modulo: 10
+  assign rating_text = whole | append: '.' | append: decimal
+  assign star_size = 14
+  if size == 'md'
+    assign star_size = 16
+  endif
+-%}
+<div class="ui-rating{% if size == 'md' %} ui-rating--md{% endif %}">
+  <span
+    class="ui-rating__stars"
+    role="img"
+    aria-label="{{ 'products.rating.label' | t: rating: rating_text, max: top | escape }}"
+    style="--rating: {{ share }}%;"
+  >
+    <span class="ui-rating__row">
+      {%- for i in (1..top) -%}{%- render 'ui-icon', icon: 'star', size: star_size -%}{%- endfor -%}
+    </span>
+    <span class="ui-rating__row ui-rating__row--full">
+      {%- for i in (1..top) -%}{%- render 'ui-icon', icon: 'star', size: star_size -%}{%- endfor -%}
+    </span>
+  </span>
+  <span class="ui-rating__value" aria-hidden="true">{{ rating_text }}</span>
+  {%- if count != blank -%}
+    {%- assign count_label = 'products.rating.reviews' | t: count: count -%}
+    {%- if url != blank -%}
+      <a class="ui-rating__count" href="{{ url }}">{{ count_label }}</a>
+    {%- else -%}
+      <span class="ui-rating__count">{{ count_label }}</span>
+    {%- endif -%}
+  {%- endif -%}
+</div>

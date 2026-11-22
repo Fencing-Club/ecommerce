@@ -1,21 +1,43 @@
 {%- comment -%}
   One announcement in the announcement bar: a ui-banner in the announcement's tone. The bar fades between them.
+  A free shipping announcement takes its minimum from Theme settings > Cart, as the cart does, and only shoppers who
+  get free shipping see it (snippets/cart-free-shipping.liquid).
 {%- endcomment -%}
-<div
-  class="announcement"
-  data-carousel-slide
-  role="group"
-  aria-roledescription="{{ 'sections.announcement_bar.slide' | t }}"
-  {{ block.shopify_attributes }}
->
-  {%- render 'ui-banner',
-    title: block.settings.title,
-    message: block.settings.message,
-    link_label: block.settings.link_label,
-    url: block.settings.link,
-    tone: block.settings.tone
-  -%}
-</div>
+{%- liquid
+  assign title = block.settings.title
+  assign message = block.settings.message
+  assign shown = true
+  if block.settings.content == 'free_shipping'
+    capture free_shipping
+      render 'cart-free-shipping'
+    endcapture
+    assign free_shipping = free_shipping | plus: 0
+    assign shown = false
+    if free_shipping > 0
+      assign shown = true
+      assign amount = free_shipping | money_without_trailing_zeros
+      assign title = 'sections.announcement_bar.free_shipping_title' | t
+      assign message = 'sections.announcement_bar.free_shipping_message' | t: amount: amount
+    endif
+  endif
+-%}
+{%- if shown -%}
+  <div
+    class="announcement"
+    data-carousel-slide
+    role="group"
+    aria-roledescription="{{ 'sections.announcement_bar.slide' | t }}"
+    {{ block.shopify_attributes }}
+  >
+    {%- render 'ui-banner',
+      title: title,
+      message: message,
+      link_label: block.settings.link_label,
+      url: block.settings.link,
+      tone: block.settings.tone
+    -%}
+  </div>
+{%- endif -%}
 
 {% stylesheet %}
   .announcement {
@@ -50,16 +72,29 @@
   "name": "t:blocks.announcement.name",
   "settings": [
     {
+      "type": "select",
+      "id": "content",
+      "label": "t:blocks.announcement.settings.content.label",
+      "info": "t:blocks.announcement.settings.content.info",
+      "default": "custom",
+      "options": [
+        { "value": "custom", "label": "t:blocks.announcement.settings.content.options__custom" },
+        { "value": "free_shipping", "label": "t:blocks.announcement.settings.content.options__free_shipping" }
+      ]
+    },
+    {
       "type": "text",
       "id": "title",
       "label": "t:blocks.announcement.settings.title.label",
-      "default": "Free US shipping"
+      "default": "Hassle-free returns",
+      "visible_if": "{{ block.settings.content == 'custom' }}"
     },
     {
       "type": "text",
       "id": "message",
       "label": "t:blocks.announcement.settings.message.label",
-      "default": "On orders over $375"
+      "default": "30-day postage paid returns",
+      "visible_if": "{{ block.settings.content == 'custom' }}"
     },
     {
       "type": "select",

@@ -1,0 +1,80 @@
+{% doc %}
+  The quick view dialog a grid's product cards open, once per page. It fetches the product's
+  `sections/product-quick-view.liquid` and shows it: centered beside the photos on desktop, as a sheet from the bottom
+  on phones. `assets/quick-view.js` opens it from any `[data-quick-view]` button and closes it once the product is in
+  the cart.
+
+  @example
+  {% render 'quick-view-dialog' %}
+{% enddoc %}
+{{ 'section-quick-view.css' | asset_url | stylesheet_tag }}
+{{ 'size-chart.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'product-form.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'product-options.js' | asset_url }}" type="module"></script>
+<script src="{{ 'size-chart.js' | asset_url }}" type="module"></script>
+<script src="{{ 'quick-view.js' | asset_url }}" type="module"></script>
+<dialog class="quick-view" data-quick-view-dialog aria-label="{{ 'products.quick_view.open' | t }}">
+  <button type="button" class="quick-view__close" data-quick-view-close aria-label="{{ 'products.quick_view.close' | t }}">
+    {%- render 'ui-icon', icon: 'x', size: 18 -%}
+  </button>
+  <div class="quick-view__body" data-quick-view-body></div>
+  <template data-quick-view-loading>
+    <div class="quick-view__content quick-view__content--loading" role="status">
+      <span class="visually-hidden">{{ 'products.quick_view.loading' | t }}</span>
+      <span class="quick-view__gallery" aria-hidden="true">
+        <span class="quick-view__thumbs">
+          {%- for i in (1..3) -%}<span class="ui-skeleton quick-view__thumb"></span>{%- endfor -%}
+        </span>
+        <span class="ui-skeleton quick-view__photo"></span>
+      </span>
+      <span class="quick-view__details" aria-hidden="true">
+        <span class="quick-view__head">
+          <span class="ui-skeleton quick-view__head-photo"></span>
+          <span class="quick-view__title-block">
+            <span class="ui-skeleton quick-view__bone quick-view__bone--brand"></span>
+            <span class="ui-skeleton quick-view__bone quick-view__bone--title"></span>
+            <span class="ui-skeleton quick-view__bone quick-view__bone--title-end"></span>
+            <span class="ui-skeleton quick-view__bone quick-view__bone--rating"></span>
+            <span class="ui-skeleton quick-view__bone quick-view__bone--price"></span>
+          </span>
+        </span>
+        <span class="quick-view__summary">
+          <span class="ui-skeleton quick-view__bone quick-view__bone--line"></span>
+          <span class="ui-skeleton quick-view__bone quick-view__bone--line"></span>
+          <span class="ui-skeleton quick-view__bone quick-view__bone--line-end"></span>
+        </span>
+        {%- comment -%} Two options, such as hand and size, as most clothing has. {%- endcomment -%}
+        <span class="quick-view__bone-options">
+          <span class="ui-skeleton quick-view__bone quick-view__bone--label"></span>
+          <span class="quick-view__bone-choices quick-view__bone-choices--two">
+            {%- for i in (1..2) -%}<span class="ui-skeleton quick-view__bone quick-view__bone--choice"></span>{%- endfor -%}
+          </span>
+        </span>
+        <span class="quick-view__bone-options">
+          <span class="ui-skeleton quick-view__bone quick-view__bone--label"></span>
+          <span class="quick-view__bone-choices">
+            {%- for i in (1..8) -%}<span class="ui-skeleton quick-view__bone quick-view__bone--choice"></span>{%- endfor -%}
+          </span>
+        </span>
+        <span class="quick-view__bone-actions">
+          <span class="ui-skeleton quick-view__bone quick-view__bone--stepper"></span>
+          <span class="ui-skeleton quick-view__bone quick-view__bone--button"></span>
+        </span>
+        <span class="quick-view__bone-delivery">
+          <span class="ui-skeleton quick-view__bone quick-view__bone--delivery"></span>
+          <span class="ui-skeleton quick-view__bone quick-view__bone--delivery"></span>
+        </span>
+        <span class="ui-skeleton quick-view__bone quick-view__bone--link"></span>
+      </span>
+    </div>
+  </template>
+  <template data-quick-view-error>
+    <p class="quick-view__failed" role="alert">
+      {{ 'products.quick_view.error' | t }}
+      <a class="quick-view__full" data-quick-view-fallback href="">
+        {{- 'products.quick_view.full_details' | t -}}
+        {%- render 'ui-icon', icon: 'arrow-right', size: 16 -%}
+      </a>
+    </p>
+  </template>
+</dialog>

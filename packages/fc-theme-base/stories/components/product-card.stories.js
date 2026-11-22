@@ -5,7 +5,8 @@ import { snippet } from '../liquid.js';
 /**
  * `snippets/ui-product-card.liquid`: the one product card for the homepage, collections, search and the product
  * page's recommendations. The protection level sits top left, Sale or Sold out top right and another brand's logo
- * bottom left. Hovering shows arrows and a progress bar over the photos; touch screens swipe and get quick add.
+ * bottom left. Hovering shows arrows and a progress bar over the photos; touch screens swipe and get quick add. A
+ * color with its own photo shows it.
  */
 export default {
   title: 'Components/Product card',
@@ -44,6 +45,27 @@ export const PhotoCarousel = {
     await userEvent.click(canvas.getByRole('button', { name: 'Previous photo' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Previous photo' }));
     await expect(segments[3]).toHaveAttribute('data-current');
+  },
+};
+
+/** A color with its own photo is a button: one among the card's photos moves there, any other takes the first place. */
+export const ColorPhotos = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const white = canvas.getByRole('button', { name: 'Show White' });
+    const black = canvas.getByRole('button', { name: 'Show Black' });
+    await expect(white).toHaveAttribute('aria-pressed', 'true');
+
+    await userEvent.click(black);
+    await expect(black).toHaveAttribute('aria-pressed', 'true');
+    await expect(white).toHaveAttribute('aria-pressed', 'false');
+    await expect(canvasElement.querySelectorAll('.ui-product-card__segment')[1]).toHaveAttribute('data-current');
+    for (const link of canvas.getAllByRole('link', { name: 'FIE 800N Competition Jacket' })) {
+      await expect(link).toHaveAttribute('href', '#product-811?variant=8111');
+    }
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Show Navy' }));
+    await expect(canvas.getByAltText('FIE 800N Competition Jacket, photo 5')).toBeInTheDocument();
+    await expect(canvasElement.querySelectorAll('.ui-product-card__segment')[0]).toHaveAttribute('data-current');
   },
 };
 
@@ -90,6 +112,21 @@ export const QuickAddWithOptions = {
     await expect(choose).toHaveAttribute('href', '#product-811');
     await expect(choose).toHaveAttribute('aria-label', 'Choose options');
     await expect(choose).toHaveAttribute('aria-describedby', 'card-811');
+  },
+};
+
+export const QuickView = {
+  args: { show_add: true, quick_view: true, section_id: 'story' },
+  play: async ({ canvas, canvasElement }) => {
+    // Pointers get the eye button on hover; touch screens get + instead, which pointer screens hide. Both open quick
+    // view.
+    const quickView = canvas.getByRole('button', { name: 'Quick view' });
+    await expect(quickView).toHaveAttribute('aria-haspopup', 'dialog');
+    await expect(quickView).toHaveAttribute('aria-describedby', 'card-811');
+    await expect(quickView).toHaveAttribute('data-quick-view', '#product-811');
+    const touch = canvasElement.querySelector('button.ui-product-card__quick-add');
+    await expect(touch).toHaveAttribute('aria-label', 'Choose options');
+    await expect(touch).toHaveAttribute('data-quick-view', '#product-811');
   },
 };
 

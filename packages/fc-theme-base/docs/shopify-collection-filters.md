@@ -18,8 +18,9 @@ do not automatically become storefront filters. Enable each source under **Searc
 | Brand | Vendor | Public-facing brand, never the internal supplier metafield. |
 
 This order follows the live Fencing Club storefront, except that its mixed Safety Level source is replaced by
-separate Safety Level and FIE Rating filters. Size and Sub-category are not enabled in the source configuration;
-their rendering support remains available without displaying the long combined size list by default.
+separate Safety Level and FIE Rating sources. The storefront shows them together as one Protection level group (see
+below). Size and Sub-category are not enabled in the source configuration; their rendering support remains available
+without displaying the long combined size list by default.
 
 The migration builder includes public product definitions for Weapon, Gender, Skill Level, Safety Level and FIE Rating.
 It does not enable Search & Discovery sources or populate those fields. Existing values without definitions must
@@ -34,10 +35,31 @@ Unrecognized colors without native swatch data are omitted, and Color groups wit
 An unsupported color already selected through a URL remains a labelled, selected choice so it can be removed.
 Other filter types keep their existing checkbox presentation.
 
-Like `fc-theme`, filter groups start expanded and can be collapsed. Unselected zero-count options and empty groups
+Like `fc-theme`, filter groups start expanded and can be collapsed. Each group is a [`ui-accordion`](shopify-accordion.md), so it opens and closes with the shared motion. Unselected zero-count options and empty groups
 are omitted. Selected zero-count options remain visible and enabled so they can be removed, including on empty-result
 pages. Filter choice and ordering come from Shopify, not a hardcoded per-collection allowlist. The source inspection
 used read-only public collection markup; app-only grouping/settings were not changed on the source store.
+
+## Presentation
+
+`snippets/collection-facet-filters.liquid` renders the sidebar, and the phone drawer reuses it. Each group's look
+comes from its Shopify source, not its label:
+
+- **Category** comes first, from the main menu rather than Shopify's filters. See
+  [collection categories](shopify-collection-categories.md).
+- **Protection level** lists each Safety Level value, then the FIE value of FIE Rating, each as the protection badge
+  products carry. The FIE Rating group itself is hidden, and Non-FIE is never offered. The toolbar shows the same
+  values as chips, from `snippets/collection-protection-filter.liquid`, with a What the levels mean popover
+  (`snippets/collection-levels-help.liquid`) that links to the [buying guide](shopify-buying-guide.md).
+- **Size** and **Hand** are pill grids. Size adds a Size guide link when the store has a `size-charts` page.
+- **Color** is swatches, and **Availability** is one In stock only switch.
+- **Price** is a slider with a handle for each end over the lowest and highest price fields
+  (`snippets/price-facet.liquid`, kept in step by `price-range` in `assets/facets.js`). Letting go of a handle applies
+  the price, as finishing with a field does. Search's filters share it.
+- Every other group is checkboxes with counts. A group with more than five values shows four and a Show more button.
+
+The filters in use show above the grid as chips that each remove one, then Clear all
+(`snippets/collection-active-filters.liquid`). Size chips name the filter, so they read Size 3XL.
 
 ## Applying filters
 

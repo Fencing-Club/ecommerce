@@ -1,0 +1,170 @@
+/* Collection buying guide, built to the Pen's C/Buying guide (SEO). */
+
+.collection-guide { background: var(--muted); scroll-margin-top: 8rem; }
+
+.collection-guide__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  padding-block: 7.2rem 8rem;
+}
+
+.collection-guide__header {
+  display: flex;
+  gap: 6.4rem;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.collection-guide__intro { display: flex; flex-direction: column; gap: 1rem; max-width: 64rem; }
+
+.collection-guide__eyebrow {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.12rem;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.collection-guide__heading { margin: 0; font-size: 3.4rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.08rem; }
+.collection-guide__text { font-size: 1.6rem; line-height: 1.6; color: var(--muted-foreground); }
+.collection-guide__text > * { margin: 0; }
+
+.collection-guide__note {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.8rem;
+  align-items: center;
+  margin: 0;
+  padding-bottom: 0.4rem;
+  font-size: 1.3rem;
+  color: var(--muted-foreground);
+}
+
+.collection-guide__levels {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1.2rem;
+  border-spacing: 0;
+  border-collapse: separate;
+  background: var(--background);
+  text-align: left;
+}
+
+.collection-guide__levels th,
+.collection-guide__levels td {
+  padding: 1.6rem 1.2rem;
+  border-top: 1px solid var(--border);
+  font-size: 1.4rem;
+  font-weight: 400;
+  vertical-align: middle;
+  color: var(--muted-foreground);
+}
+
+.collection-guide__levels th:first-child,
+.collection-guide__levels td:first-child { width: 18rem; padding-left: 2.4rem; }
+.collection-guide__levels th:last-child,
+.collection-guide__levels td:last-child { padding-right: 2.4rem; }
+.collection-guide__levels thead th {
+  padding-block: 1.2rem;
+  border-top: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.06rem;
+  text-transform: uppercase;
+}
+
+.collection-guide__meaning { width: 36%; }
+
+.collection-guide__shop { white-space: nowrap; }
+
+.collection-guide__shop a {
+  display: inline-flex;
+  gap: 0.6rem;
+  align-items: center;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.collection-guide__shop a:hover { text-decoration: underline; text-underline-offset: 0.3rem; }
+
+.collection-guide__more {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38rem;
+  gap: 6.4rem;
+  padding-top: 1.6rem;
+}
+
+.collection-guide__more > :only-child { grid-column: 1 / -1; }
+
+.collection-guide__subheading { margin: 0 0 1.6rem; font-size: 2.4rem; font-weight: 700; letter-spacing: -0.04rem; }
+
+.collection-guide__questions .ui-faq-item { border-bottom: 1px solid var(--border); }
+
+.collection-guide__links { display: flex; flex-direction: column; gap: 3.2rem; }
+.collection-guide__links-title { margin: 0 0 1.4rem; font-size: 1.6rem; font-weight: 700; }
+
+.collection-guide__chips { display: flex; flex-wrap: wrap; gap: 0.8rem; margin: 0; }
+
+.collection-guide__logos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 0;
+}
+
+.collection-guide__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 5.6rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--background);
+}
+
+.collection-guide__brand:hover { border-color: var(--input); }
+.collection-guide__brand img { max-width: 100%; max-height: 3.2rem; object-fit: contain; }
+
+@media screen and (max-width: 989px) {
+  .collection-guide__header { flex-direction: column; align-items: flex-start; gap: 1.6rem; }
+  .collection-guide__more { grid-template-columns: minmax(0, 1fr); gap: 4rem; }
+}
+
+@media screen and (max-width: 749px) {
+  .collection-guide__inner { gap: 2.4rem; padding-block: 4rem; }
+  .collection-guide__heading { font-size: 2.6rem; }
+  .collection-guide__text { font-size: 1.4rem; line-height: 1.55; }
+  .collection-guide__note { display: none; }
+
+  /* Each level becomes a card: the badge, then where you'd wear it, linking to the level's page. */
+  .collection-guide__levels,
+  .collection-guide__levels tbody { display: flex; flex-direction: column; gap: 1rem; border: 0; background: none; }
+  .collection-guide__levels thead { display: none; }
+  .collection-guide__levels tr {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.4rem 1.6rem;
+    border: 1px solid var(--border);
+    border-radius: 1.2rem;
+    background: var(--background);
+  }
+  .collection-guide__levels th,
+  .collection-guide__levels td { width: auto !important; padding: 0 !important; border: 0; font-size: 1.3rem; }
+  .collection-guide__meaning { display: none; }
+  .collection-guide__shop { position: absolute; top: 1.4rem; right: 1.6rem; }
+  .collection-guide__shop a::after { position: absolute; inset: -1.4rem -1.6rem; content: ''; }
+  .collection-guide__shop a { position: static; }
+  .collection-guide__levels tr:has(a) { padding-right: 4rem; }
+  .collection-guide__shop-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  .collection-guide__subheading { font-size: 2.2rem; }
+  .collection-guide__brands { display: none; }
+}

@@ -13,13 +13,10 @@
 <div class="fc-mega__columns">
   {%- for childlink in link.links -%}
     {%- if childlink.links != blank -%}
-      {%- capture child_context_url -%}
-        {%- render 'collection-context-url', url: childlink.url, current_label: childlink.title -%}
-      {%- endcapture -%}
       <div class="fc-mega__column">
         <a
           class="fc-mega__column-heading"
-          href="{{ child_context_url }}"
+          href="{{ childlink.url }}"
           {% if childlink.current %}
             aria-current="page"
           {% endif %}
@@ -37,18 +34,10 @@
                 assign grandchild_label = 'Women'
               endif
             -%}
-            {%- capture grandchild_context_url -%}
-              {%- render 'collection-context-url',
-                url: grandchildlink.url,
-                parent_label: childlink.title,
-                parent_url: child_context_url,
-                current_label: grandchild_label
-              -%}
-            {%- endcapture -%}
             <li>
               <a
                 class="fc-mega__link"
-                href="{{ grandchild_context_url }}"
+                href="{{ grandchildlink.url }}"
                 {% if grandchildlink.current %}
                   aria-current="page"
                 {% endif %}
@@ -75,12 +64,9 @@
     <div class="fc-mega__column fc-mega__column--standalone">
       {%- for childlink in link.links -%}
         {%- if childlink.links == blank -%}
-          {%- capture standalone_context_url -%}
-            {%- render 'collection-context-url', url: childlink.url, current_label: childlink.title -%}
-          {%- endcapture -%}
           <a
             class="fc-mega__column-heading"
-            href="{{ standalone_context_url }}"
+            href="{{ childlink.url }}"
             {% if childlink.current %}
               aria-current="page"
             {% endif %}

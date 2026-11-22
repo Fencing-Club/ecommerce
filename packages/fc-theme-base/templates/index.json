@@ -90,8 +90,8 @@
                 "slide-2-actions-button": {
                   "type": "button",
                   "settings": {
-                    "label": "Weapons",
-                    "link": "shopify://collections/weapons",
+                    "label": "Blades",
+                    "link": "shopify://collections/blades",
                     "style": "secondary",
                     "size": "lg"
                   }
@@ -99,8 +99,8 @@
                 "slide-2-actions-link": {
                   "type": "link",
                   "settings": {
-                    "label": "Blades",
-                    "link": "shopify://collections/blades"
+                    "label": "Weapons",
+                    "link": "shopify://collections/weapons"
                   }
                 }
               },
@@ -156,7 +156,7 @@
                   "type": "button",
                   "settings": {
                     "label": "Shop Novus",
-                    "link": "shopify://collections/clothing",
+                    "link": "/search?q=novus&type=product",
                     "style": "secondary",
                     "size": "lg"
                   }

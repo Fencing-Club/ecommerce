@@ -1,42 +1,42 @@
-{%- comment -%}
-  Renders one accessible FAQ disclosure.
+{% doc %}
+  One question and its answer on ui-accordion, so it opens in place with the shared motion. The default style marks
+  them with Q and A badges, joined by a line while the answer shows.
 
-  Accepts:
-  - question: {String} Question text (required)
-  - answer: {RichText} Answer content (required)
-  - open: {Boolean} Expand the item initially
-  - link_label: {String} Optional related link label
-  - link_url: {String} Optional related link target
-  - structured_data: {Boolean} Mark the item up as a schema.org Question, for a page marked up as an FAQPage
-  - block: {Block} Optional Theme Editor block
-{%- endcomment -%}
-<details
-  class="ui-faq-item"
-  data-motion
-  {% if open %}
-    open
-  {% endif %}
-  {% if structured_data %}
-    itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"
-  {% endif %}
-  {% if block %}
-    {{ block.shopify_attributes }}
-  {% endif %}
->
-  <summary class="ui-faq-item__question">
+  @param {string} question - The question.
+  @param {string} answer - The answer, as rich text.
+  @param {boolean} [open] - Starts open.
+  @param {string} [link_label] - A related link's label.
+  @param {string} [link_url] - The related link's destination.
+  @param {boolean} [structured_data] - Marks the item up as a schema.org Question, for a page marked up as an FAQPage.
+  @param {string} [variant] - plain drops the badges and shows a plus that turns to minus, as in a collection's buying
+    guide.
+  @param {object} [block] - The Theme Editor block it renders.
+
+  @example
+  {% render 'ui-faq-item', question: block.settings.question, answer: block.settings.answer, block: block %}
+{% enddoc %}
+{%- liquid
+  assign plain = false
+  if variant == 'plain'
+    assign plain = true
+  endif
+-%}
+{%- capture summary -%}
+  {%- unless plain -%}
     <span class="ui-faq-item__badge ui-faq-item__badge--question" aria-hidden="true">Q</span>
-    <span class="ui-faq-item__question-text"{% if structured_data %} itemprop="name"{% endif %}>{{ question | escape }}</span>
-    <span class="ui-faq-item__chevron" aria-hidden="true">
-      {%- render 'ui-icon', icon: 'chevron-down', size: 18 -%}
-    </span>
-  </summary>
+  {%- endunless -%}
+  <span class="ui-faq-item__question-text"{% if structured_data %} itemprop="name"{% endif %}>{{ question | escape }}</span>
+{%- endcapture -%}
+{%- capture content -%}
   <div
     class="ui-faq-item__answer"
     {% if structured_data %}
       itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"
     {% endif %}
   >
-    <span class="ui-faq-item__badge ui-faq-item__badge--answer" aria-hidden="true">A</span>
+    {%- unless plain -%}
+      <span class="ui-faq-item__badge ui-faq-item__badge--answer" aria-hidden="true">A</span>
+    {%- endunless -%}
     <div class="ui-faq-item__answer-copy">
       <div class="ui-faq-item__answer-text rte"{% if structured_data %} itemprop="text"{% endif %}>{{ answer }}</div>
       {%- if link_label != blank and link_url != blank -%}
@@ -44,4 +44,17 @@
       {%- endif -%}
     </div>
   </div>
-</details>
+{%- endcapture -%}
+{%- liquid
+  assign item_class = 'ui-faq-item'
+  assign indicator = 'chevron'
+  if plain
+    assign item_class = 'ui-faq-item ui-faq-item--plain'
+    assign indicator = 'plus'
+  endif
+  assign attributes = ''
+  if structured_data
+    assign attributes = 'itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"'
+  endif
+  render 'ui-accordion', summary: summary, content: content, indicator: indicator, indicator_size: 18, open: open, class: item_class, attributes: attributes, block: block
+-%}

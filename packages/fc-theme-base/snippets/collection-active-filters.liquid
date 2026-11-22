@@ -1,0 +1,54 @@
+{% doc %}
+  The filters in use, each a chip that removes it, then Clear all. Shows nothing when no filter is on.
+
+  @param {object} results - The collection whose filters are in use.
+  @param {string} clear_url - Where Clear all goes.
+
+  @example
+  {% render 'collection-active-filters', results: collection, clear_url: collection.url %}
+{% enddoc %}
+{%- capture chips -%}
+  {%- for filter in results.filters -%}
+    {%- assign parameter_name = filter.param_name | default: filter.values.first.param_name -%}
+    {%- if filter.type == 'price_range' -%}
+      {%- if filter.min_value.value != nil or filter.max_value.value != nil -%}
+        {%- liquid
+          assign low = filter.min_value.value | default: 0 | money_without_trailing_zeros
+          assign high = filter.max_value.value | default: filter.range_max | money_without_trailing_zeros
+          assign chip_label = 'collections.active.price' | t: low: low, high: high
+          assign remove_label = 'collections.active.remove' | t: label: chip_label
+        -%}
+        <li>
+          <a class="collection-active-filter" href="{{ filter.url_to_remove }}" aria-label="{{ remove_label | escape }}">
+            {{- chip_label -}}
+            {%- render 'ui-icon', icon: 'x', size: 14 -%}
+          </a>
+        </li>
+      {%- endif -%}
+    {%- else -%}
+      {%- for value in filter.active_values -%}
+        {%- liquid
+          assign chip_label = value.label
+          if parameter_name == 'filter.v.option.size'
+            assign chip_label = filter.label | append: ' ' | append: value.label
+          elsif parameter_name == 'filter.v.availability'
+            assign chip_label = 'collections.filters.in_stock_only' | t
+          endif
+          assign remove_label = 'collections.active.remove' | t: label: chip_label
+        -%}
+        <li>
+          <a class="collection-active-filter" href="{{ value.url_to_remove }}" aria-label="{{ remove_label | escape }}">
+            {{- chip_label | escape -}}
+            {%- render 'ui-icon', icon: 'x', size: 14 -%}
+          </a>
+        </li>
+      {%- endfor -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if chips != blank -%}
+  <div class="collection-active-filters">
+    <ul class="collection-active-filters__list list-unstyled" aria-label="{{ 'collections.active.label' | t }}">{{ chips }}</ul>
+    <a class="collection-active-filters__clear" href="{{ clear_url }}" data-clear-collection-filters>{{ 'collections.active.clear_all' | t }}</a>
+  </div>
+{%- endif -%}

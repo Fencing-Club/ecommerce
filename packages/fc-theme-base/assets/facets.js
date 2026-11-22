@@ -388,9 +388,18 @@ FacetFiltersForm.setListeners();
 class PriceRange extends HTMLElement {
   constructor() {
     super();
-    this.querySelectorAll('input').forEach((element) => {
+    // The lowest and highest price fields carry the filter; the slider's handles mirror them.
+    this.fields = [...this.querySelectorAll('input[name]')];
+    this.thumbs = [...this.querySelectorAll('[data-price-thumb]')];
+    this.fields.forEach((element, index) => {
       element.addEventListener('change', this.onRangeChange.bind(this));
       element.addEventListener('keydown', this.onKeyDown.bind(this));
+      element.addEventListener('input', () => this.moveThumb(index));
+    });
+    this.thumbs.forEach((thumb, index) => {
+      thumb.addEventListener('input', () => this.onSlide(index));
+      // Dropping a handle applies the price, as finishing with a field does.
+      thumb.addEventListener('change', () => this.fields[index]?.dispatchEvent(new Event('change', { bubbles: true })));
     });
     this.setMinAndMaxValues();
   }
@@ -407,10 +416,36 @@ class PriceRange extends HTMLElement {
     if (!event.key.match(pattern)) event.preventDefault();
   }
 
+  onSlide(index) {
+    const [low, high] = this.thumbs;
+    // The handles can meet but not pass each other.
+    if (Number(low.value) > Number(high.value)) this.thumbs[index].value = this.thumbs[1 - index].value;
+    const field = this.fields[index];
+    if (field) field.value = this.thumbs[index].value;
+    this.setMinAndMaxValues();
+    this.showRange();
+  }
+
+  moveThumb(index) {
+    const thumb = this.thumbs[index];
+    if (!thumb) return;
+    const typed = Number.parseFloat(this.fields[index].value.replace(/,/g, ''));
+    thumb.value = Number.isNaN(typed) ? (index === 0 ? thumb.min : thumb.max) : String(typed);
+    this.showRange();
+  }
+
+  showRange() {
+    if (this.thumbs.length !== 2) return;
+    const range = this.querySelector('.ui-price-range');
+    const top = Number(this.thumbs[1].max) || 1;
+    range?.style.setProperty('--low', String(Number(this.thumbs[0].value) / top));
+    range?.style.setProperty('--high', String(Number(this.thumbs[1].value) / top));
+    const symbol = this.fields[0]?.closest('.ui-text-field')?.querySelector('.ui-text-field__prefix')?.textContent ?? '';
+    for (const thumb of this.thumbs) thumb.setAttribute('aria-valuetext', `${symbol}${thumb.value}`);
+  }
+
   setMinAndMaxValues() {
-    const inputs = this.querySelectorAll('input');
-    const minInput = inputs[0];
-    const maxInput = inputs[1];
+    const [minInput, maxInput] = this.fields;
     if (maxInput.value) minInput.setAttribute('data-max', maxInput.value);
     if (minInput.value) maxInput.setAttribute('data-min', minInput.value);
     if (minInput.value === '') maxInput.setAttribute('data-min', 0);

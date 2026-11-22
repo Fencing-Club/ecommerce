@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import '../assets/collection-breadcrumbs.js';
+import '../assets/collection-filters.js';
 
 const filters = (deferred) => `
   <div class="${deferred ? 'collection-curated-filters-mobile' : 'collection-curated-filters-desktop'}">
