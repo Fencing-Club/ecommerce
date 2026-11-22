@@ -63,7 +63,6 @@
 
   assign return_policy_record = shop.metafields.structured_data.primary_return_policy.value
   if return_policy_record != blank
-    assign configured_policy_page = return_policy_record.policy_page.value
     assign configured_applicable_countries = return_policy_record.applicable_countries.value
     assign configured_return_country = return_policy_record.return_country.value | strip
     assign configured_policy_category = return_policy_record.policy_category.value | strip
@@ -71,9 +70,6 @@
     assign configured_return_fees = return_policy_record.return_fees.value | strip
     assign configured_label_source = return_policy_record.return_label_source.value | strip
 
-    if configured_policy_page != blank
-      assign return_policy_url = configured_policy_page
-    endif
     if configured_applicable_countries != blank
       assign return_applicable_countries = configured_applicable_countries
     endif
@@ -221,25 +217,26 @@
   assign organization_id = site_url | append: '/#organization'
   assign website_id = site_url | append: '/#website'
   assign webpage_id = canonical_url | append: '#webpage'
-  assign breadcrumb_id = canonical_url | append: '#breadcrumb'
-  assign home_url = site_url | append: routes.root_url
   assign return_policy_id = site_url | append: '/#return-policy'
   assign shipping_service_id = site_url | append: '/#shipping-standard-' | append: policy_country_handle
-  assign return_policy_url = shop.refund_policy.url
+  # Where the store states its policies: the page set in the structured_data metafields, else the theme's own policy
+  # page (the header's Returns and Shipping links go there), else Shopify's legal policy. With none, that policy's
+  # markup is left out.
+  assign return_policy_url = pages['refund-policy'].url | default: shop.refund_policy.url
+  if return_policy_record != blank and return_policy_record.policy_page.value != blank
+    assign return_policy_url = return_policy_record.policy_page.value
+  endif
   assign return_policy_url_prefix = return_policy_url | slice: 0, 1
   if return_policy_url_prefix == '/'
     assign return_policy_url = site_url | append: return_policy_url
   endif
-  if return_policy_record != blank and return_policy_record.policy_page.value != blank
-    assign return_policy_url = return_policy_record.policy_page.value
+  assign shipping_policy_url = pages['shipping-policy'].url | default: shop.shipping_policy.url
+  if configured_shipping_policy_url != blank
+    assign shipping_policy_url = configured_shipping_policy_url
   endif
-  assign shipping_policy_url = shop.shipping_policy.url
   assign shipping_policy_url_prefix = shipping_policy_url | slice: 0, 1
   if shipping_policy_url_prefix == '/'
     assign shipping_policy_url = site_url | append: shipping_policy_url
-  endif
-  if configured_shipping_policy_url != blank
-    assign shipping_policy_url = configured_shipping_policy_url
   endif
   assign organization_image = settings.logo
   if organization_image == blank
@@ -362,10 +359,10 @@
                 "closes": {{ store_closes_at | json }}
               }]
             {%- endif -%}
-            {%- if shop.refund_policy.url != blank -%},
+            {%- if return_policy_url != blank -%},
               "hasMerchantReturnPolicy": { "@id": {{ return_policy_id | json }} }
             {%- endif -%}
-            {%- if shop.shipping_policy.url != blank -%},
+            {%- if shipping_policy_url != blank -%},
               "hasShippingService": { "@id": {{ shipping_service_id | json }} }
             {%- endif -%}
             {%- if settings.social_facebook_link != blank or settings.social_instagram_link != blank -%},
@@ -380,7 +377,7 @@
               ]
             {%- endif -%}
           }
-          {%- if shop.refund_policy.url != blank -%},
+          {%- if return_policy_url != blank -%},
           {
             "@type": "MerchantReturnPolicy",
             "@id": {{ return_policy_id | json }},
@@ -400,13 +397,13 @@
             "itemCondition": {% if return_item_conditions.size == 1 %}{{ return_item_conditions.first | json }}{% else %}{{ return_item_conditions | json }}{% endif %},
             "customerRemorseReturnFees": {{ return_fees | json }},
             "itemDefectReturnFees": {{ return_fees | json }}
-          },
+          }
           {%- endif -%}
-          {%- if shop.shipping_policy.url != blank -%}
+          {%- if shipping_policy_url != blank -%},
           {
             "@type": "ShippingService",
             "@id": {{ shipping_service_id | json }},
-            "name": {% if shipping_service_record != blank %}{{ default_shipping_service_name | json }}{% else %}{{ shop.shipping_policy.title | default: default_shipping_service_name | json }}{% endif %},
+            "name": {{ default_shipping_service_name | json }},
             "url": {{ shipping_policy_url | json }},
             "fulfillmentType": "https://schema.org/FulfillmentTypeDelivery",
             "handlingTime": {
@@ -439,13 +436,9 @@
                 }
               }
             }
-          },
-          {%- endif -%}
+          }
+          {%- endif -%},
         {%- endif -%}
-        {%- if request.page_type == 'index'
-          and shop.refund_policy.url == blank
-          and shop.shipping_policy.url == blank
-        -%},{%- endif -%}
         {
           "@type": {{ webpage_type | json }},
           "@id": {{ webpage_id | json }},
@@ -456,9 +449,6 @@
           {%- if page_description != blank -%},
             "description": {{ page_description | strip_html | json }}
           {%- endif -%}
-          {%- unless request.page_type == 'index' -%},
-            "breadcrumb": { "@id": {{ breadcrumb_id | json }} }
-          {%- endunless -%}
           {%- if request.page_type == 'product' -%},
             "mainEntity": { "@id": {{ product_schema_id | json }} }
           {%- elsif request.page_type == 'collection' and collection_item_list_enabled -%},
@@ -491,41 +481,7 @@
             }
           {%- endif -%}
         }
-        {%- unless request.page_type == 'index' -%},
-          {
-            "@type": "BreadcrumbList",
-            "@id": {{ breadcrumb_id | json }},
-            "itemListElement": [
-              {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Home",
-                "item": {{ home_url | json }}
-              }
-              {%- if request.page_type == 'article' -%},
-                {
-                  "@type": "ListItem",
-                  "position": 2,
-                  "name": {{ blog.title | json }},
-                  "item": {{ site_url | append: blog.url | json }}
-                },
-                {
-                  "@type": "ListItem",
-                  "position": 3,
-                  "name": {{ article.title | json }},
-                  "item": {{ canonical_url | json }}
-                }
-              {%- else -%},
-                {
-                  "@type": "ListItem",
-                  "position": 2,
-                  "name": {{ page_title | json }},
-                  "item": {{ canonical_url | json }}
-                }
-              {%- endif -%}
-            ]
-          }
-        {%- endunless -%}
+        {%- comment -%} The visible breadcrumbs write their own BreadcrumbList; see ui-breadcrumbs. {%- endcomment -%}
         {%- if request.page_type == 'collection' and collection_item_list_enabled -%},
           {
             "@type": "ItemList",

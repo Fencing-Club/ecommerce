@@ -9,6 +9,9 @@ It has three styles:
 - **Tree**, at the top of the [filters](shopify-collection-filters.md): a link up to all equipment, then this
   collection's whole top-level branch. The branch holding this collection starts open; others open with their arrow.
 - **Parent**, in an empty collection: one Shop all link to the category above.
+- **Breadcrumbs**, in the hero and above a product: Home, then each menu level above the page. A product's trail goes
+  through the deepest menu collection holding it. A menu heading that links to the same collection as the level above
+  it, like Masks under Masks, appears once.
 
 Each category shows its product count. Menu links on the store aren't always collection links, so the snippet finds
 each collection by the last part of its link's address. Categories with no products are left out, unless one is the
