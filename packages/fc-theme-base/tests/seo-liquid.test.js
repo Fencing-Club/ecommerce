@@ -124,16 +124,14 @@ describe('product structured data', () => {
     canonical_url: `${origin}/products/novus-epee-mask`,
     product: product(metafields),
   });
-  const reviews = { reviews: { rating: { value: { rating: '4.6', scale_min: '1.0', scale_max: '5.0' } }, rating_count: { value: 12 } } };
 
-  it("carries the reviews app's rating", () => {
-    const group = nodeOfType(jsonLdNodes('structured-data', {}, productGlobals(reviews)).nodes, 'ProductGroup');
-    expect(group.aggregateRating).toEqual({ '@type': 'AggregateRating', ratingValue: '4.6', bestRating: '5.0', worstRating: '1.0', ratingCount: 12 });
-  });
-
-  it('leaves the rating out before the first review', () => {
+  it("gives the product the @id Judge.me's rating joins, with or without variants", () => {
+    const productId = `${origin}/products/novus-epee-mask#product`;
     const group = nodeOfType(jsonLdNodes('structured-data', {}, productGlobals({})).nodes, 'ProductGroup');
-    expect(group.aggregateRating).toBeUndefined();
+    expect(group['@id']).toBe(productId);
+
+    const single = { ...productGlobals({}), product: { ...product(), variants: [variants[0]] } };
+    expect(nodeOfType(jsonLdNodes('structured-data', {}, single).nodes, 'Product')['@id']).toBe(productId);
   });
 
   it("keeps the description on the group, not on each variant", () => {

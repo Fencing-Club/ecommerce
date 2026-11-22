@@ -277,10 +277,9 @@
   endif
   if request.page_type == 'product'
     assign product_variant_count = product.variants | size
+    # Judge.me writes the rating markup as its own node with this @id, so search engines join it to the product, or
+    # to the group when the product has variants.
     assign product_schema_id = canonical_url | append: '#product'
-    unless product_variant_count == 1
-      assign product_schema_id = canonical_url | append: '#product-group'
-    endunless
 
     assign configured_product_condition = product.metafields.structured_data.condition.value | strip
     case configured_product_condition
@@ -301,11 +300,6 @@
       when 'discontinued'
         assign product_availability = 'https://schema.org/Discontinued'
     endcase
-
-    # The reviews app (Judge.me) writes the product's rating to Shopify's standard reviews fields, the same ones the
-    # product page shows as stars.
-    assign product_rating = product.metafields.reviews.rating.value
-    assign product_rating_count = product.metafields.reviews.rating_count.value | default: 0
   endif
 
   # A shop account writing articles is the store itself, not a person.
@@ -327,18 +321,6 @@
     assign webpage_type = 'ContactPage'
   endif
 -%}
-
-{%- if product_rating != blank and product_rating_count > 0 -%}
-  {%- capture aggregate_rating -%}
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": {{ product_rating.rating | json }},
-      "bestRating": {{ product_rating.scale_max | json }},
-      "worstRating": {{ product_rating.scale_min | json }},
-      "ratingCount": {{ product_rating_count | json }}
-    }
-  {%- endcapture -%}
-{%- endif -%}
 
 {%- if supported_page -%}
   {%- capture graph_json -%}
@@ -578,9 +560,6 @@
               {%- endif -%}
               {%- if valid_gtin -%},
                 "gtin{{ barcode_length }}": {{ barcode | json }}
-              {%- endif -%}
-              {%- if aggregate_rating != blank -%},
-                {{ aggregate_rating }}
               {%- endif -%},
               "offers": {
                 "@type": "Offer",
@@ -636,9 +615,6 @@
               {%- endif -%}
               {%- if product.featured_image -%},
                 "image": [{{ product.featured_image | image_url: width: product.featured_image.width | prepend: 'https:' | json }}]
-              {%- endif -%}
-              {%- if aggregate_rating != blank -%},
-                {{ aggregate_rating }}
               {%- endif -%}
               {%- if varies_by_count > 0 -%},
                 "variesBy": [

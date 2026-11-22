@@ -16,12 +16,12 @@ turns it all on or off; turn it off only when an app writes the store's JSON-LD 
 
 ## Products
 
-Variants share the group's description. The rating comes from Shopify's standard `reviews.rating` and
-`reviews.rating_count` product fields, which the reviews app (Judge.me) fills and the product page shows as stars. A
-product without reviews gets no rating.
+Variants share the group's description.
 
-Judge.me can write its own Product JSON-LD, which would give the page a second product. Turn off its JSON-LD snippets
-in Judge.me under **Settings**, **Google, SEO and AI**, **SEO Rich Snippets**.
+Judge.me, the reviews app, writes the rating and reviews markup itself. Its node carries the `@id` the theme gives the
+product, the canonical URL plus `#product`, so search engines read both as one product. Products with variants use the
+same `@id` on their ProductGroup. Keep that `@id` if the snippet changes. In Judge.me, under **Settings**, **Google,
+SEO and AI**, **SEO Rich Snippets**, keep the JSON-LD snippets on and microdata off, since the theme writes JSON-LD.
 
 ## Articles
 
@@ -39,5 +39,5 @@ facts at its top, which must match what the policy pages say.
 ## Checking
 
 Run a page through Google's Rich Results Test after changing the snippets. `tests/seo-liquid.test.js` checks the
-markup's logic: valid JSON with any mix of policies, breadcrumbs that match the visible trail, ratings, article
-authors and the collection list.
+markup's logic: valid JSON with any mix of policies, breadcrumbs that match the visible trail, the product `@id`
+Judge.me joins, article authors and the collection list.
