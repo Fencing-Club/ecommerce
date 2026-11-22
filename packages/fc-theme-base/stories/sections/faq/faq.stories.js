@@ -48,9 +48,12 @@ export const Default = {
 
     await expect(canvas.getByText('We email you a tracking link as soon as your order ships.')).toBeVisible();
     const dispatch = canvas.getByText('How quickly are orders dispatched?');
-    await expect(canvas.getByText(/Orders placed by 1pm/)).not.toBeVisible();
+    const answer = canvas.getByText(/Orders placed by 1pm/);
+    await expect(answer).not.toBeVisible();
     await userEvent.click(dispatch);
-    await waitFor(() => expect(canvas.getByText(/Orders placed by 1pm/)).toBeVisible());
+    await waitFor(() => expect(answer).toBeVisible());
+    // The answer fades in. Let it finish so the accessibility check reads its final colors, not a frame partway.
+    await Promise.all(answer.closest('details').getAnimations({ subtree: true }).map((animation) => animation.finished));
 
     await expect(canvas.getByRole('heading', { name: 'Questions?' })).toBeVisible();
     await expect(canvas.getByRole('link', { name: 'Contact us' })).toHaveAttribute('href', '/pages/contact');
