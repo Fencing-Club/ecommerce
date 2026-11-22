@@ -22,6 +22,9 @@ It runs at `http://localhost:6107`.
   snippets a section renders can read `section`, and `section.blocks` gives each theme block's id but not its
   settings. Every render gets the theme settings from `config/settings_data.json`, a sample `shop` with the store's
   address, email, phone and payment methods, and a `localization` with two markets and two languages.
+  `snippet(name, { globals })` replaces any of these, or adds others such as `customer` or `linklists`, for every
+  snippet the render reaches; as a function it gets the story's args, so each story can give the reward progress its
+  own cart total.
 - `tests/helpers/shopify-liquid.mjs` holds the stand-ins for Shopify's own tags and filters (`t`, `money`,
   `image_url`, `asset_url`, `form` and the rest). The unit tests and the component lab register the same ones.
 - `.storybook/preview.js` writes the CSS variables `layout/theme.liquid` writes: the color schemes from
@@ -50,7 +53,11 @@ section rendering or store requests. Check sections on the contosocamp store bef
   accessibility check runs too, and a violation fails the test.
 - Shared fixtures (products, articles) live in `stories/fixtures.js` and use the theme's own sample images.
 - A snippet that needs its section's script gets it from a `loaders: [loadScript('file.js')]` entry, because markup
-  a story renders can't run its own `<script>` tags.
+  a story renders can't run its own `<script>` tags. Loaders run together, so a script that needs another one first
+  loads both in one loader.
+- A component that talks to Shopify gets a stand-in from a loader: the cookie banner a fake Customer Privacy API, and
+  predictive search a `fetch` that answers its suggest requests with the `predictive-search` section rendered from a
+  fixture.
 - Foundations stories paint with the live CSS variables, so a token change shows there too.
 
 ## Tests
