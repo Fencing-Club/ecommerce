@@ -3,19 +3,32 @@
 <div class="about-section about-section--phase about-closing">
   {%- content_for 'block', type: 'phase-heading', id: 'phase' -%}
   <div class="about-closing__intro">{%- content_for 'block', type: 'group', id: 'intro' -%}</div>
-  <div class="about-closing__panel about-dark">{%- content_for 'block', type: 'group', id: 'panel' -%}</div>
+  <div class="about-closing__panel about-dark">
+    {%- content_for 'block', type: 'group', id: 'panel' -%}
+    {%- content_for 'block', type: 'button', id: 'action' -%}
+  </div>
 </div>
 
 {% stylesheet %}
   .about-closing__intro {
     max-width: calc(var(--spacing) * 180);
   }
+  /* The invitation and its button share a row; phones stack the button under it. */
   .about-closing__panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--spacing-10);
     padding: var(--spacing-14);
     border-radius: var(--radius-xl);
   }
   @media (max-width: 749px) {
-    .about-closing__panel { padding: var(--spacing-8) var(--spacing-6); }
+    .about-closing__panel {
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: start;
+      gap: var(--spacing-6);
+      padding: var(--spacing-8) var(--spacing-6);
+    }
   }
 {% endstylesheet %}
 
@@ -51,15 +64,14 @@
           "settings": { "direction": "column", "gap": "lg" },
           "blocks": [
             { "type": "heading", "settings": { "heading": "Building something for fencing? Let's talk.", "tag": "h3", "size": "md" } },
-            { "type": "text", "settings": { "text": "<p>Sell on our platform, use our distribution, or just say hello.</p>", "style": "lead" } },
-            {
-              "type": "group",
-              "settings": { "direction": "row", "gap": "md", "align": "center" },
-              "blocks": [
-                { "type": "button", "settings": { "label": "Get in touch", "link": "/pages/contact", "style": "primary", "size": "lg" } }
-              ]
-            }
+            { "type": "text", "settings": { "text": "<p>Sell on our platform, use our distribution, or just say hello.</p>", "style": "lead" } }
           ]
+        },
+        {
+          "type": "button",
+          "id": "action",
+          "static": true,
+          "settings": { "label": "Get in touch", "link": "/pages/contact", "style": "primary", "size": "lg" }
         }
       ]
     }

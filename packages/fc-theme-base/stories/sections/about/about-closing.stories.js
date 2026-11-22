@@ -28,14 +28,9 @@ export default {
         blocks: [
           { id: 'statement', type: 'heading', settings: { heading: 'Building something for fencing? Let’s talk.', tag: 'h3', size: 'md' } },
           { id: 'body', type: 'text', settings: { text: '<p>Sell on our platform, use our distribution, or just say hello.</p>', style: 'lead' } },
-          {
-            id: 'actions',
-            type: 'group',
-            settings: { direction: 'row', gap: 'md', align: 'center' },
-            blocks: [button('contact', 'Get in touch', '/pages/contact', 'primary')],
-          },
         ],
       },
+      button('action', 'Get in touch', '/pages/contact', 'primary'),
     ],
   }),
 };

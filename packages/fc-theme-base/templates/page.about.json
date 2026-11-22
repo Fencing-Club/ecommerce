@@ -750,35 +750,22 @@
                 "text": "<p>Sell on our platform, use our distribution, or just say hello.</p>",
                 "style": "lead"
               }
-            },
-            "actions": {
-              "type": "group",
-              "settings": {
-                "direction": "row",
-                "gap": "md",
-                "align": "center"
-              },
-              "blocks": {
-                "contact": {
-                  "type": "button",
-                  "settings": {
-                    "label": "Get in touch",
-                    "link": "shopify://pages/contact",
-                    "style": "primary",
-                    "size": "lg"
-                  }
-                }
-              },
-              "block_order": [
-                "contact"
-              ]
             }
           },
           "block_order": [
             "statement",
-            "body",
-            "actions"
+            "body"
           ],
+          "static": true
+        },
+        "action": {
+          "type": "button",
+          "settings": {
+            "label": "Get in touch",
+            "link": "shopify://pages/contact",
+            "style": "primary",
+            "size": "lg"
+          },
           "static": true
         }
       },
