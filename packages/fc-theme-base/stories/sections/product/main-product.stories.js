@@ -62,9 +62,9 @@ export const PickASize = {
     await expect(canvas.getByRole('link', { name: 'Shop all FWF' })).toBeVisible();
     await expect(canvas.getByRole('img', { name: 'Rated 4.7 out of 5' })).toBeVisible();
 
-    // Adding before a size asks for one, and Shop Pay waits for it too.
+    // Adding before a size asks for one, and Buy it now waits for it too.
     await expect(canvas.getByRole('group', { name: 'Size Choose a size' })).toBeVisible();
-    await expect(canvas.queryByRole('button', { name: 'Buy with Shop Pay' })).toBeNull();
+    await expect(canvas.queryByRole('button', { name: 'Buy it now' })).toBeNull();
     await userEvent.click(canvas.getAllByRole('button', { name: 'Add to cart' })[0]);
     await expect(canvas.getByText('Choose a size first')).toBeVisible();
 
@@ -73,7 +73,7 @@ export const PickASize = {
     await waitFor(() => expect(canvas.getByRole('group', { name: 'Size M' })).toBeVisible());
     await expect(canvas.getByRole('radio', { name: 'M' })).toBeChecked();
     await expect(canvas.getByText('In stock in Woodinville, WA')).toBeVisible();
-    await expect(canvas.getByRole('button', { name: 'Buy with Shop Pay' })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Buy it now' })).toBeVisible();
     const photos = within(canvas.getByRole('list', { name: 'Photos' }));
     await expect(photos.getAllByRole('button')[0]).toHaveAccessibleName('Open photo 3 of 6');
   },
@@ -100,7 +100,7 @@ export const SoldOut = {
   play: async ({ canvas }) => {
     await expect(canvas.getByText('Sold out in size XL')).toBeVisible();
     await expect(canvas.getAllByRole('button', { name: 'Sold out' })[0]).toHaveAttribute('aria-disabled', 'true');
-    await expect(canvas.queryByRole('button', { name: 'Buy with Shop Pay' })).toBeNull();
+    await expect(canvas.queryByRole('button', { name: 'Buy it now' })).toBeNull();
   },
 };
 

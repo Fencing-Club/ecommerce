@@ -211,11 +211,12 @@ export function registerShopifyLiquid(engine, { locale = {}, readAsset, readBloc
     const options = Object.fromEntries(attributes);
     return `<svg class="${escapeAttribute(options.class ?? '')}" viewBox="0 0 38 24" role="img" aria-labelledby="pi-${type}"><title id="pi-${type}">${escapeAttribute(name)}</title><rect width="37" height="23" x="0.5" y="0.5" rx="3" fill="#fff" stroke="#d4d4d8"/></svg>`;
   });
-  // Shopify draws the installments line and the express checkout button itself; these are plain stand-ins.
+  // Shopify draws the installments line and the express checkout button itself; these are plain stand-ins. The button
+  // is Shopify's plain Buy it now, the one the theme styles. Wallet buttons such as Shop Pay keep Shopify's own look.
   engine.registerFilter('payment_terms', () => '<shopify-payment-terms>Or 4 interest-free payments with Shop Pay</shopify-payment-terms>');
   engine.registerFilter(
     'payment_button',
-    () => '<div class="shopify-payment-button"><button type="button" class="shopify-payment-button__button shopify-payment-button__button--branded">Buy with Shop Pay</button></div>',
+    () => '<div class="shopify-payment-button"><button type="button" class="shopify-payment-button__button shopify-payment-button__button--unbranded">Buy it now</button></div>',
   );
   engine.registerFilter('video_tag', (media, ...attributes) => {
     const options = Object.fromEntries(attributes);

@@ -116,14 +116,18 @@
   --shopify-accelerated-checkout-button-box-shadow: none;
 }
 .shopify-payment-button .shopify-payment-button__button--unbranded {
+  width: 100%;
+  height: var(--shopify-accelerated-checkout-button-block-size);
   padding: 0 var(--spacing-6);
   border: 0.1rem solid transparent;
+  border-radius: var(--shopify-accelerated-checkout-button-border-radius);
   background-color: var(--primary);
   color: var(--primary-foreground);
   font-family: inherit;
   font-size: var(--text-base);
   font-weight: 600;
   line-height: 1.25;
+  cursor: pointer;
   transition: background-color var(--default-transition-duration) var(--ease-out), color var(--default-transition-duration) var(--ease-out);
 }
 @media (hover: hover) {
