@@ -447,8 +447,8 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Homepage overlay header — the design draws the header on top of the hero
-   (Hero Header, 214px tall, transparent over a 720px hero).
+   Overlay header: the homepage and About designs draw the header on top of
+   their full-bleed hero photos (Hero Header, 214px tall).
    --------------------------------------------------------------------------- */
 
 .header__heading-logo--light {
@@ -591,7 +591,7 @@
   background: color-mix(in srgb, var(--primary-foreground) 8%, transparent);
 }
 
-/* Only wide screens float the homepage header over the hero. Below 990 the header is
+/* Only wide screens float the header over the hero. Below 990 the header is
    solid, so floating it would only hide the top of the photo; it stays in the page flow
    as on every other page. */
 @media screen and (min-width: 990px) {

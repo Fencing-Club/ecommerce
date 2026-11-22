@@ -1,0 +1,145 @@
+{{ 'section-about.css' | asset_url | stylesheet_tag }}
+
+<div class="about-section about-section--phase about-timeline" id="how-far-weve-come">
+  {%- content_for 'block', type: 'phase-heading', id: 'phase' -%}
+  <div class="about-timeline__body">
+    <div class="about-timeline__intro">
+      <div class="about-lead">{%- content_for 'block', type: 'heading', id: 'lead' -%}</div>
+      {%- comment -%}
+        The legend explains the dots, which are hidden from screen readers; each milestone's status pill says the same
+        in words.
+      {%- endcomment -%}
+      <ul class="about-timeline__legend" aria-hidden="true">
+        <li><span class="about-timeline__swatch about-timeline__swatch--done"></span>{{ 'sections.about_timeline.done' | t }}</li>
+        <li>
+          <span class="about-timeline__swatch about-timeline__swatch--in-progress"></span>
+          {{- 'sections.about_timeline.in_progress' | t -}}
+        </li>
+        <li>
+          <span class="about-timeline__swatch about-timeline__swatch--planned"></span>
+          {{- 'sections.about_timeline.planned' | t -}}
+        </li>
+      </ul>
+      {%- content_for 'block', type: 'text', id: 'note' -%}
+    </div>
+    <div class="about-timeline__list">{%- content_for 'blocks' -%}</div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .about-timeline {
+    border-top: 1px solid var(--border);
+  }
+  .about-timeline__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-12);
+  }
+  .about-timeline__intro {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+  }
+  .about-timeline__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2) var(--spacing-6);
+    margin: 0;
+    padding: var(--spacing-1) 0 0;
+    list-style: none;
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+    color: var(--muted-foreground);
+  }
+  .about-timeline__legend li {
+    display: flex;
+    gap: var(--spacing-2-5);
+    align-items: center;
+  }
+  .about-timeline__swatch {
+    display: grid;
+    place-items: center;
+    width: calc(var(--spacing) * 4.5);
+    height: calc(var(--spacing) * 4.5);
+  }
+  .about-timeline__swatch::before {
+    content: '';
+    border-radius: 50%;
+  }
+  .about-timeline__swatch--done::before {
+    width: calc(var(--spacing) * 2.75);
+    height: calc(var(--spacing) * 2.75);
+    background: var(--foreground);
+  }
+  .about-timeline__swatch--in-progress::before {
+    width: var(--spacing-3-5);
+    height: var(--spacing-3-5);
+    border: 3px solid var(--foreground);
+  }
+  .about-timeline__swatch--planned::before {
+    width: var(--spacing-2-5);
+    height: var(--spacing-2-5);
+    border: 2px solid color-mix(in srgb, var(--foreground) 60%, transparent);
+  }
+  /* The milestones share one shaded track: the first rounds its top, the last its bottom, and the line stops at both
+     ends. */
+  .about-timeline__list > :first-child .about-milestone__track {
+    border-radius: 999px 999px 0 0;
+  }
+  .about-timeline__list > :last-child .about-milestone__track {
+    border-radius: 0 0 999px 999px;
+  }
+  .about-timeline__list > :first-child .about-milestone__track::before,
+  .about-timeline__list > :last-child .about-milestone__track::after {
+    content: none;
+  }
+  .about-timeline__list > :last-child .about-milestone__copy {
+    padding-bottom: var(--spacing-5);
+  }
+  @media (max-width: 749px) {
+    .about-timeline__body { gap: var(--spacing-7); }
+    .about-timeline__intro { gap: var(--spacing-4); }
+    .about-timeline__legend {
+      gap: var(--spacing-2) var(--spacing-4);
+      padding-top: 0;
+      font-size: calc(var(--spacing) * 3.25);
+    }
+    .about-timeline__legend li { gap: var(--spacing-2); }
+    .about-timeline__list > :last-child .about-milestone__copy { padding-bottom: var(--spacing-2); }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.about_timeline.name",
+  "tag": "section",
+  "blocks": [{ "type": "_milestone" }],
+  "presets": [
+    {
+      "name": "t:sections.about_timeline.name",
+      "blocks": [
+        {
+          "type": "phase-heading",
+          "id": "phase",
+          "static": true,
+          "settings": { "meaning": "Fence", "word": "Allez" }
+        },
+        {
+          "type": "heading",
+          "id": "lead",
+          "static": true,
+          "settings": { "heading": "We haven't stopped moving since our first allez.", "tag": "h3", "size": "sm" }
+        },
+        {
+          "type": "text",
+          "id": "note",
+          "static": true,
+          "settings": { "text": "<p>Dates for planned work are targets and may move.</p>", "style": "subtle" }
+        },
+        { "type": "_milestone", "settings": { "date": "2023", "title": "Fencing Club is founded", "text": "We open in Woodinville, near Seattle." } },
+        { "type": "_milestone", "settings": { "date": "2027", "title": "What comes next", "text": "A milestone still to come.", "status": "planned" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

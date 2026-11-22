@@ -1,0 +1,208 @@
+{%- comment -%}
+  A milestone on the About page's timeline: when it happened, a dot on the shaded track and what happened. The line
+  into a dot is solid unless the milestone is planned; the line out is solid only once it's done. One in progress has
+  a ringed dot and an In progress pill; a planned one has a hollow dot, softer text and a Planned pill. Phones put the
+  date over the title, beside the track.
+{%- endcomment -%}
+{%- liquid
+  assign status = block.settings.status | default: 'done'
+-%}
+<div class="about-milestone about-milestone--{{ status | replace: '_', '-' }}" {{ block.shopify_attributes }}>
+  <p class="about-milestone__when">
+    <span class="about-milestone__date">{{ block.settings.date | escape }}</span>
+    {%- case status -%}
+      {%- when 'in_progress' -%}
+        <span class="about-milestone__pill">{{ 'sections.about_timeline.in_progress' | t }}</span>
+      {%- when 'planned' -%}
+        <span class="about-milestone__pill">{{ 'sections.about_timeline.planned' | t }}</span>
+    {%- endcase -%}
+  </p>
+  <span class="about-milestone__track" aria-hidden="true"><span class="about-milestone__dot"></span></span>
+  <div class="about-milestone__copy">
+    <h3 class="about-milestone__title">{{ block.settings.title | escape }}</h3>
+    {%- if block.settings.text != blank -%}
+      <p class="about-milestone__text">{{ block.settings.text | escape }}</p>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .about-milestone {
+    --milestone-line: var(--foreground);
+    --milestone-line-faded: color-mix(in srgb, var(--foreground) 25%, transparent);
+    --milestone-dot-y: calc(var(--spacing) * 5.5);
+    display: grid;
+    grid-template-columns: calc(var(--spacing) * 37.5) var(--spacing-9) minmax(0, 1fr);
+    grid-template-areas: 'when track copy';
+    column-gap: var(--spacing-7);
+  }
+  .about-milestone__when {
+    grid-area: when;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+    margin: 0;
+    padding-top: calc(var(--spacing) * 2.75);
+  }
+  .about-milestone__date {
+    font-size: calc(var(--spacing) * 4.25);
+    line-height: var(--leading-snug);
+    font-weight: var(--font-weight-bold);
+    color: var(--foreground);
+  }
+  .about-milestone__pill {
+    padding: var(--spacing-0-5) var(--spacing-2);
+    border-radius: 999px;
+    background: var(--muted);
+    font-size: calc(var(--spacing) * 2.75);
+    line-height: var(--text-xs--line-height);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .about-milestone--in-progress .about-milestone__pill {
+    background: var(--foreground);
+    color: var(--background);
+  }
+  .about-milestone__track {
+    grid-area: track;
+    position: relative;
+    background: var(--muted);
+  }
+  .about-milestone__track::before,
+  .about-milestone__track::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 2px;
+    transform: translateX(-50%);
+    background: var(--milestone-line);
+  }
+  .about-milestone__track::before {
+    top: 0;
+    height: var(--milestone-dot-y);
+  }
+  .about-milestone__track::after {
+    top: var(--milestone-dot-y);
+    bottom: 0;
+  }
+  .about-milestone__dot {
+    position: absolute;
+    z-index: 1;
+    top: var(--milestone-dot-y);
+    left: 50%;
+    width: var(--spacing-3-5);
+    height: var(--spacing-3-5);
+    border-radius: 50%;
+    background: var(--foreground);
+    transform: translate(-50%, -50%);
+  }
+  .about-milestone--in-progress .about-milestone__track::after,
+  .about-milestone--planned .about-milestone__track::before,
+  .about-milestone--planned .about-milestone__track::after {
+    background: var(--milestone-line-faded);
+  }
+  .about-milestone--in-progress .about-milestone__dot {
+    width: calc(var(--spacing) * 4.5);
+    height: calc(var(--spacing) * 4.5);
+    border: 4px solid var(--foreground);
+    background: var(--background);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--foreground) 12%, transparent);
+  }
+  .about-milestone--planned .about-milestone__dot {
+    width: var(--spacing-3);
+    height: var(--spacing-3);
+    border: 2px solid color-mix(in srgb, var(--foreground) 60%, transparent);
+    background: var(--background);
+  }
+  .about-milestone__copy {
+    grid-area: copy;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+    min-width: 0;
+    padding: calc(var(--spacing) * 2.25) 0 calc(var(--spacing) * 13);
+  }
+  .about-milestone__title {
+    margin: 0;
+    font-size: calc(var(--spacing) * 5.5);
+    line-height: var(--leading-snug);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: -0.014em;
+    color: var(--foreground);
+  }
+  .about-milestone__text {
+    max-width: calc(var(--spacing) * 130);
+    margin: 0;
+    font-size: var(--text-base);
+    line-height: 1.55;
+    color: var(--muted-foreground);
+  }
+  .about-milestone--planned .about-milestone__date {
+    color: var(--muted-foreground);
+  }
+  .about-milestone--planned .about-milestone__title {
+    color: color-mix(in srgb, var(--foreground) 70%, transparent);
+  }
+  @media (max-width: 749px) {
+    .about-milestone {
+      --milestone-dot-y: var(--spacing-5);
+      grid-template-columns: var(--spacing-7) minmax(0, 1fr);
+      grid-template-areas:
+        'track when'
+        'track copy';
+      column-gap: var(--spacing-4);
+    }
+    .about-milestone__when {
+      flex-direction: row;
+      align-items: center;
+      padding-top: var(--spacing-2-5);
+    }
+    .about-milestone__date { font-size: var(--text-sm); }
+    .about-milestone__copy {
+      gap: var(--spacing-1-5);
+      padding: var(--spacing-1-5) 0 var(--spacing-9);
+    }
+    .about-milestone__title { font-size: calc(var(--spacing) * 4.75); }
+    .about-milestone__text { font-size: calc(var(--spacing) * 3.75); }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.milestone.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "date",
+      "label": "t:blocks.milestone.settings.date.label",
+      "default": "t:blocks.milestone.settings.date.default"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:blocks.milestone.settings.title.label",
+      "default": "t:blocks.milestone.settings.title.default"
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "t:blocks.milestone.settings.text.label"
+    },
+    {
+      "type": "select",
+      "id": "status",
+      "label": "t:blocks.milestone.settings.status.label",
+      "default": "done",
+      "options": [
+        { "value": "done", "label": "t:blocks.milestone.settings.status.options.done" },
+        { "value": "in_progress", "label": "t:blocks.milestone.settings.status.options.in_progress" },
+        { "value": "planned", "label": "t:blocks.milestone.settings.status.options.planned" }
+      ]
+    }
+  ],
+  "presets": [{ "name": "t:blocks.milestone.name" }]
+}
+{% endschema %}

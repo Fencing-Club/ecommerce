@@ -1,0 +1,32 @@
+{% doc %}
+  A product's protection level as a dark pill with a shield and a thin white edge, so it reads on white and dark
+  photos alike. The level comes from the product's Safety Level and FIE Rating fields: 800N plus FIE reads 800N FIE,
+  and FIE with no rating reads FIE. Renders nothing when the product has neither.
+
+  @param {object} [product] - The product whose level to show.
+  @param {string} [label] - A level to show instead, such as 350N.
+
+  @example
+  {% render 'ui-protection-badge', product: product %}
+{% enddoc %}
+{%- liquid
+  assign level = label
+  if level == blank and product != blank
+    assign rating = product.metafields.custom.protection_rating.value | strip
+    assign fie_status = product.metafields.custom.fie_status.value | strip
+    if rating != blank and fie_status == 'FIE'
+      assign level = rating | append: ' FIE'
+    elsif rating != blank
+      assign level = rating
+    elsif fie_status == 'FIE'
+      assign level = 'FIE'
+    endif
+  endif
+-%}
+{%- if level != blank -%}
+  <span class="ui-protection-badge">
+    {%- render 'ui-icon', icon: 'shield-check', size: 12 -%}
+    <span class="visually-hidden">{{ 'products.product.protection_level' | t }}</span>
+    <span class="ui-protection-badge__label">{{ level | escape }}</span>
+  </span>
+{%- endif -%}

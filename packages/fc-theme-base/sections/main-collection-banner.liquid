@@ -1,40 +1,78 @@
 {{ 'section-main-collection.css' | asset_url | stylesheet_tag }}
-<script src="{{ 'collection-breadcrumbs.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'collection-filters.js' | asset_url }}" type="module"></script>
+<script src="{{ 'collection-page.js' | asset_url }}" type="module"></script>
 
 {%- comment -%}
-  Category pills come from a menu whose handle matches the collection, so any
-  collection can offer them without section blocks.
+  The collection's breadcrumbs, title, description, trust lines and the categories under it. The breadcrumbs and
+  categories come from the main menu, where the collection sits up to three levels deep.
 {%- endcomment -%}
-{%- assign category_links = linklists[collection.handle].links -%}
+<header class="collection-hero page-width">
+  {%- render 'collection-category-tree', collection: collection, style: 'breadcrumbs', home_label: section.settings.home_label -%}
 
-<header class="collection-intro">
-  {%- render 'ui-breadcrumbs',
-    root_label: section.settings.home_label,
-    root_url: routes.root_url,
-    current_label: collection.title,
-    contextual: true
-  -%}
+  <div class="collection-hero__head">
+    <div class="collection-hero__intro">
+      <h1 class="collection-hero__title">{{ collection.title | escape }}</h1>
+      {%- if collection.description != blank or section.settings.show_guide -%}
+        <div class="collection-hero__description">
+          {%- if collection.description != blank -%}
+            <div class="collection-hero__text rte" id="CollectionDescription-{{ section.id }}" data-read-more-text>
+              {{ collection.description }}
+            </div>
+            <button
+              type="button"
+              class="collection-hero__more"
+              aria-expanded="false"
+              aria-controls="CollectionDescription-{{ section.id }}"
+              data-read-more
+              hidden
+            >
+              {{- 'collections.hero.read_more' | t -}}
+            </button>
+          {%- endif -%}
+          {%- if section.settings.show_guide and section.settings.guide_anchor != blank -%}
+            {%- assign guide_title = collection.title | downcase -%}
+            <a class="collection-hero__guide" href="#{{ section.settings.guide_anchor | escape }}">
+              {{- 'collections.hero.guide' | t: title: guide_title -}}
+              {%- render 'ui-icon', icon: 'arrow-down', size: 14 -%}
+            </a>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    </div>
 
-  <h1 class="collection-intro__title">{{ collection.title | escape }}</h1>
-
-  {%- if section.settings.show_collection_description and collection.description != blank -%}
-    <div class="collection-intro__description rte">{{ collection.description }}</div>
-  {%- endif -%}
-
-  {%- if section.settings.show_category_pills and category_links.size > 0 -%}
-    <nav class="collection-intro__pills" aria-label="{{ section.settings.category_label | escape }}">
-      {%- for link in category_links -%}
-        {%- capture category_url -%}
-          {%- render 'collection-context-url',
-            url: link.url,
-            parent_label: collection.title,
-            parent_url: collection.url,
-            current_label: link.title
-          -%}
-        {%- endcapture -%}
-        {%- render 'ui-pill', label: link.title, url: category_url -%}
+    {%- comment -%}
+      A free shipping line takes its minimum from Theme settings > Cart, as the cart does, and only shoppers who get
+      free shipping see it.
+    {%- endcomment -%}
+    {%- capture trust_lines -%}
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign text = block.settings.text | escape
+          if block.settings.content == 'free_shipping'
+            capture free_shipping
+              render 'cart-free-shipping'
+            endcapture
+            assign free_shipping = free_shipping | plus: 0
+            if free_shipping == 0
+              continue
+            endif
+            assign amount = free_shipping | money_without_trailing_zeros
+            assign text = 'general.free_shipping' | t: amount: amount
+          endif
+        -%}
+        <li class="collection-hero__trust-item" {{ block.shopify_attributes }}>
+          {%- render 'ui-icon', icon: block.settings.icon, size: 16 -%}
+          <span>{{ text }}</span>
+        </li>
       {%- endfor -%}
-    </nav>
+    {%- endcapture -%}
+    {%- if trust_lines != blank -%}
+      <ul class="collection-hero__trust list-unstyled">{{ trust_lines }}</ul>
+    {%- endif -%}
+  </div>
+
+  {%- if section.settings.show_categories -%}
+    {%- render 'collection-category-tree', collection: collection, style: 'tiles' -%}
   {%- endif -%}
 </header>
 
@@ -46,16 +84,56 @@
     { "type": "text", "id": "home_label", "label": "Home label", "default": "Home" },
     {
       "type": "checkbox",
-      "id": "show_collection_description",
-      "default": true,
-      "label": "t:sections.main-collection-banner.settings.show_collection_description.label"
+      "id": "show_guide",
+      "label": "Link to the buying guide",
+      "info": "Shows How to choose and the collection's name, linking down to the buying guide section.",
+      "default": true
     },
-    { "type": "checkbox", "id": "show_category_pills", "label": "Show category links", "default": true },
+    { "type": "text", "id": "guide_anchor", "label": "Buying guide anchor", "default": "BuyingGuide" },
+    { "type": "checkbox", "id": "show_categories", "label": "Show categories", "default": true },
     {
       "type": "paragraph",
-      "content": "Category links come from the navigation menu whose handle matches the collection handle."
-    },
-    { "type": "text", "id": "category_label", "label": "Category navigation label", "default": "Shop categories" }
+      "content": "Categories are the menu items under this collection in the main menu."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "trust",
+      "name": "Trust line",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "select",
+          "id": "content",
+          "label": "Shows",
+          "info": "Free shipping uses the minimum in Theme settings > Cart and shows only to shoppers who get it.",
+          "default": "custom",
+          "options": [
+            { "value": "custom", "label": "Your own text" },
+            { "value": "free_shipping", "label": "Free shipping" }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "default": "package-check",
+          "options": [
+            { "value": "truck", "label": "Truck" },
+            { "value": "package-check", "label": "Package" },
+            { "value": "users", "label": "People" },
+            { "value": "shield-check", "label": "Shield" }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "In stock and packed by our team",
+          "visible_if": "{{ block.settings.content == 'custom' }}"
+        }
+      ]
+    }
   ]
 }
 {% endschema %}

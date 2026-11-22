@@ -6,7 +6,7 @@ export default {
   title: 'Blocks/Feature',
   render: block('feature'),
   args: { icon: 'truck', label: 'Fast shipping', detail: 'Ships in 1 business day' },
-  argTypes: { icon: { control: 'inline-radio', options: ['badge-check', 'truck', 'rotate-ccw', 'star'] } },
+  argTypes: { icon: { control: 'inline-radio', options: ['badge-check', 'truck', 'rotate-ccw', 'star', 'target', 'tag', 'git-branch', 'life-buoy'] } },
 };
 
 export const Plain = {

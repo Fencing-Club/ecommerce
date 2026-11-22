@@ -31,6 +31,15 @@ const shop = {
   address: { street: '17190 128th Pl NE', city: 'Woodinville', province_code: 'WA', zip: '98072' },
   enabled_payment_types: ['visa', 'master', 'american_express', 'paypal', 'diners_club', 'discover'],
   customer_accounts_enabled: true,
+  // Brand entries other than our own, each with the logo product cards show.
+  metaobjects: {
+    brand: Object.fromEntries(
+      ['fwf', 'favero', 'blaise', 'asics'].map((handle) => [
+        handle,
+        { title: handle.toUpperCase(), logo: { value: { src: assetUrl(`${handle}.png`), alt: handle.toUpperCase(), width: 240, height: 80 } } },
+      ]),
+    ),
+  },
 };
 
 // The shopper's market and language, with a second of each so the header's selectors show.
@@ -91,24 +100,28 @@ export const block =
 /**
  * A story `render` function for a section built on theme blocks: its args become the section's settings, over its
  * schema defaults. `blocks` are its theme blocks and `staticBlocks` the static ones its `{% content_for 'block' %}`
- * tags render, each `{ id, type, settings, blocks }`. `variables` adds globals such as `blogs`.
+ * tags render, each `{ id, type, settings, blocks }`. `sectionBlocks` are blocks the section's own schema declares,
+ * each `{ id, type, settings }`. `variables` adds page objects such as `blogs` or `collection`, and `globals` replaces
+ * defaults such as `routes`.
  *
  * @param {string} name The section's file name in `sections/`, without `.liquid`.
- * @param {{ blocks?: object[], staticBlocks?: object[], variables?: Record<string, unknown> }} [options]
+ * @param {{ blocks?: object[], staticBlocks?: object[], sectionBlocks?: object[], variables?: Record<string, unknown>, globals?: Record<string, unknown> }} [options]
  */
 export const section =
-  (name, { blocks = [], staticBlocks = [], variables = {} } = {}) =>
+  (name, { blocks = [], staticBlocks = [], sectionBlocks, variables = {}, globals: extra = {} } = {}) =>
   (settings) => {
     // As on a store, the section sees each theme block's id but not its type or settings; `content_for` renders them.
+    // A section with its own blocks in its schema sees them whole, so `sectionBlocks` pass straight through.
     const current = {
       id: 'story',
       settings: { ...schemaDefaults(templates[`${name}.liquid`]), ...settings },
-      blocks: blocks.map(({ id }) => ({ id, type: '@theme', settings: {} })),
+      blocks: sectionBlocks ? sectionBlocks.map((own) => ({ shopify_attributes: '', ...own })) : blocks.map(({ id }) => ({ id, type: '@theme', settings: {} })),
       theme_blocks: blocks,
       static_blocks: staticBlocks,
     };
-    // On a store the snippets a section renders can read `section` too, so it is a global for the render.
-    return engine.renderFileSync(name, { ...variables, section: current }, { globals: { ...globals, section: current } });
+    // On a store the snippets a section renders can read `section` and page objects such as `collection` too, so
+    // they are globals for the render.
+    return engine.renderFileSync(name, { ...variables, section: current }, { globals: { ...globals, ...variables, ...extra, section: current } });
   };
 
 /**
@@ -128,3 +141,11 @@ export const loadScript = (file) => () =>
         script.onerror = reject;
         document.head.append(script);
       });
+
+/**
+ * A story loader that imports a theme script the store loads as a module. The browser runs a module once however
+ * many times a story's markup adds its script tag, so stories share it with the sections that load it.
+ *
+ * @param {string} file A file in the theme's assets.
+ */
+export const loadModule = (file) => () => import(/* @vite-ignore */ assetUrl(file));

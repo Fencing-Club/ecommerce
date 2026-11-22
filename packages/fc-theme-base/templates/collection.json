@@ -2,32 +2,136 @@
   "sections": {
     "banner": {
       "type": "main-collection-banner",
+      "blocks": {
+        "shipping": { "type": "trust", "settings": { "content": "free_shipping", "icon": "truck" } },
+        "stock": { "type": "trust", "settings": { "icon": "package-check", "text": "In stock and packed by our team" } },
+        "clubs": { "type": "trust", "settings": { "icon": "users", "text": "Club and team pricing" } }
+      },
+      "block_order": ["shipping", "stock", "clubs"],
       "settings": {
         "home_label": "Home",
-        "show_collection_description": true,
-        "show_category_pills": true,
-        "category_label": "Shop categories"
+        "show_guide": true,
+        "guide_anchor": "BuyingGuide",
+        "show_categories": true
       }
     },
     "product-grid": {
       "type": "main-collection-product-grid",
       "settings": {
-        "products_per_page": 9,
-        "columns_desktop": 3,
+        "products_per_page": 16,
+        "columns_mobile": "2",
         "quick_add": "standard",
-        "add_label": "Add",
+        "add_label": "Add to cart",
         "enable_filtering": true,
-        "mobile_filter_label": "Filter",
         "enable_sorting": true,
-        "filter_heading": "Filters",
-        "clear_all_label": "Clear all",
         "sort_label": "Sort:",
         "load_more_label": "Load more",
-        "columns_mobile": "2",
-        "padding_top": 8,
-        "padding_bottom": 90
+        "guide_anchor": "BuyingGuide",
+        "contact_url": "shopify://pages/contact",
+        "padding_top": 0,
+        "padding_bottom": 80
+      }
+    },
+    "recently-viewed": {
+      "type": "recently-viewed",
+      "settings": { "limit": 6 }
+    },
+    "buying-guide": {
+      "type": "collection-buying-guide",
+      "blocks": {
+        "level-350n": {
+          "type": "level",
+          "settings": {
+            "label": "350N",
+            "meaning": "Fabric resists 350 newtons.",
+            "where": "Club training and most domestic events.",
+            "link": ""
+          }
+        },
+        "level-800n": {
+          "type": "level",
+          "settings": {
+            "label": "800N",
+            "meaning": "Fabric resists 800 newtons. Not FIE approved.",
+            "where": "Extra protection for training and club bouts.",
+            "link": ""
+          }
+        },
+        "level-800n-fie": {
+          "type": "level",
+          "settings": {
+            "label": "800N FIE",
+            "meaning": "800N fabric, approved by the FIE.",
+            "where": "FIE events, and any event that asks for FIE clothing.",
+            "link": ""
+          }
+        },
+        "level-1600n-fie": {
+          "type": "level",
+          "settings": {
+            "label": "1600N FIE",
+            "meaning": "Mask bibs that resist 1,600 newtons, approved by the FIE.",
+            "where": "Masks for FIE events.",
+            "link": ""
+          }
+        },
+        "level-fie": {
+          "type": "level",
+          "settings": {
+            "label": "FIE",
+            "meaning": "Approved by the FIE, with no newton rating.",
+            "where": "Gloves and chest protectors for FIE events.",
+            "link": ""
+          }
+        },
+        "question-size": {
+          "type": "question",
+          "settings": {
+            "question": "What size fencing jacket should I buy?",
+            "answer": "<p>Measure your chest, waist and arm length, then match them to the size chart on the product page. Each product has its own chart.</p>"
+          }
+        },
+        "question-levels": {
+          "type": "question",
+          "settings": {
+            "question": "What's the difference between 350N and 800N?",
+            "answer": "<p>350N fabric is right for club training and most domestic events. 800N resists more than twice the force, and FIE events ask for 800N FIE clothing.</p>"
+          }
+        },
+        "question-clubs": {
+          "type": "question",
+          "settings": {
+            "question": "Do clubs get special pricing?",
+            "answer": "<p>Yes. Clubs, schools and nonprofits get member pricing and bulk discounts. Contact us with what your club needs.</p>"
+          }
+        },
+        "question-returns": {
+          "type": "question",
+          "settings": {
+            "question": "Can I return clothing that doesn't fit?",
+            "answer": "<p>Yes. Returns are free within 30 days of delivery, as long as it's unworn, with its tags and in its original packaging.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "level-350n",
+        "level-800n",
+        "level-800n-fie",
+        "level-1600n-fie",
+        "level-fie",
+        "question-size",
+        "question-levels",
+        "question-clubs",
+        "question-returns"
+      ],
+      "settings": {
+        "anchor": "BuyingGuide",
+        "eyebrow": "Buying guide",
+        "intro": "<p>Every piece of fencing clothing has a protection level. The number is the force, in newtons, the fabric resists before a blade gets through. FIE marks mean the International Fencing Federation has approved the item for its events.</p>",
+        "note": "Rules vary by event. Check yours before you buy.",
+        "popular_menu": ""
       }
     }
   },
-  "order": ["banner", "product-grid"]
+  "order": ["banner", "product-grid", "recently-viewed", "buying-guide"]
 }

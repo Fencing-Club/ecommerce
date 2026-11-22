@@ -4,7 +4,7 @@
 
 {%- if section.settings.enable_filtering or section.settings.enable_sorting -%}
   {{ 'component-facets.css' | asset_url | stylesheet_tag }}
-  <script src="{{ 'facets.js' | asset_url }}" defer="defer"></script>
+  <script src="{{ 'facets.js' | asset_url }}" type="module"></script>
 {%- endif -%}
 
 {%- if section.settings.enable_sorting -%}
@@ -145,24 +145,16 @@
             >
               {%- for item in product_results -%}
                 {%- liquid
-                  assign badge_label = blank
-                  if item.compare_at_price > item.price
-                    assign badge_label = 'SALE'
-                  endif
                   assign card_id = 'SearchProduct-' | append: section.id | append: '-' | append: item.id
                 -%}
                 <li>
                   {%- render 'ui-product-card',
                     product: item,
-                    variant: 'home',
                     card_id: card_id,
-                    badge_label: badge_label,
-                    show_type: true,
                     show_price: true,
                     show_add: true,
                     add_label: section.settings.add_label,
                     section_id: section.id,
-                    trim_price: true,
                     image_sizes: '(min-width: 990px) 300px, (min-width: 750px) calc((100vw - 116px) / 2), calc((100vw - 52px) / 2)',
                     image_widths: '300, 450, 600',
                     image_loading: 'lazy'

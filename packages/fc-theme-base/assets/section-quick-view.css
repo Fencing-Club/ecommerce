@@ -1,0 +1,326 @@
+/* Quick view: the dialog a grid's cards open. Desktop shows the photos beside the buy box; phones get the quick add
+   sheet from the bottom. Measurements follow the Quick view and Quick add sheet boards in the Pen. */
+html:has(.quick-view[open]) { overflow: hidden; }
+
+.quick-view {
+  width: min(100rem, calc(100vw - 4.8rem));
+  max-width: none;
+  max-height: calc(100dvh - 4.8rem);
+  margin: auto;
+  padding: 2.4rem;
+  overflow: auto;
+  border: 0;
+  border-radius: 1.6rem;
+  background: var(--background);
+  box-shadow: 0 1.6rem 4.8rem rgb(16 16 18 / 0.25);
+  color: var(--foreground);
+}
+
+.quick-view::backdrop { background: rgb(16 16 18 / 0.5); }
+
+.quick-view__close {
+  position: absolute;
+  z-index: 2;
+  top: 2.4rem;
+  right: 2.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.6rem;
+  height: 3.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--muted);
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.quick-view__close:focus-visible,
+.quick-view__track:focus-visible,
+.quick-view__thumb:focus-visible,
+.quick-view__arrow:focus-visible,
+.quick-view__full:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+.quick-view__failed {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  align-items: center;
+  justify-content: center;
+  min-height: 30rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+.quick-view__content { display: flex; gap: 3.2rem; align-items: flex-start; }
+
+/* Photos */
+.quick-view__gallery { display: flex; flex: 0 0 auto; gap: 1.2rem; }
+
+.quick-view__thumbs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-height: 52.5rem;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.quick-view__thumb {
+  flex: 0 0 auto;
+  width: 6.4rem;
+  height: 8rem;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 0.8rem;
+  background: var(--muted);
+  cursor: pointer;
+}
+
+.quick-view__thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.quick-view__thumb[aria-current='true'] { border-color: var(--foreground); }
+
+.quick-view__photo {
+  position: relative;
+  width: 42rem;
+  aspect-ratio: 420 / 525;
+  overflow: hidden;
+  border-radius: 1.2rem;
+  background: var(--muted);
+}
+
+.quick-view__track {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.quick-view__slide { flex: 0 0 100%; scroll-snap-align: start; }
+.quick-view__slide img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.quick-view__photo-top { position: absolute; top: 1.4rem; left: 1.4rem; pointer-events: none; }
+
+.quick-view__arrows {
+  position: absolute;
+  top: 50%;
+  inset-inline: 1.4rem;
+  display: flex;
+  justify-content: space-between;
+  translate: 0 -50%;
+  pointer-events: none;
+}
+
+.quick-view__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.6rem;
+  height: 3.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.9);
+  color: var(--foreground);
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    background-color var(--default-transition-duration) var(--ease-out),
+    color var(--default-transition-duration) var(--ease-out);
+}
+
+/* As on the product card, hovering an arrow over the photo turns it dark. */
+@media (hover: hover) {
+  .quick-view__arrow:hover { background: #101012; color: #fff; }
+}
+
+.quick-view__counter {
+  position: absolute;
+  bottom: 1.4rem;
+  left: 50%;
+  margin: 0;
+  padding: 0.4rem 1rem;
+  border-radius: 99.9rem;
+  background: rgb(255 255 255 / 0.9);
+  font-size: 1.2rem;
+  font-weight: 600;
+  translate: -50% 0;
+}
+
+/* Buy box */
+.quick-view__details { display: flex; flex: 1 1 auto; flex-direction: column; gap: 1.8rem; min-width: 0; }
+.quick-view__head { display: flex; gap: 1.2rem; padding-right: 4.8rem; }
+.quick-view__head-photo,
+.quick-view__head-badge { display: none; }
+.quick-view__title-block { display: flex; flex-direction: column; gap: 0.8rem; min-width: 0; }
+.quick-view__brand { margin: 0; color: var(--muted-foreground); font-size: 1.3rem; }
+.quick-view__title { margin: 0; font-size: 2.6rem; font-weight: 700; line-height: 1.2; }
+.quick-view__price { margin-top: 1rem; }
+.quick-view__price .ui-price__amount { font-size: 2.2rem; font-weight: 700; }
+
+.quick-view__summary {
+  margin: 0;
+  padding-bottom: 1.8rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 1.4rem;
+  line-height: 1.55;
+}
+
+.quick-view__buy,
+.quick-view__options { display: flex; flex-direction: column; gap: 1.8rem; }
+.quick-view__buy[aria-busy='true'] { opacity: 0.6; }
+.quick-view__option-error { margin: 0; color: var(--destructive); font-size: 1.3rem; }
+.quick-view__option-error[hidden] { display: none; }
+.quick-view__actions form { display: flex; gap: 1rem; padding-top: 0.6rem; }
+.quick-view__actions .ui-quantity-stepper { flex: 0 0 11.2rem; height: 4.8rem; border-radius: 0.8rem; }
+.quick-view__actions .ui-quantity-stepper__button { width: 3.6rem; }
+.quick-view__actions .ui-quantity-stepper__input { flex: 1; }
+.quick-view__add.ui-button { flex: 1 1 auto; min-height: 4.8rem; gap: 0.8rem; border-radius: 0.8rem; font-size: 1.5rem; }
+
+.quick-view__error {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin: 0.8rem 0 0;
+  color: var(--destructive);
+  font-size: 1.3rem;
+}
+
+.quick-view__error[hidden] { display: none; }
+.quick-view__delivery { display: flex; flex-direction: column; gap: 0.8rem; }
+.quick-view__delivery:empty { display: none; }
+
+/* Size guide: the size chart takes the options' place, under the title and price, until Back. */
+.quick-view__details[data-showing-size-guide] > :not(.quick-view__head, .quick-view__size-guide) { display: none; }
+.quick-view__size-guide { display: flex; flex-direction: column; gap: 1.6rem; min-width: 0; }
+.quick-view__size-guide[hidden] { display: none; }
+.quick-view__size-guide-head { display: flex; flex-direction: column; gap: 1.2rem; align-items: flex-start; }
+
+.quick-view__back {
+  display: inline-flex;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--foreground);
+  font: 600 1.4rem/1.4 var(--font-body-family);
+  cursor: pointer;
+}
+
+.quick-view__back:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.quick-view__size-guide-title { margin: 0; font-size: 1.8rem; font-weight: 700; line-height: 1.3; }
+/* The title takes focus when the chart opens, for screen readers; it isn't a control, so it shows no ring. */
+.quick-view__size-guide-title:focus { outline: none; }
+.quick-view__full-chart { align-self: flex-start; }
+
+.quick-view__full {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 0.6rem;
+  align-items: center;
+  color: var(--foreground);
+  font-size: 1.4rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Loading: skeletons in the content's own layout, at the sizes of what replaces them. */
+.quick-view__content--loading .quick-view__head { padding-right: 4.8rem; }
+.quick-view__content--loading .quick-view__title-block { flex: 1; }
+.quick-view__bone { height: 1.4rem; }
+.quick-view__bone--brand { width: 8rem; height: 1.3rem; }
+.quick-view__bone--title { width: 90%; height: 2.6rem; }
+.quick-view__bone--title-end { width: 55%; height: 2.6rem; }
+.quick-view__bone--price { width: 10rem; height: 2.4rem; margin-top: 1rem; }
+.quick-view__bone--rating { width: 14rem; }
+.quick-view__content--loading .quick-view__summary { display: flex; flex-direction: column; gap: 0.6rem; }
+.quick-view__content--loading .quick-view__summary .quick-view__bone { height: 1.6rem; }
+.quick-view__bone--line-end { width: 70%; }
+.quick-view__bone-options { display: flex; flex-direction: column; gap: 1.2rem; }
+.quick-view__bone--label { width: 12rem; height: 1.3rem; }
+.quick-view__bone-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: 0.8rem; }
+.quick-view__bone-choices--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.quick-view__bone--choice { height: 4rem; border-radius: 0.8rem; }
+.quick-view__bone-actions { display: flex; gap: 1rem; padding-top: 0.6rem; }
+.quick-view__bone--stepper { flex: 0 0 11.2rem; height: 4.8rem; border-radius: 0.8rem; }
+.quick-view__bone--button { flex: 1; height: 4.8rem; border-radius: 0.8rem; }
+.quick-view__bone-delivery { display: flex; flex-direction: column; gap: 1.2rem; padding-block: 0.2rem; }
+.quick-view__bone--delivery { width: 22rem; }
+.quick-view__bone--link { width: 14rem; margin-block: 0.5rem; }
+
+/* Tablets: the photo shrinks and the thumbnails go. */
+@media screen and (max-width: 989px) {
+  .quick-view__thumbs { display: none; }
+  .quick-view__photo { width: 32rem; }
+}
+
+/* Phones: the quick add sheet. A small photo and the price head it, then the options and a full-width button. */
+@media screen and (max-width: 749px) {
+  .quick-view {
+    width: 100%;
+    max-height: 90dvh;
+    margin: auto 0 0;
+    padding: 2.8rem 1.6rem 2.4rem;
+    border-radius: 2rem 2rem 0 0;
+  }
+
+  .quick-view::before {
+    position: absolute;
+    top: 0.8rem;
+    left: 50%;
+    width: 4rem;
+    height: 0.4rem;
+    border-radius: 99.9rem;
+    background: var(--input);
+    content: '';
+    translate: -50% 0;
+  }
+
+  .quick-view__close { top: 2.8rem; right: 1.6rem; }
+  .quick-view__content { display: block; }
+
+  .quick-view__gallery,
+  .quick-view__brand,
+  .quick-view__rating,
+  .quick-view__summary,
+  .quick-view__actions .ui-quantity-stepper { display: none; }
+
+  .quick-view__details { gap: 2rem; }
+
+  .quick-view__head-photo {
+    display: block;
+    flex: 0 0 6.4rem;
+    height: 6.4rem;
+    overflow: hidden;
+    border-radius: 0.8rem;
+    background: var(--muted);
+  }
+
+  .quick-view__head-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .quick-view__head-badge { display: block; }
+  .quick-view__title-block { gap: 0.4rem; }
+  .quick-view__title { font-size: 1.7rem; line-height: 1.3; }
+  .quick-view__price { margin-top: 0; }
+  .quick-view__price .ui-price__amount { font-size: 1.6rem; }
+  .quick-view .ui-variant-picker--compact .ui-choice { min-height: 4.4rem; font-size: 1.4rem; }
+  .quick-view__actions form { padding-top: 0; }
+  .quick-view__bone--title { height: 1.7rem; }
+  .quick-view__bone--title-end { height: 1.7rem; }
+  .quick-view__bone--price { height: 1.8rem; margin-top: 0; }
+  .quick-view__bone--brand,
+  .quick-view__bone--rating,
+  .quick-view__bone--stepper { display: none; }
+  .quick-view__bone--choice { height: 4.4rem; }
+  .quick-view__bone-actions { padding-top: 0; }
+  .quick-view__bone--button { height: 5rem; }
+  .quick-view__bone--link { align-self: center; }
+  .quick-view__add.ui-button { min-height: 5rem; font-size: 1.6rem; }
+  .quick-view__full { align-self: center; }
+}
+

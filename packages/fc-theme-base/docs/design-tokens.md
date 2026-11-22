@@ -12,7 +12,8 @@ built on, with Tailwind's values. Storybook's Foundations stories show each scal
 - Use the role, not the look: `--primary` for the main action, `--muted-foreground` for secondary text, `--border`
   for dividers and card edges, `--input` for field borders, `--ring` for the focus ring, `--destructive` for errors.
 - Use the radius scale: `--radius-sm` for small marks, `--radius-md` for controls, `--radius-lg` for notices and
-  fields, `--radius-xl` for cards and media. Pills and swatches stay fully rounded.
+  fields, `--radius-xl` for cards and media, and `--radius-3xl` for large feature panels. Pills and swatches stay
+  fully rounded.
 - Space with the step tokens, `--spacing-0-5` to `--spacing-24`, named after Tailwind's steps (its `p-4` is
   `--spacing-4`, 16px). Half steps use a hyphen: `--spacing-1-5`.
 - Size text with `--text-xs` to `--text-5xl` and their `--text-*--line-height` pairs, and weight it with

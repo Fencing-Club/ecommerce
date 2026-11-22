@@ -1,0 +1,168 @@
+{% doc %}
+  Where a collection sits in the main menu, three levels deep. Counts and photos come from the collection each menu
+  item links to. As tiles it shows the categories under the collection;
+  as a tree it shows the whole branch, opened down to the collection. As breadcrumbs it shows the menu levels above
+  the collection, named as the menu names them; a collection that isn't in the menu gets Home and its title.
+
+  @param {object} collection - The collection on the page.
+  @param {string} [menu] - The menu's handle. Default main-menu.
+  @param {string} [style] - tiles (default), tree, breadcrumbs, or parent for a Shop all button to the collection one
+    level up.
+  @param {string} [id_prefix] - Makes the tree's ids unique when a page shows it twice.
+  @param {string} [home_label] - The breadcrumbs' first link. Default Home.
+
+  @example
+  {% render 'collection-category-tree', collection: collection, style: 'tree', id_prefix: section.id %}
+{% enddoc %}
+{%- liquid
+  assign level = 0
+  assign menu_handle = menu | default: 'main-menu'
+  for l1 in linklists[menu_handle].links
+    if level > 0
+      break
+    endif
+    if l1.url == collection.url
+      assign level = 1
+      assign branch = l1
+      assign current = l1
+      break
+    endif
+    for l2 in l1.links
+      if level > 0
+        break
+      endif
+      if l2.url == collection.url
+        assign level = 2
+        assign branch = l1
+        assign open = l2
+        assign current = l2
+        break
+      endif
+      for l3 in l2.links
+        if l3.url == collection.url
+          assign level = 3
+          assign branch = l1
+          assign open = l2
+          assign current = l3
+          break
+        endif
+      endfor
+    endfor
+  endfor
+-%}
+{%- if style == 'breadcrumbs' -%}
+  {%- liquid
+    assign root_label = 'general.breadcrumb_home' | t
+    if home_label != blank
+      assign root_label = home_label
+    endif
+    assign current_label = collection.title
+    if level > 0
+      assign current_label = current.title
+    endif
+    if level == 2
+      assign parent_label = branch.title
+      assign parent_url = branch.url
+    elsif level == 3
+      assign ancestors = linklists[menu_handle].links | where: 'url', branch.url
+      assign parent_label = open.title
+      assign parent_url = open.url
+    endif
+  -%}
+  {%- render 'ui-breadcrumbs',
+    root_label: root_label,
+    root_url: routes.root_url,
+    ancestors: ancestors,
+    parent_label: parent_label,
+    parent_url: parent_url,
+    current_label: current_label
+  -%}
+{%- elsif style == 'parent' -%}
+  {%- liquid
+    assign parent_url = routes.all_products_collection_url
+    assign parent_title = 'collections.filters.all_equipment' | t
+    if level == 2
+      assign parent_url = branch.url
+      assign parent_title = branch.title
+    elsif level == 3
+      assign parent_url = open.url
+      assign parent_title = open.title
+    endif
+    assign parent_title = parent_title | downcase
+    assign shop_all = 'collections.empty.shop_all' | t: title: parent_title
+  -%}
+  {%- render 'ui-button', label: shop_all, url: parent_url, variant: 'primary', size: 'md', trailing_icon: 'arrow-right' -%}
+{%- elsif level > 0 -%}
+  {%- if style == 'tree' -%}
+    <div class="collection-tree">
+      <a class="collection-tree__up" href="{{ routes.all_products_collection_url }}">
+        {%- render 'ui-icon', icon: 'arrow-left', size: 14 -%}
+        {{- 'collections.filters.all_equipment' | t -}}
+      </a>
+      <ul class="collection-tree__list list-unstyled">
+        <li>
+          <a class="collection-tree__node collection-tree__node--root" href="{{ branch.url }}"{% if level == 1 %} aria-current="page"{% endif %}>
+            {%- render 'ui-icon', icon: 'chevron-down', size: 14 -%}
+            <span class="collection-tree__label">{{ branch.title | escape }}</span>
+            {%- assign link_handle = branch.url | split: '/' | last -%}{%- if collections[link_handle].all_products_count != blank -%}<span class="collection-tree__count" aria-hidden="true">{{ collections[link_handle].all_products_count }}</span><span class="visually-hidden">{{ 'products.facets.product_count_simple' | t: count: collections[link_handle].all_products_count }}</span>{%- endif -%}
+          </a>
+          {%- if branch.links.size > 0 -%}
+            <ul class="list-unstyled">
+              {%- for child in branch.links -%}
+                {%- assign link_handle = child.url | split: '/' | last -%}
+                {%- if collections[link_handle].all_products_count == 0 and child.url != current.url -%}{%- continue -%}{%- endif -%}
+                {%- assign child_id = 'CollectionTree-' | append: id_prefix | append: '-' | append: forloop.index -%}
+                <li class="collection-tree__item">
+                  <div class="collection-tree__row">
+                    {%- if child.links.size > 0 -%}
+                      <button
+                        type="button"
+                        class="collection-tree__toggle"
+                        aria-expanded="{% if child.url == open.url %}true{% else %}false{% endif %}"
+                        aria-controls="{{ child_id }}"
+                        aria-label="{{ child.title | escape }}"
+                        data-tree-toggle
+                      >
+                        {%- render 'ui-icon', icon: 'chevron-right', size: 14 -%}
+                      </button>
+                    {%- endif -%}
+                    <a class="collection-tree__node collection-tree__node--child" href="{{ child.url }}"{% if level == 2 and child.url == current.url %} aria-current="page"{% endif %}>
+                      <span class="collection-tree__label">{{ child.title | escape }}</span>
+                      {%- assign link_handle = child.url | split: '/' | last -%}{%- if collections[link_handle].all_products_count != blank -%}<span class="collection-tree__count" aria-hidden="true">{{ collections[link_handle].all_products_count }}</span><span class="visually-hidden">{{ 'products.facets.product_count_simple' | t: count: collections[link_handle].all_products_count }}</span>{%- endif -%}
+                    </a>
+                  </div>
+                  {%- if child.links.size > 0 -%}
+                    <ul class="list-unstyled" id="{{ child_id }}"{% unless child.url == open.url %} hidden{% endunless %}>
+                      {%- for grandchild in child.links -%}
+                        {%- assign link_handle = grandchild.url | split: '/' | last -%}
+                        {%- if collections[link_handle].all_products_count == 0 and grandchild.url != current.url -%}{%- continue -%}{%- endif -%}
+                        <li>
+                          <a class="collection-tree__node collection-tree__node--grandchild" href="{{ grandchild.url }}"{% if level == 3 and grandchild.url == current.url %} aria-current="page"{% endif %}>
+                            <span class="collection-tree__label">{{ grandchild.title | escape }}</span>
+                            {%- assign link_handle = grandchild.url | split: '/' | last -%}{%- if collections[link_handle].all_products_count != blank -%}<span class="collection-tree__count" aria-hidden="true">{{ collections[link_handle].all_products_count }}</span><span class="visually-hidden">{{ 'products.facets.product_count_simple' | t: count: collections[link_handle].all_products_count }}</span>{%- endif -%}
+                          </a>
+                        </li>
+                      {%- endfor -%}
+                    </ul>
+                  {%- endif -%}
+                </li>
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+        </li>
+      </ul>
+    </div>
+  {%- elsif current.links.size > 0 -%}
+    <nav class="collection-tiles" aria-label="{{ 'collections.hero.categories' | t: title: current.title }}">
+      {%- for child in current.links -%}
+        {%- liquid
+          assign link_handle = child.url | split: '/' | last
+          assign child_count = collections[link_handle].all_products_count
+          assign child_image = collections[link_handle].featured_image
+        -%}
+        {%- if child_count == 0 -%}{%- continue -%}{%- endif -%}
+        {%- render 'ui-category-tile', url: child.url, label: child.title, count: child_count, image: child_image -%}
+      {%- endfor -%}
+    </nav>
+  {%- endif -%}
+{%- endif -%}

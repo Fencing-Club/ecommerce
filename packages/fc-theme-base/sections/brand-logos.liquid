@@ -1,6 +1,6 @@
 {{ 'section-home.css' | asset_url | stylesheet_tag }}
 
-<div class="home-section brand-logos">
+<div class="home-section brand-logos brand-logos--{{ section.settings.layout | default: 'open' }}">
   {%- content_for 'block', type: 'group', id: 'header' -%}
   <div class="brand-logos__grid">{%- content_for 'blocks' -%}</div>
 </div>
@@ -16,12 +16,56 @@
     align-items: center;
     padding-block: var(--spacing-10);
   }
+  /* Boxed sets the logos in a bordered grid of equal cells on a muted band, as on the About page. */
+  .home-section.brand-logos--boxed {
+    gap: var(--spacing-14);
+    padding-block: calc(var(--spacing) * 30) calc(var(--spacing) * 34);
+    background: var(--muted);
+  }
+  .brand-logos--boxed .brand-logos__grid {
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--background);
+  }
+  .brand-logos--boxed .brand-logos__grid > * {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(var(--spacing) * 37);
+    padding-inline: var(--spacing-6);
+    border-inline-start: 1px solid var(--border);
+  }
+  .brand-logos--boxed .brand-logos__grid > :nth-child(4n + 1) { border-inline-start: 0; }
+  .brand-logos--boxed .brand-logos__grid > :nth-child(n + 5) { border-top: 1px solid var(--border); }
+  .brand-logos--boxed .brand-logo {
+    width: calc(var(--spacing) * 42.5);
+    height: var(--spacing-12);
+  }
   @media (max-width: 749px) {
     .home-section.brand-logos { padding-block: var(--spacing-14); }
     .brand-logos__grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: var(--spacing-8);
       padding-block: var(--spacing-8);
+    }
+    .home-section.brand-logos--boxed {
+      gap: var(--spacing-6);
+      padding-block: calc(var(--spacing) * 18);
+    }
+    .brand-logos--boxed .brand-logos__grid { padding: 0; gap: 0; }
+    .brand-logos--boxed .brand-logos__grid > * {
+      height: var(--spacing-24);
+      padding-inline: var(--spacing-4);
+    }
+    .brand-logos--boxed .brand-logos__grid > :nth-child(n) { border-inline-start: 1px solid var(--border); }
+    .brand-logos--boxed .brand-logos__grid > :nth-child(2n + 1) { border-inline-start: 0; }
+    .brand-logos--boxed .brand-logos__grid > :nth-child(n + 3) { border-top: 1px solid var(--border); }
+    .brand-logos--boxed .brand-logo {
+      width: calc(var(--spacing) * 30);
+      height: calc(var(--spacing) * 9.5);
     }
   }
 {% endstylesheet %}
@@ -31,6 +75,18 @@
   "name": "t:sections.brand_logos.name",
   "tag": "section",
   "blocks": [{ "type": "_logo" }],
+  "settings": [
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.brand_logos.settings.layout.label",
+      "default": "open",
+      "options": [
+        { "value": "open", "label": "t:sections.brand_logos.settings.layout.options.open" },
+        { "value": "boxed", "label": "t:sections.brand_logos.settings.layout.options.boxed" }
+      ]
+    }
+  ],
   "presets": [
     {
       "name": "t:sections.brand_logos.name",

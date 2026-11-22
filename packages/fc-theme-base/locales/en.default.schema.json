@@ -1401,7 +1401,16 @@
       }
     },
     "brand_logos": {
-      "name": "Brand logos"
+      "name": "Brand logos",
+      "settings": {
+        "layout": {
+          "label": "Layout",
+          "options": {
+            "open": "Open",
+            "boxed": "Boxed grid"
+          }
+        }
+      }
     },
     "announcement_bar": {
       "name": "Announcement bar",
@@ -1495,6 +1504,41 @@
           "label": "Text"
         }
       }
+    },
+    "about_hero": {
+      "name": "About hero",
+      "settings": {
+        "image": {
+          "label": "Photo",
+          "info": "Fills the hero behind the text. Choose a wide photo with room on the left."
+        }
+      }
+    },
+    "about_story": {
+      "name": "Our story",
+      "settings": {
+        "image": {
+          "label": "Photo"
+        }
+      }
+    },
+    "about_clubs": {
+      "name": "Clubs"
+    },
+    "about_principles": {
+      "name": "Principles"
+    },
+    "about_programs": {
+      "name": "Programs"
+    },
+    "about_timeline": {
+      "name": "Timeline"
+    },
+    "about_stats": {
+      "name": "Stats"
+    },
+    "about_closing": {
+      "name": "Closing"
     }
   },
   "blocks": {
@@ -1543,7 +1587,9 @@
           "options": {
             "body": "Body",
             "subtle": "Subtle",
-            "eyebrow": "Eyebrow"
+            "eyebrow": "Eyebrow",
+            "lead": "Lead",
+            "quote": "Quote"
           }
         }
       }
@@ -1643,7 +1689,12 @@
             "badge_check": "Badge",
             "truck": "Truck",
             "returns": "Returns",
-            "star": "Star"
+            "star": "Star",
+            "target": "Target",
+            "tag": "Price tag",
+            "git_branch": "Branches",
+            "life_buoy": "Life buoy",
+            "users": "People"
           }
         },
         "label": {
@@ -1667,10 +1718,6 @@
       "settings": {
         "product": {
           "label": "Product"
-        },
-        "badge": {
-          "label": "Badge",
-          "info": "Shows on the photo, for example Best seller."
         },
         "show_add": {
           "label": "Show add button",
@@ -1772,6 +1819,12 @@
     "announcement": {
       "name": "Announcement",
       "settings": {
+        "content": {
+          "label": "Shows",
+          "info": "Free shipping uses the minimum in Theme settings > Cart and shows only to shoppers who get it.",
+          "options__custom": "Your own text",
+          "options__free_shipping": "Free shipping"
+        },
         "title": {
           "label": "Title"
         },
@@ -1936,6 +1989,159 @@
         },
         "answer": {
           "label": "Answer"
+        }
+      }
+    },
+    "phase_heading": {
+      "name": "Phase heading",
+      "settings": {
+        "meaning": {
+          "label": "Meaning",
+          "info": "The call in English, such as Ready for Prêts",
+          "default": "Ready"
+        },
+        "word": {
+          "label": "Call",
+          "default": "Prêts"
+        },
+        "tag": {
+          "label": "Level",
+          "info": "Use Paragraph when a level 1 heading follows, as in the hero.",
+          "options": {
+            "h2": "Level 2",
+            "h3": "Level 3",
+            "p": "Paragraph"
+          }
+        },
+        "style": {
+          "label": "Style",
+          "options": {
+            "call": "Call",
+            "eyebrow": "Eyebrow"
+          }
+        }
+      }
+    },
+    "club": {
+      "name": "Club",
+      "settings": {
+        "discipline": {
+          "label": "Weapon",
+          "info": "Such as épée, foil or open fencing"
+        },
+        "name": {
+          "label": "Name",
+          "default": "Club name"
+        },
+        "location": {
+          "label": "Location"
+        },
+        "link": {
+          "label": "Website"
+        }
+      }
+    },
+    "clubs_callout": {
+      "name": "Callout",
+      "settings": {
+        "title": {
+          "label": "Title",
+          "default": "Free delivery to our home clubs"
+        },
+        "text": {
+          "label": "Text"
+        }
+      }
+    },
+    "program": {
+      "name": "Program",
+      "settings": {
+        "icon": {
+          "label": "Icon",
+          "options": {
+            "badge_percent": "Discount",
+            "boxes": "Boxes",
+            "plug": "Plug",
+            "users": "People"
+          }
+        },
+        "figure_prefix": {
+          "label": "Offer prefix",
+          "info": "Shown above the offer, such as Up to"
+        },
+        "figure": {
+          "label": "Offer",
+          "info": "Shown in large type, such as 15%"
+        },
+        "figure_caption": {
+          "label": "Offer detail",
+          "info": "Shown under the offer, such as off house-brand gear"
+        },
+        "badge": {
+          "label": "Badge",
+          "info": "Such as Coming soon. A card with a badge shows its title in large type instead of an offer."
+        },
+        "title": {
+          "label": "Title",
+          "default": "Program name"
+        },
+        "text": {
+          "label": "Description"
+        }
+      }
+    },
+    "milestone": {
+      "name": "Milestone",
+      "settings": {
+        "date": {
+          "label": "Date",
+          "default": "2026"
+        },
+        "title": {
+          "label": "Title",
+          "default": "What happened"
+        },
+        "text": {
+          "label": "Description"
+        },
+        "status": {
+          "label": "Status",
+          "options": {
+            "done": "Done",
+            "in_progress": "In progress",
+            "planned": "Planned"
+          }
+        }
+      }
+    },
+    "stat": {
+      "name": "Stat",
+      "settings": {
+        "number": {
+          "label": "Number",
+          "default": "100+"
+        },
+        "label": {
+          "label": "Label",
+          "default": "Orders shipped"
+        }
+      }
+    },
+    "bout_nav": {
+      "name": "Chapter links"
+    },
+    "bout_link": {
+      "name": "Chapter link",
+      "settings": {
+        "call": {
+          "label": "Call"
+        },
+        "topic": {
+          "label": "Topic"
+        },
+        "link": {
+          "label": "Link",
+          "info": "The chapter's id, such as #the-numbers"
         }
       }
     }

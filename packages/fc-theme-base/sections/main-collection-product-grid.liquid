@@ -1,13 +1,15 @@
 {{ 'component-facets.css' | asset_url | stylesheet_tag }}
 {{ 'section-main-collection.css' | asset_url | stylesheet_tag }}
-<script src="{{ 'facets.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'facets.js' | asset_url }}" type="module"></script>
+<script src="{{ 'collection-load-more.js' | asset_url }}" type="module"></script>
+<script src="{{ 'collection-page.js' | asset_url }}" type="module"></script>
 {%- unless section.settings.quick_add == 'none' -%}
   <script src="{{ 'product-form.js' | asset_url }}" defer="defer"></script>
+  {%- render 'quick-view-dialog' -%}
 {%- endunless -%}
 
 {%- style -%}
   .section-{{ section.id }}-padding {
-    --collection-columns: {{ section.settings.columns_desktop }};
     --collection-mobile-columns: {{ section.settings.columns_mobile }};
     padding-top: {{ section.settings.padding_top }}px;
     padding-bottom: {{ section.settings.padding_bottom }}px;
@@ -32,164 +34,154 @@
           collection_position_offset: structured_data_position_offset
         -%}
       {%- endif -%}
-      <div class="collection-layout{% unless section.settings.enable_filtering %} collection-layout--no-filters{% endunless %} facets-vertical">
+      {%- liquid
+        assign filters_id = 'CollectionFilters-' | append: section.id
+        assign guide_url = blank
+        if section.settings.guide_anchor != blank
+          assign guide_url = '#' | append: section.settings.guide_anchor
+        endif
+        assign toolbar_filters_id = blank
+        assign filter_drawer = blank
+      -%}
+      {%- if section.settings.enable_filtering -%}
+        {%- comment -%}
+          Phones pick filters in a drawer and apply them together; collection-filters.js builds the URL on Apply.
+        {%- endcomment -%}
+        {%- liquid
+          assign toolbar_filters_id = filters_id
+          assign mobile_filter_id = section.id | append: '-mobile'
+          assign filter_drawer_id = 'CollectionFilterDrawer-' | append: section.id
+          assign filter_title = 'collections.toolbar.filters' | t
+          assign filter_close_label = 'accessibility.close' | t
+          assign filter_remove_label = 'products.facets.clear_all' | t
+          assign filter_apply_label = 'products.facets.apply' | t
+          assign filter_count_label = 'products.facets.product_count_simple' | t: count: collection.products_count
+        -%}
+        {%- capture filter_trigger -%}
+          <button
+            type="button"
+            class="collection-toolbar__drawer-trigger"
+            data-drawer-open
+            aria-controls="{{ filter_drawer_id }}"
+            aria-expanded="false"
+            aria-haspopup="dialog"
+          >
+            {%- render 'ui-icon', icon: 'sliders-horizontal', size: 16 -%}
+            <span>{{ filter_title }}</span>
+          </button>
+        {%- endcapture -%}
+        {%- capture filter_content -%}
+          {%- render 'collection-facet-filters', results: collection, section_id: mobile_filter_id, show_categories: true -%}
+        {%- endcapture -%}
+        {%- capture filter_footer -%}
+          {%- render 'ui-button',
+            label: filter_remove_label,
+            url: collection.url,
+            variant: 'outline',
+            size: 'md',
+            additional_props: 'data-clear-collection-filters'
+          -%}
+          {%- render 'ui-button',
+            label: filter_apply_label,
+            variant: 'primary',
+            size: 'md',
+            additional_props: 'data-apply-collection-filters'
+          -%}
+        {%- endcapture -%}
+        {%- capture filter_drawer -%}
+          {%- render 'ui-drawer',
+            id: filter_drawer_id,
+            title: filter_title,
+            description: filter_count_label,
+            close_label: filter_close_label,
+            content: filter_content,
+            footer: filter_footer,
+            trigger: filter_trigger
+          -%}
+        {%- endcapture -%}
+      {%- endif -%}
+
+      <div class="collection-toolbar-band">
+        {%- render 'collection-toolbar',
+          results: collection,
+          section_id: section.id,
+          filters_id: toolbar_filters_id,
+          filter_drawer: filter_drawer,
+          enable_sorting: section.settings.enable_sorting,
+          sort_label: section.settings.sort_label,
+          guide_url: guide_url
+        -%}
+      </div>
+
+      <div class="collection-layout{% unless section.settings.enable_filtering %} collection-layout--no-filters{% endunless %}" data-collection-layout>
         {%- if section.settings.enable_filtering -%}
           <aside
-            aria-labelledby="CollectionFilters-{{ section.id }}"
-            class="collection-filter-panel facets-wrapper{% unless section.settings.enable_filtering %} facets-wrapper--no-filters{% endunless %}"
-            id="main-collection-filters"
+            class="collection-filter-panel"
+            id="{{ filters_id }}"
+            aria-label="{{ 'collections.toolbar.filters' | t }}"
             data-id="{{ section.id }}"
           >
-            {%- assign filter_heading_id = 'CollectionFilters-' | append: section.id -%}
-            {% render 'collection-filter-header', heading_id: filter_heading_id, heading: section.settings.filter_heading, clear_label: section.settings.clear_all_label, clear_url: collection.url %}
-            {%- liquid
-              assign desktop_filter_id = section.id | append: '-desktop'
-              assign mobile_filter_id = section.id | append: '-mobile'
-            -%}
-            <div class="collection-curated-filters-desktop">
-              {%- render 'collection-facet-filters', results: collection, section_id: desktop_filter_id -%}
-            </div>
-            <details class="collection-curated-filters-mobile">
-              <summary>
-                <span class="svg-wrapper">{%- render 'ui-icon', icon: 'sliders-horizontal', size: 16 -%}</span>
-                <span>{{ section.settings.mobile_filter_label | escape }}</span>
-              </summary>
-              <div class="collection-curated-filters-mobile__panel">
-                <div class="collection-curated-filters-mobile__header">
-                  <strong>{{ section.settings.filter_heading | escape }}</strong>
-                  <div class="collection-curated-filters-mobile__actions">
-                    <a href="{{ collection.url }}" data-clear-collection-filters>{{ section.settings.clear_all_label | escape }}</a>
-                    <button
-                      type="button"
-                      aria-label="{{ 'accessibility.close' | t }}"
-                      onclick="this.closest('details').removeAttribute('open')"
-                    >
-                      {%- render 'ui-icon', icon: 'x', size: 20 -%}
-                    </button>
-                  </div>
-                </div>
-                {%- render 'collection-facet-filters', results: collection, section_id: mobile_filter_id -%}
-              </div>
-            </details>
+            {%- assign desktop_filter_id = section.id | append: '-desktop' -%}
+            {%- render 'collection-facet-filters', results: collection, section_id: desktop_filter_id, show_categories: true -%}
           </aside>
         {%- endif -%}
 
-        <div
-          class="collection-grid-column product-grid-container"
-          id="ProductGridContainer"
-        >
-          <div class="collection">
-            {%- render 'collection-toolbar',
+        <div class="collection-grid-column product-grid-container" id="ProductGridContainer">
+          {%- render 'collection-active-filters', results: collection, clear_url: collection.url -%}
+
+          {%- if collection.products.size == 0 -%}
+            {%- render 'collection-no-results',
               results: collection,
-              enable_sorting: section.settings.enable_sorting,
-              sort_label: section.settings.sort_label
+              section_id: section.id,
+              clear_url: collection.url,
+              contact_url: section.settings.contact_url
             -%}
+          {%- else -%}
+            <div class="loading-overlay gradient"></div>
+            <ul id="product-grid" data-id="{{ section.id }}" class="collection-product-grid list-unstyled">
+              {%- for product in collection.products -%}
+                {%- liquid
+                  assign show_add = false
+                  unless section.settings.quick_add == 'none'
+                    assign show_add = true
+                  endunless
+                  assign card_id = 'CollectionProduct-' | append: section.id | append: '-' | append: product.id
+                -%}
+                <li>
+                  {%- render 'ui-product-card',
+                    product: product,
+                    card_id: card_id,
+                    show_price: true,
+                    show_add: show_add,
+                    quick_view: show_add,
+                    add_label: section.settings.add_label,
+                    section_id: section.id,
+                    image_sizes: '(min-width: 990px) 300px, (min-width: 750px) calc((100vw - 104px) / 2), calc((100vw - 52px) / 2)',
+                    image_widths: '300, 450, 600',
+                    image_loading: 'lazy'
+                  -%}
+                </li>
+              {%- endfor -%}
+            </ul>
 
-            {%- if collection.products.size == 0 -%}
+            {%- if paginate.pages > 1 -%}
               {%- liquid
-                assign active_filter_count = 0
-                for filter in collection.filters
-                  assign active_filter_count = active_filter_count | plus: filter.active_values.size
-                  if filter.type == 'price_range'
-                    if filter.min_value.value != blank
-                      assign active_filter_count = active_filter_count | plus: 1
-                    endif
-                    if filter.max_value.value != blank
-                      assign active_filter_count = active_filter_count | plus: 1
-                    endif
-                  endif
-                endfor
+                assign shown = paginate.current_offset | plus: collection.products.size
+                assign progress = shown | times: 100 | divided_by: paginate.items
               -%}
-              <div class="collection-empty" id="product-grid" data-id="{{ section.id }}">
-                <div class="loading-overlay gradient"></div>
-                <div class="collection-empty__copy">
-                  <h2 class="collection-empty__heading">
-                    {%- if active_filter_count > 0 -%}
-                      {{ section.settings.empty_filtered_heading | escape }}
-                    {%- else -%}
-                      {{ section.settings.empty_heading | escape }}
-                    {%- endif -%}
-                  </h2>
-                  <p class="collection-empty__hint">
-                    {%- if active_filter_count > 0 -%}
-                      {{ section.settings.empty_filtered_hint | escape }}
-                    {%- else -%}
-                      {{ section.settings.empty_hint | escape }}
-                    {%- endif -%}
-                  </p>
-                </div>
-
-                <div class="collection-empty__actions">
-                  {%- if active_filter_count > 0 -%}
-                    {%- render 'ui-button',
-                      label: section.settings.clear_all_label,
-                      url: collection.url,
-                      additional_props: 'data-clear-collection-filters',
-                      variant: 'primary'
-                    -%}
-                  {%- endif -%}
-                  {%- render 'ui-button',
-                    label: section.settings.empty_browse_label,
-                    url: routes.all_products_collection_url,
-                    variant: 'outline'
-                  -%}
-                </div>
-              </div>
-            {%- else -%}
-              <div class="loading-overlay gradient"></div>
-              <ul
-                id="product-grid"
-                data-id="{{ section.id }}"
-                class="collection-product-grid"
-              >
-                {%- for product in collection.products -%}
-                  {%- liquid
-                    assign badge_label = blank
-                    if product.compare_at_price > product.price
-                      assign badge_label = 'SALE'
-                    endif
-                    for product_tag in product.tags
-                      assign normalized_tag = product_tag | downcase
-                      if normalized_tag == 'best seller' or normalized_tag == 'new'
-                        assign badge_label = product_tag | upcase
-                        break
-                      endif
-                    endfor
-                    assign show_add = false
-                    unless section.settings.quick_add == 'none'
-                      assign show_add = true
-                    endunless
-                    assign card_id = 'CollectionProduct-' | append: section.id | append: '-' | append: product.id
-                  -%}
-                  <li>
-                    {%- render 'ui-product-card',
-                      product: product,
-                      variant: 'home',
-                      card_id: card_id,
-                      badge_label: badge_label,
-                      show_type: true,
-                      show_price: true,
-                      show_add: show_add,
-                      add_label: section.settings.add_label,
-                      section_id: section.id,
-                      trim_price: true,
-                      image_sizes: '(min-width: 990px) 300px, (min-width: 750px) calc((100vw - 104px) / 2), calc((100vw - 52px) / 2)',
-                      image_widths: '300, 450, 600',
-                      image_loading: 'lazy'
-                    -%}
-                  </li>
-                {%- endfor -%}
-              </ul>
-
-              {%- render 'ui-pagination',
-                paginate: paginate,
-                anchor: 'product-grid',
-                mode: 'next',
-                next_label: section.settings.load_more_label,
-                class: 'collection-load-more'
-              -%}
+              <collection-load-more class="collection-load-more" data-section-id="{{ section.id }}">
+                <p class="collection-load-more__status">{{ 'collections.load_more.showing' | t: shown: shown, total: paginate.items }}</p>
+                <span class="collection-load-more__bar" aria-hidden="true"><span style="width: {{ progress }}%"></span></span>
+                {%- render 'ui-pagination',
+                  paginate: paginate,
+                  anchor: 'product-grid',
+                  mode: 'next',
+                  next_label: section.settings.load_more_label,
+                  class: 'collection-load-more__pagination'
+                -%}
+              </collection-load-more>
             {%- endif -%}
-          </div>
+          {%- endif -%}
         </div>
       </div>
     {%- endpaginate -%}
@@ -204,20 +196,11 @@
     {
       "type": "range",
       "id": "products_per_page",
-      "min": 6,
-      "max": 36,
-      "step": 3,
-      "default": 9,
+      "min": 8,
+      "max": 48,
+      "step": 4,
+      "default": 16,
       "label": "t:sections.main-collection-product-grid.settings.products_per_page.label"
-    },
-    {
-      "type": "range",
-      "id": "columns_desktop",
-      "min": 2,
-      "max": 4,
-      "step": 1,
-      "default": 3,
-      "label": "t:sections.main-collection-product-grid.settings.columns_desktop.label"
     },
     {
       "type": "select",
@@ -251,7 +234,7 @@
         }
       ]
     },
-    { "type": "text", "id": "add_label", "label": "Add button label", "default": "Add" },
+    { "type": "text", "id": "add_label", "label": "Add button label", "default": "Add to cart" },
     {
       "type": "header",
       "content": "t:sections.main-collection-product-grid.settings.header__1.content"
@@ -263,43 +246,27 @@
       "label": "t:sections.main-collection-product-grid.settings.enable_filtering.label",
       "info": "t:sections.main-collection-product-grid.settings.enable_filtering.info"
     },
-    { "type": "text", "id": "mobile_filter_label", "label": "Mobile filter label", "default": "Filter" },
-    { "type": "header", "content": "Empty state" },
-    {
-      "type": "text",
-      "id": "empty_filtered_heading",
-      "label": "Heading when filters exclude everything",
-      "default": "No products match these filters"
-    },
-    {
-      "type": "textarea",
-      "id": "empty_filtered_hint",
-      "label": "Hint when filters exclude everything",
-      "default": "Try removing a filter, or clear them all to see everything in this collection."
-    },
-    {
-      "type": "text",
-      "id": "empty_heading",
-      "label": "Heading when the collection is empty",
-      "default": "Nothing here yet"
-    },
-    {
-      "type": "textarea",
-      "id": "empty_hint",
-      "label": "Hint when the collection is empty",
-      "default": "This collection has no products right now. Browse the full range instead."
-    },
-    { "type": "text", "id": "empty_browse_label", "label": "Empty state browse label", "default": "Browse all products" },
     {
       "type": "checkbox",
       "id": "enable_sorting",
       "default": true,
       "label": "t:sections.main-collection-product-grid.settings.enable_sorting.label"
     },
-    { "type": "text", "id": "filter_heading", "label": "Filter heading", "default": "Filters" },
-    { "type": "text", "id": "clear_all_label", "label": "Clear filters label", "default": "Clear all" },
     { "type": "text", "id": "sort_label", "label": "Sort prefix", "default": "Sort:" },
     { "type": "text", "id": "load_more_label", "label": "Next page label", "default": "Load more" },
+    {
+      "type": "text",
+      "id": "guide_anchor",
+      "label": "Buying guide anchor",
+      "info": "The protection levels help links to the buying guide section with this anchor.",
+      "default": "BuyingGuide"
+    },
+    {
+      "type": "url",
+      "id": "contact_url",
+      "label": "Ask us to find it link",
+      "info": "Shown when filters leave nothing. Leave empty to hide the button."
+    },
     {
       "type": "header",
       "content": "t:sections.all.padding.section_padding_heading"
@@ -312,7 +279,7 @@
       "step": 2,
       "unit": "px",
       "label": "t:sections.all.padding.padding_top",
-      "default": 8
+      "default": 0
     },
     {
       "type": "range",
@@ -322,7 +289,7 @@
       "step": 2,
       "unit": "px",
       "label": "t:sections.all.padding.padding_bottom",
-      "default": 90
+      "default": 80
     }
   ]
 }

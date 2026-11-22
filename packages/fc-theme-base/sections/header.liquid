@@ -90,7 +90,7 @@
 {% liquid
   assign header_style = 'default'
 
-  if request.page_type == 'index'
+  if request.page_type == 'index' or template.suffix == 'about'
     assign header_style = 'translucent'
   endif
 

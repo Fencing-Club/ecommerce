@@ -26,6 +26,7 @@
   --radius-md: calc(var(--radius) - 0.2rem);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 0.4rem);
+  --radius-3xl: calc(var(--radius) + 1.2rem);
 
   /* Spacing: Tailwind's 4px unit and its named steps (Tailwind's p-4 is --spacing-4). Half steps use a hyphen,
      --spacing-1-5, because a CSS variable name can't hold a dot. */

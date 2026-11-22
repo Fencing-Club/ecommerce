@@ -4,6 +4,7 @@
   Accepts:
   - id: {String} Input id, used to associate the label. Required.
   - label: {String} Visible label text.
+  - label_content: {String} Optional trusted HTML shown instead of the label text, such as a badge.
   - description: {String} Optional supporting text below the label.
   - badge: {String} Optional badge text shown beside the label.
   - checked: {Boolean} Initial checked state.
@@ -37,12 +38,12 @@
   >
   <label class="ui-checkbox-field__copy" for="{{ id | escape }}">
     <span class="ui-checkbox-field__label">
-      {{- label | escape -}}
+      {%- if label_content != blank -%}{{ label_content }}{%- else -%}{{ label | escape }}{%- endif -%}
       {%- if badge %}{% render 'ui-badge', label: badge %}{% endif -%}
     </span>
     {%- if description -%}
       <span class="ui-checkbox-field__description">{{ description | escape }}</span>
     {%- endif -%}
   </label>
-  {% if count != nil %}<span class="ui-checkbox-field__count" aria-hidden="true">({{ count }})</span>{% endif %}
+  {% if count != nil %}<span class="ui-checkbox-field__count" aria-hidden="true">{{ count }}</span>{% endif %}
 </div>

@@ -1,0 +1,217 @@
+{%- comment -%}
+  A program card on the About page. The top half leads with the offer in large type, such as "Up to 15% off house-brand
+  gear", with an icon in the corner; the title and description sit under a rule. A card with a badge, such as Coming
+  soon, has no offer yet: it sits on the muted fill, the badge takes the top line and the title takes the large type.
+{%- endcomment -%}
+{%- liquid
+  assign upcoming = false
+  if block.settings.badge != blank
+    assign upcoming = true
+  endif
+-%}
+<div class="about-program{% if upcoming %} about-program--upcoming{% endif %}" {{ block.shopify_attributes }}>
+  <div class="about-program__figure">
+    <span class="about-program__icon">{%- render 'ui-icon', icon: block.settings.icon, size: 22 -%}</span>
+    {%- if upcoming -%}
+      <span class="about-program__badge">{{ block.settings.badge | escape }}</span>
+      <h3 class="about-program__value about-program__value--title">{{ block.settings.title | escape }}</h3>
+      {%- if block.settings.figure_caption != blank -%}
+        <p class="about-program__caption">{{ block.settings.figure_caption | escape }}</p>
+      {%- endif -%}
+    {%- else -%}
+      <p class="about-program__offer">
+        {%- if block.settings.figure_prefix != blank -%}
+          <span class="about-program__prefix">{{ block.settings.figure_prefix | escape }}</span>
+          {{- ' ' -}}
+        {%- endif -%}
+        <span class="about-program__value">{{ block.settings.figure | escape }}</span>
+        {%- if block.settings.figure_caption != blank -%}
+          {{- ' ' -}}
+          <span class="about-program__caption">{{ block.settings.figure_caption | escape }}</span>
+        {%- endif -%}
+      </p>
+    {%- endif -%}
+  </div>
+  <div class="about-program__body">
+    {%- unless upcoming -%}
+      <h3 class="about-program__title">{{ block.settings.title | escape }}</h3>
+    {%- endunless -%}
+    {%- if block.settings.text != blank -%}
+      <p class="about-program__text">{{ block.settings.text | escape }}</p>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .about-program {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--background);
+  }
+  .about-program--upcoming {
+    background: var(--muted);
+  }
+  .about-program__figure {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-1-5);
+    padding: var(--spacing-9) var(--spacing-9) var(--spacing-8);
+    border-bottom: 1px solid var(--border);
+  }
+  .about-program__icon {
+    position: absolute;
+    top: var(--spacing-9);
+    right: var(--spacing-9);
+    display: inline-flex;
+    color: var(--muted-foreground);
+  }
+  .about-program__offer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1-5);
+    margin: 0;
+  }
+  .about-program__prefix {
+    font-size: var(--text-sm);
+    line-height: var(--spacing-6);
+    font-weight: var(--font-weight-semibold);
+    color: var(--muted-foreground);
+  }
+  .about-program__value {
+    margin: 0;
+    font-family: var(--font-heading-family);
+    font-size: calc(var(--spacing) * 22);
+    line-height: 1;
+    font-weight: var(--font-weight-bold);
+    letter-spacing: -0.045em;
+    color: var(--foreground);
+  }
+  .about-program__value--title {
+    display: flex;
+    align-items: flex-start;
+    min-height: calc(var(--spacing) * 22);
+    padding-right: var(--spacing-8);
+    font-size: var(--text-4xl);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+  }
+  .about-program__caption {
+    margin: 0;
+    font-size: calc(var(--spacing) * 3.75);
+    line-height: var(--leading-normal);
+    color: var(--muted-foreground);
+  }
+  .about-program__badge {
+    padding: var(--spacing-0-5) var(--spacing-2-5);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--background);
+    font-size: calc(var(--spacing) * 2.75);
+    line-height: var(--text-xs--line-height);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .about-program__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--spacing-2-5);
+    padding: var(--spacing-7) var(--spacing-9) var(--spacing-9);
+  }
+  .about-program__title {
+    margin: 0;
+    font-family: var(--font-heading-family);
+    font-size: calc(var(--spacing) * 5.25);
+    line-height: var(--leading-snug);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: -0.014em;
+    color: var(--foreground);
+  }
+  .about-program__text {
+    margin: 0;
+    font-size: var(--text-base);
+    line-height: 1.6;
+    color: var(--muted-foreground);
+  }
+  @media (max-width: 749px) {
+    .about-program__figure {
+      padding: var(--spacing-6) var(--spacing-6) var(--spacing-5);
+    }
+    .about-program__icon {
+      top: var(--spacing-6);
+      right: var(--spacing-6);
+    }
+    .about-program__value { font-size: var(--spacing-16); }
+    .about-program__value--title {
+      min-height: 0;
+      font-size: calc(var(--spacing) * 8.5);
+    }
+    .about-program__caption { font-size: var(--text-sm); }
+    .about-program__body { padding: var(--spacing-5) var(--spacing-6) var(--spacing-6); }
+    .about-program__title { font-size: calc(var(--spacing) * 4.75); }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.program.name",
+  "settings": [
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "t:blocks.program.settings.icon.label",
+      "default": "badge-percent",
+      "options": [
+        { "value": "badge-percent", "label": "t:blocks.program.settings.icon.options.badge_percent" },
+        { "value": "boxes", "label": "t:blocks.program.settings.icon.options.boxes" },
+        { "value": "plug", "label": "t:blocks.program.settings.icon.options.plug" },
+        { "value": "users", "label": "t:blocks.program.settings.icon.options.users" }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "figure_prefix",
+      "label": "t:blocks.program.settings.figure_prefix.label",
+      "info": "t:blocks.program.settings.figure_prefix.info"
+    },
+    {
+      "type": "text",
+      "id": "figure",
+      "label": "t:blocks.program.settings.figure.label",
+      "info": "t:blocks.program.settings.figure.info"
+    },
+    {
+      "type": "text",
+      "id": "figure_caption",
+      "label": "t:blocks.program.settings.figure_caption.label",
+      "info": "t:blocks.program.settings.figure_caption.info"
+    },
+    {
+      "type": "text",
+      "id": "badge",
+      "label": "t:blocks.program.settings.badge.label",
+      "info": "t:blocks.program.settings.badge.info"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:blocks.program.settings.title.label",
+      "default": "t:blocks.program.settings.title.default"
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "t:blocks.program.settings.text.label"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.program.name" }]
+}
+{% endschema %}

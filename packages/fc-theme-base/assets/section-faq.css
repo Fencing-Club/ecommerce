@@ -65,19 +65,12 @@
   border-bottom: 0.1rem solid var(--border);
 }
 
-.ui-faq-item__question {
+.ui-faq-item > .ui-accordion__summary {
   position: relative;
   display: grid;
   grid-template-columns: 2.6rem minmax(0, 1fr) 1.8rem;
   gap: 1.4rem;
-  align-items: center;
   padding: 1.8rem 0;
-  list-style: none;
-  cursor: pointer;
-}
-
-.ui-faq-item__question::-webkit-details-marker {
-  display: none;
 }
 
 .ui-faq-item__question-text {
@@ -110,19 +103,8 @@
   color: var(--muted-foreground);
 }
 
-.ui-faq-item__chevron {
-  display: inline-flex;
-  margin-top: 0;
-  color: var(--muted-foreground);
-  transition: transform 150ms ease;
-}
-
-.ui-faq-item[open]:not([data-closing]) .ui-faq-item__chevron {
-  transform: rotate(180deg);
-}
-
 /* While the answer shows, a line runs from the Q down to the A. The badge sits in the middle of the question row. */
-.ui-faq-item__question::after {
+.ui-faq-item > .ui-accordion__summary::after {
   content: '';
   position: absolute;
   top: calc(50% + 1.3rem);
@@ -136,7 +118,7 @@
   transition: scale var(--duration-enter) var(--ease-out);
 }
 
-.ui-faq-item[open]:not([data-closing]) > .ui-faq-item__question::after {
+.ui-faq-item[open]:not([data-closing]) > .ui-accordion__summary::after {
   scale: 1;
 }
 
@@ -167,19 +149,18 @@
   margin-top: 0.8rem;
 }
 
-.ui-faq-item__question:focus-visible {
-  outline: 0.2rem solid var(--ring);
-  outline-offset: 0.3rem;
-  box-shadow: 0 0 0 0.3rem var(--background);
-}
+/* Plain: the question and a plus that turns to minus, with the answer under the question. */
+.ui-faq-item--plain > .ui-accordion__summary { grid-template-columns: minmax(0, 1fr) 1.8rem; gap: 2.4rem; }
+.ui-faq-item--plain > .ui-accordion__summary::after { content: none; }
+.ui-faq-item--plain .ui-faq-item__answer { display: block; max-width: 64rem; padding: 0 0 1.8rem; }
+.ui-faq-item--plain .ui-faq-item__answer-copy { padding-top: 0; }
 
 .faq-page__contact {
   margin: 0 var(--page-gutter) 7.2rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ui-faq-item__chevron,
-  .ui-faq-item__question::after {
+  .ui-faq-item > .ui-accordion__summary::after {
     transition-duration: 1ms;
   }
 }

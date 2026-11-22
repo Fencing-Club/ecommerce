@@ -1,0 +1,80 @@
+{%- comment -%}
+  The dark band under the About page's clubs, such as the offer to drop orders off at them.
+{%- endcomment -%}
+<div class="about-callout about-dark" {{ block.shopify_attributes }}>
+  <span class="about-callout__icon">{%- render 'ui-icon', icon: 'truck', size: 24 -%}</span>
+  <div class="about-callout__copy">
+    <h3 class="about-callout__title">{{ block.settings.title | escape }}</h3>
+    {%- if block.settings.text != blank -%}
+      <p class="about-callout__text">{{ block.settings.text | escape }}</p>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .about-callout {
+    display: flex;
+    gap: var(--spacing-5);
+    align-items: center;
+    padding: var(--spacing-8) var(--spacing-9);
+    border-radius: var(--radius-xl);
+  }
+  .about-callout__icon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: var(--spacing-12);
+    height: var(--spacing-12);
+    border-radius: 50%;
+    background: var(--muted);
+    color: var(--foreground);
+  }
+  .about-callout__copy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    min-width: 0;
+  }
+  .about-callout__title {
+    margin: 0;
+    font-family: var(--font-heading-family);
+    font-size: var(--text-xl);
+    line-height: var(--leading-tight);
+    font-weight: var(--font-weight-bold);
+    color: var(--foreground);
+  }
+  .about-callout__text {
+    margin: 0;
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
+    color: var(--muted-foreground);
+  }
+  @media (max-width: 749px) {
+    .about-callout {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: var(--spacing-6);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.clubs_callout.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:blocks.clubs_callout.settings.title.label",
+      "default": "t:blocks.clubs_callout.settings.title.default"
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "t:blocks.clubs_callout.settings.text.label"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.clubs_callout.name" }]
+}
+{% endschema %}

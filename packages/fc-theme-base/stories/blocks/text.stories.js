@@ -1,7 +1,7 @@
 import { expect } from 'storybook/test';
 import { block } from '../liquid.js';
 
-/** `blocks/text.liquid`: rich text in the body, subtle or eyebrow style. */
+/** `blocks/text.liquid`: rich text in the body, lead, subtle, eyebrow or quote style. */
 export default {
   title: 'Blocks/Text',
   render: block('text'),
@@ -11,7 +11,7 @@ export default {
     alignment: 'left',
   },
   argTypes: {
-    style: { control: 'inline-radio', options: ['body', 'subtle', 'eyebrow'] },
+    style: { control: 'inline-radio', options: ['body', 'lead', 'subtle', 'eyebrow', 'quote'] },
     alignment: { control: 'inline-radio', options: ['left', 'center', 'right'] },
   },
 };
@@ -23,6 +23,13 @@ export const Body = {
   play: async ({ canvas }) => {
     await expect(canvas.getByText('We stock competition-grade foil, épée and sabre equipment.')).toBeVisible();
     await expect(canvas.getByRole('link', { name: 'sizing guide' })).toHaveAttribute('href', '#sizing');
+  },
+};
+
+export const Lead = {
+  args: { text: '<p>A specialty shop serving clubs, schools and individual athletes.</p>', style: 'lead' },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('A specialty shop serving clubs, schools and individual athletes.')).toBeVisible();
   },
 };
 
@@ -44,5 +51,12 @@ export const Centered = {
   args: { alignment: 'center' },
   play: async ({ canvas }) => {
     await expect(canvas.getByText(/competition-grade foil/)).toBeVisible();
+  },
+};
+
+export const Quote = {
+  args: { text: '<p>Cost and access should never stand between a fencer and the sport.</p>', style: 'quote' },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('Cost and access should never stand between a fencer and the sport.')).toBeVisible();
   },
 };

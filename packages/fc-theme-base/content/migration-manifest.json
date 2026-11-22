@@ -3358,6 +3358,32 @@
       }
     },
     {
+      "key": "definition.brand",
+      "kind": "metaobject-definition",
+      "data": {
+        "type": "brand",
+        "name": "Brand",
+        "displayNameKey": "title",
+        "access": {
+          "storefront": "PUBLIC_READ"
+        },
+        "fieldDefinitions": [
+          {
+            "key": "title",
+            "name": "Name",
+            "type": "single_line_text_field",
+            "required": true
+          },
+          {
+            "key": "logo",
+            "name": "Logo",
+            "type": "file_reference",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
       "key": "collection.featured-products",
       "kind": "collection",
       "data": {

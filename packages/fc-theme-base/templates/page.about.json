@@ -1,0 +1,881 @@
+{
+  "sections": {
+    "hero": {
+      "type": "about-hero",
+      "blocks": {
+        "phase": {
+          "type": "phase-heading",
+          "static": true,
+          "settings": {
+            "meaning": "On guard",
+            "word": "En garde",
+            "tag": "p",
+            "style": "eyebrow"
+          }
+        },
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "heading": "From first lesson to the final touch.",
+            "tag": "h1",
+            "size": "xl"
+          }
+        },
+        "mission": {
+          "type": "text",
+          "settings": {
+            "text": "<p>We're a team of fencers in Woodinville, Washington. Since 2023 we've bought straight from the makers so clubs, schools, and fencers at every level get dependable gear at fair prices.</p>",
+            "style": "lead"
+          }
+        },
+        "actions": {
+          "type": "group",
+          "settings": {
+            "direction": "row",
+            "gap": "sm",
+            "align": "center"
+          },
+          "blocks": {
+            "shop": {
+              "type": "button",
+              "settings": {
+                "label": "Shop all gear",
+                "link": "shopify://collections/all",
+                "style": "primary",
+                "size": "lg"
+              }
+            },
+            "story": {
+              "type": "button",
+              "settings": {
+                "label": "Read our story",
+                "link": "#our-story",
+                "style": "outline",
+                "size": "lg"
+              }
+            }
+          },
+          "block_order": [
+            "shop",
+            "story"
+          ]
+        },
+        "nav": {
+          "type": "_bout-nav",
+          "static": true,
+          "blocks": {
+            "en-garde": {
+              "type": "_bout-link",
+              "settings": {
+                "call": "En garde",
+                "topic": "Who we are",
+                "link": "#our-story"
+              }
+            },
+            "prets": {
+              "type": "_bout-link",
+              "settings": {
+                "call": "Prêts",
+                "topic": "What we stand for",
+                "link": "#what-we-stand-for"
+              }
+            },
+            "allez": {
+              "type": "_bout-link",
+              "settings": {
+                "call": "Allez",
+                "topic": "How far we've come",
+                "link": "#how-far-weve-come"
+              }
+            },
+            "touche": {
+              "type": "_bout-link",
+              "settings": {
+                "call": "Touché",
+                "topic": "The numbers",
+                "link": "#the-numbers"
+              }
+            },
+            "la-belle": {
+              "type": "_bout-link",
+              "settings": {
+                "call": "La belle",
+                "topic": "Work with us",
+                "link": "#work-with-us"
+              }
+            }
+          },
+          "block_order": [
+            "en-garde",
+            "prets",
+            "allez",
+            "touche",
+            "la-belle"
+          ]
+        }
+      },
+      "block_order": [
+        "heading",
+        "mission",
+        "actions"
+      ],
+      "settings": {
+        "image": "shopify://shop_images/about-hero-lunge.jpg"
+      }
+    },
+    "story": {
+      "type": "about-story",
+      "blocks": {
+        "header": {
+          "type": "group",
+          "settings": {
+            "direction": "column",
+            "gap": "lg"
+          },
+          "blocks": {
+            "eyebrow": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Our story</p>",
+                "style": "eyebrow"
+              }
+            },
+            "heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "It started in other people's clubs",
+                "tag": "h2",
+                "size": "lg"
+              }
+            }
+          },
+          "block_order": [
+            "eyebrow",
+            "heading"
+          ],
+          "static": true
+        },
+        "paragraph-1": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Before Fencing Club, we spent years visiting fencing clubs, schools, and training halls around the world. Everywhere we went, we saw the same problem. The gear fencers needed was hard to find, quality changed from one batch to the next, and long, indirect supply chains pushed prices up.</p>",
+            "style": "lead"
+          }
+        },
+        "paragraph-2": {
+          "type": "text",
+          "settings": {
+            "text": "<p>It didn't matter whether someone was picking up a foil for the first time or training for the finals. Getting reliable equipment was expensive, slow, or a gamble.</p>",
+            "style": "lead"
+          }
+        },
+        "belief": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Cost and access should never stand between a fencer and the sport.</p>",
+            "style": "quote"
+          }
+        },
+        "paragraph-3": {
+          "type": "text",
+          "settings": {
+            "text": "<p>So in 2023 we opened Fencing Club in Woodinville, near Seattle, buying direct from the makers and answering every question ourselves.</p>",
+            "style": "lead"
+          }
+        }
+      },
+      "block_order": [
+        "paragraph-1",
+        "paragraph-2",
+        "belief",
+        "paragraph-3"
+      ],
+      "settings": {
+        "image": "shopify://shop_images/about-club-visit.jpg"
+      }
+    },
+    "clubs": {
+      "type": "about-clubs",
+      "blocks": {
+        "header": {
+          "type": "group",
+          "settings": {
+            "direction": "column",
+            "gap": "md"
+          },
+          "blocks": {
+            "eyebrow": {
+              "type": "text",
+              "settings": {
+                "text": "<p>USA Fencing Region 1</p>",
+                "style": "eyebrow"
+              }
+            },
+            "heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "The clubs we call home",
+                "tag": "h2",
+                "size": "lg"
+              }
+            },
+            "intro": {
+              "type": "text",
+              "settings": {
+                "text": "<p>You'll find our team on the piste most weeks, fencing épée at Kaizen Academy and Olympic Epee Masters, foil at Rain City Fencing Center, and open fencing at Salle Auriol. If you train at one of them, come say hello.</p>",
+                "style": "lead"
+              }
+            }
+          },
+          "block_order": [
+            "eyebrow",
+            "heading",
+            "intro"
+          ],
+          "static": true
+        },
+        "callout": {
+          "type": "_clubs-callout",
+          "static": true,
+          "settings": {
+            "title": "Free delivery to our home clubs",
+            "text": "We're there most weeks anyway, so we'll drop off your order at any of these four clubs for free."
+          }
+        },
+        "kaizen": {
+          "type": "_club",
+          "settings": {
+            "discipline": "Épée",
+            "name": "Kaizen Academy",
+            "location": "Redmond, WA",
+            "link": "https://kaizenfencing.com"
+          }
+        },
+        "olympic-epee-masters": {
+          "type": "_club",
+          "settings": {
+            "discipline": "Épée",
+            "name": "Olympic Epee Masters",
+            "location": "Redmond, WA",
+            "link": "https://olympicepeemasters.com"
+          }
+        },
+        "rain-city": {
+          "type": "_club",
+          "settings": {
+            "discipline": "Foil",
+            "name": "Rain City Fencing Center",
+            "location": "Bellevue, WA",
+            "link": "https://raincityfencing.com"
+          }
+        },
+        "salle-auriol": {
+          "type": "_club",
+          "settings": {
+            "discipline": "Open fencing",
+            "name": "Salle Auriol Seattle",
+            "location": "Seattle, WA",
+            "link": "https://salleauriol.com"
+          }
+        }
+      },
+      "block_order": [
+        "kaizen",
+        "olympic-epee-masters",
+        "rain-city",
+        "salle-auriol"
+      ]
+    },
+    "principles": {
+      "type": "about-principles",
+      "blocks": {
+        "phase": {
+          "type": "phase-heading",
+          "static": true,
+          "settings": {
+            "meaning": "Ready",
+            "word": "Prêts",
+            "tag": "h2"
+          }
+        },
+        "lead": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Before the bout, you settle into your stance. Here's ours.</p>",
+            "style": "body"
+          },
+          "static": true
+        },
+        "operations_heading": {
+          "type": "heading",
+          "settings": {
+            "heading": "Our own stock, our own team",
+            "tag": "h3",
+            "size": "md"
+          },
+          "static": true
+        },
+        "operations_start": {
+          "type": "text",
+          "settings": {
+            "text": "<p>We're a true direct retailer. We keep our own inventory at our own facility instead of dropshipping, and we work directly with manufacturing partners and established fencing brands around the world to keep quality consistent.</p>",
+            "style": "lead"
+          },
+          "static": true
+        },
+        "operations_end": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Orders ship from fulfillment locations in the U.S. Sometimes a logistics partner handles delivery, but they only move the boxes; they never resell. Every question, order, and return comes back to our own team.</p>",
+            "style": "lead"
+          },
+          "static": true
+        },
+        "company": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Fencing Club is operated by Fencing Club LLC, a Washington limited liability company.</p>",
+            "style": "subtle"
+          },
+          "static": true
+        },
+        "built-for-clubs": {
+          "type": "feature",
+          "settings": {
+            "icon": "users",
+            "label": "Built for clubs",
+            "detail": "Member pricing, team kits, and free drop-off at our home clubs."
+          }
+        },
+        "fair-pricing": {
+          "type": "feature",
+          "settings": {
+            "icon": "tag",
+            "label": "Fair pricing",
+            "detail": "We buy direct and keep the supply chain short, so price never keeps anyone from fencing."
+          }
+        },
+        "direct-sourcing": {
+          "type": "feature",
+          "settings": {
+            "icon": "git-branch",
+            "label": "Direct sourcing",
+            "detail": "We buy straight from authorized makers, the brands your club and your referees already trust."
+          }
+        },
+        "real-support": {
+          "type": "feature",
+          "settings": {
+            "icon": "life-buoy",
+            "label": "Real support",
+            "detail": "Ask us about sizing, blades, or your first tournament kit. The people who answer fence too."
+          }
+        },
+        "operations_image": {
+          "type": "image",
+          "static": true,
+          "settings": {
+            "image": "shopify://shop_images/604715797_17889916662401039_1634178802558249955_n_0b34b41a-445c-448a-9926-2ca2d7dc7ca3.jpg",
+            "aspect_ratio": "landscape"
+          }
+        },
+        "operations_eyebrow": {
+          "type": "text",
+          "static": true,
+          "settings": {
+            "text": "<p>How we operate</p>",
+            "style": "eyebrow"
+          }
+        }
+      },
+      "block_order": [
+        "built-for-clubs",
+        "fair-pricing",
+        "direct-sourcing",
+        "real-support"
+      ]
+    },
+    "programs": {
+      "type": "about-programs",
+      "blocks": {
+        "header": {
+          "type": "group",
+          "settings": {
+            "direction": "column",
+            "gap": "md"
+          },
+          "blocks": {
+            "eyebrow": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Programs</p>",
+                "style": "eyebrow"
+              }
+            },
+            "heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "Pricing built for clubs, schools, and teams",
+                "tag": "h2",
+                "size": "lg"
+              }
+            },
+            "intro": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Equipping a whole club adds up fast. We help clubs, schools, and nonprofits do it for less, with member pricing and bulk discounts today and club partnerships on the way.</p>",
+                "style": "lead"
+              }
+            }
+          },
+          "block_order": [
+            "eyebrow",
+            "heading",
+            "intro"
+          ],
+          "static": true
+        },
+        "club-pricing": {
+          "type": "_program",
+          "settings": {
+            "icon": "badge-percent",
+            "figure_prefix": "Up to",
+            "figure": "15%",
+            "figure_caption": "off house-brand gear",
+            "title": "Club member pricing",
+            "text": "Club members get everyday pricing on Fencing Club house-brand gear. Name brands such as UNIC and FWF aren't included."
+          }
+        },
+        "bulk": {
+          "type": "_program",
+          "settings": {
+            "icon": "boxes",
+            "figure_prefix": "Up to",
+            "figure": "10%",
+            "figure_caption": "off orders of $1,500 or more",
+            "title": "Bulk and team kitting",
+            "text": "Kitting out a full squad? Orders of $1,500 or more get bulk pricing."
+          }
+        },
+        "partnerships": {
+          "type": "_program",
+          "settings": {
+            "icon": "plug",
+            "badge": "Coming soon",
+            "title": "Club partnerships",
+            "figure_caption": "Partner clubs only",
+            "text": "Show our gear on your club's website, with a custom checkout for the starter kits you approve."
+          }
+        }
+      },
+      "block_order": [
+        "club-pricing",
+        "bulk",
+        "partnerships"
+      ]
+    },
+    "timeline": {
+      "type": "about-timeline",
+      "blocks": {
+        "phase": {
+          "type": "phase-heading",
+          "static": true,
+          "settings": {
+            "meaning": "Fence",
+            "word": "Allez",
+            "tag": "h2"
+          }
+        },
+        "lead": {
+          "type": "heading",
+          "settings": {
+            "heading": "We haven't stopped moving since our first allez.",
+            "tag": "h3",
+            "size": "sm"
+          },
+          "static": true
+        },
+        "founded": {
+          "type": "_milestone",
+          "settings": {
+            "date": "2023",
+            "title": "Fencing Club is founded",
+            "text": "We open in Woodinville, near Seattle."
+          }
+        },
+        "online": {
+          "type": "_milestone",
+          "settings": {
+            "date": "2023",
+            "title": "Online only, on purpose",
+            "text": "No storefront, so the savings go straight to fencers."
+          }
+        },
+        "dealer": {
+          "type": "_milestone",
+          "settings": {
+            "date": "2024",
+            "title": "Authorized dealer",
+            "text": "We become an authorized dealer for four leading brands and buy from them direct."
+          }
+        },
+        "kitting": {
+          "type": "_milestone",
+          "settings": {
+            "date": "2025",
+            "title": "Club and team kits",
+            "text": "Club and team kitting arrives, with member pricing for clubs, schools, and nonprofits."
+          }
+        },
+        "blades": {
+          "type": "_milestone",
+          "settings": {
+            "date": "2027",
+            "title": "FIE blades from UNIC",
+            "text": "We start carrying UNIC's FIE-homologated blades.",
+            "status": "planned"
+          }
+        },
+        "masks": {
+          "type": "_milestone",
+          "settings": {
+            "date": "Late 2026",
+            "title": "Our own certified masks",
+            "text": "Our own 350N and 1600N masks for foil, épée, and sabre. We're placing the first orders now.",
+            "status": "in_progress"
+          }
+        },
+        "uniform": {
+          "type": "_milestone",
+          "settings": {
+            "date": "2027",
+            "title": "An 800N uniform",
+            "text": "An 800N competition uniform rounds out the kit.",
+            "status": "planned"
+          }
+        },
+        "platform": {
+          "type": "_milestone",
+          "settings": {
+            "date": "Early 2028",
+            "title": "Club management platform",
+            "text": "We're building a white-label portal with clubs for scheduling classes and private lessons and taking payments.",
+            "status": "planned"
+          }
+        },
+        "store": {
+          "type": "_milestone",
+          "settings": {
+            "date": "Late 2028",
+            "title": "White-label fencing store",
+            "text": "A fencing store built into your club's website. Sell our products, choose the kits you recommend, and earn a commission.",
+            "status": "planned"
+          }
+        },
+        "note": {
+          "type": "text",
+          "static": true,
+          "settings": {
+            "text": "<p>Dates for planned work are targets and may move.</p>",
+            "style": "subtle"
+          }
+        }
+      },
+      "block_order": [
+        "founded",
+        "online",
+        "dealer",
+        "kitting",
+        "masks",
+        "blades",
+        "uniform",
+        "platform",
+        "store"
+      ]
+    },
+    "brands": {
+      "type": "brand-logos",
+      "blocks": {
+        "header": {
+          "type": "group",
+          "settings": {
+            "direction": "column",
+            "gap": "md",
+            "align": "start"
+          },
+          "blocks": {
+            "header-eyebrow": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Authorized retailer</p>",
+                "style": "eyebrow"
+              }
+            },
+            "header-heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "Official dealer for the brands fencers trust",
+                "tag": "h2",
+                "size": "xl"
+              }
+            },
+            "header-text": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Every product is genuine and homologated, bought straight from the makers and never from the grey market.</p>",
+                "style": "lead"
+              }
+            }
+          },
+          "block_order": [
+            "header-eyebrow",
+            "header-heading",
+            "header-text"
+          ],
+          "static": true
+        },
+        "logo-1": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/fwf.png"
+          }
+        },
+        "logo-2": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/favero.png"
+          }
+        },
+        "logo-3": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/unic.png"
+          }
+        },
+        "logo-4": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/blaise.png"
+          }
+        },
+        "logo-5": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/neps.png"
+          }
+        },
+        "logo-6": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/bsi.png"
+          }
+        },
+        "logo-7": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/asics.png"
+          }
+        },
+        "logo-8": {
+          "type": "_logo",
+          "settings": {
+            "image": "shopify://shop_images/yonex.png"
+          }
+        }
+      },
+      "block_order": [
+        "logo-1",
+        "logo-2",
+        "logo-3",
+        "logo-4",
+        "logo-5",
+        "logo-6",
+        "logo-7",
+        "logo-8"
+      ],
+      "settings": {
+        "layout": "boxed"
+      }
+    },
+    "stats": {
+      "type": "about-stats",
+      "blocks": {
+        "phase": {
+          "type": "phase-heading",
+          "static": true,
+          "settings": {
+            "meaning": "A touch lands",
+            "word": "Touché",
+            "tag": "h2"
+          }
+        },
+        "header": {
+          "type": "group",
+          "settings": {
+            "direction": "column",
+            "gap": "sm"
+          },
+          "blocks": {
+            "heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "Measured, not marketed.",
+                "tag": "h3",
+                "size": "lg"
+              }
+            }
+          },
+          "block_order": [
+            "heading"
+          ],
+          "static": true
+        },
+        "caption": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Most of what we sell is our own brand, ordered straight from the factories that make it. You pay for the gear, not a chain of markups.</p>",
+            "style": "lead"
+          },
+          "static": true
+        },
+        "orders": {
+          "type": "_stat",
+          "settings": {
+            "number": "9,700+",
+            "label": "Orders shipped"
+          }
+        },
+        "fencers": {
+          "type": "_stat",
+          "settings": {
+            "number": "7,400+",
+            "label": "Fencers equipped"
+          }
+        },
+        "brands": {
+          "type": "_stat",
+          "settings": {
+            "number": "4",
+            "label": "Authorized brands"
+          }
+        },
+        "countries": {
+          "type": "_stat",
+          "settings": {
+            "number": "11+",
+            "label": "Countries shipped to"
+          }
+        },
+        "middlemen": {
+          "type": "_stat",
+          "settings": {
+            "number": "0",
+            "label": "Middlemen"
+          }
+        }
+      },
+      "block_order": [
+        "orders",
+        "fencers",
+        "brands",
+        "countries",
+        "middlemen"
+      ]
+    },
+    "closing": {
+      "type": "about-closing",
+      "blocks": {
+        "phase": {
+          "type": "phase-heading",
+          "static": true,
+          "settings": {
+            "meaning": "The deciding touch",
+            "word": "La belle",
+            "tag": "h2"
+          }
+        },
+        "intro": {
+          "type": "group",
+          "settings": {
+            "direction": "column",
+            "gap": "md"
+          },
+          "blocks": {
+            "heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "We're just getting started.",
+                "tag": "h3",
+                "size": "lg"
+              }
+            },
+            "body": {
+              "type": "text",
+              "settings": {
+                "text": "<p>There's more to come, from new gear of our own to a platform for clubs, and we'd love to build it with the fencing community.</p>",
+                "style": "lead"
+              }
+            }
+          },
+          "block_order": [
+            "heading",
+            "body"
+          ],
+          "static": true
+        },
+        "panel": {
+          "type": "group",
+          "settings": {
+            "direction": "column",
+            "gap": "lg"
+          },
+          "blocks": {
+            "statement": {
+              "type": "heading",
+              "settings": {
+                "heading": "We back the people building this sport.",
+                "tag": "h3",
+                "size": "md"
+              }
+            },
+            "body": {
+              "type": "text",
+              "settings": {
+                "text": "<p>If you're making gear, building an app, or want to reach fencers through our sales channel, we can sell it in our store and ship it through our distribution network. Tell us what you're working on.</p>",
+                "style": "lead"
+              }
+            }
+          },
+          "block_order": [
+            "statement",
+            "body"
+          ],
+          "static": true
+        },
+        "action": {
+          "type": "button",
+          "settings": {
+            "label": "Get in touch",
+            "link": "shopify://pages/contact",
+            "style": "primary",
+            "size": "lg",
+            "show_arrow": true
+          },
+          "static": true
+        }
+      },
+      "block_order": []
+    }
+  },
+  "order": [
+    "hero",
+    "story",
+    "clubs",
+    "principles",
+    "programs",
+    "timeline",
+    "brands",
+    "stats",
+    "closing"
+  ]
+}

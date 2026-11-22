@@ -1,0 +1,106 @@
+{% doc %}
+  What a collection shows when nothing is in its grid. With filters on, it offers removing one of them, with how many
+  products that brings back, or clearing them all, then the collection's best sellers. An empty collection points one
+  level up instead.
+
+  @param {object} results - The collection.
+  @param {string} section_id - The section that renders the grid, for loading counts and best sellers.
+  @param {string} clear_url - Where Clear all filters goes.
+  @param {string} [contact_url] - Where Ask us to find it goes. Without it the button is left out.
+
+  @example
+  {% render 'collection-no-results', results: collection, section_id: section.id, clear_url: collection.url, contact_url: pages.contact.url %}
+{% enddoc %}
+{%- liquid
+  assign filtered = false
+  for filter in results.filters
+    if filter.active_values.size > 0
+      assign filtered = true
+    endif
+    if filter.type == 'price_range'
+      if filter.min_value.value != nil or filter.max_value.value != nil
+        assign filtered = true
+      endif
+    endif
+  endfor
+-%}
+<div class="collection-no-results" id="product-grid" data-id="{{ section_id }}">
+  <div class="collection-no-results__panel">
+    <span class="collection-no-results__icon">
+      {%- if filtered -%}
+        {%- render 'ui-icon', icon: 'search-x', size: 24 -%}
+      {%- else -%}
+        {%- render 'ui-icon', icon: 'package-open', size: 24 -%}
+      {%- endif -%}
+    </span>
+    {%- if filtered -%}
+      <h2 class="collection-no-results__heading">{{ 'collections.empty.filtered_heading' | t }}</h2>
+      {%- capture suggestions -%}
+        {%- assign suggested = 0 -%}
+        {%- for filter in results.filters -%}
+          {%- assign parameter_name = filter.param_name | default: filter.values.first.param_name -%}
+          {%- if filter.type == 'price_range' and suggested < 3 -%}
+            {%- if filter.min_value.value != nil or filter.max_value.value != nil -%}
+              {%- liquid
+                assign suggested = suggested | plus: 1
+                assign low = filter.min_value.value | default: 0 | money_without_trailing_zeros
+                assign high = filter.max_value.value | default: filter.range_max | money_without_trailing_zeros
+                assign chip_label = 'collections.active.price' | t: low: low, high: high
+              -%}
+              <li>
+                <a class="collection-no-results__suggestion" href="{{ filter.url_to_remove }}" data-suggestion-url="{{ filter.url_to_remove }}">
+                  {%- render 'ui-icon', icon: 'x', size: 14 -%}
+                  <span class="collection-no-results__label">{{ 'collections.active.remove' | t: label: chip_label }}</span>
+                  <span class="collection-no-results__count" data-suggestion-count></span>
+                </a>
+              </li>
+            {%- endif -%}
+          {%- endif -%}
+          {%- for value in filter.active_values -%}
+            {%- if suggested == 3 -%}{%- break -%}{%- endif -%}
+            {%- liquid
+              assign suggested = suggested | plus: 1
+              assign chip_label = value.label
+              if parameter_name == 'filter.v.option.size'
+                assign chip_label = filter.label | append: ' ' | append: value.label
+              elsif parameter_name == 'filter.v.availability'
+                assign chip_label = 'collections.filters.in_stock_only' | t
+              endif
+            -%}
+            <li>
+              <a class="collection-no-results__suggestion" href="{{ value.url_to_remove }}" data-suggestion-url="{{ value.url_to_remove }}">
+                {%- render 'ui-icon', icon: 'x', size: 14 -%}
+                <span class="collection-no-results__label">{{ 'collections.active.remove' | t: label: chip_label }}</span>
+                <span class="collection-no-results__count" data-suggestion-count></span>
+              </a>
+            </li>
+          {%- endfor -%}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- if suggestions != blank -%}
+        <p class="collection-no-results__hint">{{ 'collections.empty.remove_one' | t }}</p>
+        <ul class="collection-no-results__suggestions list-unstyled">{{ suggestions }}</ul>
+      {%- endif -%}
+      <div class="collection-no-results__actions">
+        {%- assign clear_label = 'collections.empty.clear_all' | t -%}
+        {%- render 'ui-button', label: clear_label, url: clear_url, variant: 'primary', size: 'md', additional_props: 'data-clear-collection-filters' -%}
+        {%- if contact_url != blank -%}
+          {%- assign ask_label = 'collections.empty.ask' | t -%}
+          {%- render 'ui-button', label: ask_label, url: contact_url, variant: 'outline', size: 'md', icon: 'message-circle' -%}
+        {%- endif -%}
+      </div>
+    {%- else -%}
+      <h2 class="collection-no-results__heading">{{ 'collections.empty.heading' | t }}</h2>
+      <p class="collection-no-results__hint">{{ 'collections.empty.text' | t }}</p>
+      <div class="collection-no-results__actions">
+        {%- render 'collection-category-tree', collection: results, style: 'parent' -%}
+      </div>
+    {%- endif -%}
+  </div>
+  {%- if filtered -%}
+    <div class="collection-no-results__fallback" data-best-sellers="{{ results.url }}?sort_by=best-selling" data-section-id="{{ section_id }}" hidden>
+      <h2 class="collection-no-results__fallback-heading">{{ 'collections.empty.best_sellers' | t: title: results.title }}</h2>
+      <ul class="collection-product-grid collection-product-grid--fallback list-unstyled" data-best-sellers-grid></ul>
+    </div>
+  {%- endif -%}
+</div>

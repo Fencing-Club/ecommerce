@@ -1,0 +1,157 @@
+{%- comment -%}
+  Opens a chapter of the About page with a referee's call. The call style puts what it means in English over the call
+  itself in very large type and a rule. The eyebrow style, for the hero, is a short rule then the call in small capitals,
+  with its meaning beside it on phones.
+{%- endcomment -%}
+{%- liquid
+  assign tag = block.settings.tag | default: 'h2'
+  assign style = block.settings.style | default: 'call'
+  assign first_letter = block.settings.word | strip | slice: 0
+  assign word_class = 'block-phase-heading__word'
+  if 'BDEFHIKLMNPRU' contains first_letter
+    assign word_class = word_class | append: ' block-phase-heading__word--stem'
+  endif
+-%}
+<div class="block-phase-heading block-phase-heading--{{ style }}" {{ block.shopify_attributes }}>
+  {%- if style == 'eyebrow' -%}
+    {%- if block.settings.word != blank -%}
+      <{{ tag }} class="block-phase-heading__word">{{ block.settings.word | escape }}</{{ tag }}>
+    {%- endif -%}
+    {%- if block.settings.meaning != blank -%}
+      <p class="block-phase-heading__meta">{{ block.settings.meaning | escape }}</p>
+    {%- endif -%}
+  {%- else -%}
+    {%- if block.settings.meaning != blank -%}
+      <p class="block-phase-heading__meta">{{ block.settings.meaning | escape }}</p>
+    {%- endif -%}
+    {%- if block.settings.word != blank -%}
+      <{{ tag }} class="{{ word_class }}">{{ block.settings.word | escape }}</{{ tag }}>
+    {%- endif -%}
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  .block-phase-heading {
+    color: var(--foreground);
+  }
+  .block-phase-heading > * {
+    margin: 0;
+  }
+  .block-phase-heading__word {
+    color: var(--foreground);
+  }
+  .block-phase-heading--call {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+    padding-bottom: var(--spacing-8);
+    border-bottom: 1px solid var(--foreground);
+  }
+  .about-dark .block-phase-heading--call {
+    border-bottom-color: var(--border);
+  }
+  .block-phase-heading__meta {
+    font-size: calc(var(--spacing) * 3.25);
+    line-height: var(--text-xs--line-height);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .block-phase-heading--call .block-phase-heading__word {
+    font-family: var(--font-heading-family);
+    font-size: calc(var(--spacing) * 55);
+    font-weight: var(--font-weight-bold);
+    line-height: 0.86;
+    letter-spacing: -0.041em;
+    overflow-wrap: anywhere;
+  }
+  /* At this size a straight-stemmed capital's side bearing shows as an indent; pull its stem in line with the meaning. */
+  .block-phase-heading__word--stem {
+    text-indent: -0.07em;
+  }
+  .block-phase-heading--eyebrow {
+    display: flex;
+    gap: var(--spacing-3-5);
+    align-items: center;
+  }
+  .block-phase-heading--eyebrow::before {
+    content: '';
+    flex: 0 0 auto;
+    width: var(--spacing-10);
+    height: 1px;
+    background: var(--foreground);
+  }
+  .block-phase-heading--eyebrow .block-phase-heading__word {
+    font-size: calc(var(--spacing) * 3.25);
+    line-height: var(--text-xs--line-height);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .block-phase-heading--eyebrow .block-phase-heading__meta {
+    display: none;
+    font-weight: var(--font-weight-normal);
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  @media (max-width: 989px) {
+    .block-phase-heading--call .block-phase-heading__word { font-size: calc(var(--spacing) * 38); }
+  }
+  @media (max-width: 749px) {
+    .block-phase-heading--call {
+      gap: var(--spacing-2);
+      padding-bottom: var(--spacing-5);
+    }
+    .block-phase-heading__meta { font-size: var(--text-xs); }
+    .block-phase-heading--call .block-phase-heading__word { font-size: calc(var(--spacing) * 26); }
+    .block-phase-heading--eyebrow { gap: var(--spacing-3); }
+    .block-phase-heading--eyebrow::before { width: var(--spacing-7); }
+    .block-phase-heading--eyebrow .block-phase-heading__word { font-size: var(--text-xs); }
+    .block-phase-heading--eyebrow .block-phase-heading__meta { display: block; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.phase_heading.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "meaning",
+      "label": "t:blocks.phase_heading.settings.meaning.label",
+      "info": "t:blocks.phase_heading.settings.meaning.info",
+      "default": "t:blocks.phase_heading.settings.meaning.default"
+    },
+    {
+      "type": "text",
+      "id": "word",
+      "label": "t:blocks.phase_heading.settings.word.label",
+      "default": "t:blocks.phase_heading.settings.word.default"
+    },
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:blocks.phase_heading.settings.style.label",
+      "default": "call",
+      "options": [
+        { "value": "call", "label": "t:blocks.phase_heading.settings.style.options.call" },
+        { "value": "eyebrow", "label": "t:blocks.phase_heading.settings.style.options.eyebrow" }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "tag",
+      "label": "t:blocks.phase_heading.settings.tag.label",
+      "info": "t:blocks.phase_heading.settings.tag.info",
+      "default": "h2",
+      "options": [
+        { "value": "h2", "label": "t:blocks.phase_heading.settings.tag.options.h2" },
+        { "value": "h3", "label": "t:blocks.phase_heading.settings.tag.options.h3" },
+        { "value": "p", "label": "t:blocks.phase_heading.settings.tag.options.p" }
+      ]
+    }
+  ],
+  "presets": [{ "name": "t:blocks.phase_heading.name" }]
+}
+{% endschema %}

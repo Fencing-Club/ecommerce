@@ -220,6 +220,7 @@ export function registerShopifyLiquid(engine, { locale = {}, readAsset, readBloc
     return `<time datetime="${escapeAttribute(value)}">${escapeAttribute(label)}</time>`;
   });
   engine.registerFilter('handle', (value) => String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+  engine.registerFilter('url_for_vendor', (vendor) => `/collections/vendors?q=${encodeURIComponent(vendor)}`);
   engine.registerFilter('pluralize', (count, singular, plural) => (count === 1 ? singular : plural));
   engine.registerFilter('json', JSON.stringify);
   engine.registerFilter('item_count_for_variant', () => 1);

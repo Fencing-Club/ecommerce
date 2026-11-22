@@ -57,7 +57,8 @@
       "previous_slide": "Slide left",
       "name": "Slider"
     },
-    "breadcrumb_home": "Home"
+    "breadcrumb_home": "Home",
+    "free_shipping": "Free US shipping over {{ amount }}"
   },
   "newsletter": {
     "label": "Email",
@@ -106,10 +107,44 @@
     "collection_title": "Your collection's name"
   },
   "products": {
+    "option": {
+      "hand": "Hand",
+      "handed": "{{ side }}-handed",
+      "choose": "Choose a {{ option }}",
+      "sold_out": "sold out",
+      "size_guide": "Size guide"
+    },
+    "quick_view": {
+      "open": "Quick view",
+      "close": "Close",
+      "loading": "Loading product",
+      "error": "This product didn't load. Open its page instead.",
+      "photos": "Photos",
+      "photo_count": "{{ index }} of {{ count }}",
+      "show_photo": "Show photo {{ index }}",
+      "full_details": "View full details",
+      "choose_first": "Choose a {{ option }} first",
+      "back_to_options": "Back to options",
+      "size_chart": "Size chart: {{ title }}",
+      "full_chart": "View full chart"
+    },
+    "stock": {
+      "local": "In stock in {{ place }}",
+      "partner": "Ships from our partner warehouse"
+    },
+    "rating": {
+      "label": "Rated {{ rating }} out of {{ max }}",
+      "reviews": {
+        "one": "{{ count }} review",
+        "other": "{{ count }} reviews"
+      }
+    },
     "product": {
       "add_to_cart": "Add to cart",
       "choose_options": "Choose options",
       "choose_product_options": "Choose options for {{ product_name }}",
+      "colors_available": "{{ count }} colors: {{ colors }}",
+      "show_color": "Show {{ color }}",
       "description": "Description",
       "inventory_in_stock": "In stock",
       "inventory_in_stock_show_count": "{{ quantity }} in stock",
@@ -119,6 +154,7 @@
       "inventory_out_of_stock_continue_selling": "In stock",
       "sku": "SKU",
       "on_sale": "Sale",
+      "percent_off": "{{ percent }}% off",
       "product_variants": "Product variants",
       "media": {
         "gallery_viewer": "Gallery Viewer",
@@ -130,6 +166,8 @@
         "play_model": "Play 3D Viewer",
         "play_video": "Play video"
       },
+      "previous_photo": "Previous photo",
+      "next_photo": "Next photo",
       "nested_label": "{{ title }} for {{ parent_title }}",
       "quantity": {
         "label": "Quantity",
@@ -167,6 +205,7 @@
         "sale_price": "Sale price",
         "unit_price": "Unit price"
       },
+      "protection_level": "Protection level",
       "share": "Share this product",
       "sold_out": "Sold out",
       "unavailable": "Unavailable",
@@ -214,10 +253,17 @@
       "sort_button": "Sort",
       "sort_by_label": "Sort by:",
       "to": "To",
+      "range_to": "to",
+      "lowest_price": "Lowest price",
+      "highest_price": "Highest price",
       "clear_filter": "Remove filter"
     }
   },
   "templates": {
+    "404": {
+      "title": "Page not found",
+      "subtext": "404"
+    },
     "search": {
       "no_results": "No results found for “{{ terms }}”. Check the spelling or use a different word or phrase.",
       "page": "Page",
@@ -292,10 +338,6 @@
         "post_success": "Thanks for contacting us. We'll get back to you as soon as possible.",
         "error_heading": "Please adjust the following:"
       }
-    },
-    "404": {
-      "title": "Page not found",
-      "subtext": "404"
     }
   },
   "sections": {
@@ -520,7 +562,9 @@
       "slide": "Announcement",
       "slide_label": "{{ index }} of {{ count }}",
       "previous": "Previous announcement",
-      "next": "Next announcement"
+      "next": "Next announcement",
+      "free_shipping_title": "Free US shipping",
+      "free_shipping_message": "On orders over {{ amount }}"
     },
     "faq": {
       "topics": "FAQ topics"
@@ -532,6 +576,18 @@
       "email": "Email",
       "phone": "Phone",
       "message": "Anything we should know?"
+    },
+    "about_clubs": {
+      "visit_site": "Visit site",
+      "visit_site_label": "Visit site: {{ club }}"
+    },
+    "about_timeline": {
+      "done": "Done",
+      "in_progress": "In progress",
+      "planned": "Planned"
+    },
+    "about_hero": {
+      "chapters": "Chapters"
     }
   },
   "localization": {
@@ -708,6 +764,75 @@
     },
     "testimonial": {
       "rating": "{{ rating }} out of 5 stars"
+    }
+  },
+  "collections": {
+    "hero": {
+      "categories": "{{ title }} categories",
+      "read_more": "Read more",
+      "guide": "How to choose {{ title }}"
+    },
+    "toolbar": {
+      "filters": "Filters",
+      "hide_filters": "Hide filters",
+      "show_filters": "Show filters",
+      "protection": "Protection",
+      "density": "Products per row",
+      "columns": "{{ count }} per row"
+    },
+    "levels": {
+      "button": "What the levels mean",
+      "title": "Protection levels",
+      "intro": "The number is the force, in newtons, the fabric resists. FIE means the International Fencing Federation approves it.",
+      "guide": "Read the buying guide",
+      "level_350n": "Club training and most domestic events.",
+      "level_800n": "Extra protection. Not FIE approved.",
+      "level_800n_fie": "Clothing for FIE events.",
+      "level_1600n_fie": "Mask bibs for FIE events.",
+      "level_fie": "FIE approved, no newton rating."
+    },
+    "filters": {
+      "category": "Category",
+      "all_equipment": "All equipment",
+      "protection_level": "Protection level",
+      "in_stock_only": "In stock only",
+      "show_more": "Show {{ count }} more",
+      "show_fewer": "Show fewer",
+      "size_guide": "Size guide"
+    },
+    "active": {
+      "label": "Filters in use",
+      "remove": "Remove {{ label }}",
+      "clear_all": "Clear all",
+      "price": "{{ low }} to {{ high }}"
+    },
+    "empty": {
+      "filtered_heading": "No products match these filters",
+      "remove_one": "Remove one to see more:",
+      "clear_all": "Clear all filters",
+      "ask": "Ask us to find it",
+      "best_sellers": "Best sellers in {{ title }}",
+      "heading": "Nothing here yet",
+      "text": "New gear for this collection is on its way.",
+      "shop_all": "Shop all {{ title }}"
+    },
+    "load_more": {
+      "showing": "Showing {{ shown }} of {{ total }}"
+    },
+    "recent": {
+      "title": "Recently viewed",
+      "clear": "Clear"
+    },
+    "guide": {
+      "heading": "How to choose {{ title }}",
+      "level": "Level",
+      "meaning": "What it means",
+      "where": "Where you'll wear it",
+      "shop": "Shop",
+      "shop_level": "Shop {{ level }}",
+      "questions": "Questions about {{ title }}",
+      "popular": "Popular in {{ title }}",
+      "brands": "Brands in {{ title }}"
     }
   }
 }

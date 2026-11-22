@@ -1,7 +1,7 @@
 <section id="cards" class="lab-section"><h2>Cards <code>Production snippets / fixture content</code></h2>
   <div class="lab-card-group specimen">
-    <h3>Product cards</h3><div class="lab-card-grid">{% for product in products %}{% render 'ui-product-card', product: product, card_id: product.id, show_type: true, show_price: true, show_add: true, add_label: 'Choose options', section_id: 'lab-cards' %}{% endfor %}</div>
-    <h3>Search product and loading placeholder</h3><div class="lab-card-grid">{% render 'ui-product-card', product: products[0], variant: 'search', card_id: 'lab-search-product', show_type: true, show_price: true %}{% render 'ui-product-card-skeleton' %}</div>
+    <h3>Product cards</h3><div class="lab-card-grid">{% for product in products %}{% render 'ui-product-card', product: product, card_id: product.id, show_price: true, show_add: true, add_label: 'Choose options', section_id: 'lab-cards' %}{% endfor %}</div>
+    <h3>Search product and loading placeholder</h3><div class="lab-card-grid">{% render 'ui-product-card', product: products[0], variant: 'search', card_id: 'lab-search-product', show_price: true %}{% render 'ui-product-card-skeleton' %}</div>
     <h3>Article cards</h3><div class="lab-card-grid">{% for article in articles %}{% render 'ui-article-card', article: article, heading_level: 4, read_label: 'Read more' %}{% endfor %}</div>
     <h3>Category links</h3><div class="lab-card-grid">
       {% render 'ui-category-link-card', label: 'Weapons', url: '#cards' %}

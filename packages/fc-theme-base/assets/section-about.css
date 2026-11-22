@@ -1,0 +1,119 @@
+/* About page section shells. Each section puts its blocks on the page gutter, one under another. */
+
+.about-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
+  padding: calc(var(--spacing) * 34) var(--page-gutter);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.about-section--muted {
+  background: var(--muted);
+}
+
+/* A section that opens with a phase heading sits closer to the section above it. */
+.about-section--phase {
+  padding-top: calc(var(--spacing) * 30);
+}
+
+/* The hero's chapter links jump to these ids, so they clear the header that slides back in on the way up. */
+.about-section[id] {
+  scroll-margin-top: var(--header-height, 0px);
+}
+
+/* The About page is editorial, so its headings run a step larger than the rest of the store: Large is the chapter
+   heading and Medium the heading inside a panel or beside a photo. */
+.about-section .block-heading--lg {
+  font-size: calc(var(--spacing) * 15);
+  line-height: 1;
+  letter-spacing: -0.033em;
+}
+
+.about-section .block-heading--md {
+  font-size: var(--text-5xl);
+  line-height: 1.05;
+  letter-spacing: -0.032em;
+}
+
+.about-section .block-text--eyebrow {
+  font-size: calc(var(--spacing) * 3.25);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.18em;
+}
+
+/* The statement under a phase heading, such as Prêts's "Before the bout…". */
+.about-lead :is(.block-heading, .block-text) {
+  max-width: calc(var(--spacing) * 205);
+  font-size: calc(var(--spacing) * 10);
+  line-height: 1.15;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.03em;
+  color: var(--foreground);
+}
+
+/* A dark panel or section, like the support band. Text and borders turn light, and inside it a primary button is
+   light with dark text. A custom property reads the values its own element sets, so the button text is set one
+   level in. */
+.about-dark {
+  --background: #09090b; /* zinc-950 */
+  --foreground: var(--primary-foreground);
+  --primary: var(--primary-foreground);
+  --muted: color-mix(in srgb, var(--primary-foreground) 6%, transparent);
+  --muted-foreground: #9f9fa9; /* zinc-400 */
+  --border: color-mix(in srgb, var(--primary-foreground) 12%, transparent);
+  --input: color-mix(in srgb, var(--primary-foreground) 40%, transparent);
+  --accent: color-mix(in srgb, var(--primary-foreground) 8%, transparent);
+  --accent-foreground: var(--primary-foreground);
+  --ring: var(--primary-foreground);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.about-dark > * {
+  --primary-foreground: #09090b; /* zinc-950 */
+}
+
+@media (max-width: 989px) {
+  .about-section .block-heading--lg {
+    font-size: var(--text-5xl);
+  }
+
+  .about-section .block-heading--md {
+    font-size: var(--text-4xl);
+  }
+}
+
+@media (max-width: 749px) {
+  .about-section {
+    gap: var(--spacing-7);
+    padding-block: calc(var(--spacing) * 18);
+  }
+
+  .about-section--phase {
+    padding-top: calc(var(--spacing) * 18);
+  }
+
+  .about-section .block-heading--lg {
+    font-size: calc(var(--spacing) * 8.5);
+    line-height: 1.06;
+    letter-spacing: -0.03em;
+  }
+
+  .about-section .block-heading--md {
+    font-size: calc(var(--spacing) * 7);
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+  }
+
+  .about-section .block-text--eyebrow {
+    font-size: var(--text-xs);
+  }
+
+  .about-lead :is(.block-heading, .block-text) {
+    font-size: var(--text-2xl);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+  }
+}

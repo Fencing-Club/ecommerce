@@ -67,6 +67,8 @@ Dawn cart stylesheets are gone.
   that reads Free once the cart reaches it. Leaving it blank turns both off.
 - Free shipping is US only, and the copy says so ("free US shipping"). Shoppers whose country isn't the US see no
   free shipping marker or row, only the gifts. No item is excluded.
+- The announcement bar's free shipping announcement, the collection hero's free shipping trust line and quick view
+  read the same minimum through `cart-free-shipping`, so they show only to shoppers the cart gives free shipping.
 - Reward amounts only appear where the theme reads them from the settings and gift entries: the progress and the gift
   panels. Fixed copy, such as the empty message, never names an amount.
 - The theme only shows free shipping. Shopify gives it at checkout through an automatic discount the merchant
