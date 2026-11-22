@@ -17,7 +17,7 @@ export default {
         settings: { direction: 'column', gap: 'md' },
         blocks: [
           { id: 'heading', type: 'heading', settings: { heading: 'We’re just getting started.', tag: 'h3', size: 'lg' } },
-          { id: 'body', type: 'text', settings: { text: '<p>There’s more to come, from our own certified masks to a platform for clubs, and we’d love to build it with the fencing community.</p>', style: 'lead' } },
+          { id: 'body', type: 'text', settings: { text: '<p>There’s more to come, from new gear of our own to a platform for clubs, and we’d love to build it with the fencing community.</p>', style: 'lead' } },
         ],
       },
       {

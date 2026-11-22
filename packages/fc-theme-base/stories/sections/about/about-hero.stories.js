@@ -31,7 +31,7 @@ export default {
       },
     ],
     blocks: [
-      { id: 'heading', type: 'heading', settings: { heading: 'Fencers equipping fencers.', tag: 'h1', size: 'xl' } },
+      { id: 'heading', type: 'heading', settings: { heading: 'From first lesson to the final touch.', tag: 'h1', size: 'xl' } },
       { id: 'mission', type: 'text', settings: { text: '<p>We’re a team of fencers in Woodinville, Washington.</p>', style: 'lead' } },
       {
         id: 'actions',
@@ -45,7 +45,7 @@ export default {
 
 export const Hero = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { level: 1, name: 'Fencers equipping fencers.' })).toBeVisible();
+    await expect(canvas.getByRole('heading', { level: 1, name: 'From first lesson to the final touch.' })).toBeVisible();
     await expect(canvas.getByRole('img', { name: 'A fencer lunging in a white jacket' })).toBeInTheDocument();
     await expect(within(canvas.getByRole('navigation', { name: 'Breadcrumb' })).getByText('About us')).toHaveAttribute('aria-current', 'page');
     await expect(canvas.getByRole('link', { name: 'Shop all gear' })).toHaveAttribute('href', '/collections/all');
@@ -71,7 +71,7 @@ export const ChapterLinks = {
 export const NoPhoto = {
   args: { image: null },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { level: 1, name: 'Fencers equipping fencers.' })).toBeVisible();
+    await expect(canvas.getByRole('heading', { level: 1, name: 'From first lesson to the final touch.' })).toBeVisible();
     await expect(canvas.queryByRole('img')).toBeNull();
   },
 };

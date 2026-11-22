@@ -16,7 +16,7 @@
         "heading": {
           "type": "heading",
           "settings": {
-            "heading": "Fencers equipping fencers.",
+            "heading": "From first lesson to the final touch.",
             "tag": "h1",
             "size": "xl"
           }
@@ -24,7 +24,7 @@
         "mission": {
           "type": "text",
           "settings": {
-            "text": "<p>We're a team of fencers in Woodinville, Washington. Since 2023 we've bought straight from the makers so clubs, schools, and fencers at every level get dependable gear at fair prices, from a first lesson to the finals.</p>",
+            "text": "<p>We're a team of fencers in Woodinville, Washington. Since 2023 we've bought straight from the makers so clubs, schools, and fencers at every level get dependable gear at fair prices.</p>",
             "style": "lead"
           }
         },
@@ -119,7 +119,9 @@
         "mission",
         "actions"
       ],
-      "settings": {}
+      "settings": {
+        "image": "shopify://shop_images/about-hero-lunge.jpg"
+      }
     },
     "story": {
       "type": "about-story",
@@ -188,7 +190,9 @@
         "belief",
         "paragraph-3"
       ],
-      "settings": {}
+      "settings": {
+        "image": "shopify://shop_images/about-club-visit.jpg"
+      }
     },
     "clubs": {
       "type": "about-clubs",
@@ -808,7 +812,7 @@
             "body": {
               "type": "text",
               "settings": {
-                "text": "<p>There's more to come, from our own certified masks to a platform for clubs, and we'd love to build it with the fencing community.</p>",
+                "text": "<p>There's more to come, from new gear of our own to a platform for clubs, and we'd love to build it with the fencing community.</p>",
                 "style": "lead"
               }
             }
