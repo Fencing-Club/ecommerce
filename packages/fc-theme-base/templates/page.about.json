@@ -449,7 +449,7 @@
         "blades": {
           "type": "_milestone",
           "settings": {
-            "date": "Late 2026",
+            "date": "2027",
             "title": "UNIC FIE blades",
             "text": "We begin carrying UNIC FIE homologated blades.",
             "planned": true
@@ -458,7 +458,7 @@
         "masks": {
           "type": "_milestone",
           "settings": {
-            "date": "2027",
+            "date": "Late 2026",
             "title": "Certified mask range",
             "text": "Our own 350N and 1600N masks for epee, sabre and foil.",
             "planned": true
@@ -479,8 +479,8 @@
         "online",
         "dealer",
         "kitting",
-        "blades",
         "masks",
+        "blades",
         "uniform"
       ]
     },

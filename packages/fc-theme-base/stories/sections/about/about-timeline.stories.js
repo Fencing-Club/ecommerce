@@ -16,7 +16,7 @@ export default {
     blocks: [
       milestone('founded', '2023', 'Fencing Club is founded', 'A fencing-only retailer launches in Woodinville.'),
       milestone('dealer', '2024', 'An authorized dealer', 'We become an authorized dealer, sourced direct.'),
-      milestone('blades', 'Late 2026', 'UNIC FIE blades', 'We begin carrying UNIC FIE homologated blades.', true),
+      milestone('blades', '2027', 'UNIC FIE blades', 'We begin carrying UNIC FIE homologated blades.', true),
       milestone('uniform', '2027', 'An 800N uniform', 'An 800N competition uniform completes the kit.', true),
     ],
   }),
