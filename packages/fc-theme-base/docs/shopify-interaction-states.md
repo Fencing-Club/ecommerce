@@ -151,11 +151,9 @@ template-owned hooks, never customer-supplied HTML. Callers must provide unique 
   `animateListChanges(container, rowsBefore, { rows, key, listFor })` with the rows from `currentRows` taken just
   before: rows with new keys open, and a removed row returns in its old place, inert, just long enough to close. The
   cart's product and gift lines use it.
-- Show/hide motion is in `assets/motion.js` too. Add `data-motion` to a `<details>` and the element after its summary
-  opens and closes the same way when the summary is clicked or pressed. While it closes, the details keeps `open` and
-  has `data-closing`, so style what marks it open (a turned chevron) with `[open]:not([data-closing])`. A click while
-  it moves turns it around from where it is. FAQ items use it, and their Q and A badges are joined by a line while
-  the answer shows.
+- Show/hide motion is in `assets/motion.js` too, built into [`ui-accordion`](shopify-accordion.md): its content
+  opens and closes the same way when the summary is clicked or pressed. Filter groups and FAQ items render it, and
+  FAQ items' Q and A badges are joined by a line while the answer shows.
 - The mega menu retains its 220ms pointer-close delay and diagonal-travel tolerance. It now has 220ms entry and
   160ms exit motion, with a 140ms cross-fade when switching siblings rather than repeating the slide-in. Outgoing
   content is inert during the cross-fade. Escape and interrupted closes preserve focus and state. Reduced motion

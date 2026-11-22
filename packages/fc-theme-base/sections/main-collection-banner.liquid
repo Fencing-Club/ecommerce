@@ -1,18 +1,13 @@
 {{ 'section-main-collection.css' | asset_url | stylesheet_tag }}
-<script src="{{ 'collection-breadcrumbs.js' | asset_url }}" type="module"></script>
+<script src="{{ 'collection-filters.js' | asset_url }}" type="module"></script>
 <script src="{{ 'collection-page.js' | asset_url }}" type="module"></script>
 
 {%- comment -%}
-  The collection's title, description, trust lines and the categories under it. The categories come from the main
-  menu, where the collection sits up to three levels deep.
+  The collection's breadcrumbs, title, description, trust lines and the categories under it. The breadcrumbs and
+  categories come from the main menu, where the collection sits up to three levels deep.
 {%- endcomment -%}
 <header class="collection-hero page-width">
-  {%- render 'ui-breadcrumbs',
-    root_label: section.settings.home_label,
-    root_url: routes.root_url,
-    current_label: collection.title,
-    contextual: true
-  -%}
+  {%- render 'collection-category-tree', collection: collection, style: 'breadcrumbs', home_label: section.settings.home_label -%}
 
   <div class="collection-hero__head">
     <div class="collection-hero__intro">
@@ -45,15 +40,34 @@
       {%- endif -%}
     </div>
 
-    {%- if section.blocks.size > 0 -%}
-      <ul class="collection-hero__trust list-unstyled">
-        {%- for block in section.blocks -%}
-          <li class="collection-hero__trust-item" {{ block.shopify_attributes }}>
-            {%- render 'ui-icon', icon: block.settings.icon, size: 16 -%}
-            <span>{{ block.settings.text | escape }}</span>
-          </li>
-        {%- endfor -%}
-      </ul>
+    {%- comment -%}
+      A free shipping line takes its minimum from Theme settings > Cart, as the cart does, and only shoppers who get
+      free shipping see it.
+    {%- endcomment -%}
+    {%- capture trust_lines -%}
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign text = block.settings.text | escape
+          if block.settings.content == 'free_shipping'
+            capture free_shipping
+              render 'cart-free-shipping'
+            endcapture
+            assign free_shipping = free_shipping | plus: 0
+            if free_shipping == 0
+              continue
+            endif
+            assign amount = free_shipping | money_without_trailing_zeros
+            assign text = 'general.free_shipping' | t: amount: amount
+          endif
+        -%}
+        <li class="collection-hero__trust-item" {{ block.shopify_attributes }}>
+          {%- render 'ui-icon', icon: block.settings.icon, size: 16 -%}
+          <span>{{ text }}</span>
+        </li>
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if trust_lines != blank -%}
+      <ul class="collection-hero__trust list-unstyled">{{ trust_lines }}</ul>
     {%- endif -%}
   </div>
 
@@ -90,9 +104,20 @@
       "settings": [
         {
           "type": "select",
+          "id": "content",
+          "label": "Shows",
+          "info": "Free shipping uses the minimum in Theme settings > Cart and shows only to shoppers who get it.",
+          "default": "custom",
+          "options": [
+            { "value": "custom", "label": "Your own text" },
+            { "value": "free_shipping", "label": "Free shipping" }
+          ]
+        },
+        {
+          "type": "select",
           "id": "icon",
           "label": "Icon",
-          "default": "truck",
+          "default": "package-check",
           "options": [
             { "value": "truck", "label": "Truck" },
             { "value": "package-check", "label": "Package" },
@@ -100,7 +125,13 @@
             { "value": "shield-check", "label": "Shield" }
           ]
         },
-        { "type": "text", "id": "text", "label": "Text", "default": "Free US shipping over $375" }
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "In stock and packed by our team",
+          "visible_if": "{{ block.settings.content == 'custom' }}"
+        }
       ]
     }
   ]

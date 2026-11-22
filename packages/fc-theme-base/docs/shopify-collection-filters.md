@@ -35,7 +35,7 @@ Unrecognized colors without native swatch data are omitted, and Color groups wit
 An unsupported color already selected through a URL remains a labelled, selected choice so it can be removed.
 Other filter types keep their existing checkbox presentation.
 
-Like `fc-theme`, filter groups start expanded and can be collapsed. Unselected zero-count options and empty groups
+Like `fc-theme`, filter groups start expanded and can be collapsed. Each group is a [`ui-accordion`](shopify-accordion.md), so it opens and closes with the shared motion. Unselected zero-count options and empty groups
 are omitted. Selected zero-count options remain visible and enabled so they can be removed, including on empty-result
 pages. Filter choice and ordering come from Shopify, not a hardcoded per-collection allowlist. The source inspection
 used read-only public collection markup; app-only grouping/settings were not changed on the source store.

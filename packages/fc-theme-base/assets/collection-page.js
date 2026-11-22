@@ -41,9 +41,16 @@ if (remember('fc:collection-filters') === 'hidden') showFilters(false);
 const savedColumns = remember('fc:collection-columns');
 if (savedColumns === '3' || savedColumns === '4') showColumns(savedColumns);
 
+// Read more shows only while the description is cut short, which changes as the page gets wider or narrower.
+const readMoreSizes = new ResizeObserver((entries) => {
+  for (const { target: text } of entries) {
+    const button = document.querySelector(`[data-read-more][aria-controls="${text.id}"]`);
+    if (button) button.hidden = text.hasAttribute('data-expanded') || text.scrollHeight <= text.clientHeight + 1;
+  }
+});
 for (const button of document.querySelectorAll('[data-read-more]')) {
   const text = document.getElementById(button.getAttribute('aria-controls'));
-  if (text && text.scrollHeight > text.clientHeight + 1) button.hidden = false;
+  if (text) readMoreSizes.observe(text);
 }
 
 function onClick(event) {

@@ -6,7 +6,11 @@ categories under this one.
 
 - The description shows in full on desktop. Phones clamp it to three lines with Read more
   (`assets/collection-page.js`), which only appears when the text is cut off.
-- Trust lines are section blocks, each an icon and a sentence. Phones leave them out, along with the guide link.
+- The breadcrumbs follow the main menu, so a collection three levels down reads Home, then each level above it.
+  A collection that isn't in the menu shows Home and its title.
+- Trust lines are section blocks, each an icon and a sentence. Phones leave them out, along with the guide link. A
+  block set to show free shipping prints the cart's free US shipping minimum, and only to shoppers who get it (see
+  [cart](shopify-cart.md#free-shipping)).
 - The tiles are the children of this collection in the main menu, each with its photo and product count. They scroll
   sideways on tablets and become pills on phones. See [collection categories](shopify-collection-categories.md).
 

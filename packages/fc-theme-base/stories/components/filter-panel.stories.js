@@ -1,6 +1,6 @@
-import { expect, fireEvent, within } from 'storybook/test';
+import { expect, fireEvent, waitFor, within } from 'storybook/test';
 import { collectionFilters as f, collectionMenu, collectionPage } from '../fixtures.js';
-import { loadModule, snippet } from '../liquid.js';
+import { loadModule, loadScript, snippet } from '../liquid.js';
 
 const render = snippet('collection-facet-filters', {
   stylesheets: ['component-facets.css', 'section-main-collection.css'],
@@ -23,11 +23,12 @@ const allFilters = (on = {}) => [
  * The collection page's filter panel, `snippets/collection-facet-filters.liquid`: the category tree, then each filter
  * Shopify supplies. Protection rating and FIE status share one Protection level group, size and hand are pills,
  * colors are swatches, long lists show four with Show more, and availability is an In stock only switch. The price
- * slider and fields stay in step through `price-range` in `assets/facets.js`.
+ * slider and fields stay in step through `price-range` in `assets/facets.js`. Each group is a `ui-accordion`, so it
+ * opens and closes with the shared motion.
  */
 export default {
   title: 'Components/Filter panel',
-  loaders: [loadModule('collection-page.js')],
+  loaders: [loadScript('motion.js'), loadModule('collection-page.js')],
   render: ({ filters }) =>
     `<aside class="collection-filter-panel" aria-label="Filters" style="max-width: 24rem">${render({
       results: { ...collectionPage(), filters },
@@ -51,6 +52,18 @@ export const Default = {
     await expect(canvas.getByRole('checkbox', { name: '3XL' })).toBeVisible();
     await expect(canvas.getByRole('textbox', { name: 'From ($)' })).toHaveValue('');
     await expect(canvas.getByRole('switch', { name: 'In stock only' })).not.toBeChecked();
+  },
+};
+
+export const CloseAGroup = {
+  play: async ({ canvas, userEvent }) => {
+    const weapon = canvas.getByRole('heading', { name: 'Weapon' });
+    await userEvent.click(weapon);
+    await waitFor(() => expect(canvas.getByRole('checkbox', { name: 'Foil' })).not.toBeVisible());
+    await userEvent.click(weapon);
+    await waitFor(() => expect(canvas.getByRole('checkbox', { name: 'Foil' })).toBeVisible());
+    // The options fade in. Let them finish so the accessibility check reads their final colors.
+    await Promise.all(weapon.closest('details').getAnimations({ subtree: true }).map((animation) => animation.finished));
   },
 };
 

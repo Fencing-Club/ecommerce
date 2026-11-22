@@ -1,0 +1,61 @@
+{% doc %}
+  A product's option pickers in the order the Pen shows them, whatever the order in Shopify: color first, then hand,
+  then the rest, such as size. Color options are swatches. The size option gets the size guide link.
+
+  @param {object} product - The product.
+  @param {string} id_prefix - Makes the input ids unique on the page.
+  @param {string} form_id - The product form the inputs belong to.
+  @param {boolean} [size_unpicked] - Shows size with no value chosen yet.
+  @param {string} [size_guide_url] - Where Size guide goes.
+  @param {string} [size_guide_controls] - The id of a panel on the page that Size guide opens instead.
+  @param {string} [hand_help] - HTML after the chosen hand, such as the Which hand? button.
+  @param {boolean} [compact] - The smaller choices quick view and quick add use.
+
+  @example
+  {% render 'product-option-pickers', product: product, id_prefix: 'Product', form_id: form_id %}
+{% enddoc %}
+{%- for pass in (1..3) -%}
+  {%- for option in product.options_with_values -%}
+    {%- liquid
+      assign option_handle = option.name | handle
+      assign group = 3
+      assign style = 'choice'
+      if option_handle contains 'color' or option_handle contains 'colour'
+        assign group = 1
+        assign style = 'swatch'
+      elsif option_handle contains 'hand'
+        assign group = 2
+      endif
+      if group != pass
+        continue
+      endif
+      assign is_size = false
+      if option_handle contains 'size'
+        assign is_size = true
+      endif
+      assign unpicked = false
+      assign guide = ''
+      assign guide_controls = ''
+      if is_size
+        assign unpicked = size_unpicked
+        assign guide = size_guide_url
+        assign guide_controls = size_guide_controls
+      endif
+      assign help = ''
+      if group == 2
+        assign help = hand_help
+      endif
+    -%}
+    {%- render 'ui-variant-picker',
+      option: option,
+      id_prefix: id_prefix,
+      style: style,
+      form_id: form_id,
+      unpicked: unpicked,
+      size_guide_url: guide,
+      size_guide_controls: guide_controls,
+      help: help,
+      compact: compact
+    -%}
+  {%- endfor -%}
+{%- endfor -%}

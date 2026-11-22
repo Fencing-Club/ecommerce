@@ -187,6 +187,7 @@ describe('component accessibility contracts', () => {
   });
   it('renders renamed Color and Size filters with shared native multi-select variants', () => {
     const engine = new Liquid({ root: resolve('snippets'), extname: '.liquid' });
+    registerShopifyLiquid(engine);
     const option = (param, label, active, count = 2, swatch) => ({ param_name: param, label, value: label, active, count, swatch, url_to_add: `/collections/all?${param}=${encodeURIComponent(label)}`, url_to_remove: '/collections/all' });
     const form = document.createElement('form');
     form.innerHTML = engine.renderFileSync('collection-facet-filters', { section_id: 'test', results: { filters: [
@@ -214,6 +215,7 @@ describe('component accessibility contracts', () => {
   });
   it('omits unsupported colors and empty color groups but keeps active unsupported colors removable', () => {
     const engine = new Liquid({ root: resolve('snippets'), extname: '.liquid' });
+    registerShopifyLiquid(engine);
     const container = document.createElement('div');
     const values = ['Black/Gunmetal', 'White/Pure Gold', 'White/Vivid Coral'].map(label => ({
       label, value: label, param_name: 'filter.v.option.color', active: false, count: 2,
@@ -236,6 +238,7 @@ describe('component accessibility contracts', () => {
   });
   it('hides irrelevant filter values and empty groups while retaining active zero-count selections', () => {
     const engine = new Liquid({ root: resolve('snippets'), extname: '.liquid' });
+    registerShopifyLiquid(engine);
     const container = document.createElement('div');
     container.innerHTML = engine.renderFileSync('collection-facet-filters', { section_id: 'visible', results: { filters: [
       { label: 'Brand', type: 'list', values: [
@@ -267,35 +270,35 @@ describe('component accessibility contracts', () => {
       expect(engine.renderFileSync('swatch-background', { color_name }).trim()).toBe('');
     }
   });
-  it.each(['swatch-input__input', 'ui-choice__input', 'ui-checkbox'])('preserves breadcrumb context on %s filter navigation and leaves disabled links inert', async inputClass => {
-    const isolated = new Window({ url: 'https://example.test/collections/clothing?breadcrumb_current=Clothing' });
+  it.each(['swatch-input__input', 'ui-choice__input', 'ui-checkbox'])('navigates %s filters to their URL and leaves disabled links inert', async inputClass => {
+    const isolated = new Window({ url: 'https://example.test/collections/clothing' });
     isolated.document.body.innerHTML = `<nav class="collection-curated-filters"><input class="${inputClass}" type="checkbox" data-filter-url="/collections/clothing?filter.v.option.color=White"></nav><li class="collection-filter-option"><a role="link" aria-disabled="true" tabindex="-1">Unavailable</a></li>`;
     const navigate = vi.spyOn(isolated.location, 'assign').mockImplementation(() => {});
-    isolated.eval(readFileSync(resolve('assets/collection-breadcrumbs.js'), 'utf8'));
+    isolated.eval(readFileSync(resolve('assets/collection-filters.js'), 'utf8'));
     isolated.document.querySelector('input').dispatchEvent(new isolated.Event('change', { bubbles: true }));
-    expect(navigate).toHaveBeenCalledWith('/collections/clothing?filter.v.option.color=White&breadcrumb_current=Clothing');
+    expect(navigate).toHaveBeenCalledWith('/collections/clothing?filter.v.option.color=White');
     expect(isolated.document.querySelector('a').hasAttribute('href')).toBe(false);
     await isolated.happyDOM.close();
   });
-  it('clears collection filters without Dawn AJAX and preserves sorting and breadcrumb context', async () => {
-    const isolated = new Window({ url: 'https://example.test/collections/masks?filter.v.availability=1&sort_by=price-ascending&page=2&breadcrumb_current=Masks' });
+  it('clears collection filters without Dawn AJAX and keeps the sort', async () => {
+    const isolated = new Window({ url: 'https://example.test/collections/masks?filter.v.availability=1&sort_by=price-ascending&page=2' });
     isolated.document.body.innerHTML = '<a class="collection-active-filters__clear" href="/collections/masks" data-clear-collection-filters>Clear all</a>';
-    isolated.eval(readFileSync(resolve('assets/collection-breadcrumbs.js'), 'utf8'));
+    isolated.eval(readFileSync(resolve('assets/collection-filters.js'), 'utf8'));
     expect(isolated.document.querySelector('facet-remove')).toBeNull();
-    expect(isolated.document.querySelector('a').getAttribute('href')).toBe('/collections/masks?breadcrumb_current=Masks&sort_by=price-ascending');
+    expect(isolated.document.querySelector('a').getAttribute('href')).toBe('/collections/masks?sort_by=price-ascending');
     await isolated.happyDOM.close();
   });
   it('applies collection price changes and sorting without losing active filters', async () => {
-    const isolated = new Window({ url: 'https://example.test/collections/masks?filter.v.availability=1&sort_by=price-ascending&page=2&breadcrumb_current=Masks' });
+    const isolated = new Window({ url: 'https://example.test/collections/masks?filter.v.availability=1&sort_by=price-ascending&page=2' });
     isolated.document.body.innerHTML = '<nav class="collection-curated-filters"><price-range><input name="filter.v.price.gte" value="20" data-min="0" data-max="200"><input name="filter.v.price.lte" data-min="0" data-max="200"></price-range></nav><form><select name="sort_by"><option value="price-descending">High to low</option></select></form>';
     const navigate = vi.spyOn(isolated.location, 'assign').mockImplementation(() => {});
-    isolated.eval(readFileSync(resolve('assets/collection-breadcrumbs.js'), 'utf8'));
+    isolated.eval(readFileSync(resolve('assets/collection-filters.js'), 'utf8'));
     isolated.document.querySelector('input').dispatchEvent(new isolated.Event('change', { bubbles: true }));
-    expect(navigate).toHaveBeenLastCalledWith('/collections/masks?filter.v.availability=1&sort_by=price-ascending&breadcrumb_current=Masks&filter.v.price.gte=20');
+    expect(navigate).toHaveBeenLastCalledWith('/collections/masks?filter.v.availability=1&sort_by=price-ascending&filter.v.price.gte=20');
     isolated.document.querySelector('price-range').remove();
     isolated.eval(readFileSync(resolve('assets/facets.js'), 'utf8'));
     isolated.customElements.get('facet-filters-form').prototype.onSubmitHandler.call({}, { preventDefault() {}, target: isolated.document.querySelector('select') });
-    expect(navigate).toHaveBeenLastCalledWith('/collections/masks?filter.v.availability=1&sort_by=price-descending&breadcrumb_current=Masks');
+    expect(navigate).toHaveBeenLastCalledWith('/collections/masks?filter.v.availability=1&sort_by=price-descending');
     await isolated.happyDOM.close();
   });
   it('preserves textbox and select labels, values and native validation states', () => {

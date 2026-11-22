@@ -16,11 +16,16 @@ product page's recommendations all render it, and its stories render the same sn
   vendor's handle, so our own brand, with no entry, shows none.
 - **Name**, up to two lines.
 - **Price row**: the price, the struck compare price, then up to three color swatches and how many more there are.
-  Card prices drop trailing zeros.
+  Card prices drop trailing zeros. A color with its own photo is a button: it shows that photo, rings the swatch and
+  points the card's links at that color. Colors without one are plain swatches.
 
-## Quick add
+## Quick add and quick view
 
 With `show_add`, touch screens get a round add button over the photo. A product with one variant goes straight into
 the cart; anything with options links to the product page. Pointer screens hide it.
+
+With `quick_view`, pointer screens get an eye button there on hover, and touch screens' add button opens
+[quick view](shopify-quick-view.md) for products with options instead of the product page. The photo arrows and the
+eye button darken on hover.
 
 The card has no category line, wishlist, rating or SKU.

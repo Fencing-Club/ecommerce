@@ -53,8 +53,10 @@ section rendering or store requests. Check sections on the contosocamp store bef
   accessibility check runs too, and a violation fails the test.
 - Shared fixtures (products, articles) live in `stories/fixtures.js` and use the theme's own sample images.
 - A snippet that needs its section's script gets it from a `loaders: [loadScript('file.js')]` entry, because markup
-  a story renders can't run its own `<script>` tags. Loaders run together, so a script that needs another one first
-  loads both in one loader.
+  a story renders can't run its own `<script>` tags. A script the theme loads as a module uses `loadModule` instead.
+  Loaders run together, so a script that needs another one first loads both in one loader.
+- Stories find snippets and sections by name in one list, so a snippet can't share a section's name. That's why
+  quick view's dialog is `quick-view-dialog` and its product is `product-quick-view`.
 - A component that talks to Shopify gets a stand-in from a loader: the cookie banner a fake Customer Privacy API, and
   predictive search a `fetch` that answers its suggest requests with the `predictive-search` section rendered from a
   fixture.

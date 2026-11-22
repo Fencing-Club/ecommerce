@@ -7,8 +7,8 @@
   - section_id: {String} Owning section id, for unique ids (required)
   - show_categories: {Boolean} Shows the category tree first
 
-  Native inputs carry Shopify add/remove URLs; collection-breadcrumbs.js navigates
-  those URLs with the current breadcrumb context. Links remain available without JavaScript.
+  Native inputs carry Shopify add/remove URLs, which collection-filters.js navigates to. Links remain available
+  without JavaScript.
 {%- endcomment -%}
 {{ 'component-swatch-input.css' | asset_url | stylesheet_tag }}
 {%- assign more_after = 4 -%}
@@ -17,13 +17,10 @@
     {%- capture tree -%}{% render 'collection-category-tree', collection: results, style: 'tree', id_prefix: section_id %}{%- endcapture -%}
     {%- if tree != blank -%}
       <section class="collection-filter-group collection-filter-group--categories" aria-labelledby="CollectionFilter-{{ section_id }}-category">
-        <details class="collection-filter-group__disclosure" open>
-          <summary>
-            <h3 id="CollectionFilter-{{ section_id }}-category">{{ 'collections.filters.category' | t }}</h3>
-            {% render 'ui-icon', icon: 'chevron-down', size: 16 %}
-          </summary>
-          {{ tree }}
-        </details>
+        {%- capture summary -%}
+          <h3 id="CollectionFilter-{{ section_id }}-category">{{ 'collections.filters.category' | t }}</h3>
+        {%- endcapture -%}
+        {%- render 'ui-accordion', summary: summary, content: tree, open: true -%}
       </section>
     {%- endif -%}
   {%- endif -%}
@@ -92,12 +89,10 @@
       class="collection-filter-group collection-filter-group--{{ presentation }}"
       aria-labelledby="CollectionFilter-{{ section_id }}-{{ group_key }}"
     >
-      <details class="collection-filter-group__disclosure" open>
-        <summary>
-          <h3 id="CollectionFilter-{{ section_id }}-{{ group_key }}">{{ group_label | escape }}</h3>
-          {% render 'ui-icon', icon: 'chevron-down', size: 16 %}
-        </summary>
-
+      {%- capture summary -%}
+        <h3 id="CollectionFilter-{{ section_id }}-{{ group_key }}">{{ group_label | escape }}</h3>
+      {%- endcapture -%}
+      {%- capture group_content -%}
         {%- if presentation == 'protection' -%}
           {{ protection_options }}
         {%- elsif presentation == 'price' -%}
@@ -169,7 +164,8 @@
             </a>
           {%- endif -%}
         {%- endif -%}
-      </details>
+      {%- endcapture -%}
+      {%- render 'ui-accordion', summary: summary, content: group_content, open: true -%}
     </section>
   {%- endfor -%}
 </nav>

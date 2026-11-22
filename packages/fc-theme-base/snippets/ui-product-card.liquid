@@ -1,9 +1,11 @@
 {% doc %}
   The product card on the homepage, collections, search and the product page's recommendations, and a compact row
   in predictive search. A grid card has a square photo with the protection level top left, Sale or Sold out top right,
-  another brand's logo bottom left and, on touch screens, a quick add button bottom right. With more than one photo,
+  another brand's logo bottom left and, on touch screens, a quick add button bottom right; with quick view, pointers
+  get an eye button there on hover instead, named Quick view. With more than one photo,
   hovering shows arrows and a progress bar, and phones swipe. Under the photo, the name wraps to two lines, and one
-  row holds the price and up to three colors.
+  row holds the price and up to three colors. A color with its own photo is a button that shows that photo and
+  points the card's links at that color.
 
   @param {object} product - The product to show.
   @param {string} [variant] - home (default) for the grid card, search for the predictive search row.
@@ -12,6 +14,8 @@
   @param {boolean} [show_price] - Shows the price row.
   @param {boolean} [show_add] - Shows quick add on touch screens.
   @param {string} [add_label] - Quick add's accessible name, such as Add to cart.
+  @param {boolean} [quick_view] - Adds Quick view on hover, and makes quick add on touch screens open the quick add
+    sheet for products with options. The page needs `quick-view-dialog` for these to open.
   @param {string} [section_id] - The section id quick add's product form reports to.
   @param {string} [tabindex] - A tabindex for the card's links.
   @param {number} [image_width] - The requested image width. Default 600.
@@ -174,7 +178,13 @@
           assign quick_add = true
         endif
       -%}
-      {%- if brand_logo != blank or quick_add or photo_count > 1 -%}
+      {%- liquid
+        assign show_quick_view = false
+        if quick_view and variant != 'search'
+          assign show_quick_view = true
+        endif
+      -%}
+      {%- if brand_logo != blank or quick_add or show_quick_view or photo_count > 1 -%}
         <div class="ui-product-card__bottom">
           <div class="ui-product-card__bottom-row">
             {%- if brand_logo != blank -%}
@@ -210,6 +220,17 @@
                     </button>
                   {%- endform -%}
                 </product-form>
+              {%- elsif show_quick_view -%}
+                <button
+                  type="button"
+                  class="ui-product-card__action ui-product-card__quick-add"
+                  data-quick-view="{{ card_url }}"
+                  aria-haspopup="dialog"
+                  aria-label="{{ 'products.product.choose_options' | t }}"
+                  aria-describedby="{{ title_id }}"
+                >
+                  {%- render 'ui-icon', icon: 'plus' -%}
+                </button>
               {%- else -%}
                 <a
                   class="ui-product-card__action ui-product-card__quick-add"
@@ -220,6 +241,20 @@
                   {%- render 'ui-icon', icon: 'plus' -%}
                 </a>
               {%- endif -%}
+            {%- endif -%}
+            {%- if show_quick_view -%}
+              {%- assign quick_view_label = 'products.quick_view.open' | t -%}
+              <button
+                type="button"
+                class="ui-product-card__action ui-product-card__quick-view"
+                data-quick-view="{{ card_url }}"
+                aria-haspopup="dialog"
+                aria-label="{{ quick_view_label }}"
+                aria-describedby="{{ title_id }}"
+                title="{{ quick_view_label }}"
+              >
+                {%- render 'ui-icon', icon: 'eye', size: 16 -%}
+              </button>
             {%- endif -%}
           </div>
           {%- if photo_count > 1 -%}
@@ -269,10 +304,77 @@
             <span class="visually-hidden">
               {{- 'products.product.colors_available' | t: count: color_count, colors: color_names -}}
             </span>
+            {%- liquid
+              # The ring starts on the color in the first photo, or on the product's first color when the first
+              # photo isn't one color's.
+              assign first_photo_id = card_images.first.id
+              assign first_photo_color = ''
+              for value in color_option.values limit: 3
+                if image_asset == blank and value.variant.featured_media.id == first_photo_id
+                  assign first_photo_color = value.name
+                  break
+                endif
+              endfor
+            -%}
             {%- for value in color_option.values limit: 3 -%}
-              <span class="ui-product-card__swatch" aria-hidden="true"{% if forloop.first %} data-current{% endif %}>
-                {%- render 'swatch', swatch: value.swatch, color_name: value -%}
-              </span>
+              {%- liquid
+                assign current_color = value.selected
+                if first_photo_color != blank
+                  assign current_color = false
+                  if value.name == first_photo_color
+                    assign current_color = true
+                  endif
+                endif
+                assign color_media = ''
+                if image_asset == blank
+                  assign color_media = value.variant.featured_media
+                endif
+                assign photo_index = -1
+                if color_media != blank
+                  for media in card_images limit: photo_count
+                    if media.id == color_media.id
+                      assign photo_index = forloop.index0
+                      break
+                    endif
+                  endfor
+                endif
+              -%}
+              {%- if color_media != blank -%}
+                {%- liquid
+                  assign show_color = 'products.product.show_color' | t: color: value
+                  assign color_photo = color_media.preview_image | default: color_media
+                  assign photo_widths = image_widths | split: ','
+                -%}
+                {%- capture photo_srcset -%}
+                  {%- for photo_width in photo_widths -%}
+                    {%- assign photo_width = photo_width | strip | plus: 0 -%}
+                    {{- color_photo | image_url: width: photo_width }} {{ photo_width }}w{% unless forloop.last %}, {% endunless -%}
+                  {%- endfor -%}
+                {%- endcapture -%}
+                <button
+                  type="button"
+                  class="ui-product-card__swatch"
+                  aria-label="{{ show_color | escape }}"
+                  aria-pressed="{{ current_color }}"
+                  data-card-swatch
+                  {% if url == blank %}
+                    data-url="{{ value.variant.url }}"
+                  {% endif %}
+                  {% if photo_index >= 0 %}
+                    data-photo-index="{{ photo_index }}"
+                  {% else %}
+                    data-photo-src="{{ color_photo | image_url: width: image_width }}"
+                    data-photo-srcset="{{ photo_srcset }}"
+                    data-photo-alt="{{ color_photo.alt | default: card_title | escape }}"
+                  {% endif %}
+                >
+                  {%- render 'swatch', swatch: value.swatch, color_name: value -%}
+                </button>
+              {%- else -%}
+                <span class="ui-product-card__swatch" aria-hidden="true"{% if current_color %} data-current{% endif %}>
+                  {%- render 'swatch', swatch: value.swatch, color_name: value -%}
+                </span>
+              {%- endif -%}
             {%- endfor -%}
             {%- if extra_colors > 0 -%}
               <span class="ui-product-card__more-colors" aria-hidden="true">+{{ extra_colors }}</span>

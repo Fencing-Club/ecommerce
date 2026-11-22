@@ -140,10 +140,11 @@
 
 /* Toolbar */
 
+/* Under the sticky header (3), so the header's menus open over it, and over the grid's cards (1). */
 .collection-toolbar-band {
   position: sticky;
   top: var(--header-sticky-offset, 0);
-  z-index: 3;
+  z-index: 2;
   padding: 1.2rem var(--page-gutter);
   border-block: 1px solid var(--border);
   background: var(--background);
@@ -387,19 +388,8 @@
 
 .collection-curated-filters > .collection-filter-group:first-child { padding-top: 0; border-top: 0; }
 
-.collection-filter-group__disclosure > summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  list-style: none;
-  cursor: pointer;
-}
-
-.collection-filter-group__disclosure > summary::-webkit-details-marker { display: none; }
-.collection-filter-group__disclosure > summary .ui-icon { flex: 0 0 auto; color: var(--muted-foreground); }
-.collection-filter-group__disclosure[open] > summary { margin-bottom: 1.2rem; }
-.collection-filter-group__disclosure[open] > summary .ui-icon { transform: rotate(180deg); }
-.collection-filter-group__disclosure > summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 0.4rem; }
+.collection-filter-group .ui-accordion__content { padding-top: 1.2rem; }
+.collection-filter-group .ui-accordion__summary:focus-visible { border-radius: 0.4rem; }
 
 .collection-filter-group h3 {
   margin: 0;

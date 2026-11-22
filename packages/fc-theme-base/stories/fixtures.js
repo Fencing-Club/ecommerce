@@ -22,45 +22,66 @@ export const products = [
   product(803, 'Fencing socks', 'Footwear', 'collection-fencing-socks-2-pack.jpg', 1800),
 ];
 
-/** A product option value, which reads as its name and carries the swatch Shopify gives it. */
-const optionValue = (name, color) => ({
+/**
+ * A product option value, which reads as its name and carries the swatch Shopify gives it, whether it's the selected
+ * one, and the variant it leads to with that variant's photo.
+ */
+const optionValue = (name, color, { selected = false, variant = null } = {}) => ({
   name,
+  selected,
+  variant,
   swatch: color ? { color: { rgb: [1, 3, 5].map((start) => parseInt(color.slice(start, start + 2), 16)).join(' ') } } : null,
   toString: () => name,
 });
 
 /**
- * A product as a grid card sees it: photos, a color option, a protection level and a vendor.
+ * A product as a grid card sees it: photos, a color option, a protection level and a vendor. A color can name the
+ * photo its variant shows, by its place in `photos`.
  *
  * @param {{ id: number, title: string, vendor?: string, price: number, compare_at_price?: number, available?: boolean,
- *   photos: string[], colors?: [string, string][], rating?: string, fie?: string, variants?: number }} details
+ *   photos: string[], colors?: [string, string, number?][], rating?: string, fie?: string, variants?: number }} details
  */
-const cardProduct = ({ id, title, vendor = 'Fencing Club', price, compare_at_price = null, available = true, photos, colors = [], rating, fie, variants = 2 }) => ({
-  id,
-  title,
-  vendor,
-  url: `#product-${id}`,
-  price,
-  compare_at_price,
-  available,
-  featured_image: image(photos[0], title),
-  media: photos.map((file, index) => ({ media_type: 'image', preview_image: image(file, `${title}, photo ${index + 1}`) })),
-  options_with_values: colors.length ? [{ name: 'Color', values: colors.map(([name, color]) => optionValue(name, color)) }] : [],
-  metafields: { custom: { protection_rating: { value: rating ?? '' }, fie_status: { value: fie ?? '' } } },
-  variants: Array.from({ length: variants }, (_, index) => ({ id: id * 10 + index })),
-  selected_or_first_available_variant: { id: id * 10, available },
-});
+const cardProduct = ({ id, title, vendor = 'Fencing Club', price, compare_at_price = null, available = true, photos, colors = [], rating, fie, variants = 2 }) => {
+  const media = photos.map((file, index) => ({ id: id * 100 + index, media_type: 'image', preview_image: image(file, `${title}, photo ${index + 1}`) }));
+  const colorValue = ([name, color, photo], index) =>
+    optionValue(name, color, {
+      selected: index === 0,
+      variant: { id: id * 10 + index, url: `#product-${id}?variant=${id * 10 + index}`, featured_media: photo === undefined ? null : media[photo] },
+    });
+  return {
+    id,
+    title,
+    vendor,
+    url: `#product-${id}`,
+    price,
+    compare_at_price,
+    available,
+    featured_image: image(photos[0], title),
+    media,
+    options_with_values: colors.length ? [{ name: 'Color', position: 1, values: colors.map(colorValue) }] : [],
+    metafields: { custom: { protection_rating: { value: rating ?? '' }, fie_status: { value: fie ?? '' } } },
+    variants: Array.from({ length: variants }, (_, index) => ({ id: id * 10 + index })),
+    selected_or_first_available_variant: { id: id * 10, available },
+  };
+};
 
 export const cardProducts = {
-  /** Another brand's jacket on sale: 800N FIE, four photos and five colors. */
+  /** Another brand's jacket on sale: 800N FIE, five photos and five colors, three with their own photo. */
   sale: cardProduct({
     id: 811,
     title: 'FIE 800N Competition Jacket',
     vendor: 'FWF',
     price: 23920,
     compare_at_price: 29900,
-    photos: ['collection-fie-800n-jacket.jpg', 'collection-aero-competition-jacket.jpg', 'collection-stretch-fencing-pants.jpg', 'collection-underarm-plastron-800n.jpg'],
-    colors: [['White', '#ffffff'], ['Black', '#101012'], ['Navy', '#1e2a44'], ['Red', '#b91c1c'], ['Blue', '#1d4ed8']],
+    // The card shows the first four photos; Navy's photo is the fifth.
+    photos: [
+      'collection-fie-800n-jacket.jpg',
+      'collection-aero-competition-jacket.jpg',
+      'collection-stretch-fencing-pants.jpg',
+      'collection-underarm-plastron-800n.jpg',
+      'collection-mens-chest-protector.jpg',
+    ],
+    colors: [['White', '#ffffff', 0], ['Black', '#101012', 1], ['Navy', '#1e2a44', 4], ['Red', '#b91c1c'], ['Blue', '#1d4ed8']],
     rating: '800N',
     fie: 'FIE',
   }),
@@ -260,3 +281,109 @@ export const collectionPage = ({ handle = 'clothing', title = 'Clothing', produc
     { name: 'Price, high to low', value: 'price-descending' },
   ],
 });
+
+const chartEntry = (handle, size, height, chest) => ({
+  system: { type: 'size_chart_entry', handle },
+  size_label: { value: size },
+  height_cm: { value: height },
+  chest_cm: { value: chest },
+});
+
+/** A complete size_chart entry, as the product's custom.size_chart field gives it. */
+export const sizeChart = {
+  system: { type: 'size_chart', handle: 'underarm-protectors', url: '/pages/size-charts/underarm-protectors' },
+  title: { value: 'Underarm protectors' },
+  entries: {
+    value: [
+      chartEntry('underarm-xs', 'XS', '158–164', '88–92'),
+      chartEntry('underarm-s', 'S', '164–170', '92–96'),
+      chartEntry('underarm-m', 'M', '170–176', '96–100'),
+      chartEntry('underarm-l', 'L', '176–182', '100–104'),
+      chartEntry('underarm-xl', 'XL', '182–188', '104–108'),
+    ],
+  },
+  measurement_keys: { value: ['height_cm', 'chest_cm'] },
+  measurement_labels: { value: ['Height (cm)', 'Chest (cm)'] },
+  imperial_keys: { value: null },
+  imperial_labels: { value: null },
+  guide: {
+    value: {
+      system: { type: 'measurement_guide' },
+      title: { value: 'Chest' },
+      instructions: { value: 'Measure around the fullest part of your chest, under your arms.' },
+      image: { value: image('collection-underarm-plastron-800n.jpg', '') },
+      alt_text: { value: 'Where to measure your chest' },
+    },
+  },
+  fit_advice: { value: '' },
+};
+
+const quickViewSizes = ['XS', 'S', 'M', 'L', 'XL'];
+const quickViewHands = ['Right', 'Left'];
+const woodinville = { available: true, location: { address: { city: 'Woodinville', province_code: 'WA' } } };
+const quickViewPhotos = ['collection-underarm-plastron-800n.jpg', 'collection-fie-800n-jacket.jpg', 'collection-aero-competition-jacket.jpg'].map(
+  (file, index) => {
+    const photo = image(file, `Novus Underarm Protector 350N, photo ${index + 1}`);
+    return { ...photo, id: 9100 + index, media_type: 'image', preview_image: photo };
+  },
+);
+// Every size in both hands. XL is sold out, and M right-handed is the one in our Woodinville store.
+const quickViewVariants = quickViewSizes.flatMap((size, sizeIndex) =>
+  quickViewHands.map((hand, handIndex) => ({
+    id: 9200 + sizeIndex * 2 + handIndex,
+    title: `${size} / ${hand}`,
+    options: [size, hand],
+    available: size !== 'XL',
+    price: 2195,
+    compare_at_price: null,
+    featured_media: null,
+    store_availabilities: [{ ...woodinville, available: size === 'M' && hand === 'Right' }],
+    url: `/products/novus-underarm-protector?variant=${9200 + sizeIndex * 2 + handIndex}`,
+  })),
+);
+
+/**
+ * The product quick view shows, as `sections/product-quick-view.liquid` sees it: sizes in both hands, three photos, a
+ * rating and a size chart. With a variant id it's that variant's page, as `?variant=` gives it; without one nothing is
+ * chosen yet.
+ *
+ * @param {number} [variantId]
+ */
+export const quickViewProduct = (variantId) => {
+  const chosen = quickViewVariants.find((variant) => variant.id === variantId) ?? null;
+  const current = chosen ?? quickViewVariants[0];
+  let nextValue = 9300;
+  const values = (names, position) =>
+    names.map((name) => ({
+      id: nextValue++,
+      name,
+      selected: current.options[position - 1] === name,
+      available: name !== 'XL',
+      swatch: null,
+      toString: () => name,
+    }));
+  return {
+    id: 9001,
+    title: 'Novus Underarm Protector 350N',
+    vendor: 'Novus',
+    url: '/products/novus-underarm-protector',
+    description: '<p>A light 350N underarm protector for club training and domestic events, worn under the jacket on your weapon arm.</p>',
+    price: 2195,
+    compare_at_price: null,
+    available: true,
+    featured_image: quickViewPhotos[0],
+    media: quickViewPhotos,
+    has_only_default_variant: false,
+    options_with_values: [
+      { name: 'Size', position: 1, values: values(quickViewSizes, 1) },
+      { name: 'Hand Orientation', position: 2, values: values(quickViewHands, 2) },
+    ],
+    variants: quickViewVariants,
+    selected_variant: chosen,
+    selected_or_first_available_variant: current,
+    metafields: {
+      custom: { protection_rating: { value: '350N' }, fie_status: { value: 'Non-FIE' }, size_chart: { value: sizeChart }, subtitle: { value: '' } },
+      reviews: { rating: { value: { rating: 4.7, scale_max: 5 } }, rating_count: { value: 88 } },
+    },
+  };
+};

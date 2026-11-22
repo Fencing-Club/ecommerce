@@ -433,7 +433,28 @@
   background: rgb(255 255 255 / 0.9);
 }
 
+.ui-product-card__quick-view {
+  margin-inline-start: auto;
+}
+
+/* Hovering a button over the photo turns it dark, which reads on any light photo. */
+.ui-product-card__action,
+.ui-product-card__arrow {
+  transition:
+    background-color var(--default-transition-duration) var(--ease-out),
+    color var(--default-transition-duration) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .ui-product-card__action:hover,
+  .ui-product-card__arrow:hover {
+    background: #101012;
+    color: #fff;
+  }
+}
+
 .ui-product-card__action:focus-visible,
+.ui-product-card__quick-view:focus-visible,
 .ui-product-card__arrow:focus-visible {
   outline: 0.2rem solid var(--ring);
   outline-offset: 0.2rem;
@@ -470,6 +491,22 @@
   }
 
   .ui-product-card__quick-add {
+    display: none;
+  }
+
+  .ui-product-card__quick-view {
+    opacity: 0;
+    transition: opacity var(--default-transition-duration) var(--ease-out);
+  }
+
+  .ui-product-card__media:hover .ui-product-card__quick-view,
+  .ui-product-card__quick-view:focus-visible {
+    opacity: 1;
+  }
+}
+
+@media (hover: none) {
+  .ui-product-card__quick-view {
     display: none;
   }
 }
@@ -570,13 +607,36 @@
   border-radius: 50%;
 }
 
-.ui-product-card__swatch[data-current] {
-  box-shadow: inset 0 0 0 0.15rem var(--foreground);
+button.ui-product-card__swatch {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+/* A 24px target around the 18px swatch. */
+button.ui-product-card__swatch::after {
+  position: absolute;
+  inset: -0.3rem;
+  content: '';
+}
+
+button.ui-product-card__swatch:focus-visible {
+  outline: 0.2rem solid var(--ring);
+  outline-offset: 0.1rem;
 }
 
 .ui-product-card__swatch .swatch {
   --swatch-input--size: 1.2rem;
   border-color: var(--border);
+}
+
+/* The ring is drawn from the color dot itself, so both land on the same pixels at any display scale. */
+.ui-product-card__swatch[data-current] .swatch,
+.ui-product-card__swatch[aria-pressed='true'] .swatch {
+  outline: 0.15rem solid var(--foreground);
+  outline-offset: 0.15rem;
 }
 
 .ui-product-card__more-colors {
@@ -1563,7 +1623,7 @@ input:disabled + .ui-checkbox-field__copy {
   :where(a, button, input, select, summary):focus-visible { outline-color: Highlight; }
 }
 
-:is(.ui-button, .ui-link, .ui-checkbox, .ui-radio, .ui-pill, .ui-drawer__close, .ui-faq-item__question, .header__menu-item, .fc-mega a, .ui-product-card a, .ui-product-card button, .ui-article-card a, .ui-page-link-card, .ui-category-link-card, .ui-contact-intent-card):focus-visible {
+:is(.ui-button, .ui-link, .ui-checkbox, .ui-radio, .ui-pill, .ui-drawer__close, .ui-accordion__summary, .header__menu-item, .fc-mega a, .ui-product-card a, .ui-product-card button, .ui-article-card a, .ui-page-link-card, .ui-category-link-card, .ui-contact-intent-card):focus-visible {
   outline: 0.2rem solid var(--ring);
   outline-offset: 0.3rem;
   box-shadow: 0 0 0 0.3rem var(--background);
@@ -1576,7 +1636,7 @@ input:disabled + .ui-checkbox-field__copy {
 }
 
 @media (forced-colors: active) {
-  :is(.ui-button, .ui-link, .ui-checkbox, .ui-radio, .ui-pill, .ui-drawer__close, .ui-faq-item__question, .header__menu-item):focus-visible {
+  :is(.ui-button, .ui-link, .ui-checkbox, .ui-radio, .ui-pill, .ui-drawer__close, .ui-accordion__summary, .header__menu-item):focus-visible {
     outline-color: Highlight;
   }
 }
@@ -1725,6 +1785,65 @@ input:disabled + .ui-checkbox-field__copy {
 .ui-price--sm .ui-price__amount { font-size: var(--text-sm); line-height: var(--text-sm--line-height); }
 .ui-price--sm .ui-price__compare { font-size: var(--text-xs); line-height: var(--text-xs--line-height); }
 
+/* UI/Accordion: motion.js grows and fades the content. While it closes, [data-closing] keeps the icon closed. */
+.ui-accordion__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
+  list-style: none;
+  cursor: pointer;
+}
+
+.ui-accordion__summary::-webkit-details-marker { display: none; }
+
+.ui-accordion__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+  transition: transform 150ms ease;
+}
+
+.ui-accordion[open]:not([data-closing]) > .ui-accordion__summary .ui-accordion__icon { transform: rotate(180deg); }
+.ui-accordion--plus > .ui-accordion__summary .ui-accordion__icon { color: var(--foreground); }
+.ui-accordion--plus[open]:not([data-closing]) > .ui-accordion__summary .ui-accordion__icon { transform: none; }
+.ui-accordion--plus > .ui-accordion__summary .ui-icon:last-child,
+.ui-accordion--plus[open]:not([data-closing]) > .ui-accordion__summary .ui-icon:first-child { display: none; }
+.ui-accordion--plus[open]:not([data-closing]) > .ui-accordion__summary .ui-icon:last-child { display: inline-flex; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-accordion__icon { transition-duration: 1ms; }
+}
+
+/* UI/Skeleton: a placeholder bar while content loads. base.css hides empty divs, so skeletons are spans. */
+.ui-skeleton {
+  display: block;
+  border-radius: 0.6rem;
+  background: var(--accent);
+  animation: ui-skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes ui-skeleton-pulse { 50% { opacity: 0.5; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-skeleton { animation: none; }
+}
+
+/* UI/Rating: two rows of stars, the dark one clipped to the rating's share. */
+.ui-rating { display: inline-flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; font-size: 1.3rem; line-height: 1.4; }
+.ui-rating__stars { position: relative; display: inline-flex; }
+.ui-rating__row { display: inline-flex; gap: 0.2rem; color: var(--input); }
+.ui-rating__row .ui-icon { fill: currentColor; stroke: none; }
+.ui-rating__row--full { position: absolute; inset: 0; overflow: hidden; color: var(--foreground); clip-path: inset(0 calc(100% - var(--rating)) 0 0); }
+.ui-rating__value { color: var(--foreground); font-weight: 600; }
+.ui-rating__count { color: var(--muted-foreground); }
+a.ui-rating__count { text-decoration: underline; text-underline-offset: 0.3rem; }
+.ui-rating--md { gap: 0.8rem; font-size: 1.4rem; }
+
+/* Product stock line: where the chosen variant ships from, in quick view, quick add and on the product page. */
+.product-stock-line { display: flex; gap: 0.8rem; align-items: center; margin: 0; color: var(--muted-foreground); font-size: 1.3rem; line-height: 1.4; }
+.product-stock-line .ui-icon { flex: none; }
+
 /* UI/Notice */
 .ui-notice {
   display: flex;
@@ -1792,18 +1911,59 @@ input:disabled + .ui-checkbox-field__copy {
 }
 
 /* UI/Variant picker and UI/Swatch */
-.ui-variant-picker { display: flex; flex-direction: column; gap: var(--spacing-1-5); min-width: 0; margin: 0; padding: 0; border: 0; }
+.ui-variant-picker { display: block; min-width: 0; margin: 0; padding: 0; border: 0; }
 .ui-variant-picker__legend {
+  float: left;
   display: flex;
-  gap: var(--spacing-1);
-  margin-block-end: var(--spacing-1-5);
+  gap: 0.6rem;
+  margin: 0 0 1rem;
   padding: 0;
-  color: var(--muted-foreground);
-  font-size: var(--text-sm);
-  line-height: var(--text-sm--line-height);
+  font-size: 1.4rem;
+  line-height: 1.4;
 }
-.ui-variant-picker__selected { color: var(--foreground); }
-.ui-variant-picker__options { display: flex; flex-wrap: wrap; gap: var(--spacing-1-5); }
+.ui-variant-picker__name { color: var(--foreground); font-weight: 600; }
+.ui-variant-picker__name::after { content: ':'; }
+.ui-variant-picker__selected { color: var(--muted-foreground); }
+.ui-variant-picker__help { float: left; display: inline-flex; margin: 0.2rem 0 0 0.6rem; }
+.ui-variant-picker__guide {
+  float: right;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--foreground);
+  font-size: 1.4rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-decoration: underline;
+  text-underline-offset: 0.3rem;
+}
+.ui-variant-picker__options { clear: both; display: flex; flex-wrap: wrap; gap: 0.8rem; }
+.ui-variant-picker .ui-choice { min-width: 8.6rem; min-height: 4.4rem; padding: 0 2rem; border-radius: 1rem; font-size: 1.4rem; font-weight: 500; }
+.ui-variant-picker .ui-choice__input[data-unavailable] + .ui-choice { border-color: var(--border); background: var(--muted); color: var(--muted-foreground); text-decoration: line-through; }
+.ui-variant-picker .ui-choice__input:checked + .ui-choice { border-color: var(--primary); background: var(--primary); color: var(--primary-foreground); }
+.ui-variant-picker .ui-choice__input[data-unavailable]:checked + .ui-choice { border-color: var(--foreground); background: var(--muted); color: var(--muted-foreground); }
+.ui-swatch__input[data-unavailable] + .ui-swatch { opacity: 0.5; }
+
+/* Quick view and quick add: the name in bold with no colon, smaller choices that fill the row, outlined when chosen. */
+.ui-variant-picker--compact .ui-variant-picker__legend,
+.ui-variant-picker--compact .ui-variant-picker__guide { font-size: 1.3rem; }
+.ui-variant-picker--compact .ui-variant-picker__name { font-weight: 700; }
+.ui-variant-picker--compact .ui-variant-picker__name::after { content: none; }
+.ui-variant-picker--compact .ui-variant-picker__guide { font-weight: 600; text-decoration: none; }
+/* Columns are at least 6.4rem, or as wide as the longest value needs. */
+.ui-variant-picker--compact .ui-variant-picker__options { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(6.4rem, calc(var(--choice-chars, 2) * 1.2ch + 2rem)), 1fr)); font-size: 1.3rem; font-weight: 600; }
+.ui-variant-picker--compact.ui-variant-picker--swatch .ui-variant-picker__options { display: flex; }
+.ui-variant-picker--compact .ui-choice { width: 100%; min-width: 0; min-height: 4rem; padding: 0 0.8rem; border-radius: 0.8rem; font-size: 1.3rem; overflow-wrap: normal; }
+.ui-variant-picker--compact .ui-choice__input:checked + .ui-choice { border-color: var(--foreground); background: var(--background); color: var(--foreground); box-shadow: inset 0 0 0 1px var(--foreground); font-weight: 600; }
+.ui-variant-picker--compact .ui-choice__input[data-unavailable]:checked + .ui-choice { background: var(--muted); color: var(--muted-foreground); }
+.ui-variant-picker--compact.ui-variant-picker--hand .ui-variant-picker__options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ui-variant-picker--compact.ui-variant-picker--hand .ui-variant-picker__selected { display: none; }
+.ui-variant-picker--compact .ui-swatch { width: 3.2rem; height: 3.2rem; border-width: 2px; }
+.ui-variant-picker--compact .ui-swatch__color { width: 2.4rem; height: 2.4rem; border-color: var(--input); }
+/* Long values, such as shoe sizes in US and cm, sit in rows that fill the width: two columns where each fits on one
+   line, otherwise one. */
+.ui-variant-picker--long .ui-variant-picker__options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr)); }
+.ui-variant-picker--long .ui-choice { justify-content: flex-start; width: 100%; min-width: 0; padding: 1rem 1.4rem; line-height: 1.35; text-align: start; }
 
 .ui-swatch__input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .ui-swatch {
@@ -1822,7 +1982,7 @@ input:disabled + .ui-checkbox-field__copy {
   height: calc(var(--spacing) * 8.5);
   border: 1px solid var(--border);
   border-radius: 999px;
-  background-color: var(--muted);
+  background: var(--swatch--background, var(--muted));
   background-position: center;
   background-size: cover;
 }

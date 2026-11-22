@@ -5,6 +5,7 @@
 <script src="{{ 'collection-page.js' | asset_url }}" type="module"></script>
 {%- unless section.settings.quick_add == 'none' -%}
   <script src="{{ 'product-form.js' | asset_url }}" defer="defer"></script>
+  {%- render 'quick-view-dialog' -%}
 {%- endunless -%}
 
 {%- style -%}
@@ -44,7 +45,7 @@
       -%}
       {%- if section.settings.enable_filtering -%}
         {%- comment -%}
-          Phones pick filters in a drawer and apply them together; collection-breadcrumbs.js builds the URL on Apply.
+          Phones pick filters in a drawer and apply them together; collection-filters.js builds the URL on Apply.
         {%- endcomment -%}
         {%- liquid
           assign toolbar_filters_id = filters_id
@@ -152,6 +153,7 @@
                     card_id: card_id,
                     show_price: true,
                     show_add: show_add,
+                    quick_view: show_add,
                     add_label: section.settings.add_label,
                     section_id: section.id,
                     image_sizes: '(min-width: 990px) 300px, (min-width: 750px) calc((100vw - 104px) / 2), calc((100vw - 52px) / 2)',

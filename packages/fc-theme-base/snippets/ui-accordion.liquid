@@ -1,0 +1,45 @@
+{% doc %}
+  A disclosure that shows and hides its content in place with the theme's shared motion from `assets/motion.js`: the
+  content grows in and fades, and shrinks and fades out. The summary row ends in a chevron that turns over, or a plus
+  that turns to minus. Filter groups and FAQ answers use it, so everything that opens in place moves the same way.
+
+  @param {string} summary - The summary row's content, as HTML. The indicator follows it.
+  @param {string} content - The content, as HTML.
+  @param {string} [indicator] - chevron (default) or plus.
+  @param {number} [indicator_size] - The indicator's size in pixels. Default: 16.
+  @param {boolean} [open] - Starts open.
+  @param {string} [class] - More classes for the details element.
+  @param {string} [attributes] - More attributes for the details element, such as schema.org microdata.
+  @param {object} [block] - The Theme Editor block it renders.
+
+  @example
+  {% capture summary %}<h3>Size</h3>{% endcapture %}
+  {% render 'ui-accordion', summary: summary, content: options, open: true %}
+{% enddoc %}
+{%- assign size = indicator_size | default: 16 -%}
+<details
+  class="ui-accordion{% if indicator == 'plus' %} ui-accordion--plus{% endif %}{% if class != blank %} {{ class }}{% endif %}"
+  data-motion
+  {% if open %}
+    open
+  {% endif %}
+  {% if attributes != blank %}
+    {{ attributes }}
+  {% endif %}
+  {% if block %}
+    {{ block.shopify_attributes }}
+  {% endif %}
+>
+  <summary class="ui-accordion__summary">
+    {{- summary -}}
+    <span class="ui-accordion__icon" aria-hidden="true">
+      {%- if indicator == 'plus' -%}
+        {%- render 'ui-icon', icon: 'plus', size: size -%}
+        {%- render 'ui-icon', icon: 'minus', size: size -%}
+      {%- else -%}
+        {%- render 'ui-icon', icon: 'chevron-down', size: size -%}
+      {%- endif -%}
+    </span>
+  </summary>
+  <div class="ui-accordion__content">{{ content }}</div>
+</details>

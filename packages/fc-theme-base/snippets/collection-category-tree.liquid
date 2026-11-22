@@ -1,12 +1,15 @@
 {% doc %}
   Where a collection sits in the main menu, three levels deep. Counts and photos come from the collection each menu
   item links to. As tiles it shows the categories under the collection;
-  as a tree it shows the whole branch, opened down to the collection.
+  as a tree it shows the whole branch, opened down to the collection. As breadcrumbs it shows the menu levels above
+  the collection, named as the menu names them; a collection that isn't in the menu gets Home and its title.
 
   @param {object} collection - The collection on the page.
   @param {string} [menu] - The menu's handle. Default main-menu.
-  @param {string} [style] - tiles (default), tree, or parent for a Shop all button to the collection one level up.
+  @param {string} [style] - tiles (default), tree, breadcrumbs, or parent for a Shop all button to the collection one
+    level up.
   @param {string} [id_prefix] - Makes the tree's ids unique when a page shows it twice.
+  @param {string} [home_label] - The breadcrumbs' first link. Default Home.
 
   @example
   {% render 'collection-category-tree', collection: collection, style: 'tree', id_prefix: section.id %}
@@ -47,7 +50,34 @@
     endfor
   endfor
 -%}
-{%- if style == 'parent' -%}
+{%- if style == 'breadcrumbs' -%}
+  {%- liquid
+    assign root_label = 'general.breadcrumb_home' | t
+    if home_label != blank
+      assign root_label = home_label
+    endif
+    assign current_label = collection.title
+    if level > 0
+      assign current_label = current.title
+    endif
+    if level == 2
+      assign parent_label = branch.title
+      assign parent_url = branch.url
+    elsif level == 3
+      assign ancestors = linklists[menu_handle].links | where: 'url', branch.url
+      assign parent_label = open.title
+      assign parent_url = open.url
+    endif
+  -%}
+  {%- render 'ui-breadcrumbs',
+    root_label: root_label,
+    root_url: routes.root_url,
+    ancestors: ancestors,
+    parent_label: parent_label,
+    parent_url: parent_url,
+    current_label: current_label
+  -%}
+{%- elsif style == 'parent' -%}
   {%- liquid
     assign parent_url = routes.all_products_collection_url
     assign parent_title = 'collections.filters.all_equipment' | t

@@ -3,7 +3,7 @@
     "banner": {
       "type": "main-collection-banner",
       "blocks": {
-        "shipping": { "type": "trust", "settings": { "icon": "truck", "text": "Free US shipping over $375" } },
+        "shipping": { "type": "trust", "settings": { "content": "free_shipping", "icon": "truck" } },
         "stock": { "type": "trust", "settings": { "icon": "package-check", "text": "In stock and packed by our team" } },
         "clubs": { "type": "trust", "settings": { "icon": "users", "text": "Club and team pricing" } }
       },

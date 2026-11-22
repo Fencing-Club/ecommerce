@@ -1,0 +1,30 @@
+{% doc %}
+  Where the chosen variant ships from, shown only while it's in stock. Our Woodinville store when Shopify lists the
+  variant as available there for pickup, otherwise the partner warehouse.
+
+  @param {object} variant - The chosen variant.
+
+  @example
+  {% render 'product-stock-line', variant: product.selected_or_first_available_variant %}
+{% enddoc %}
+{%- if variant.available -%}
+  {%- liquid
+    assign local = nil
+    for availability in variant.store_availabilities
+      if availability.available
+        assign local = availability.location
+        break
+      endif
+    endfor
+  -%}
+  <p class="product-stock-line">
+    {%- if local -%}
+      {%- capture place -%}{{ local.address.city }}, {{ local.address.province_code }}{%- endcapture -%}
+      {%- render 'ui-icon', icon: 'package-check', size: 16 -%}
+      <span>{{ 'products.stock.local' | t: place: place }}</span>
+    {%- else -%}
+      {%- render 'ui-icon', icon: 'warehouse', size: 16 -%}
+      <span>{{ 'products.stock.partner' | t }}</span>
+    {%- endif -%}
+  </p>
+{%- endif -%}
