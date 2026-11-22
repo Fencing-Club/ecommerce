@@ -2068,9 +2068,13 @@
         "text": {
           "label": "Description"
         },
-        "planned": {
-          "label": "Planned",
-          "info": "Shows a hollow dot and a Planned label"
+        "status": {
+          "label": "Status",
+          "options": {
+            "done": "Done",
+            "in_progress": "In progress",
+            "planned": "Planned"
+          }
         }
       }
     },

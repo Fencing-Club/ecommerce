@@ -538,6 +538,7 @@
       "visit_site_label": "Visit site: {{ club }}"
     },
     "about_timeline": {
+      "in_progress": "In progress",
       "planned": "Planned"
     }
   },

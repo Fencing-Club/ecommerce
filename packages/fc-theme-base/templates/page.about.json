@@ -192,7 +192,8 @@
           "settings": {
             "discipline": "Épée",
             "name": "Kaizen Academy",
-            "location": "Redmond, WA"
+            "location": "Redmond, WA",
+            "link": "https://kaizenfencing.com"
           }
         },
         "olympic-epee-masters": {
@@ -200,7 +201,8 @@
           "settings": {
             "discipline": "Épée",
             "name": "Olympic Epee Masters",
-            "location": "Redmond, WA"
+            "location": "Redmond, WA",
+            "link": "https://olympicepeemasters.com"
           }
         },
         "rain-city": {
@@ -208,7 +210,8 @@
           "settings": {
             "discipline": "Foil",
             "name": "Rain City Fencing Center",
-            "location": "Bellevue, WA"
+            "location": "Bellevue, WA",
+            "link": "https://raincityfencing.com"
           }
         },
         "salle-auriol": {
@@ -415,8 +418,7 @@
           "settings": {
             "date": "2023",
             "title": "Fencing Club is founded",
-            "text": "A fencing-only retailer launches in Woodinville, near Seattle.",
-            "planned": false
+            "text": "A fencing-only retailer launches in Woodinville, near Seattle."
           }
         },
         "online": {
@@ -424,8 +426,7 @@
           "settings": {
             "date": "2023",
             "title": "Online-only, on purpose",
-            "text": "No storefront, so the savings go straight to fencers.",
-            "planned": false
+            "text": "No storefront, so the savings go straight to fencers."
           }
         },
         "dealer": {
@@ -433,8 +434,7 @@
           "settings": {
             "date": "2024",
             "title": "An authorized dealer",
-            "text": "We become an authorized dealer for four leading brands, sourced direct.",
-            "planned": false
+            "text": "We become an authorized dealer for four leading brands, sourced direct."
           }
         },
         "kitting": {
@@ -442,8 +442,7 @@
           "settings": {
             "date": "2025",
             "title": "Kitting clubs & teams",
-            "text": "Club and team kitting with member pricing for clubs, schools and non-profits.",
-            "planned": false
+            "text": "Club and team kitting with member pricing for clubs, schools and non-profits."
           }
         },
         "blades": {
@@ -452,7 +451,7 @@
             "date": "2027",
             "title": "UNIC FIE blades",
             "text": "We begin carrying UNIC FIE homologated blades.",
-            "planned": true
+            "status": "planned"
           }
         },
         "masks": {
@@ -461,7 +460,7 @@
             "date": "Late 2026",
             "title": "Certified mask range",
             "text": "Our own 350N and 1600N masks for epee, sabre and foil.",
-            "planned": true
+            "status": "in_progress"
           }
         },
         "uniform": {
@@ -470,7 +469,16 @@
             "date": "2027",
             "title": "An 800N uniform",
             "text": "An 800N competition uniform completes the kit.",
-            "planned": true
+            "status": "planned"
+          }
+        },
+        "platform": {
+          "type": "_milestone",
+          "settings": {
+            "date": "Early 2028",
+            "title": "Club management platform",
+            "text": "A white-label portal, built with clubs, for scheduling classes and private lessons and taking payments.",
+            "status": "planned"
           }
         }
       },
@@ -481,7 +489,8 @@
         "kitting",
         "masks",
         "blades",
-        "uniform"
+        "uniform",
+        "platform"
       ]
     },
     "brands": {

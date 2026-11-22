@@ -1,15 +1,21 @@
 {%- comment -%}
-  A milestone on the About page's timeline: when, what happened and a line about it. A planned one has a hollow dot,
-  muted text and a Planned pill.
+  A milestone on the About page's timeline: when, what happened and a line about it. One in progress has an outlined
+  dot and an In progress pill; a planned one has a hollow dot, muted text and a Planned pill.
 {%- endcomment -%}
-<div class="about-milestone{% if block.settings.planned %} about-milestone--planned{% endif %}" {{ block.shopify_attributes }}>
+{%- liquid
+  assign status = block.settings.status | default: 'done'
+-%}
+<div class="about-milestone about-milestone--{{ status | replace: '_', '-' }}" {{ block.shopify_attributes }}>
   <span class="about-milestone__dot" aria-hidden="true"></span>
   <div class="about-milestone__content">
     <p class="about-milestone__meta">
       <span class="about-milestone__date">{{ block.settings.date | escape }}</span>
-      {%- if block.settings.planned -%}
-        <span class="about-milestone__pill">{{ 'sections.about_timeline.planned' | t }}</span>
-      {%- endif -%}
+      {%- case status -%}
+        {%- when 'in_progress' -%}
+          <span class="about-milestone__pill">{{ 'sections.about_timeline.in_progress' | t }}</span>
+        {%- when 'planned' -%}
+          <span class="about-milestone__pill">{{ 'sections.about_timeline.planned' | t }}</span>
+      {%- endcase -%}
     </p>
     <h3 class="about-milestone__title">{{ block.settings.title | escape }}</h3>
     {%- if block.settings.text != blank -%}
@@ -34,6 +40,9 @@
     border: 2px solid var(--foreground);
     border-radius: 50%;
     background: var(--foreground);
+  }
+  .about-milestone--in-progress .about-milestone__dot {
+    background: var(--background);
   }
   .about-milestone--planned .about-milestone__dot {
     border-color: var(--muted-foreground);
@@ -69,6 +78,10 @@
     letter-spacing: var(--tracking-wide);
     text-transform: uppercase;
     color: var(--muted-foreground);
+  }
+  .about-milestone--in-progress .about-milestone__pill {
+    background: var(--primary);
+    color: var(--primary-foreground);
   }
   .about-milestone__title {
     margin: 0;
@@ -110,11 +123,15 @@
       "label": "t:blocks.milestone.settings.text.label"
     },
     {
-      "type": "checkbox",
-      "id": "planned",
-      "label": "t:blocks.milestone.settings.planned.label",
-      "info": "t:blocks.milestone.settings.planned.info",
-      "default": false
+      "type": "select",
+      "id": "status",
+      "label": "t:blocks.milestone.settings.status.label",
+      "default": "done",
+      "options": [
+        { "value": "done", "label": "t:blocks.milestone.settings.status.options.done" },
+        { "value": "in_progress", "label": "t:blocks.milestone.settings.status.options.in_progress" },
+        { "value": "planned", "label": "t:blocks.milestone.settings.status.options.planned" }
+      ]
     }
   ],
   "presets": [{ "name": "t:blocks.milestone.name" }]
