@@ -12,7 +12,7 @@
   <div class="lab-catalog-main">
     {% render 'collection-toolbar', results: catalog, enable_sorting: true, sort_label: 'Sort by' %}
     <div class="lab-card-grid" data-catalog-products>
-      {% for product in catalog.products %}{% assign card_id = 'lab-catalog-card-' | append: product.id %}{% render 'ui-product-card', product: product, card_id: card_id, show_type: true, show_price: true, section_id: 'lab-catalog' %}{% else %}<div class="lab-empty"><h3>No products found</h3><p>Try different filters.</p><a href="/lab/catalog" class="ui-link">Clear all</a></div>{% endfor %}
+      {% for product in catalog.products %}{% assign card_id = 'lab-catalog-card-' | append: product.id %}{% render 'ui-product-card', product: product, card_id: card_id, show_price: true, section_id: 'lab-catalog' %}{% else %}<div class="lab-empty"><h3>No products found</h3><p>Try different filters.</p><a href="/lab/catalog" class="ui-link">Clear all</a></div>{% endfor %}
     </div>
     {% render 'ui-pagination', paginate: catalog.paginate %}
   </div>

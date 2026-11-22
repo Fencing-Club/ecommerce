@@ -1,39 +1,40 @@
-{%- comment -%}
-  Renders a product card with separate media and title links.
+{% doc %}
+  The product card on the homepage, collections, search and the product page's recommendations, and a compact row
+  in predictive search. A grid card has a square photo with the protection level top left, Sale or Sold out top right,
+  another brand's logo bottom left and, on touch screens, a quick add button bottom right. With more than one photo,
+  hovering shows arrows and a progress bar, and phones swipe. Under the photo, the name wraps to two lines, and one
+  row holds the price and up to three colors.
 
-  Accepts:
-  - product: {Product} Product to render (required)
-  - variant: {String} 'home' or 'search' (default 'home')
-  - card_id: {String} Unique title id
-  - block_attributes: {String} Optional Shopify block attributes
-  - badge_label: {String} Optional media badge
-  - show_type: {Boolean} Show the product type
-  - show_price: {Boolean} Show the product price
-  - show_add: {Boolean} Show the homepage add action
-  - add_label: {String} Add action label
-  - section_id: {String} Section id used by product-form
-  - tabindex: {String} Optional tabindex for both links
-  - image_width: {Number} Requested image width
-  - image_widths: {String} Responsive image widths
-  - image_sizes: {String} Responsive image sizes
-  - image_loading: {String} Image loading strategy
-  - trim_price: {Boolean} Remove insignificant trailing zeroes from prices
-  - title: {String} Optional title override
-  - url: {String} Optional destination override
-  - product_type: {String} Optional type override
-  - price_label: {String} Optional formatted price override
-  - image_asset: {String} Optional theme asset filename
-  - image_alt: {String} Optional theme asset alt text
-{%- endcomment -%}
+  @param {object} product - The product to show.
+  @param {string} [variant] - home (default) for the grid card, search for the predictive search row.
+  @param {string} [card_id] - The name's id. Defaults to one built from the product id.
+  @param {string} [block_attributes] - Shopify's block attributes, when a block renders the card.
+  @param {boolean} [show_price] - Shows the price row.
+  @param {boolean} [show_add] - Shows quick add on touch screens.
+  @param {string} [add_label] - Quick add's accessible name, such as Add to cart.
+  @param {string} [section_id] - The section id quick add's product form reports to.
+  @param {string} [tabindex] - A tabindex for the card's links.
+  @param {number} [image_width] - The requested image width. Default 600.
+  @param {string} [image_widths] - Responsive image widths.
+  @param {string} [image_sizes] - Responsive image sizes.
+  @param {string} [image_loading] - lazy (default) or eager.
+  @param {string} [title] - A name to show instead of the product's.
+  @param {string} [url] - A link to use instead of the product's.
+  @param {string} [price_label] - A formatted price to show instead of the product's.
+  @param {string} [image_asset] - A theme asset to show instead of the product's photos.
+  @param {string} [image_alt] - The asset's alternative text.
+
+  @example
+  {% render 'ui-product-card', product: product, show_price: true %}
+{% enddoc %}
 {%- liquid
   assign variant = variant | default: 'home'
   assign image_width = image_width | default: 600
-  assign image_widths = image_widths | default: '294, 441, 588'
-  assign image_sizes = image_sizes | default: '(min-width: 990px) 294px, 50vw'
+  assign image_widths = image_widths | default: '300, 450, 600'
+  assign image_sizes = image_sizes | default: '(min-width: 990px) 300px, 50vw'
   assign image_loading = image_loading | default: 'lazy'
   assign card_title = title | default: product.title
   assign card_url = url | default: product.url
-  assign card_type = product_type | default: product.type
   assign title_id = card_id
   if title_id == blank
     assign title_handle = card_title | handle
@@ -42,49 +43,198 @@
       assign title_id = 'ProductCardTitle-' | append: title_handle
     endif
   endif
+
+  assign card_images = product.media | where: 'media_type', 'image'
+  assign photo_count = card_images.size | at_most: 4
+  if image_asset != blank or variant == 'search'
+    assign photo_count = photo_count | at_most: 1
+  endif
+
+  assign sold_out = false
+  if product.available == false
+    assign sold_out = true
+  endif
+  assign percent_off = 0
+  if sold_out == false and product.compare_at_price > product.price
+    assign saving = product.compare_at_price | minus: product.price | times: 100.0
+    assign percent_off = saving | divided_by: product.compare_at_price | round
+  endif
+
+  assign vendor_handle = product.vendor | handle
+  assign brand_logo = shop.metaobjects.brand[vendor_handle].logo.value
+
+  for option in product.options_with_values
+    assign option_name = option.name | downcase
+    if option_name == 'color' or option_name == 'colour'
+      assign color_option = option
+      break
+    endif
+  endfor
 -%}
 
-<article class="ui-product-card ui-product-card--{{ variant }}" {{ block_attributes }}>
-  <a
-    class="ui-product-card__media"
-    href="{{ card_url }}"
-    aria-label="{{ card_title | escape }}{% if badge_label != blank %}, {{ badge_label | escape }}{% endif %}"
-    {% if tabindex != blank %}
-      tabindex="{{ tabindex }}"
-    {% endif %}
-  >
-    {%- if image_asset != blank -%}
-      <img
-        class="ui-product-card__image"
-        src="{{ image_asset | asset_url }}"
-        alt="{{ image_alt | default: card_title | escape }}"
-        width="{{ image_width }}"
-        height="{{ image_width }}"
-        loading="{{ image_loading }}"
-      >
-    {%- elsif product.featured_image -%}
-      {{
-        product.featured_image
-        | image_url: width: image_width
-        | image_tag:
-          class: 'ui-product-card__image',
-          widths: image_widths,
-          sizes: image_sizes,
-          alt: product.featured_image.alt | default: card_title,
-          loading: image_loading
-      }}
-    {%- else -%}
-      <span class="ui-product-card__placeholder"></span>
-    {%- endif -%}
-    {%- if badge_label != blank -%}
-      <span class="ui-product-card__badge">{{ badge_label | escape }}</span>
-    {%- endif -%}
-  </a>
+<article
+  class="ui-product-card ui-product-card--{{ variant }}{% if sold_out %} ui-product-card--sold-out{% endif %}"
+  {{ block_attributes }}
+>
+  <product-card-gallery class="ui-product-card__media" data-photos="{{ photo_count }}">
+    <a
+      class="ui-product-card__track"
+      href="{{ card_url }}"
+      aria-labelledby="{{ title_id }}"
+      {% if tabindex != blank %}
+        tabindex="{{ tabindex }}"
+      {% endif %}
+    >
+      {%- if image_asset != blank -%}
+        <img
+          class="ui-product-card__image"
+          src="{{ image_asset | asset_url }}"
+          alt="{{ image_alt | default: card_title | escape }}"
+          width="{{ image_width }}"
+          height="{{ image_width }}"
+          loading="{{ image_loading }}"
+        >
+      {%- elsif photo_count > 0 -%}
+        {%- for media in card_images limit: photo_count -%}
+          {%- liquid
+            assign photo_loading = image_loading
+            unless forloop.first
+              assign photo_loading = 'lazy'
+            endunless
+            assign photo = media.preview_image | default: media
+          -%}
+          {{
+            photo
+            | image_url: width: image_width
+            | image_tag:
+              class: 'ui-product-card__image',
+              widths: image_widths,
+              sizes: image_sizes,
+              alt: photo.alt | default: card_title,
+              loading: photo_loading
+          }}
+        {%- endfor -%}
+      {%- elsif product.featured_image -%}
+        {{
+          product.featured_image
+          | image_url: width: image_width
+          | image_tag:
+            class: 'ui-product-card__image',
+            widths: image_widths,
+            sizes: image_sizes,
+            alt: product.featured_image.alt | default: card_title,
+            loading: image_loading
+        }}
+      {%- else -%}
+        <span class="ui-product-card__placeholder"></span>
+      {%- endif -%}
+    </a>
+
+    {%- unless variant == 'search' -%}
+      {%- capture protection_badge -%}{%- render 'ui-protection-badge', product: product -%}{%- endcapture -%}
+      {%- if protection_badge != blank or sold_out or percent_off > 0 -%}
+        <div class="ui-product-card__top">
+          {{- protection_badge -}}
+          {%- if sold_out -%}
+            <span class="ui-product-card__promo ui-product-card__promo--sold-out">
+              {{- 'products.product.sold_out' | t -}}
+            </span>
+          {%- elsif percent_off > 0 -%}
+            <span class="ui-product-card__promo">{{ 'products.product.percent_off' | t: percent: percent_off }}</span>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+
+      {%- if photo_count > 1 -%}
+        <div class="ui-product-card__arrows">
+          <button
+            type="button"
+            class="ui-product-card__arrow"
+            data-step="-1"
+            tabindex="-1"
+            aria-label="{{ 'products.product.previous_photo' | t }}"
+          >
+            {%- render 'ui-icon', icon: 'chevron-left' -%}
+          </button>
+          <button
+            type="button"
+            class="ui-product-card__arrow"
+            data-step="1"
+            tabindex="-1"
+            aria-label="{{ 'products.product.next_photo' | t }}"
+          >
+            {%- render 'ui-icon', icon: 'chevron-right' -%}
+          </button>
+        </div>
+      {%- endif -%}
+
+      {%- liquid
+        assign quick_add = false
+        if show_add and sold_out == false
+          assign quick_add = true
+        endif
+      -%}
+      {%- if brand_logo != blank or quick_add or photo_count > 1 -%}
+        <div class="ui-product-card__bottom">
+          <div class="ui-product-card__bottom-row">
+            {%- if brand_logo != blank -%}
+              <span class="ui-product-card__brand">
+                {{
+                  brand_logo
+                  | image_url: width: 120
+                  | image_tag: class: 'ui-product-card__brand-logo', alt: product.vendor, loading: 'lazy'
+                }}
+              </span>
+            {%- endif -%}
+            {%- if quick_add -%}
+              {%- liquid
+                assign add_variant = product.selected_or_first_available_variant
+                assign add_form_id = 'ProductCardAdd-' | append: section_id | append: '-' | append: product.id
+                assign add_name = add_label
+                if add_name == blank
+                  assign add_name = 'products.product.add_to_cart' | t
+                endif
+              -%}
+              {%- if product.variants.size == 1 and add_variant.available -%}
+                <product-form class="ui-product-card__quick-add" data-section-id="{{ section_id }}">
+                  {%- form 'product', product, id: add_form_id, novalidate: 'novalidate', data-type: 'add-to-cart-form' -%}
+                    <input type="hidden" name="id" value="{{ add_variant.id }}" class="product-variant-id">
+                    <button
+                      type="submit"
+                      name="add"
+                      class="ui-product-card__action"
+                      aria-label="{{ add_name | escape }}"
+                      aria-describedby="{{ title_id }}"
+                    >
+                      {%- render 'ui-icon', icon: 'plus' -%}
+                    </button>
+                  {%- endform -%}
+                </product-form>
+              {%- else -%}
+                <a
+                  class="ui-product-card__action ui-product-card__quick-add"
+                  href="{{ card_url }}"
+                  aria-label="{{ 'products.product.choose_options' | t }}"
+                  aria-describedby="{{ title_id }}"
+                >
+                  {%- render 'ui-icon', icon: 'plus' -%}
+                </a>
+              {%- endif -%}
+            {%- endif -%}
+          </div>
+          {%- if photo_count > 1 -%}
+            <div class="ui-product-card__progress" aria-hidden="true">
+              {%- for i in (1..photo_count) -%}
+                <span class="ui-product-card__segment"{% if forloop.first %} data-current{% endif %}></span>
+              {%- endfor -%}
+            </div>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    {%- endunless -%}
+  </product-card-gallery>
 
   <div class="ui-product-card__info">
-    {%- if show_type and card_type != blank -%}
-      <p class="ui-product-card__tag">{{ card_type | upcase }}</p>
-    {%- endif -%}
     <h3 class="ui-product-card__name" id="{{ title_id }}">
       <a
         class="ui-product-card__link"
@@ -96,52 +246,40 @@
         {{- card_title | escape -}}
       </a>
     </h3>
-  </div>
 
-  {%- if show_price or show_add -%}
-    <div class="ui-product-card__price-row">
-      {%- if show_price -%}
-        <span class="ui-product-card__price">
-          {%- if price_label != blank -%}
-            {{- price_label | escape -}}
-          {%- elsif trim_price -%}
-            {{- product.price | money_without_trailing_zeros -}}
-          {%- else -%}
-            {{- product.price | money -}}
-          {%- endif -%}
-        </span>
-      {%- endif -%}
-      {%- if show_add -%}
-        {%- liquid
-          assign add_variant = product.selected_or_first_available_variant
-          assign add_form_id = 'ProductCardAdd-' | append: section_id | append: '-' | append: product.id
-        -%}
-        {%- if product.variants.size == 1 and add_variant.available -%}
-          <product-form data-section-id="{{ section_id }}">
-            {%- form 'product',
-              product,
-              id: add_form_id,
-              class: 'ui-product-card__add-form',
-              novalidate: 'novalidate',
-              data-type: 'add-to-cart-form'
-            -%}
-              <input type="hidden" name="id" value="{{ add_variant.id }}" class="product-variant-id">
-              {%- capture add_props -%}id="{{ add_form_id }}-submit" name="add" aria-labelledby="{{ add_form_id }}-submit {{ title_id }}" aria-live="polite"{%- endcapture -%}
-              {%- render 'ui-button',
-                label: add_label,
-                variant: 'secondary',
-                type: 'submit',
-                icon: 'plus',
-                spinner: true,
-                class: 'ui-product-card__add',
-                additional_props: add_props
-              -%}
-            {%- endform -%}
-          </product-form>
+    {%- if show_price -%}
+      <div class="ui-product-card__price-row">
+        {%- if price_label != blank -%}
+          <span class="ui-product-card__price-label">{{ price_label | escape }}</span>
         {%- else -%}
-          {%- render 'ui-button', label: add_label, url: card_url, variant: 'secondary', icon: 'plus', class: 'ui-product-card__add' -%}
+          {%- liquid
+            assign compare_at_price = product.compare_at_price
+            if sold_out
+              assign compare_at_price = 0
+            endif
+          -%}
+          {%- render 'ui-price', price: product.price, compare_at_price: compare_at_price, size: 'sm', trim: true -%}
         {%- endif -%}
-      {%- endif -%}
-    </div>
-  {%- endif -%}
+
+        {%- if color_option != blank and variant != 'search' -%}
+          {%- assign color_count = color_option.values.size -%}
+          {%- assign extra_colors = color_count | minus: 3 -%}
+          {%- assign color_names = color_option.values | join: ', ' -%}
+          <div class="ui-product-card__swatches">
+            <span class="visually-hidden">
+              {{- 'products.product.colors_available' | t: count: color_count, colors: color_names -}}
+            </span>
+            {%- for value in color_option.values limit: 3 -%}
+              <span class="ui-product-card__swatch" aria-hidden="true"{% if forloop.first %} data-current{% endif %}>
+                {%- render 'swatch', swatch: value.swatch, color_name: value -%}
+              </span>
+            {%- endfor -%}
+            {%- if extra_colors > 0 -%}
+              <span class="ui-product-card__more-colors" aria-hidden="true">+{{ extra_colors }}</span>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  </div>
 </article>

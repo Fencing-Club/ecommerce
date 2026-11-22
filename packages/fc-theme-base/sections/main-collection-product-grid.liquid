@@ -175,17 +175,6 @@
               >
                 {%- for product in collection.products -%}
                   {%- liquid
-                    assign badge_label = blank
-                    if product.compare_at_price > product.price
-                      assign badge_label = 'SALE'
-                    endif
-                    for product_tag in product.tags
-                      assign normalized_tag = product_tag | downcase
-                      if normalized_tag == 'best seller' or normalized_tag == 'new'
-                        assign badge_label = product_tag | upcase
-                        break
-                      endif
-                    endfor
                     assign show_add = false
                     unless section.settings.quick_add == 'none'
                       assign show_add = true
@@ -195,15 +184,11 @@
                   <li>
                     {%- render 'ui-product-card',
                       product: product,
-                      variant: 'home',
                       card_id: card_id,
-                      badge_label: badge_label,
-                      show_type: true,
                       show_price: true,
                       show_add: show_add,
                       add_label: section.settings.add_label,
                       section_id: section.id,
-                      trim_price: true,
                       image_sizes: '(min-width: 990px) 300px, (min-width: 750px) calc((100vw - 104px) / 2), calc((100vw - 52px) / 2)',
                       image_widths: '300, 450, 600',
                       image_loading: 'lazy'

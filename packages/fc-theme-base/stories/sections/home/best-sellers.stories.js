@@ -9,7 +9,7 @@ export default {
   loaders: [loadScript('product-form.js')],
   render: section('best-sellers', {
     staticBlocks: [sectionHeader('Featured products', 'Best sellers', { label: 'View all', link: '#all' })],
-    blocks: products.map((product) => ({ id: `card-${product.id}`, type: 'product-card', settings: { product, badge: 'Best seller', show_add: true } })),
+    blocks: products.map((product) => ({ id: `card-${product.id}`, type: 'product-card', settings: { product, show_add: true } })),
   }),
 };
 
@@ -18,6 +18,6 @@ export const Products = {
     await expect(canvas.getByRole('heading', { level: 2, name: 'Best sellers' })).toBeVisible();
     await expect(canvas.getByRole('link', { name: 'View all' })).toHaveAttribute('href', '#all');
     await expect(canvas.getByRole('heading', { level: 3, name: 'Competition jacket' })).toBeVisible();
-    await expect(canvas.getByRole('link', { name: 'Fencing glove, Best seller' })).toHaveAttribute('href', '#product-802');
+    for (const link of canvas.getAllByRole('link', { name: 'Fencing glove' })) await expect(link).toHaveAttribute('href', '#product-802');
   },
 };

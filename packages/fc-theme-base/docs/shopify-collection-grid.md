@@ -7,8 +7,7 @@ section rendering API, adds its products, and swaps in that page's link, or remo
 The link is an ordinary page link, so it still works before the script runs, and the script follows it if a request
 fails. The address bar keeps the first page, so a reload starts from the top of the collection.
 
-Product tiles use the muted background, and images multiply onto it, so photos shot on white sit on the same tile
-as photos with their own backdrop.
+Each product is the shared [product card](shopify-product-card.md).
 
 When filters exclude everything, the empty state offers Clear all filters and Browse all products. Each label is a
 section setting.

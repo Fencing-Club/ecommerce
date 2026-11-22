@@ -1719,10 +1719,6 @@
         "product": {
           "label": "Product"
         },
-        "badge": {
-          "label": "Badge",
-          "info": "Shows on the photo, for example Best seller."
-        },
         "show_add": {
           "label": "Show add button",
           "info": "Shows only for products with one variant."

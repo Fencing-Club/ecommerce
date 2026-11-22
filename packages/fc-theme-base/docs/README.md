@@ -20,6 +20,7 @@ The new Fencing Club Shopify theme, built on Dawn.
 - [Drawers](shopify-drawers.md)
 - [Interaction states](shopify-interaction-states.md)
 - [Policy pages](shopify-policy-pages.md)
+- [Product card](shopify-product-card.md)
 - [Size charts](shopify-size-charts.md)
 
 ## Content and rehearsal

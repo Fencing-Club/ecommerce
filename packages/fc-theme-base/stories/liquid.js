@@ -31,6 +31,15 @@ const shop = {
   address: { street: '17190 128th Pl NE', city: 'Woodinville', province_code: 'WA', zip: '98072' },
   enabled_payment_types: ['visa', 'master', 'american_express', 'paypal', 'diners_club', 'discover'],
   customer_accounts_enabled: true,
+  // Brand entries other than our own, each with the logo product cards show.
+  metaobjects: {
+    brand: Object.fromEntries(
+      ['fwf', 'favero', 'blaise', 'asics'].map((handle) => [
+        handle,
+        { title: handle.toUpperCase(), logo: { value: { src: assetUrl(`${handle}.png`), alt: handle.toUpperCase(), width: 240, height: 80 } } },
+      ]),
+    ),
+  },
 };
 
 // The shopper's market and language, with a second of each so the header's selectors show.

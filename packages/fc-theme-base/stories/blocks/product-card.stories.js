@@ -6,7 +6,7 @@ import { block } from '../liquid.js';
 export default {
   title: 'Blocks/Product card',
   render: block('product-card'),
-  args: { product: products[0], badge: '', show_add: false },
+  args: { product: products[0], show_add: false },
   decorators: [(story) => `<div style="max-width: 300px">${story()}</div>`],
 };
 
@@ -14,12 +14,5 @@ export const Product = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('heading', { level: 3, name: 'Competition jacket' })).toBeVisible();
     await expect(canvas.getByText('$69.95')).toBeVisible();
-  },
-};
-
-export const WithBadge = {
-  args: { badge: 'Best seller' },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole('link', { name: 'Competition jacket, Best seller' })).toBeVisible();
   },
 };

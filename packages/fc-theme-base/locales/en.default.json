@@ -110,6 +110,7 @@
       "add_to_cart": "Add to cart",
       "choose_options": "Choose options",
       "choose_product_options": "Choose options for {{ product_name }}",
+      "colors_available": "{{ count }} colors: {{ colors }}",
       "description": "Description",
       "inventory_in_stock": "In stock",
       "inventory_in_stock_show_count": "{{ quantity }} in stock",
@@ -119,6 +120,7 @@
       "inventory_out_of_stock_continue_selling": "In stock",
       "sku": "SKU",
       "on_sale": "Sale",
+      "percent_off": "{{ percent }}% off",
       "product_variants": "Product variants",
       "media": {
         "gallery_viewer": "Gallery Viewer",
@@ -130,6 +132,8 @@
         "play_model": "Play 3D Viewer",
         "play_video": "Play video"
       },
+      "previous_photo": "Previous photo",
+      "next_photo": "Next photo",
       "nested_label": "{{ title }} for {{ parent_title }}",
       "quantity": {
         "label": "Quantity",
@@ -167,6 +171,7 @@
         "sale_price": "Sale price",
         "unit_price": "Unit price"
       },
+      "protection_level": "Protection level",
       "share": "Share this product",
       "sold_out": "Sold out",
       "unavailable": "Unavailable",

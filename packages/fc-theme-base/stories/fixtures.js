@@ -22,6 +22,58 @@ export const products = [
   product(803, 'Fencing socks', 'Footwear', 'collection-fencing-socks-2-pack.jpg', 1800),
 ];
 
+/** A product option value, which reads as its name and carries the swatch Shopify gives it. */
+const optionValue = (name, color) => ({
+  name,
+  swatch: color ? { color: { rgb: [1, 3, 5].map((start) => parseInt(color.slice(start, start + 2), 16)).join(' ') } } : null,
+  toString: () => name,
+});
+
+/**
+ * A product as a grid card sees it: photos, a color option, a protection level and a vendor.
+ *
+ * @param {{ id: number, title: string, vendor?: string, price: number, compare_at_price?: number, available?: boolean,
+ *   photos: string[], colors?: [string, string][], rating?: string, fie?: string, variants?: number }} details
+ */
+const cardProduct = ({ id, title, vendor = 'Fencing Club', price, compare_at_price = null, available = true, photos, colors = [], rating, fie, variants = 2 }) => ({
+  id,
+  title,
+  vendor,
+  url: `#product-${id}`,
+  price,
+  compare_at_price,
+  available,
+  featured_image: image(photos[0], title),
+  media: photos.map((file, index) => ({ media_type: 'image', preview_image: image(file, `${title}, photo ${index + 1}`) })),
+  options_with_values: colors.length ? [{ name: 'Color', values: colors.map(([name, color]) => optionValue(name, color)) }] : [],
+  metafields: { custom: { protection_rating: { value: rating ?? '' }, fie_status: { value: fie ?? '' } } },
+  variants: Array.from({ length: variants }, (_, index) => ({ id: id * 10 + index })),
+  selected_or_first_available_variant: { id: id * 10, available },
+});
+
+export const cardProducts = {
+  /** Another brand's jacket on sale: 800N FIE, four photos and five colors. */
+  sale: cardProduct({
+    id: 811,
+    title: 'FIE 800N Competition Jacket',
+    vendor: 'FWF',
+    price: 23920,
+    compare_at_price: 29900,
+    photos: ['collection-fie-800n-jacket.jpg', 'collection-aero-competition-jacket.jpg', 'collection-stretch-fencing-pants.jpg', 'collection-underarm-plastron-800n.jpg'],
+    colors: [['White', '#ffffff'], ['Black', '#101012'], ['Navy', '#1e2a44'], ['Red', '#b91c1c'], ['Blue', '#1d4ed8']],
+    rating: '800N',
+    fie: 'FIE',
+  }),
+  /** Our own brand, so no logo: one photo, 350N, full price. */
+  ownBrand: cardProduct({ id: 812, title: 'Knicker Pants 350N', price: 8900, photos: ['collection-knicker-pants-350n.jpg'], rating: '350N', fie: 'Non-FIE' }),
+  /** Sold out with every variant gone. */
+  soldOut: cardProduct({ id: 813, title: 'Novus Stretch Pants 350N', price: 7900, compare_at_price: 9900, available: false, photos: ['collection-stretch-fencing-pants.jpg'], rating: '350N' }),
+  /** A single-variant product quick add puts straight in the cart. */
+  single: cardProduct({ id: 814, title: 'Fencing Socks, 2 Pack', price: 1800, photos: ['collection-fencing-socks-2-pack.jpg'], variants: 1 }),
+  /** A name long enough to need two lines. */
+  longName: cardProduct({ id: 815, title: 'Stretch Fencing Pants 800N FIE with Adjustable Suspenders and Reinforced Knees', vendor: 'Blaise', price: 21900, photos: ['collection-stretch-fencing-pants.jpg'], rating: '800N', fie: 'FIE' }),
+};
+
 export const articles = [
   {
     title: 'Choosing your first fencing kit',

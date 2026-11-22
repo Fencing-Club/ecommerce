@@ -428,17 +428,6 @@
   list-style: none;
 }
 
-.collection-product-grid .ui-product-card--home .ui-product-card__media {
-  height: 30rem;
-  background: var(--muted);
-}
-
-/* Multiplying lets product shots on white take the tile color, so every card shows the same tile. */
-.collection-product-grid .ui-product-card__image {
-  object-fit: cover;
-  mix-blend-mode: multiply;
-}
-
 .collection-load-more {
   margin-top: 2.8rem;
 }
@@ -517,11 +506,6 @@
   .collection-product-grid {
     grid-template-columns: repeat(var(--collection-mobile-columns), minmax(0, 1fr));
   }
-
-  .collection-product-grid .ui-product-card--home .ui-product-card__media {
-    height: auto;
-    aspect-ratio: 1;
-  }
 }
 
 @media screen and (max-width: 749px) {
@@ -569,22 +553,6 @@
 
   .collection-product-grid {
     gap: 2.4rem 1.2rem;
-  }
-
-  .collection-product-grid .ui-product-card--home {
-    gap: 1.2rem;
-  }
-
-  .collection-product-grid .ui-product-card--home .ui-product-card__name {
-    font-size: 1.6rem;
-  }
-
-  .collection-product-grid .ui-product-card--home .ui-product-card__price {
-    font-size: 1.5rem;
-  }
-
-  .collection-product-grid .ui-product-card__add {
-    padding-inline: 1rem;
   }
 }
 

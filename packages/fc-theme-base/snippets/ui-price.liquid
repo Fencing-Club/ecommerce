@@ -6,11 +6,19 @@
   @param {string} [badge_label] - A short badge after the price, such as Sale.
   @param {string} [unit_price] - A formatted unit price, such as $2.50/100g.
   @param {string} [size] - sm for cards and lines, md (default) for the product page.
+  @param {boolean} [trim] - Drops .00 from whole amounts, so $89.00 reads $89.
 {% enddoc %}
 {%- liquid
   assign on_sale = false
   if compare_at_price > price
     assign on_sale = true
+  endif
+  if trim
+    assign price_text = price | money_without_trailing_zeros
+    assign compare_text = compare_at_price | money_without_trailing_zeros
+  else
+    assign price_text = price | money
+    assign compare_text = compare_at_price | money
   endif
 -%}
 <div class="ui-price{% if size == 'sm' %} ui-price--sm{% endif %}">
@@ -18,14 +26,14 @@
     {%- if on_sale -%}
       <s class="ui-price__compare">
         <span class="visually-hidden">{{ 'products.product.price.regular_price' | t }}</span>
-        {{- compare_at_price | money -}}
+        {{- compare_text -}}
       </s>
       <span class="ui-price__amount">
         <span class="visually-hidden">{{ 'products.product.price.sale_price' | t }}</span>
-        {{- price | money -}}
+        {{- price_text -}}
       </span>
     {%- else -%}
-      <span class="ui-price__amount">{{ price | money }}</span>
+      <span class="ui-price__amount">{{ price_text }}</span>
     {%- endif -%}
     {%- if badge_label != blank -%}
       {%- render 'ui-badge', label: badge_label -%}
