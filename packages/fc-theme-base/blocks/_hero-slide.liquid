@@ -3,9 +3,12 @@
   slide turns light. The section's carousel fades between slides.
 {%- endcomment -%}
 {%- liquid
+  # The first slide's photo is the page's largest image, so it loads first and at high priority.
   assign slide_loading = 'lazy'
+  assign slide_priority = 'auto'
   if section.blocks.first.id == block.id
     assign slide_loading = 'eager'
+    assign slide_priority = 'high'
   endif
   # A focal point set in admin decides the crop; without one, CSS keeps the upper part.
   assign focal_point = block.settings.image.presentation.focal_point
@@ -25,6 +28,7 @@
         sizes: '100vw',
         alt: block.settings.image.alt,
         loading: slide_loading,
+        fetchpriority: slide_priority,
         style: focal_style
     }}
   {%- endif -%}
@@ -73,6 +77,11 @@
     object-fit: cover;
     /* People sit in the upper part of these photos. A focal point set in admin overrides this inline. */
     object-position: 50% 30%;
+  }
+  /* Hidden slides still sit in the viewport, where lazy photos load right away. Until the page has loaded or the
+     shopper changes slides, they stay out of layout so the first photo downloads alone. */
+  fc-carousel:not([data-slides-ready]) .hero-slide__image[loading='lazy'] {
+    display: none;
   }
   /* Past the content, the photo widens by 28rem a side and then stops, which would only crop it harder. */
   .hero-slide__image {

@@ -19,6 +19,8 @@ const engine = new Liquid({ templates, extname: '.liquid' });
 registerShopifyLiquid(engine, { locale, readAsset: (name) => icons[name], readBlock: (type) => blocks[`${type}.liquid`] });
 // Where .storybook/main.js serves the theme's assets.
 engine.registerFilter('asset_url', (name) => `/theme-assets/${name}`);
+// Shopify's CDN resizes asset images; stories serve the original file.
+engine.registerFilter('asset_img_url', (name) => `/theme-assets/${name}`);
 export const assetUrl = (name) => `/theme-assets/${name}`;
 
 export const settings = themeSettings({ schema, data });

@@ -153,6 +153,14 @@
       render 'header-search', input_id: 'Search-In-Modal-1'
     -%}
 
+    {%- comment -%} The logo PNGs are print size; the CDN resizes them for the mark's slot, about 82px wide. {%- endcomment -%}
+    {%- capture logo_srcset -%}
+      {{- 'fencing-club-logo.png' | asset_img_url: '200x' }} 2x, {{ 'fencing-club-logo.png' | asset_img_url: '300x' }} 3x
+    {%- endcapture -%}
+    {%- capture logo_light_srcset -%}
+      {{- 'fencing-club-logo-light.png' | asset_img_url: '200x' }} 2x, {{ 'fencing-club-logo-light.png' | asset_img_url: '300x' }} 3x
+    {%- endcapture -%}
+
     <div class="header__heading">
       <a href="{{ routes.root_url }}" class="header__heading-link link link--text focus-inset">
         {%- if settings.logo != blank -%}
@@ -176,7 +184,8 @@
             {%- unless header_style == 'default' -%}
               {%- comment -%}Light mark for the transparent header over the hero.{%- endcomment -%}
               <img
-                src="{{ 'fencing-club-logo-light.png' | asset_url }}"
+                src="{{ 'fencing-club-logo-light.png' | asset_img_url: '100x' }}"
+                srcset="{{ logo_light_srcset }}"
                 class="header__heading-logo header__heading-logo--light motion-reduce"
                 width="{{ settings.logo_width }}"
                 height="{{ logo_height }}"
@@ -187,7 +196,8 @@
           </div>
         {%- else -%}
           <img
-            src="{{ 'fencing-club-logo.png' | asset_url }}"
+            src="{{ 'fencing-club-logo.png' | asset_img_url: '100x' }}"
+            srcset="{{ logo_srcset }}"
             class="header__heading-logo motion-reduce"
             width="80"
             height="100"
@@ -197,7 +207,8 @@
           {%- unless header_style == 'default' -%}
             {%- comment -%}Light mark for the transparent header over the hero.{%- endcomment -%}
             <img
-              src="{{ 'fencing-club-logo-light.png' | asset_url }}"
+              src="{{ 'fencing-club-logo-light.png' | asset_img_url: '100x' }}"
+              srcset="{{ logo_light_srcset }}"
               class="header__heading-logo header__heading-logo--light motion-reduce"
               width="80"
               height="100"

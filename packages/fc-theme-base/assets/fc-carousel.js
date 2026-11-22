@@ -27,6 +27,10 @@ if (!customElements.get('fc-carousel')) {
 
         this.addEventListener('keydown', this.onKeydown);
 
+        // Hero slides after the first hold their photos back until the page has loaded (see _hero-slide.liquid).
+        if (document.readyState === 'complete') this.readySlides();
+        else window.addEventListener('load', this.readySlides, { once: true });
+
         if (!this.isFade) {
           this.resizeObserver = new ResizeObserver(() => this.render());
           this.resizeObserver.observe(this);
@@ -55,7 +59,12 @@ if (!customElements.get('fc-carousel')) {
       disconnectedCallback() {
         this.pause();
         this.resizeObserver?.disconnect();
+        window.removeEventListener('load', this.readySlides);
       }
+
+      readySlides = () => {
+        this.toggleAttribute('data-slides-ready', true);
+      };
 
       onKeydown = (event) => {
         if (event.key === 'ArrowLeft') {
@@ -96,6 +105,7 @@ if (!customElements.get('fc-carousel')) {
       }
 
       goTo(index) {
+        this.readySlides();
         const pages = this.pageCount();
         this.index = ((index % pages) + pages) % pages;
         this.render();

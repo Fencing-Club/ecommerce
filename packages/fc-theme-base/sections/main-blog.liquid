@@ -51,6 +51,8 @@
             aria-label="{{ featured_article.title | escape }}"
           >
             {%- if featured_article.image -%}
+              {%- comment -%} A filter inside image_tag's arguments would end them, so the alt text is worked out first. {%- endcomment -%}
+              {%- assign feature_alt = featured_article.image.alt | default: featured_article.title -%}
               {{
                 featured_article.image
                 | image_url: width: 1280
@@ -58,7 +60,7 @@
                   class: 'journal-feature__image',
                   widths: '640, 960, 1280',
                   sizes: '(min-width: 990px) 640px, calc(100vw - 40px)',
-                  alt: featured_article.image.alt | default: featured_article.title,
+                  alt: feature_alt,
                   loading: 'eager',
                   fetchpriority: 'high'
               }}
