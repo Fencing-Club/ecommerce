@@ -6,7 +6,7 @@ const menu = (heading, links) => ({ id: heading.toLowerCase(), type: '_footer-me
 
 const blocks = [
   menu('Shop', [{ ...link('Masks'), current: true }, link('Jackets'), link('Weapons'), link('Blades'), link('Gloves'), link('Footwear')]),
-  menu('Support', [link('Contact us'), link('Shipping'), link('Returns'), link('Size guides'), link('Track order')]),
+  menu('Support', [link('Contact us'), link('FAQ'), link('Shipping'), link('Returns'), link('Size guides'), link('Track order')]),
   menu('Company', [
     link('Our story'),
     link('The Journal'),
@@ -36,6 +36,7 @@ export const Default = {
     const menus = canvas.getByRole('navigation', { name: 'Footer' });
     await expect(within(menus).getByRole('heading', { level: 2, name: 'Support' })).toBeVisible();
     await expect(within(menus).getByRole('link', { name: 'Size guides' })).toHaveAttribute('href', '/pages/size-guides');
+    await expect(within(menus).getByRole('link', { name: 'FAQ' })).toHaveAttribute('href', '/pages/faq');
     await expect(within(menus).getByRole('link', { name: 'Masks' })).toHaveAttribute('aria-current', 'page');
     await expect(within(menus).getByRole('link', { name: 'Cookie preferences' })).toHaveAttribute('data-cookie-preferences');
 
