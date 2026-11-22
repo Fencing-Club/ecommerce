@@ -22,7 +22,7 @@ export default {
       },
       { id: 'caption', type: 'text', settings: { text: '<p>Most of what we sell is our own brand.</p>', style: 'subtle' } },
     ],
-    blocks: [stat('orders', '8,300+', 'Orders shipped'), stat('fencers', '6,350+', 'Fencers equipped'), stat('middlemen', '0', 'Middlemen')],
+    blocks: [stat('orders', '8,700+', 'Orders shipped'), stat('fencers', '7,400+', 'Fencers equipped'), stat('middlemen', '0', 'Middlemen')],
   }),
 };
 
@@ -31,7 +31,7 @@ export const Stats = {
     await expect(canvas.getByRole('heading', { level: 2, name: 'Touché' })).toBeVisible();
     await expect(canvas.getByRole('heading', { level: 3, name: 'Measured, not marketed.' })).toBeVisible();
     await expect(canvas.getByText('Most of what we sell is our own brand.')).toBeVisible();
-    for (const [number, label] of [['8,300+', 'Orders shipped'], ['6,350+', 'Fencers equipped'], ['0', 'Middlemen']]) {
+    for (const [number, label] of [['8,700+', 'Orders shipped'], ['7,400+', 'Fencers equipped'], ['0', 'Middlemen']]) {
       await expect(canvas.getByText(label).previousElementSibling).toHaveTextContent(number);
     }
   },

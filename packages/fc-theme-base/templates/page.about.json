@@ -21,7 +21,7 @@
           "type": "image",
           "static": true,
           "settings": {
-            "image": "shopify://shop_images/Hero_Fencing_Field_908d0b99-1d56-45c9-a5b5-eb059014e962.jpg",
+            "image": "shopify://shop_images/604715797_17889916662401039_1634178802558249955_n_0b34b41a-445c-448a-9926-2ca2d7dc7ca3.jpg",
             "aspect_ratio": "landscape"
           }
         },
@@ -638,14 +638,14 @@
         "orders": {
           "type": "_stat",
           "settings": {
-            "number": "8,300+",
+            "number": "8,700+",
             "label": "Orders shipped"
           }
         },
         "fencers": {
           "type": "_stat",
           "settings": {
-            "number": "6,350+",
+            "number": "7,400+",
             "label": "Fencers equipped"
           }
         },
@@ -659,7 +659,7 @@
         "countries": {
           "type": "_stat",
           "settings": {
-            "number": "8+",
+            "number": "11+",
             "label": "Countries served"
           }
         },
