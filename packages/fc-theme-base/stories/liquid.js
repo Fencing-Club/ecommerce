@@ -50,9 +50,11 @@ const globals = { settings, shop, localization, routes: { root_url: '/', search_
  *
  * @param {string} name The file name without `.liquid`.
  * @param {Record<string, unknown>} [variables]
+ * @param {Record<string, unknown>} [extraGlobals] Globals such as `cart` or `shop` that replace the defaults. Unlike
+ *   variables, every snippet the render reaches can read them.
  */
-export function renderLiquid(name, variables = {}) {
-  return engine.renderFileSync(name, variables, { globals });
+export function renderLiquid(name, variables = {}, extraGlobals = {}) {
+  return engine.renderFileSync(name, variables, { globals: { ...globals, ...extraGlobals } });
 }
 
 /** The CSS variables layout/theme.liquid writes in its `{% style %}` block. */
@@ -62,15 +64,17 @@ export function themeCss() {
 
 /**
  * A story `render` function for a snippet: its args become the snippet's variables. `stylesheets` are the theme CSS
- * files the section that renders it would load, beyond the layout's.
+ * files the section that renders it would load, beyond the layout's. `globals` replaces default globals such as
+ * `cart`, `shop` or `routes`; as a function it gets the story's args.
  *
  * @param {string} name
- * @param {{ stylesheets?: string[] }} [options]
+ * @param {{ stylesheets?: string[], globals?: Record<string, unknown> | ((args: object) => Record<string, unknown>) }} [options]
  */
 export const snippet =
-  (name, { stylesheets = [] } = {}) =>
+  (name, { stylesheets = [], globals: extra = {} } = {}) =>
   (args) =>
-    stylesheets.map((file) => `<link rel="stylesheet" href="${assetUrl(file)}">`).join('') + renderLiquid(name, args);
+    stylesheets.map((file) => `<link rel="stylesheet" href="${assetUrl(file)}">`).join('') +
+    renderLiquid(name, args, typeof extra === 'function' ? extra(args) : extra);
 
 /**
  * A story `render` function for a theme block: its args become the block's settings, over its schema defaults. The

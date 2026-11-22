@@ -320,7 +320,17 @@
         "kits_2_description": "Competition-ready electric sets with lamé, body cord and a tested weapon.",
         "kit_builder_title": "Build Your Own Kit",
         "kit_builder_description": "Bundle any weapon, mask, jacket and more into one kit.",
-        "kit_builder_action": "Build a kit"
+        "kit_builder_action": "Build a kit",
+        "cards": {
+          "shoes": "Grippy soles and lunge support.",
+          "socks": "Knee-high and moisture-wicking.",
+          "wheel_bags": "Rolling bags for a full kit.",
+          "carry_bags": "Carry for a single weapon.",
+          "kids": "Club sets sized for juniors.",
+          "scoring_systems": "FIE machines and repeaters.",
+          "reels_and_floor_cables": "Reels and floor cabling.",
+          "repair_tools": "Testers, tips and spares."
+        }
       }
     },
     "cart": {
