@@ -737,6 +737,9 @@
             }
           }
         },
+        "pickup_availability": {
+          "name": "Pickup availability"
+        },
         "description": {
           "name": "Description"
         },
