@@ -1,26 +1,110 @@
 {{ 'section-about.css' | asset_url | stylesheet_tag }}
 
-<div class="about-section about-section--phase about-dark about-stats">
-  {%- content_for 'block', type: 'phase-heading', id: 'phase' -%}
-  {%- content_for 'block', type: 'group', id: 'header' -%}
-  {%- content_for 'block', type: 'text', id: 'caption' -%}
+<div class="about-section about-section--phase about-dark about-stats" id="the-numbers">
+  <div class="about-stats__call">
+    {%- content_for 'block', type: 'phase-heading', id: 'phase' -%}
+    {%- comment -%} A scoring box's red and green lamps, lit for a touch. {%- endcomment -%}
+    <div class="about-stats__lamps" aria-hidden="true">
+      <span class="about-stats__lamp about-stats__lamp--red"></span>
+      <span class="about-stats__lamp about-stats__lamp--green"></span>
+    </div>
+  </div>
+  <div class="about-stats__intro">
+    {%- content_for 'block', type: 'group', id: 'header' -%}
+    {%- content_for 'block', type: 'text', id: 'caption' -%}
+  </div>
   <div class="about-stats__grid">{%- content_for 'blocks' -%}</div>
 </div>
 
 {% stylesheet %}
+  .about-stats__call {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--spacing-12);
+    align-items: end;
+  }
+  .about-stats__lamps {
+    display: flex;
+    gap: var(--spacing-3-5);
+    padding-bottom: var(--spacing-11);
+  }
+  .about-stats__lamp {
+    width: var(--spacing-24);
+    height: var(--spacing-14);
+    border-radius: var(--radius-lg);
+  }
+  .about-stats__lamp--red {
+    background: #e7000b; /* red-600 */
+    box-shadow: 0 0 36px rgb(231 0 11 / 0.6);
+  }
+  .about-stats__lamp--green {
+    background: #00c950; /* green-500 */
+    box-shadow: 0 0 36px rgb(0 201 80 / 0.6);
+  }
+  .about-stats__intro {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-5);
+  }
+  /* A scoreboard: figures in columns between two rules, each after the first set off by a line. */
   .about-stats__grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: var(--spacing-4);
+    border-block: 1px solid var(--border);
   }
   .about-stats__grid > * {
     display: flex;
+    padding: var(--spacing-10) var(--spacing-6);
+    border-inline-start: 1px solid var(--border);
+  }
+  .about-stats__grid > :nth-child(5n + 1) {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+  .about-stats__grid > :nth-child(n + 6) {
+    border-top: 1px solid var(--border);
   }
   @media (max-width: 989px) {
     .about-stats__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .about-stats__grid > :nth-child(n) {
+      padding-inline-start: var(--spacing-6);
+      border-inline-start: 1px solid var(--border);
+    }
+    .about-stats__grid > :nth-child(3n + 1) {
+      padding-inline-start: 0;
+      border-inline-start: 0;
+    }
+    .about-stats__grid > :nth-child(n + 4) { border-top: 1px solid var(--border); }
   }
+  /* Phones light the lamps above the call and pair the figures in rows. */
   @media (max-width: 749px) {
+    .about-stats__call {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--spacing-7);
+    }
+    .about-stats__lamps {
+      order: -1;
+      gap: var(--spacing-2-5);
+      padding-bottom: 0;
+    }
+    .about-stats__lamp {
+      width: var(--spacing-14);
+      height: var(--spacing-8);
+      border-radius: calc(var(--radius) - 0.3rem);
+      box-shadow: none;
+    }
+    .about-stats__intro { gap: var(--spacing-4); }
     .about-stats__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .about-stats__grid > :nth-child(n) {
+      padding: var(--spacing-6) var(--spacing-4);
+      border-inline-start: 1px solid var(--border);
+      border-top: 0;
+    }
+    .about-stats__grid > :nth-child(2n + 1) {
+      padding-inline-start: 0;
+      border-inline-start: 0;
+    }
+    .about-stats__grid > :nth-child(n + 3) { border-top: 1px solid var(--border); }
   }
 {% endstylesheet %}
 
@@ -52,7 +136,7 @@
           "type": "text",
           "id": "caption",
           "static": true,
-          "settings": { "text": "<p>Most of what we sell is our own brand.</p>", "style": "subtle" }
+          "settings": { "text": "<p>Most of what we sell is our own brand.</p>", "style": "lead" }
         },
         { "type": "_stat", "settings": { "number": "9,700+", "label": "Orders shipped" } },
         { "type": "_stat", "settings": { "number": "0", "label": "Middlemen" } }

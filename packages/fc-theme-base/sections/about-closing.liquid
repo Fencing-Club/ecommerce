@@ -1,6 +1,6 @@
 {{ 'section-about.css' | asset_url | stylesheet_tag }}
 
-<div class="about-section about-section--phase about-closing">
+<div class="about-section about-section--phase about-closing" id="work-with-us">
   {%- content_for 'block', type: 'phase-heading', id: 'phase' -%}
   <div class="about-closing__intro">{%- content_for 'block', type: 'group', id: 'intro' -%}</div>
   <div class="about-closing__panel about-dark">
@@ -10,25 +10,43 @@
 </div>
 
 {% stylesheet %}
-  .about-closing__intro {
-    max-width: calc(var(--spacing) * 180);
+  .about-closing__intro .block-group {
+    gap: var(--spacing-6);
   }
   /* The invitation and its button share a row; phones stack the button under it. */
   .about-closing__panel {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 160fr) minmax(0, 99fr);
     align-items: center;
+    justify-items: end;
     gap: var(--spacing-10);
-    padding: var(--spacing-14);
-    border-radius: var(--radius-xl);
+    min-height: calc(var(--spacing) * 85);
+    padding: var(--spacing-16) var(--spacing-20);
+    border-radius: var(--radius-3xl);
+  }
+  .about-closing__panel > :first-child {
+    justify-self: stretch;
+  }
+  .about-closing__panel .block-group {
+    gap: calc(var(--spacing) * 4.5);
+  }
+  @media (max-width: 989px) {
+    .about-closing__panel {
+      grid-template-columns: minmax(0, 1fr) auto;
+      padding: var(--spacing-12);
+    }
   }
   @media (max-width: 749px) {
+    .about-closing__intro .block-group { gap: var(--spacing-4); }
     .about-closing__panel {
       grid-template-columns: minmax(0, 1fr);
       justify-items: start;
-      gap: var(--spacing-6);
-      padding: var(--spacing-8) var(--spacing-6);
+      gap: var(--spacing-4);
+      min-height: 0;
+      padding: var(--spacing-8) var(--spacing-6) var(--spacing-7);
     }
+    .about-closing__panel .block-group { gap: var(--spacing-4); }
+    .about-closing__panel > :last-child { padding-top: var(--spacing-2); }
   }
 {% endstylesheet %}
 
@@ -52,7 +70,7 @@
           "static": true,
           "settings": { "direction": "column", "gap": "md" },
           "blocks": [
-            { "type": "heading", "settings": { "heading": "We're just getting started.", "tag": "h3", "size": "md" } },
+            { "type": "heading", "settings": { "heading": "We're just getting started.", "tag": "h3", "size": "lg" } },
             { "type": "text", "settings": { "text": "<p>There's more to come, from our own certified masks to a platform for clubs, and we'd love to build it with the fencing community.</p>", "style": "lead" } }
           ]
         },
@@ -70,7 +88,7 @@
           "type": "button",
           "id": "action",
           "static": true,
-          "settings": { "label": "Get in touch", "link": "/pages/contact", "style": "primary", "size": "lg" }
+          "settings": { "label": "Get in touch", "link": "/pages/contact", "style": "primary", "size": "lg", "show_arrow": true }
         }
       ]
     }

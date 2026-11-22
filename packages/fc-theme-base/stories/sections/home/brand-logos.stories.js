@@ -2,7 +2,10 @@ import { expect } from 'storybook/test';
 import { brandLogos, sectionHeader } from '../../fixtures.js';
 import { section } from '../../liquid.js';
 
-/** `sections/brand-logos.liquid`: the brands the shop carries. Each logo is a `_logo` block. */
+/**
+ * `sections/brand-logos.liquid`: the brands the shop carries. Each logo is a `_logo` block. The open layout spaces
+ * them on the page; the boxed layout, used on the About page, sets them in a bordered grid on a muted band.
+ */
 export default {
   title: 'Sections/Home/Brand logos',
   parameters: { layout: 'fullscreen' },
@@ -17,5 +20,13 @@ export const Logos = {
     await expect(canvas.getByRole('heading', { level: 2, name: "Official dealer for the sport's best brands" })).toBeVisible();
     await expect(canvas.getAllByRole('img')).toHaveLength(4);
     await expect(canvas.getByRole('link', { name: 'FWF' })).toHaveAttribute('href', '#fwf');
+  },
+};
+
+export const Boxed = {
+  args: { layout: 'boxed' },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('heading', { level: 2, name: "Official dealer for the sport's best brands" })).toBeVisible();
+    await expect(canvas.getAllByRole('img')).toHaveLength(4);
   },
 };

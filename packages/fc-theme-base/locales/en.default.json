@@ -538,8 +538,12 @@
       "visit_site_label": "Visit site: {{ club }}"
     },
     "about_timeline": {
+      "done": "Done",
       "in_progress": "In progress",
       "planned": "Planned"
+    },
+    "about_hero": {
+      "chapters": "Chapters"
     }
   },
   "localization": {

@@ -1401,7 +1401,16 @@
       }
     },
     "brand_logos": {
-      "name": "Brand logos"
+      "name": "Brand logos",
+      "settings": {
+        "layout": {
+          "label": "Layout",
+          "options": {
+            "open": "Open",
+            "boxed": "Boxed grid"
+          }
+        }
+      }
     },
     "announcement_bar": {
       "name": "Announcement bar",
@@ -1497,10 +1506,21 @@
       }
     },
     "about_hero": {
-      "name": "About hero"
+      "name": "About hero",
+      "settings": {
+        "image": {
+          "label": "Photo",
+          "info": "Fills the hero behind the text. Choose a wide photo with room on the left."
+        }
+      }
     },
     "about_story": {
-      "name": "Our story"
+      "name": "Our story",
+      "settings": {
+        "image": {
+          "label": "Photo"
+        }
+      }
     },
     "about_clubs": {
       "name": "Clubs"
@@ -1568,7 +1588,8 @@
             "body": "Body",
             "subtle": "Subtle",
             "eyebrow": "Eyebrow",
-            "lead": "Lead"
+            "lead": "Lead",
+            "quote": "Quote"
           }
         }
       }
@@ -1989,6 +2010,13 @@
             "h3": "Level 3",
             "p": "Paragraph"
           }
+        },
+        "style": {
+          "label": "Style",
+          "options": {
+            "call": "Call",
+            "eyebrow": "Eyebrow"
+          }
         }
       }
     },
@@ -2035,9 +2063,21 @@
             "users": "People"
           }
         },
+        "figure_prefix": {
+          "label": "Offer prefix",
+          "info": "Shown above the offer, such as Up to"
+        },
+        "figure": {
+          "label": "Offer",
+          "info": "Shown in large type, such as 15%"
+        },
+        "figure_caption": {
+          "label": "Offer detail",
+          "info": "Shown under the offer, such as off house-brand gear"
+        },
         "badge": {
           "label": "Badge",
-          "info": "Shown at the top, such as Coming soon"
+          "info": "Such as Coming soon. A card with a badge shows its title in large type instead of an offer."
         },
         "title": {
           "label": "Title",
@@ -2045,10 +2085,6 @@
         },
         "text": {
           "label": "Description"
-        },
-        "note": {
-          "label": "Note",
-          "info": "Shown at the bottom, such as the discount"
         }
       }
     },
@@ -2086,6 +2122,24 @@
         "label": {
           "label": "Label",
           "default": "Orders shipped"
+        }
+      }
+    },
+    "bout_nav": {
+      "name": "Chapter links"
+    },
+    "bout_link": {
+      "name": "Chapter link",
+      "settings": {
+        "call": {
+          "label": "Call"
+        },
+        "topic": {
+          "label": "Topic"
+        },
+        "link": {
+          "label": "Link",
+          "info": "The chapter's id, such as #the-numbers"
         }
       }
     }

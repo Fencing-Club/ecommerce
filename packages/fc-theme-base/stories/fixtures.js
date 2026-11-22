@@ -47,8 +47,9 @@ export const brandLogos = ['fwf', 'favero', 'blaise', 'asics'].map((name) => ima
  * @param {string} meaning
  * @param {string} word
  * @param {string} [tag]
+ * @param {'call' | 'eyebrow'} [style]
  */
-export const phaseHeading = (meaning, word, tag = 'h2') => ({ id: 'phase', type: 'phase-heading', settings: { meaning, word, tag } });
+export const phaseHeading = (meaning, word, tag = 'h2', style = 'call') => ({ id: 'phase', type: 'phase-heading', settings: { meaning, word, tag, style } });
 
 /**
  * The static header group an About page section opens with: an eyebrow, a heading and an optional lead paragraph.

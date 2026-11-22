@@ -189,7 +189,8 @@
       {%- render 'cart-drawer' -%}
     {%- endif -%}
 
-    <div class="header-group{% if request.page_type == 'index' %} header-group--overlay{% endif %}">
+    {%- comment -%} The homepage and About page open on a full-bleed photo, so the header floats over it. {%- endcomment -%}
+    <div class="header-group{% if request.page_type == 'index' or template.suffix == 'about' %} header-group--overlay{% endif %}">
       {% sections 'header-group' %}
     </div>
 

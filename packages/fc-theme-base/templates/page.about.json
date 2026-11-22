@@ -1,9 +1,5 @@
 {
   "sections": {
-    "breadcrumbs": {
-      "type": "page-breadcrumbs",
-      "settings": {}
-    },
     "hero": {
       "type": "about-hero",
       "blocks": {
@@ -13,15 +9,8 @@
           "settings": {
             "meaning": "On guard",
             "word": "En garde",
-            "tag": "p"
-          }
-        },
-        "image": {
-          "type": "image",
-          "static": true,
-          "settings": {
-            "image": "shopify://shop_images/604715797_17889916662401039_1634178802558249955_n_0b34b41a-445c-448a-9926-2ca2d7dc7ca3.jpg",
-            "aspect_ratio": "landscape"
+            "tag": "p",
+            "style": "eyebrow"
           }
         },
         "heading": {
@@ -70,13 +59,67 @@
             "shop",
             "story"
           ]
+        },
+        "nav": {
+          "type": "_bout-nav",
+          "static": true,
+          "blocks": {
+            "en-garde": {
+              "type": "_bout-link",
+              "settings": {
+                "call": "En garde",
+                "topic": "Who we are",
+                "link": "#our-story"
+              }
+            },
+            "prets": {
+              "type": "_bout-link",
+              "settings": {
+                "call": "Prêts",
+                "topic": "What we stand for",
+                "link": "#what-we-stand-for"
+              }
+            },
+            "allez": {
+              "type": "_bout-link",
+              "settings": {
+                "call": "Allez",
+                "topic": "How far we've come",
+                "link": "#how-far-weve-come"
+              }
+            },
+            "touche": {
+              "type": "_bout-link",
+              "settings": {
+                "call": "Touché",
+                "topic": "The numbers",
+                "link": "#the-numbers"
+              }
+            },
+            "la-belle": {
+              "type": "_bout-link",
+              "settings": {
+                "call": "La belle",
+                "topic": "Work with us",
+                "link": "#work-with-us"
+              }
+            }
+          },
+          "block_order": [
+            "en-garde",
+            "prets",
+            "allez",
+            "touche",
+            "la-belle"
+          ]
         }
       },
       "block_order": [
         "heading",
         "mission",
         "actions"
-      ]
+      ],
+      "settings": {}
     },
     "story": {
       "type": "about-story",
@@ -85,7 +128,7 @@
           "type": "group",
           "settings": {
             "direction": "column",
-            "gap": "md"
+            "gap": "lg"
           },
           "blocks": {
             "eyebrow": {
@@ -120,7 +163,7 @@
         "paragraph-2": {
           "type": "text",
           "settings": {
-            "text": "<p>It didn't matter whether someone was picking up a foil for the first time or training for the finals. Getting reliable equipment was slow, expensive, or a gamble.</p>",
+            "text": "<p>It didn't matter whether someone was picking up a foil for the first time or training for the finals. Getting reliable equipment was expensive, slow, or a gamble.</p>",
             "style": "lead"
           }
         },
@@ -128,13 +171,13 @@
           "type": "text",
           "settings": {
             "text": "<p>Cost and access should never stand between a fencer and the sport.</p>",
-            "style": "lead"
+            "style": "quote"
           }
         },
         "paragraph-3": {
           "type": "text",
           "settings": {
-            "text": "<p>So in 2023 we opened Fencing Club in Woodinville, near Seattle, buying direct from the makers and answering every question ourselves. We sold our first 1,000 orders offline, before the web store even opened.</p>",
+            "text": "<p>So in 2023 we opened Fencing Club in Woodinville, near Seattle, buying direct from the makers and answering every question ourselves.</p>",
             "style": "lead"
           }
         }
@@ -144,7 +187,8 @@
         "paragraph-2",
         "belief",
         "paragraph-3"
-      ]
+      ],
+      "settings": {}
     },
     "clubs": {
       "type": "about-clubs",
@@ -261,9 +305,9 @@
         "operations_heading": {
           "type": "heading",
           "settings": {
-            "heading": "How we operate",
+            "heading": "Our own stock, our own team",
             "tag": "h3",
-            "size": "sm"
+            "size": "md"
           },
           "static": true
         },
@@ -322,6 +366,22 @@
             "label": "Real support",
             "detail": "Ask us about sizing, blades, or your first tournament kit. The people who answer fence too."
           }
+        },
+        "operations_image": {
+          "type": "image",
+          "static": true,
+          "settings": {
+            "image": "shopify://shop_images/604715797_17889916662401039_1634178802558249955_n_0b34b41a-445c-448a-9926-2ca2d7dc7ca3.jpg",
+            "aspect_ratio": "landscape"
+          }
+        },
+        "operations_eyebrow": {
+          "type": "text",
+          "static": true,
+          "settings": {
+            "text": "<p>How we operate</p>",
+            "style": "eyebrow"
+          }
         }
       },
       "block_order": [
@@ -375,27 +435,32 @@
           "type": "_program",
           "settings": {
             "icon": "badge-percent",
+            "figure_prefix": "Up to",
+            "figure": "15%",
+            "figure_caption": "off house-brand gear",
             "title": "Club member pricing",
-            "text": "Club members get everyday pricing on Fencing Club house-brand gear. Name brands such as UNIC and FWF aren't included.",
-            "note": "Up to 15% off house-brand gear"
+            "text": "Club members get everyday pricing on Fencing Club house-brand gear. Name brands such as UNIC and FWF aren't included."
           }
         },
         "bulk": {
           "type": "_program",
           "settings": {
             "icon": "boxes",
+            "figure_prefix": "Up to",
+            "figure": "10%",
+            "figure_caption": "off orders of $1,500 or more",
             "title": "Bulk and team kitting",
-            "text": "Kitting out a full squad? Kitting out a full squad? Orders of $1,500 or more get bulk pricing.",
-            "note": "Up to 10% off"
+            "text": "Kitting out a full squad? Orders of $1,500 or more get bulk pricing."
           }
         },
         "partnerships": {
           "type": "_program",
           "settings": {
             "icon": "plug",
+            "badge": "Coming soon",
             "title": "Club partnerships",
-            "text": "Show our gear on your club's website, with a custom checkout for the starter kits you approve.",
-            "badge": "Coming soon"
+            "figure_caption": "Partner clubs only",
+            "text": "Show our gear on your club's website, with a custom checkout for the starter kits you approve."
           }
         }
       },
@@ -493,6 +558,23 @@
             "text": "We're building a white-label portal with clubs for scheduling classes and private lessons and taking payments.",
             "status": "planned"
           }
+        },
+        "store": {
+          "type": "_milestone",
+          "settings": {
+            "date": "Late 2028",
+            "title": "White-label fencing store",
+            "text": "A fencing store built into your club's website. Sell our products, choose the kits you recommend, and earn a commission.",
+            "status": "planned"
+          }
+        },
+        "note": {
+          "type": "text",
+          "static": true,
+          "settings": {
+            "text": "<p>Dates for planned work are targets and may move.</p>",
+            "style": "subtle"
+          }
         }
       },
       "block_order": [
@@ -503,7 +585,8 @@
         "masks",
         "blades",
         "uniform",
-        "platform"
+        "platform",
+        "store"
       ]
     },
     "brands": {
@@ -529,7 +612,7 @@
               "settings": {
                 "heading": "Official dealer for the brands fencers trust",
                 "tag": "h2",
-                "size": "md"
+                "size": "xl"
               }
             },
             "header-text": {
@@ -605,7 +688,10 @@
         "logo-6",
         "logo-7",
         "logo-8"
-      ]
+      ],
+      "settings": {
+        "layout": "boxed"
+      }
     },
     "stats": {
       "type": "about-stats",
@@ -644,7 +730,7 @@
           "type": "text",
           "settings": {
             "text": "<p>Most of what we sell is our own brand, ordered straight from the factories that make it. You pay for the gear, not a chain of markups.</p>",
-            "style": "subtle"
+            "style": "lead"
           },
           "static": true
         },
@@ -716,7 +802,7 @@
               "settings": {
                 "heading": "We're just getting started.",
                 "tag": "h3",
-                "size": "md"
+                "size": "lg"
               }
             },
             "body": {
@@ -768,7 +854,8 @@
             "label": "Get in touch",
             "link": "shopify://pages/contact",
             "style": "primary",
-            "size": "lg"
+            "size": "lg",
+            "show_arrow": true
           },
           "static": true
         }
@@ -777,7 +864,6 @@
     }
   },
   "order": [
-    "breadcrumbs",
     "hero",
     "story",
     "clubs",

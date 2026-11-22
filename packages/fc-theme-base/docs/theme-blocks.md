@@ -8,10 +8,10 @@ Shared blocks live in `blocks/`. A section lists the blocks it accepts in its sc
 
 - **Heading** (`heading.liquid`): the heading text, its level (`h1` to `h4`, `h2` by default), a size from small to
   extra large, and its alignment. Level sets the document outline and size sets the look, so pick them separately.
-- **Text** (`text.liquid`): rich text in one of four styles: body, lead (larger and muted, for intros and story
-  paragraphs), subtle (smaller, muted, for supporting detail) or eyebrow (the small uppercase label above a heading),
-  and its alignment. Merchants type eyebrows in normal case;
-  the style makes them uppercase.
+- **Text** (`text.liquid`): rich text in one of five styles: body, lead (larger and muted, for intros and story
+  paragraphs), subtle (smaller, muted, for supporting detail), eyebrow (the small uppercase label above a heading) or
+  quote (a pull quote, larger with a rule beside it), and its alignment. Merchants type eyebrows in normal case; the
+  style makes them uppercase.
 - **Button** (`button.liquid`): a label, a link, a style (primary, secondary or outline), a size and an optional
   trailing arrow. It renders through `ui-button`. Without a link it shows disabled, so it stays visible in the editor.
 - **Image** (`image.liquid`): an image, shown at its own shape or cropped to square, portrait, landscape or wide.
@@ -25,9 +25,10 @@ Shared blocks live in `blocks/`. A section lists the blocks it accepts in its sc
 - **Feature** (`feature.liquid`): a short selling point: an icon, a label, a line of detail and an optional link.
 - **Product card** (`product-card.liquid`): one chosen product, shown through `ui-product-card`, with an optional
   badge and add button.
-- **Phase heading** (`phase-heading.liquid`): opens an About page chapter with a referee's call: its English meaning
-  on one line, the call in large type under it, then a rule. The call is a level 2 or 3 heading, or a paragraph when a
-  level 1 heading follows it.
+- **Phase heading** (`phase-heading.liquid`): opens an About page chapter with a referee's call. The call style puts
+  its English meaning on one line, the call in very large type under it, then a rule. The eyebrow style, for the
+  hero, is a short rule and the call in small capitals, with the meaning beside it on phones. The call is a level 2
+  or 3 heading, or a paragraph when a level 1 heading follows it.
 
 ## Section shells
 
@@ -68,11 +69,19 @@ shared Breadcrumbs section, the template's first section.
 The About page (`templates/page.about.json`) follows the About Us board in the Pen. Five of its sections are
 chapters named after the calls of a bout, each opening with a static Phase heading: About hero (En garde), Principles
 (Prêts), Timeline (Allez), Stats (Touché) and Closing (La belle). Our story, Clubs and Programs sit between them, and
-Brand logos is the homepage section. Clubs are `_club` blocks, with the static `_clubs-callout` band under them;
-program cards are `_program` blocks, timeline steps `_milestone` blocks and figures `_stat` blocks. Principles are
-Feature blocks, which the section stands icon over text. Stats, the callout and the closing panel are dark: their
-shared shell in `assets/section-about.css` turns the roles light inside them, so the blocks need no dark variants.
-The hero's "Read our story" button links to `#our-story`, the Our story section's id.
+Brand logos is the homepage section in its boxed layout. The hero is a full-bleed photo (a section setting) with the
+header floating over it on wide screens, as on the homepage. It renders the breadcrumbs itself, so the template has
+no Breadcrumbs section. Under its copy, the static `_bout-nav` holds a `_bout-link` per chapter; each links to its
+section's id (`#our-story`, `#what-we-stand-for`, `#how-far-weve-come`, `#the-numbers`, `#work-with-us`).
+
+Clubs are `_club` blocks, with the static `_clubs-callout` band under them; program cards are `_program` blocks,
+timeline steps `_milestone` blocks and figures `_stat` blocks. A program card leads with its offer (prefix, figure and
+detail); one with a badge, such as Coming soon, leads with its title on the muted fill. Principles are Feature blocks,
+which the section stands icon over text, then the static warehouse photo beside how we operate. The story's photo is a
+section setting, so it can use the full width. Stats, the callout and the closing panel are dark: their shared shell in
+`assets/section-about.css` turns the roles light inside them, so the blocks need no dark variants. That shell also
+sets the page's larger heading scale (Large for chapter headings, Medium beside a photo or in a panel) and the
+`about-lead` statement under a phase heading.
 
 The Contact page has two sets of blocks in different places, so each sits in a static block that renders its own
 children: `_contact-topics` holds the `_contact-topic` cards above the form, shown through `ui-contact-intent-card`,

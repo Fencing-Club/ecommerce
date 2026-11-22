@@ -4,7 +4,10 @@ import { section } from '../../liquid.js';
 
 const stat = (id, number, label) => ({ id, type: '_stat', settings: { number, label } });
 
-/** `sections/about-stats.liquid`: the shop's numbers on a dark band. Each figure is a `_stat` block. */
+/**
+ * `sections/about-stats.liquid`: the shop's numbers on a dark band, with a scoring box's lamps beside the call and the
+ * figures on a ruled scoreboard. Each figure is a `_stat` block.
+ */
 export default {
   title: 'Sections/About/Stats',
   parameters: { layout: 'fullscreen' },
@@ -19,7 +22,7 @@ export default {
           { id: 'heading', type: 'heading', settings: { heading: 'Measured, not marketed.', tag: 'h3', size: 'lg' } },
         ],
       },
-      { id: 'caption', type: 'text', settings: { text: '<p>Most of what we sell is our own brand.</p>', style: 'subtle' } },
+      { id: 'caption', type: 'text', settings: { text: '<p>Most of what we sell is our own brand.</p>', style: 'lead' } },
     ],
     blocks: [stat('orders', '9,700+', 'Orders shipped'), stat('fencers', '7,400+', 'Fencers equipped'), stat('middlemen', '0', 'Middlemen')],
   }),

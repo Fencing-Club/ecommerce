@@ -2,7 +2,7 @@ import { expect } from 'storybook/test';
 import { phaseHeading } from '../../fixtures.js';
 import { section } from '../../liquid.js';
 
-const button = (id, label, link, style) => ({ id, type: 'button', settings: { label, link, style, size: 'lg' } });
+const button = (id, label, link, style) => ({ id, type: 'button', settings: { label, link, style, size: 'lg', show_arrow: true } });
 
 /** `sections/about-closing.liquid`: the About page's last chapter, an invitation to get in touch, on a dark panel. */
 export default {
@@ -16,7 +16,7 @@ export default {
         type: 'group',
         settings: { direction: 'column', gap: 'md' },
         blocks: [
-          { id: 'heading', type: 'heading', settings: { heading: 'We’re just getting started.', tag: 'h3', size: 'md' } },
+          { id: 'heading', type: 'heading', settings: { heading: 'We’re just getting started.', tag: 'h3', size: 'lg' } },
           { id: 'body', type: 'text', settings: { text: '<p>There’s more to come, from our own certified masks to a platform for clubs, and we’d love to build it with the fencing community.</p>', style: 'lead' } },
         ],
       },

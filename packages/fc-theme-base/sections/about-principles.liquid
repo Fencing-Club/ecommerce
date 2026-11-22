@@ -1,50 +1,105 @@
 {{ 'section-about.css' | asset_url | stylesheet_tag }}
 
-<div class="about-section about-section--phase about-section--muted about-principles">
+<div class="about-section about-section--phase about-section--muted about-principles" id="what-we-stand-for">
   {%- content_for 'block', type: 'phase-heading', id: 'phase' -%}
-  {%- content_for 'block', type: 'text', id: 'lead' -%}
+  <div class="about-lead">{%- content_for 'block', type: 'text', id: 'lead' -%}</div>
   <div class="about-principles__grid">{%- content_for 'blocks' -%}</div>
   <div class="about-principles__operations">
-    {%- content_for 'block', type: 'heading', id: 'operations_heading' -%}
-    <div class="about-principles__columns">
+    <div class="about-principles__photo">
+      {%- content_for 'block', type: 'image', id: 'operations_image' -%}
+    </div>
+    <div class="about-principles__copy">
+      {%- content_for 'block', type: 'text', id: 'operations_eyebrow' -%}
+      {%- content_for 'block', type: 'heading', id: 'operations_heading' -%}
       {%- content_for 'block', type: 'text', id: 'operations_start' -%}
       {%- content_for 'block', type: 'text', id: 'operations_end' -%}
+      {%- content_for 'block', type: 'text', id: 'company' -%}
     </div>
-    {%- content_for 'block', type: 'text', id: 'company' -%}
   </div>
 </div>
 
 {% stylesheet %}
-  /* Each principle stands its icon over its text. */
+  .about-principles {
+    gap: calc(var(--spacing) * 18);
+  }
+  /* Each principle stands its icon over its text, under a rule of its own. */
   .about-principles__grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--spacing-8);
+    gap: var(--spacing-10);
   }
   .about-principles__grid .block-feature {
     flex-direction: column;
     gap: var(--spacing-3-5);
+    height: 100%;
+    padding-top: var(--spacing-7);
+    border-top: 1px solid var(--border);
   }
+  .about-principles__grid .block-feature > .ui-icon {
+    width: var(--spacing-7);
+    height: var(--spacing-7);
+  }
+  .about-principles__grid .block-feature__text {
+    gap: var(--spacing-3-5);
+  }
+  .about-principles__grid .block-feature__label {
+    font-size: calc(var(--spacing) * 5.25);
+    line-height: var(--leading-snug);
+    letter-spacing: -0.014em;
+  }
+  .about-principles__grid .block-feature__detail {
+    font-size: var(--text-base);
+    line-height: 1.6;
+  }
+  /* The warehouse photo beside how we work. */
   .about-principles__operations {
+    display: grid;
+    grid-template-columns: minmax(0, 62fr) minmax(0, 54fr);
+    gap: var(--spacing-24);
+    align-items: center;
+    padding-top: var(--spacing-6);
+  }
+  .about-principles__photo .block-image {
+    aspect-ratio: 62 / 52;
+  }
+  .about-principles__copy {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-4);
-    padding-top: var(--spacing-5);
+    gap: var(--spacing-6);
   }
-  .about-principles__columns {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--spacing-12);
+  .about-principles__copy .block-text--lead {
+    line-height: 1.65;
   }
   @media (max-width: 989px) {
     .about-principles__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-  @media (max-width: 749px) {
-    .about-principles__grid,
-    .about-principles__columns {
+    .about-principles__operations {
       grid-template-columns: minmax(0, 1fr);
-      gap: var(--spacing-6);
+      gap: var(--spacing-10);
     }
+  }
+  /* Phones list the principles as rows, icon beside text. */
+  @media (max-width: 749px) {
+    .about-principles { gap: var(--spacing-8); }
+    .about-principles__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+    }
+    .about-principles__grid .block-feature {
+      flex-direction: row;
+      gap: var(--spacing-4);
+      padding-block: calc(var(--spacing) * 5.5);
+    }
+    .about-principles__grid .block-feature > .ui-icon {
+      width: var(--spacing-6);
+      height: var(--spacing-6);
+    }
+    .about-principles__grid .block-feature__text { gap: var(--spacing-1-5); }
+    .about-principles__grid .block-feature__label { font-size: calc(var(--spacing) * 4.75); }
+    .about-principles__operations {
+      gap: var(--spacing-6);
+      padding-top: var(--spacing-2);
+    }
+    .about-principles__photo .block-image { aspect-ratio: 35 / 28; }
   }
 {% endstylesheet %}
 
@@ -69,7 +124,9 @@
           "static": true,
           "settings": { "text": "<p>Before the bout, you settle into your stance. Here's ours.</p>", "style": "body" }
         },
-        { "type": "heading", "id": "operations_heading", "static": true, "settings": { "heading": "How we operate", "tag": "h3", "size": "sm" } },
+        { "type": "image", "id": "operations_image", "static": true, "settings": { "aspect_ratio": "landscape" } },
+        { "type": "text", "id": "operations_eyebrow", "static": true, "settings": { "text": "<p>How we operate</p>", "style": "eyebrow" } },
+        { "type": "heading", "id": "operations_heading", "static": true, "settings": { "heading": "Our own stock, our own team", "tag": "h3", "size": "md" } },
         { "type": "text", "id": "operations_start", "static": true, "settings": { "text": "<p>We hold our own inventory.</p>", "style": "lead" } },
         { "type": "text", "id": "operations_end", "static": true, "settings": { "text": "<p>Our own team handles every order.</p>", "style": "lead" } },
         { "type": "text", "id": "company", "static": true, "settings": { "text": "<p>Fencing Club is operated by Fencing Club LLC, a Washington limited liability company.</p>", "style": "subtle" } },

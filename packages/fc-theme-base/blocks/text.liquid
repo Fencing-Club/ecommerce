@@ -43,6 +43,23 @@
     text-transform: uppercase;
     color: var(--muted-foreground);
   }
+  /* A pull quote: a line from the copy set larger, with a rule beside it. */
+  .block-text--quote {
+    padding: var(--spacing-1) 0 var(--spacing-1) var(--spacing-8);
+    border-inline-start: 3px solid var(--foreground);
+    font-size: var(--text-3xl);
+    line-height: 1.22;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: -0.027em;
+    color: var(--foreground);
+  }
+  @media (max-width: 749px) {
+    .block-text--quote {
+      padding-inline-start: var(--spacing-5);
+      font-size: var(--text-2xl);
+      line-height: 1.25;
+    }
+  }
   .block-text--left { text-align: start; }
   .block-text--center { text-align: center; }
   .block-text--right { text-align: end; }
@@ -67,7 +84,8 @@
         { "value": "body", "label": "t:blocks.text.settings.style.options.body" },
         { "value": "lead", "label": "t:blocks.text.settings.style.options.lead" },
         { "value": "subtle", "label": "t:blocks.text.settings.style.options.subtle" },
-        { "value": "eyebrow", "label": "t:blocks.text.settings.style.options.eyebrow" }
+        { "value": "eyebrow", "label": "t:blocks.text.settings.style.options.eyebrow" },
+        { "value": "quote", "label": "t:blocks.text.settings.style.options.quote" }
       ]
     },
     {

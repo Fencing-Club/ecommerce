@@ -1,6 +1,6 @@
 {{ 'section-about.css' | asset_url | stylesheet_tag }}
 
-<div class="about-section about-section--muted about-programs">
+<div class="about-section about-programs">
   {%- content_for 'block', type: 'group', id: 'header' -%}
   <div class="about-programs__grid">{%- content_for 'blocks' -%}</div>
 </div>
@@ -18,7 +18,10 @@
     .about-programs__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 749px) {
-    .about-programs__grid { grid-template-columns: minmax(0, 1fr); }
+    .about-programs__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--spacing-3);
+    }
   }
 {% endstylesheet %}
 
@@ -44,11 +47,11 @@
         },
         {
           "type": "_program",
-          "settings": { "icon": "badge-percent", "title": "Club member pricing", "text": "Club members save on house-brand gear every day.", "note": "Up to 15% off house-brand gear" }
+          "settings": { "icon": "badge-percent", "figure_prefix": "Up to", "figure": "15%", "figure_caption": "off house-brand gear", "title": "Club member pricing", "text": "Club members save on house-brand gear every day." }
         },
         {
           "type": "_program",
-          "settings": { "icon": "boxes", "title": "Bulk and team kitting", "text": "Large orders unlock bulk pricing.", "note": "Up to 10% off" }
+          "settings": { "icon": "boxes", "figure_prefix": "Up to", "figure": "10%", "figure_caption": "off orders of $1,500 or more", "title": "Bulk and team kitting", "text": "Large orders unlock bulk pricing." }
         }
       ]
     }

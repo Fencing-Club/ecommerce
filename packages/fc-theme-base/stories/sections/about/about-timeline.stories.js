@@ -4,7 +4,10 @@ import { section } from '../../liquid.js';
 
 const milestone = (id, date, title, text, status = 'done') => ({ id, type: '_milestone', settings: { date, title, text, status } });
 
-/** `sections/about-timeline.liquid`: the shop's journey. Each step is a `_milestone` block, done, in progress or planned; planned ones are muted. */
+/**
+ * `sections/about-timeline.liquid`: the shop's journey on a shaded track, with a legend for the dots and a note on
+ * planned dates. Each step is a `_milestone` block, done, in progress or planned; planned ones are muted.
+ */
 export default {
   title: 'Sections/About/Timeline',
   parameters: { layout: 'fullscreen' },
@@ -12,6 +15,7 @@ export default {
     staticBlocks: [
       phaseHeading('Fence', 'Allez'),
       { id: 'lead', type: 'heading', settings: { heading: 'We haven’t stopped moving since our first allez.', tag: 'h3', size: 'sm' } },
+      { id: 'note', type: 'text', settings: { text: '<p>Dates for planned work are targets and may move.</p>', style: 'subtle' } },
     ],
     blocks: [
       milestone('founded', '2023', 'Fencing Club is founded', 'We open in Woodinville, near Seattle.'),
@@ -28,10 +32,13 @@ export const Timeline = {
     await expect(canvas.getByRole('heading', { level: 2, name: 'Allez' })).toBeVisible();
     const steps = canvas.getAllByRole('heading', { level: 3 }).slice(1);
     await expect(steps.map((step) => step.textContent.trim())).toEqual(['Fencing Club is founded', 'Authorized dealer', 'Our own certified masks', 'FIE blades from UNIC', 'An 800N uniform']);
-    await expect(canvas.getAllByText('Planned')).toHaveLength(2);
-    const masks = canvas.getByRole('heading', { name: 'Our own certified masks' }).parentElement;
+    await expect(canvas.getByText('Dates for planned work are targets and may move.')).toBeVisible();
+    // The legend names each kind of dot once; the two planned milestones and the one in progress carry pills.
+    await expect(canvas.getByText('Done')).toBeVisible();
+    await expect(canvas.getAllByText('Planned')).toHaveLength(3);
+    const masks = canvas.getByRole('heading', { name: 'Our own certified masks' }).closest('.about-milestone');
     await expect(within(masks).getByText('In progress')).toBeVisible();
-    const founded = canvas.getByRole('heading', { name: 'Fencing Club is founded' }).parentElement;
+    const founded = canvas.getByRole('heading', { name: 'Fencing Club is founded' }).closest('.about-milestone');
     await expect(within(founded).getByText('2023')).toBeVisible();
     await expect(within(founded).queryByText('Planned')).toBeNull();
   },
