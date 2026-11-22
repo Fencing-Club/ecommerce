@@ -1,0 +1,27 @@
+{% doc %}
+  A filter in use, as a chip that removes it: the filter's name, then an x. Active filters use the small size; the
+  no-results panel uses the large one, with how many products removing the filter brings back.
+
+  @param {string} label - The filter's name, such as Size M.
+  @param {string} url - Where removing the filter goes.
+  @param {string} [size] - sm (default) or md.
+  @param {boolean} [with_count] - Leaves room after the name for how many products removing the filter brings back,
+    which a script fills in.
+  @param {string} [attributes] - Extra attributes, such as data hooks.
+
+  @example
+  {% render 'ui-filter-chip', label: value.label, url: value.url_to_remove %}
+{% enddoc %}
+{%- liquid
+  # The link is named Remove Size M from its own text, so the visible name and count stay part of it. The words around
+  # the name come from the translation, in whatever order it puts them.
+  assign remove_label = 'collections.active.remove' | t: label: '[name]'
+  assign around = remove_label | split: '[name]'
+-%}
+<a class="ui-filter-chip{% if size == 'md' %} ui-filter-chip--md{% endif %}" href="{{ url }}" {{ attributes }}>
+  {%- if around[0] != blank -%}<span class="visually-hidden">{{ around[0] }}</span>{%- endif -%}
+  <span class="ui-filter-chip__label">{{ label | escape }}</span>
+  {%- if around[1] != blank -%}<span class="visually-hidden">{{ around[1] }}</span>{%- endif -%}
+  {%- if with_count %} <span class="ui-filter-chip__count" data-filter-chip-count></span>{%- endif -%}
+  {%- render 'ui-icon', icon: 'x', size: 14 -%}
+</a>

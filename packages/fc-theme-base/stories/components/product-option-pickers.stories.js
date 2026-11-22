@@ -34,11 +34,9 @@ export const ProductPage = {
 };
 
 export const QuickView = {
-  args: { compact: true, size_unpicked: true, size_guide_controls: 'StorySizeGuide' },
+  args: { compact: true, size_unpicked: true },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('group', { name: 'Size Choose a size' })).toBeVisible();
-    const guide = canvas.getByRole('link', { name: 'Size guide' });
-    await expect(guide).toHaveAttribute('aria-controls', 'StorySizeGuide');
-    await expect(guide).toHaveAttribute('aria-expanded', 'false');
+    await expect(canvas.getByRole('link', { name: 'Size guide' })).toHaveAttribute('href', '#size-guide');
   },
 };

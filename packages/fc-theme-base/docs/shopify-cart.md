@@ -19,7 +19,8 @@ Dawn cart stylesheets are gone.
   with the checkout note under it on the left and the savings on the right, checkout (`cart-checkout`) and the trust
   notes (returns and secure checkout, from the theme's cart settings). The items subtotal shows only when it differs from the total, and the Shipping row only when shipping is free.
   The checkout note says shipping and taxes are calculated at checkout, or only taxes once shipping is free.
-- `cart-message`: the empty cart and the load failed message. `cart-popular` shows collections chosen in the theme's
+- `cart-message`: the empty cart and the load failed message, each a `ui-message` (an icon in a circle, a heading, a
+  line of text and buttons), which quick view also uses when a product doesn't load. `cart-popular` shows collections chosen in the theme's
   cart settings under the empty message. `cart-skeleton` draws the loading state.
 
 ## Behavior

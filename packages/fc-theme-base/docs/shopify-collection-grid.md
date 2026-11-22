@@ -22,8 +22,9 @@ starts from the top of the collection.
 ## No results
 
 `snippets/collection-no-results.liquid` replaces the grid when it's empty. With filters on, it offers removing one
-of up to three filters in use, each with how many products that brings back, then Clear all filters and Ask us to
-find it, which goes to the section's contact page. The collection's best sellers follow. The script loads the counts
+of up to three filters in use, each a large filter chip (`snippets/ui-filter-chip.liquid`) with how many products
+that brings back, then Clear all filters and Ask us to find it, which goes to the section's contact page. Phones
+list the chips as full-width rows. The collection's best sellers follow. The script loads the counts
 and best sellers through the section rendering API, and leaves them out if a request fails.
 
 A collection with nothing in it at all says new gear is on its way and links one level up the category menu.

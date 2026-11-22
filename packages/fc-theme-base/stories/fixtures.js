@@ -365,7 +365,7 @@ export const quickViewProduct = (variantId) => {
   return {
     id: 9001,
     title: 'Novus Underarm Protector 350N',
-    vendor: 'Novus',
+    vendor: 'FWF',
     url: '/products/novus-underarm-protector',
     description: '<p>A light 350N underarm protector for club training and domestic events, worn under the jacket on your weapon arm.</p>',
     price: 2195,

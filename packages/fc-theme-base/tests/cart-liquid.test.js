@@ -297,7 +297,7 @@ describe('whole-cart messages', () => {
 
   it('keeps reward amounts out of the empty message', () => {
     for (const view of ['flyout', 'page']) {
-      const body = text(render(view, 'empty').querySelector('[data-cart-message="empty"] .fc-message__body'));
+      const body = text(render(view, 'empty').querySelector('[data-cart-message="empty"] .ui-message__body'));
       expect(body).toBe('Find everything you need for your next bout, from a first kit to competition gear.');
     }
   });

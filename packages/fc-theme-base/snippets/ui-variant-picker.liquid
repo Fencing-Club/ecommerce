@@ -13,8 +13,6 @@
   @param {string} [form_id] - The product form the inputs belong to.
   @param {boolean} [unpicked] - Shows no value chosen yet, with a prompt such as Choose a size in the label.
   @param {string} [size_guide_url] - Adds a Size guide link at the end of the label row.
-  @param {string} [size_guide_controls] - The id of a panel on the page that Size guide opens instead of following its
-    link.
   @param {string} [help] - HTML after the chosen value, such as a help button.
   @param {boolean} [compact] - The smaller choices quick view and quick add use.
 
@@ -80,13 +78,7 @@
   </legend>
   {%- if help != blank -%}<span class="ui-variant-picker__help">{{ help }}</span>{%- endif -%}
   {%- if size_guide_url != blank -%}
-    <a
-      class="ui-variant-picker__guide"
-      href="{{ size_guide_url }}"
-      {% if size_guide_controls != blank %}
-        aria-controls="{{ size_guide_controls }}" aria-expanded="false" data-size-guide-open
-      {% endif %}
-    >
+    <a class="ui-variant-picker__guide" href="{{ size_guide_url }}">
       {%- render 'ui-icon', icon: 'ruler', size: 15 -%}
       {{- 'products.option.size_guide' | t -}}
     </a>

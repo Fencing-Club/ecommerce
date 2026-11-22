@@ -7,7 +7,6 @@
   @param {string} form_id - The product form the inputs belong to.
   @param {boolean} [size_unpicked] - Shows size with no value chosen yet.
   @param {string} [size_guide_url] - Where Size guide goes.
-  @param {string} [size_guide_controls] - The id of a panel on the page that Size guide opens instead.
   @param {string} [hand_help] - HTML after the chosen hand, such as the Which hand? button.
   @param {boolean} [compact] - The smaller choices quick view and quick add use.
 
@@ -35,11 +34,9 @@
       endif
       assign unpicked = false
       assign guide = ''
-      assign guide_controls = ''
       if is_size
         assign unpicked = size_unpicked
         assign guide = size_guide_url
-        assign guide_controls = size_guide_controls
       endif
       assign help = ''
       if group == 2
@@ -53,7 +50,6 @@
       form_id: form_id,
       unpicked: unpicked,
       size_guide_url: guide,
-      size_guide_controls: guide_controls,
       help: help,
       compact: compact
     -%}

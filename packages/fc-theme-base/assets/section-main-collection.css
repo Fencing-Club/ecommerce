@@ -581,21 +581,6 @@ input[type='checkbox'].collection-filter-switch__input:checked::after { transfor
 
 .collection-active-filters__list { display: contents; }
 
-.collection-active-filter {
-  display: inline-flex;
-  gap: 0.6rem;
-  align-items: center;
-  padding: 0.7rem 1rem 0.7rem 1.2rem;
-  border-radius: 999px;
-  background: var(--muted);
-  font-size: 1.3rem;
-  font-weight: 500;
-  color: var(--foreground);
-  text-decoration: none;
-}
-
-.collection-active-filter:hover { background: var(--secondary); }
-
 .collection-active-filters__clear {
   font-size: 1.3rem;
   font-weight: 500;
@@ -641,23 +626,9 @@ input[type='checkbox'].collection-filter-switch__input:checked::after { transfor
   margin: 0;
 }
 
-.collection-no-results__suggestion {
-  display: inline-flex;
-  gap: 0.8rem;
-  align-items: center;
-  padding: 0.9rem 1.4rem;
-  border: 1px solid var(--input);
-  border-radius: 999px;
-  background: var(--background);
-  font-size: 1.4rem;
-  font-weight: 500;
-  color: var(--foreground);
-  text-decoration: none;
-}
-
-.collection-no-results__suggestion:hover { border-color: var(--foreground); }
-.collection-no-results__count { font-size: 1.2rem; font-weight: 400; color: var(--muted-foreground); }
-.collection-no-results__count:empty { display: none; }
+/* The panel is muted, so its chips sit on the background. */
+.collection-no-results__suggestions .ui-filter-chip { background: var(--background); }
+.collection-no-results__suggestions .ui-filter-chip:hover { border-color: var(--foreground); }
 
 .collection-no-results__actions {
   display: flex;
@@ -781,9 +752,9 @@ input[type='checkbox'].collection-filter-switch__input:checked::after { transfor
   .collection-no-results__hint { font-size: 1.4rem; }
   .collection-no-results__suggestions,
   .collection-no-results__actions { flex-direction: column; flex-wrap: nowrap; align-self: stretch; }
-  .collection-no-results__suggestion { display: flex; padding: 1.1rem 1.4rem; border-radius: 1rem; text-align: left; }
-  .collection-no-results__label { flex: 1; }
-  .collection-no-results__count { font-size: 1.3rem; }
+  /* Phones list the suggestions as full-width rows: the name on the left, the count and x on the right. */
+  .collection-no-results__suggestions .ui-filter-chip { display: flex; height: 4.4rem; border-radius: 1rem; text-align: left; }
+  .collection-no-results__suggestions .ui-filter-chip__label { flex: 1; }
   .collection-no-results__actions { gap: 1.2rem; padding-top: 0; }
   .collection-no-results__actions .ui-button { width: 100%; min-height: 4.6rem; border-radius: 1rem; font-size: 1.5rem; }
   .collection-load-more__pagination .ui-pagination__next,

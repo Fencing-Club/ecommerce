@@ -118,15 +118,14 @@
       "open": "Quick view",
       "close": "Close",
       "loading": "Loading product",
-      "error": "This product didn't load. Open its page instead.",
+      "error": "We couldn't load this product",
+      "error_body": "Your connection or our store didn't respond.",
+      "try_again": "Try again",
       "photos": "Photos",
       "photo_count": "{{ index }} of {{ count }}",
       "show_photo": "Show photo {{ index }}",
       "full_details": "View full details",
-      "choose_first": "Choose a {{ option }} first",
-      "back_to_options": "Back to options",
-      "size_chart": "Size chart: {{ title }}",
-      "full_chart": "View full chart"
+      "choose_first": "Choose a {{ option }} first"
     },
     "stock": {
       "local": "In stock in {{ place }}",

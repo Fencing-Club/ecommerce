@@ -59,7 +59,9 @@ comes from its Shopify source, not its label:
 - Every other group is checkboxes with counts. A group with more than five values shows four and a Show more button.
 
 The filters in use show above the grid as chips that each remove one, then Clear all
-(`snippets/collection-active-filters.liquid`). Size chips name the filter, so they read Size 3XL.
+(`snippets/collection-active-filters.liquid`). Size chips name the filter, so they read Size 3XL. Each chip is
+`snippets/ui-filter-chip.liquid`: the name, then the x, named Remove Size 3XL for screen readers. The no-results
+panel uses the same chip.
 
 ## Applying filters
 
