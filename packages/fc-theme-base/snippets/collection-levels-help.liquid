@@ -1,0 +1,61 @@
+{% doc %}
+  A help button that opens what each protection level means, with a link down to the buying guide. Phones show the
+  icon only.
+
+  @param {string} id - Makes the popover's id unique.
+  @param {string} [guide_url] - Where Read the buying guide goes. Without it the link is left out.
+
+  @example
+  {% render 'collection-levels-help', id: section.id, guide_url: '#BuyingGuide' %}
+{% enddoc %}
+{%- liquid
+  assign popover_id = 'LevelsHelp-' | append: id
+  assign title_id = popover_id | append: '-title'
+  assign levels = '350N,800N,800N FIE,1600N FIE,FIE' | split: ','
+-%}
+<button
+  type="button"
+  class="collection-levels-help"
+  popovertarget="{{ popover_id }}"
+  style="anchor-name: --levels-help-{{ id }}"
+>
+  {%- render 'ui-icon', icon: 'circle-question-mark', size: 16 -%}
+  <span class="collection-levels-help__label">{{ 'collections.levels.button' | t }}</span>
+</button>
+<div
+  class="collection-levels-popover"
+  id="{{ popover_id }}"
+  popover
+  role="dialog"
+  aria-labelledby="{{ title_id }}"
+  style="position-anchor: --levels-help-{{ id }}"
+>
+  <div class="collection-levels-popover__header">
+    <h2 class="collection-levels-popover__title" id="{{ title_id }}">{{ 'collections.levels.title' | t }}</h2>
+    <button
+      type="button"
+      class="collection-levels-popover__close"
+      popovertarget="{{ popover_id }}"
+      popovertargetaction="hide"
+      aria-label="{{ 'accessibility.close' | t }}"
+    >
+      {%- render 'ui-icon', icon: 'x', size: 16 -%}
+    </button>
+  </div>
+  <p class="collection-levels-popover__intro">{{ 'collections.levels.intro' | t }}</p>
+  <dl class="collection-levels-popover__list">
+    {%- for level in levels -%}
+      {%- assign level_key = level | handle | replace: '-', '_' | prepend: 'collections.levels.level_' -%}
+      <div class="collection-levels-popover__level">
+        <dt>{% render 'ui-protection-badge', label: level %}</dt>
+        <dd>{{ level_key | t }}</dd>
+      </div>
+    {%- endfor -%}
+  </dl>
+  {%- if guide_url != blank -%}
+    <a class="collection-levels-popover__guide" href="{{ guide_url }}">
+      {{- 'collections.levels.guide' | t -}}
+      {%- render 'ui-icon', icon: 'arrow-down', size: 14 -%}
+    </a>
+  {%- endif -%}
+</div>

@@ -62,9 +62,7 @@ output { display: block; margin-top: 12px; font-size: 14px; color: var(--cp-text
 .lab-catalog-layout { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: 32px; }
 .lab-catalog-main { min-width: 0; }
 .lab-filter-disclosure > summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; font-weight: 600; }
-.lab-catalog-layout .collection-filter-panel__header { display: flex; }
 @media (min-width:750px) { .lab-filter-disclosure > summary, .lab-filter-actions { display: none; } }
-@media (max-width:749px) { .lab-catalog-layout .collection-filter-panel__header { display: none; } }
 .lab-filter-actions { padding-block: 8px; }
 .lab-catalog-layout .collection-filter-option { min-height: 44px; }
 .lab-catalog-layout .collection-filter-group--swatch .collection-filter-group__options { gap: 0; }

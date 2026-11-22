@@ -1719,10 +1719,6 @@
         "product": {
           "label": "Product"
         },
-        "badge": {
-          "label": "Badge",
-          "info": "Shows on the photo, for example Best seller."
-        },
         "show_add": {
           "label": "Show add button",
           "info": "Shows only for products with one variant."
@@ -1823,6 +1819,12 @@
     "announcement": {
       "name": "Announcement",
       "settings": {
+        "content": {
+          "label": "Shows",
+          "info": "Free shipping uses the minimum in Theme settings > Cart and shows only to shoppers who get it.",
+          "options__custom": "Your own text",
+          "options__free_shipping": "Free shipping"
+        },
         "title": {
           "label": "Title"
         },

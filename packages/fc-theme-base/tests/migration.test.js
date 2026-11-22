@@ -17,6 +17,10 @@ describe('Fencing Club migration package', () => {
       { namespace: 'custom', key: 'protection_rating', name: 'Safety Level', type: 'single_line_text_field', ownerType: 'PRODUCT', access: { storefront: 'PUBLIC_READ' } },
       { namespace: 'custom', key: 'fie_status', name: 'FIE Rating', type: 'single_line_text_field', ownerType: 'PRODUCT', access: { storefront: 'PUBLIC_READ' } },
     ]);
+    expect(manifest.resources.find((resource) => resource.key === 'definition.brand').data.fieldDefinitions.map((field) => [field.key, field.type])).toEqual([
+      ['title', 'single_line_text_field'],
+      ['logo', 'file_reference'],
+    ]);
     expect(JSON.stringify(manifest)).not.toContain('gid://shopify/');
     expect(JSON.stringify(manifest)).not.toContain('/collections/sabre');
     expect(JSON.stringify(manifest)).not.toContain('/apps/track');

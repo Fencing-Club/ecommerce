@@ -25,7 +25,7 @@ export const WithDescription = {
 export const FilterOption = {
   args: { id: 'FilterJackets', name: 'filter.p.product_type', label: 'Jackets', variant: 'filter', count: 12 },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('(12)')).toBeVisible();
+    await expect(canvas.getByText('12')).toBeVisible();
   },
 };
 

@@ -90,8 +90,8 @@
                 "slide-2-actions-button": {
                   "type": "button",
                   "settings": {
-                    "label": "Weapons",
-                    "link": "shopify://collections/weapons",
+                    "label": "Blades",
+                    "link": "shopify://collections/blades",
                     "style": "secondary",
                     "size": "lg"
                   }
@@ -99,8 +99,8 @@
                 "slide-2-actions-link": {
                   "type": "link",
                   "settings": {
-                    "label": "Blades",
-                    "link": "shopify://collections/blades"
+                    "label": "Weapons",
+                    "link": "shopify://collections/weapons"
                   }
                 }
               },
@@ -156,7 +156,7 @@
                   "type": "button",
                   "settings": {
                     "label": "Shop Novus",
-                    "link": "shopify://collections/clothing",
+                    "link": "/search?q=novus&type=product",
                     "style": "secondary",
                     "size": "lg"
                   }
@@ -475,7 +475,6 @@
           "type": "product-card",
           "settings": {
             "product": "standard-electric-foil-french",
-            "badge": "Best seller",
             "show_add": true
           }
         },
@@ -483,7 +482,6 @@
           "type": "product-card",
           "settings": {
             "product": "novus-epee-fencing-mask-350n",
-            "badge": "Best seller",
             "show_add": true
           }
         },
@@ -491,7 +489,6 @@
           "type": "product-card",
           "settings": {
             "product": "novus-mens-fencing-jacket-350n",
-            "badge": "Best seller",
             "show_add": true
           }
         },
@@ -499,7 +496,6 @@
           "type": "product-card",
           "settings": {
             "product": "standard-foil-saber-body-cord",
-            "badge": "Best seller",
             "show_add": true
           }
         }

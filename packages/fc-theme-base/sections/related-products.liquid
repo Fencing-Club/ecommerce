@@ -32,7 +32,7 @@
         {% for recommendation in recommendations.products %}
           <li class="grid__item">
             {%- assign card_id = 'RelatedProductTitle-' | append: section.id | append: '-' | append: recommendation.id -%}
-            {%- render 'ui-product-card', product: recommendation, card_id: card_id, show_type: true, show_price: true -%}
+            {%- render 'ui-product-card', product: recommendation, card_id: card_id, show_price: true -%}
           </li>
         {% endfor %}
       </ul>

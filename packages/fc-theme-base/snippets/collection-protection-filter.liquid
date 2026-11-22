@@ -1,0 +1,82 @@
+{% doc %}
+  The protection levels a collection can be filtered by: each rating from custom.protection_rating, then FIE from
+  custom.fie_status, with Shopify's count beside each. Picking a rating and FIE together shows, say, 800N FIE kit.
+
+  @param {object} results - The collection or search results whose filters hold the levels.
+  @param {string} section_id - Makes the input ids unique.
+  @param {string} [style] - chips (default) for the toolbar row, or list for the filter panel.
+
+  @example
+  {% render 'collection-protection-filter', results: collection, section_id: section.id %}
+{% enddoc %}
+{%- liquid
+  for filter in results.filters
+    assign parameter_name = filter.param_name | default: filter.values.first.param_name
+    if parameter_name == 'filter.p.m.custom.protection_rating'
+      assign rating_filter = filter
+    elsif parameter_name == 'filter.p.m.custom.fie_status'
+      assign fie_filter = filter
+    endif
+  endfor
+  assign rating_count = rating_filter.values.size | default: 0
+  assign levels = rating_filter.values
+  if fie_filter != blank
+    if levels == blank
+      assign levels = fie_filter.values
+    else
+      assign levels = levels | concat: fie_filter.values
+    endif
+  endif
+-%}
+{%- assign shown = 0 -%}
+{%- capture items -%}
+  {%- for value in levels -%}
+    {%- liquid
+      assign is_fie = false
+      if forloop.index > rating_count
+        assign is_fie = true
+      endif
+      if is_fie and value.value != 'FIE'
+        continue
+      endif
+      if value.count == 0 and value.active == false
+        continue
+      endif
+      assign shown = shown | plus: 1
+      assign option_url = value.url_to_add
+      if value.active
+        assign option_url = value.url_to_remove
+      endif
+      assign input_id = 'ProtectionLevel-' | append: section_id | append: '-' | append: forloop.index
+      assign count_label = 'products.facets.product_count_simple' | t: count: value.count
+    -%}
+    {%- capture filter_attributes -%}data-filter-url="{{ option_url | escape }}"{%- endcapture -%}
+    {%- if style == 'list' -%}
+      <li class="collection-filter-option collection-filter-option--checkbox">
+        {%- capture badge -%}{% render 'ui-protection-badge', label: value.label %}{%- endcapture -%}
+        {% render 'ui-checkbox-field', variant: 'filter', id: input_id, name: value.param_name, value: value.value, label: value.label, label_content: badge, checked: value.active, count: value.count, additional_props: filter_attributes %}
+      </li>
+    {%- else -%}
+      <span class="collection-level-chip">
+        <input type="checkbox" class="collection-level-chip__input" id="{{ input_id }}" name="{{ value.param_name | escape }}" value="{{ value.value | escape }}"{% if value.active %} checked{% endif %} {{ filter_attributes }}>
+        <label for="{{ input_id }}">
+          {%- render 'ui-icon', icon: 'shield-check', size: 14 -%}
+          <span class="collection-level-chip__label">{{ value.label | escape }}</span>
+          <span class="collection-level-chip__count" aria-hidden="true">{{ value.count }}</span>
+          <span class="visually-hidden">{{ count_label }}</span>
+        </label>
+      </span>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if shown > 0 -%}
+  {%- if style == 'list' -%}
+    <ul class="collection-filter-group__options list-unstyled">{{ items }}</ul>
+  {%- else -%}
+    {%- assign label_id = 'ProtectionLevels-' | append: section_id -%}
+    <div class="collection-levels" role="group" aria-labelledby="{{ label_id }}">
+      <span class="collection-levels__label" id="{{ label_id }}">{{ 'collections.toolbar.protection' | t }}</span>
+      {{ items }}
+    </div>
+  {%- endif -%}
+{%- endif -%}

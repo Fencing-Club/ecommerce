@@ -116,11 +116,12 @@ describe('local component library', () => {
   });
   it('serves rendered local responses and currency artwork without enabling writes', async () => {
     const catalog = await (await fetch(`${base}/lab/catalog?type=Jackets`)).text();
-    expect(catalog).toContain('2 of 6 products');
+    expect(catalog).toContain('2 products');
     expect(catalog).toContain('class="ui-checkbox"');
     expect(catalog).not.toContain('value="XL"');
     expect(catalog).not.toContain('collection-filter-option__check');
-    expect(catalog).not.toContain('aria-pressed=');
+    // Only the products-per-row buttons are toggle buttons; filter options are checkboxes.
+    expect(catalog.replace(/<button[^>]*collection-density__option[^>]*>/g, '')).not.toContain('aria-pressed=');
     expect(catalog).not.toContain('accessibility.selected');
     expect(catalog).toContain('data-filter-url=');
     expect(catalog).toContain('type="checkbox"');

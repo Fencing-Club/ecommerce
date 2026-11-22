@@ -15,6 +15,14 @@ export function buildMigrationManifest(sizing, navigation, assignments, pages, c
       namespace: 'custom', key, name, type, ownerType: 'PRODUCT', access: { storefront: 'PUBLIC_READ' },
     } });
   }
+  // Other brands' logos on product cards and the product page. An entry's handle is its vendor's handle.
+  resources.push({ key: 'definition.brand', kind: 'metaobject-definition', data: {
+    type: 'brand', name: 'Brand', displayNameKey: 'title', access: { storefront: 'PUBLIC_READ' },
+    fieldDefinitions: [
+      { key: 'title', name: 'Name', type: 'single_line_text_field', required: true },
+      { key: 'logo', name: 'Logo', type: 'file_reference', required: true },
+    ],
+  } });
   for (const collection of collections) resources.push({ key: `collection.${collection.handle}`, kind: 'collection', data: collection });
   if (journal) resources.push({ key: `blog.${journal.handle}`, kind: 'blog', data: journal });
   const addLinks = (items) => items.map((item) => {

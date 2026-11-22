@@ -1,9 +1,18 @@
+{% doc %}
+  A price filter: a slider with a handle for each end over the lowest and highest price fields. The fields carry
+  Shopify's filter parameters; `assets/facets.js` keeps the slider and fields in step. Wrap it in `price-range`.
+
+  @param {object} filter - Shopify's price range filter.
+  @param {string} id_prefix - Starts the fields' ids, so each copy of the filter on a page is unique.
+
+  @example
+  <price-range>{% render 'price-facet', filter: filter, id_prefix: 'Filter-' %}</price-range>
+{% enddoc %}
 {%- liquid
   assign from_id = id_prefix | append: filter.label | append: '-GTE'
   assign to_id = id_prefix | append: filter.label | append: '-LTE'
   assign from_label = 'products.facets.from' | t
   assign to_label = 'products.facets.to' | t
-  assign maximum = filter.range_max | money_without_currency
   assign from_value = ''
   assign to_value = ''
   if filter.min_value.value != nil
@@ -12,8 +21,45 @@
   if filter.max_value.value != nil
     assign to_value = filter.max_value.value | money_without_currency
   endif
+
+  assign top = filter.range_max | divided_by: 100.0 | ceil
+  assign low = filter.min_value.value | default: 0 | divided_by: 100.0 | floor | at_most: top
+  assign high = filter.max_value.value | default: filter.range_max | divided_by: 100.0 | ceil | at_most: top | at_least: low
+  assign low_share = 0
+  assign high_share = 1
+  if top > 0
+    assign low_share = low | times: 1.0 | divided_by: top
+    assign high_share = high | times: 1.0 | divided_by: top
+  endif
 -%}
-<div class="ui-price-fields">
-  {% render 'ui-text-field', id: from_id, name: filter.min_value.param_name, label: from_label, value: from_value, placeholder: '0', prefix: cart.currency.symbol, inputmode: 'decimal', range_min: 0, range_max: maximum %}
-  {% render 'ui-text-field', id: to_id, name: filter.max_value.param_name, label: to_label, value: to_value, placeholder: maximum, prefix: cart.currency.symbol, inputmode: 'decimal', range_min: 0, range_max: maximum %}
+<div class="ui-price-range" style="--low: {{ low_share }}; --high: {{ high_share }};">
+  <div class="ui-price-range__slider">
+    <input
+      class="ui-price-range__thumb"
+      type="range"
+      min="0"
+      max="{{ top }}"
+      step="1"
+      value="{{ low }}"
+      aria-label="{{ 'products.facets.lowest_price' | t | escape }}"
+      aria-valuetext="{{ cart.currency.symbol }}{{ low }}"
+      data-price-thumb="low"
+    >
+    <input
+      class="ui-price-range__thumb"
+      type="range"
+      min="0"
+      max="{{ top }}"
+      step="1"
+      value="{{ high }}"
+      aria-label="{{ 'products.facets.highest_price' | t | escape }}"
+      aria-valuetext="{{ cart.currency.symbol }}{{ high }}"
+      data-price-thumb="high"
+    >
+  </div>
+  <div class="ui-price-fields">
+    {% render 'ui-text-field', id: from_id, name: filter.min_value.param_name, label: from_label, hide_label: true, value: from_value, placeholder: '0', prefix: cart.currency.symbol, inputmode: 'decimal', range_min: 0, range_max: top %}
+    <span class="ui-price-fields__to" aria-hidden="true">{{ 'products.facets.range_to' | t }}</span>
+    {% render 'ui-text-field', id: to_id, name: filter.max_value.param_name, label: to_label, hide_label: true, value: to_value, placeholder: top, prefix: cart.currency.symbol, inputmode: 'decimal', range_min: 0, range_max: top %}
+  </div>
 </div>
