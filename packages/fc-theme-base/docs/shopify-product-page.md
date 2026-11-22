@@ -24,9 +24,9 @@ products below. The sections further down the Pen (Overview, Specs, Size and fit
   price, choice and Add to cart. Before a size is picked its button reads Choose a size and goes back to the sizes.
   Sections further down join its links by carrying `data-product-section` with their name and an `id`.
 - The buy row: quantity, Add to cart and, once a size is picked and in stock, Shopify's express checkout button.
-  Shopify draws Buy with Shop Pay. Where Shop Pay is off, its plain Buy it now takes the outline button's look
-  (UI/Express checkout in `assets/component-ui.css`). App blocks, such as a back-in-stock form, sit under it, then the trust notes (the section's **Trust note** blocks)
-  and the description.
+  Shopify draws Buy with Shop Pay. Where Shop Pay is off, its plain Buy it now takes the primary button's look
+  (UI/Express checkout in `assets/component-ui.css`). App blocks, such as a back-in-stock form, sit under it, then
+  the trust notes (the section's **Trust note** blocks) and the description.
 
 ## Scripts
 

@@ -109,7 +109,7 @@
 }
 
 /* UI/Express checkout: Shopify draws these buttons. Its plain Buy it now, shown when no wallet applies, takes the
-   outline button's look, and wallet buttons keep their own. Two classes outrank Shopify's one. */
+   primary button's look, and wallet buttons keep their own. Two classes outrank Shopify's one. */
 .shopify-payment-button {
   --shopify-accelerated-checkout-button-block-size: var(--spacing-11);
   --shopify-accelerated-checkout-button-border-radius: var(--radius-md);
@@ -117,9 +117,9 @@
 }
 .shopify-payment-button .shopify-payment-button__button--unbranded {
   padding: 0 var(--spacing-6);
-  border: 0.1rem solid var(--input);
-  background-color: var(--background);
-  color: var(--foreground);
+  border: 0.1rem solid transparent;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
   font-family: inherit;
   font-size: var(--text-base);
   font-weight: 600;
@@ -127,7 +127,7 @@
   transition: background-color var(--default-transition-duration) var(--ease-out), color var(--default-transition-duration) var(--ease-out);
 }
 @media (hover: hover) {
-  .shopify-payment-button .shopify-payment-button__button--unbranded:hover:not([disabled]) { background-color: var(--accent); color: var(--accent-foreground); }
+  .shopify-payment-button .shopify-payment-button__button--unbranded:hover:not([disabled]) { background-color: color-mix(in srgb, var(--primary) 90%, transparent); }
 }
 .shopify-payment-button .shopify-payment-button__more-options {
   margin-top: var(--spacing-2);
