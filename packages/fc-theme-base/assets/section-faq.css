@@ -66,6 +66,7 @@
 }
 
 .ui-faq-item__question {
+  position: relative;
   display: grid;
   grid-template-columns: 2.6rem minmax(0, 1fr) 1.8rem;
   gap: 1.4rem;
@@ -116,17 +117,27 @@
   transition: transform 150ms ease;
 }
 
-.ui-faq-item[open] .ui-faq-item__chevron {
+.ui-faq-item[open]:not([data-closing]) .ui-faq-item__chevron {
   transform: rotate(180deg);
 }
 
-.ui-faq-item[open] .ui-faq-item__answer {
-  animation: faq-answer-enter var(--duration-enter) var(--ease-out);
+/* While the answer shows, a line runs from the Q down to the A. The badge sits in the middle of the question row. */
+.ui-faq-item__question::after {
+  content: '';
+  position: absolute;
+  top: calc(50% + 1.3rem);
+  bottom: 0;
+  left: 1.3rem;
+  width: 0.15rem;
+  translate: -50%;
+  background: var(--border);
+  transform-origin: top;
+  scale: 1 0;
+  transition: scale var(--duration-enter) var(--ease-out);
 }
 
-@keyframes faq-answer-enter {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+.ui-faq-item[open]:not([data-closing]) > .ui-faq-item__question::after {
+  scale: 1;
 }
 
 .ui-faq-item__answer {
@@ -167,8 +178,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ui-faq-item[open] .ui-faq-item__answer { animation: none; }
-  .ui-faq-item__chevron {
+  .ui-faq-item__chevron,
+  .ui-faq-item__question::after {
     transition-duration: 1ms;
   }
 }
