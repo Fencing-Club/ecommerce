@@ -141,6 +141,15 @@
               {%- for item in product_results -%}
                 {%- liquid
                   assign card_id = 'SearchProduct-' | append: section.id | append: '-' | append: item.id
+                  # The first page's first row shows at load; its first photo is the page's largest image.
+                  assign card_loading = 'lazy'
+                  assign card_fetchpriority = 'auto'
+                  if paginate.current_page == 1 and forloop.index <= 4
+                    assign card_loading = 'eager'
+                    if forloop.first
+                      assign card_fetchpriority = 'high'
+                    endif
+                  endif
                 -%}
                 <li>
                   {%- render 'ui-product-card',
@@ -152,7 +161,8 @@
                     section_id: section.id,
                     image_sizes: '(min-width: 990px) 300px, (min-width: 750px) calc((100vw - 116px) / 2), calc((100vw - 52px) / 2)',
                     image_widths: '300, 450, 600',
-                    image_loading: 'lazy'
+                    image_loading: card_loading,
+                    image_fetchpriority: card_fetchpriority
                   -%}
                 </li>
               {%- endfor -%}

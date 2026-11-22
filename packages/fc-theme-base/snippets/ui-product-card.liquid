@@ -22,6 +22,8 @@
   @param {string} [image_widths] - Responsive image widths.
   @param {string} [image_sizes] - Responsive image sizes.
   @param {string} [image_loading] - lazy (default) or eager.
+  @param {string} [image_fetchpriority] - high for the card most likely to be the page's largest image, auto (default)
+    otherwise.
   @param {string} [title] - A name to show instead of the product's.
   @param {string} [url] - A link to use instead of the product's.
   @param {string} [price_label] - A formatted price to show instead of the product's.
@@ -37,6 +39,7 @@
   assign image_widths = image_widths | default: '300, 450, 600'
   assign image_sizes = image_sizes | default: '(min-width: 990px) 300px, 50vw'
   assign image_loading = image_loading | default: 'lazy'
+  assign image_fetchpriority = image_fetchpriority | default: 'auto'
   assign card_title = title | default: product.title
   assign card_url = url | default: product.url
   assign title_id = card_id
@@ -97,15 +100,20 @@
           width="{{ image_width }}"
           height="{{ image_width }}"
           loading="{{ image_loading }}"
+          fetchpriority="{{ image_fetchpriority }}"
         >
       {%- elsif photo_count > 0 -%}
         {%- for media in card_images limit: photo_count -%}
           {%- liquid
             assign photo_loading = image_loading
+            assign photo_fetchpriority = image_fetchpriority
             unless forloop.first
               assign photo_loading = 'lazy'
+              assign photo_fetchpriority = 'auto'
             endunless
             assign photo = media.preview_image | default: media
+            # A filter inside image_tag's arguments would end them, so the alt text is worked out first.
+            assign photo_alt = photo.alt | default: card_title
           -%}
           {{
             photo
@@ -114,11 +122,13 @@
               class: 'ui-product-card__image',
               widths: image_widths,
               sizes: image_sizes,
-              alt: photo.alt | default: card_title,
-              loading: photo_loading
+              alt: photo_alt,
+              loading: photo_loading,
+              fetchpriority: photo_fetchpriority
           }}
         {%- endfor -%}
       {%- elsif product.featured_image -%}
+        {%- assign featured_alt = product.featured_image.alt | default: card_title -%}
         {{
           product.featured_image
           | image_url: width: image_width
@@ -126,8 +136,9 @@
             class: 'ui-product-card__image',
             widths: image_widths,
             sizes: image_sizes,
-            alt: product.featured_image.alt | default: card_title,
-            loading: image_loading
+            alt: featured_alt,
+            loading: image_loading,
+            fetchpriority: image_fetchpriority
         }}
       {%- else -%}
         <span class="ui-product-card__placeholder"></span>

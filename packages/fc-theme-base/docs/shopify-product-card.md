@@ -19,6 +19,12 @@ product page's recommendations all render it, and its stories render the same sn
   Card prices drop trailing zeros. A color with its own photo is a button: it shows that photo, rings the swatch and
   points the card's links at that color. Colors without one are plain swatches.
 
+## Photo loading
+
+Photos load when they near the screen. The collection grid and search results load the first row of their first
+page right away, and the first card's photo at high priority (`image_fetchpriority: 'high'`), since it is the
+largest image on screen when the page opens.
+
 ## Quick add and quick view
 
 With `show_add`, touch screens get a round add button over the photo. A product with one variant goes straight into
