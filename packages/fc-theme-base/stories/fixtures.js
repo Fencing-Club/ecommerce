@@ -42,14 +42,13 @@ export const articles = [
 export const brandLogos = ['fwf', 'favero', 'blaise', 'asics'].map((name) => image(`${name}.png`, name.toUpperCase()));
 
 /**
- * The static phase heading an About page chapter opens with.
+ * The static phase heading an About page chapter opens with: a referee's call and what it means in English.
  *
- * @param {string} phase
  * @param {string} meaning
  * @param {string} word
  * @param {string} [tag]
  */
-export const phaseHeading = (phase, meaning, word, tag = 'h2') => ({ id: 'phase', type: 'phase-heading', settings: { phase, meaning, word, tag } });
+export const phaseHeading = (meaning, word, tag = 'h2') => ({ id: 'phase', type: 'phase-heading', settings: { meaning, word, tag } });
 
 /**
  * The static header group an About page section opens with: an eyebrow, a heading and an optional lead paragraph.

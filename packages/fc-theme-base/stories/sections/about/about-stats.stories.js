@@ -10,13 +10,12 @@ export default {
   parameters: { layout: 'fullscreen' },
   render: section('about-stats', {
     staticBlocks: [
-      phaseHeading('Phase 03', 'The point lands', 'Touché'),
+      phaseHeading('A touch lands', 'Touché'),
       {
         id: 'header',
         type: 'group',
         settings: { direction: 'column', gap: 'sm' },
         blocks: [
-          { id: 'eyebrow', type: 'text', settings: { text: '<p>Touché, the point lands</p>', style: 'eyebrow' } },
           { id: 'heading', type: 'heading', settings: { heading: 'Measured, not marketed.', tag: 'h3', size: 'lg' } },
         ],
       },

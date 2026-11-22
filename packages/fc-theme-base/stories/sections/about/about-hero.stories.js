@@ -13,12 +13,12 @@ export default {
   parameters: { layout: 'fullscreen' },
   render: section('about-hero', {
     staticBlocks: [
-      phaseHeading('Phase 00', 'Take your stance', 'En garde', 'p'),
+      phaseHeading('On guard', 'En garde', 'p'),
       { id: 'image', type: 'image', settings: { image: image('collection-fie-800n-jacket.jpg', 'A fencing jacket'), aspect_ratio: 'landscape' } },
     ],
     blocks: [
       { id: 'heading', type: 'heading', settings: { heading: 'Everything for fencing, and only fencing.', tag: 'h1', size: 'xl' } },
-      { id: 'mission', type: 'text', settings: { text: '<p>A specialty shop serving clubs, schools and individual athletes since 2023.</p>', style: 'lead' } },
+      { id: 'mission', type: 'text', settings: { text: '<p>Since 2023, we’ve supplied clubs, schools, and individual fencers with dependable gear at honest prices.</p>', style: 'lead' } },
       {
         id: 'actions',
         type: 'group',

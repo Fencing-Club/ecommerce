@@ -10,15 +10,14 @@ export default {
   parameters: { layout: 'fullscreen' },
   render: section('about-closing', {
     staticBlocks: [
-      phaseHeading('Phase 04', 'The deciding touch', 'La belle'),
+      phaseHeading('The deciding touch', 'La belle'),
       {
         id: 'intro',
         type: 'group',
         settings: { direction: 'column', gap: 'md' },
         blocks: [
-          { id: 'eyebrow', type: 'text', settings: { text: '<p>La belle, the deciding touch</p>', style: 'eyebrow' } },
-          { id: 'heading', type: 'heading', settings: { heading: 'We are just getting started.', tag: 'h3', size: 'md' } },
-          { id: 'body', type: 'text', settings: { text: '<p>We are glad to back the people building this sport.</p>', style: 'lead' } },
+          { id: 'heading', type: 'heading', settings: { heading: 'We back the people building this sport.', tag: 'h3', size: 'md' } },
+          { id: 'body', type: 'text', settings: { text: '<p>If you’re building something for fencers, you can sell it in our store and ship it through our distribution network.</p>', style: 'lead' } },
         ],
       },
       {
@@ -26,8 +25,8 @@ export default {
         type: 'group',
         settings: { direction: 'column', gap: 'lg' },
         blocks: [
-          { id: 'statement', type: 'heading', settings: { heading: 'Building something for fencing? Let’s talk.', tag: 'h3', size: 'md' } },
-          { id: 'body', type: 'text', settings: { text: '<p>Sell on our platform, use our distribution, or just say hello.</p>', style: 'lead' } },
+          { id: 'statement', type: 'heading', settings: { heading: 'Tell us what you’re building.', tag: 'h3', size: 'md' } },
+          { id: 'body', type: 'text', settings: { text: '<p>Ask about selling with us or shipping through our network, or just say hello.</p>', style: 'lead' } },
         ],
       },
       button('action', 'Get in touch', '/pages/contact', 'primary'),
@@ -38,8 +37,8 @@ export default {
 export const Closing = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('heading', { level: 2, name: 'La belle' })).toBeVisible();
-    await expect(canvas.getByRole('heading', { level: 3, name: 'We are just getting started.' })).toBeVisible();
-    await expect(canvas.getByRole('heading', { level: 3, name: 'Building something for fencing? Let’s talk.' })).toBeVisible();
+    await expect(canvas.getByRole('heading', { level: 3, name: 'We back the people building this sport.' })).toBeVisible();
+    await expect(canvas.getByRole('heading', { level: 3, name: 'Tell us what you’re building.' })).toBeVisible();
     await expect(canvas.getByRole('link', { name: 'Get in touch' })).toHaveAttribute('href', '/pages/contact');
   },
 };

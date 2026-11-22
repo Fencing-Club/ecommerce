@@ -13,11 +13,11 @@ export default {
   parameters: { layout: 'fullscreen' },
   render: section('about-clubs', {
     staticBlocks: [
-      aboutHeader('Our home pistes', 'The clubs we call home', 'Most weeks you’ll find our team on the piste at these clubs.'),
+      aboutHeader('USA Fencing Region 1', 'The clubs we call home', 'Our team trains at these clubs most weeks.'),
       {
         id: 'callout',
         type: '_clubs-callout',
-        settings: { title: 'Free order delivery to our home clubs', text: 'We’ll drop your order off free at any of them.' },
+        settings: { title: 'Free delivery to our home clubs', text: 'We’ll drop your order off free at any of them.' },
       },
     ],
     blocks: [
@@ -32,7 +32,7 @@ export const Clubs = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('heading', { level: 2, name: 'The clubs we call home' })).toBeVisible();
     const names = canvas.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent.trim());
-    await expect(names).toEqual(['Kaizen Academy', 'Rain City Fencing Center', 'Salle Auriol Seattle', 'Free order delivery to our home clubs']);
+    await expect(names).toEqual(['Kaizen Academy', 'Rain City Fencing Center', 'Salle Auriol Seattle', 'Free delivery to our home clubs']);
     await expect(canvas.getByRole('link', { name: 'Visit site: Salle Auriol Seattle' })).toHaveAttribute('href', 'https://salleauriol.com');
     await expect(canvas.getAllByRole('link')).toHaveLength(1);
     const kaizen = canvas.getByRole('heading', { name: 'Kaizen Academy' }).parentElement;

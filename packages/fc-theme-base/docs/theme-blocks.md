@@ -25,9 +25,9 @@ Shared blocks live in `blocks/`. A section lists the blocks it accepts in its sc
 - **Feature** (`feature.liquid`): a short selling point: an icon, a label, a line of detail and an optional link.
 - **Product card** (`product-card.liquid`): one chosen product, shown through `ui-product-card`, with an optional
   badge and add button.
-- **Phase heading** (`phase-heading.liquid`): opens an About page chapter like a phase of a bout: the phase and what
-  it means on one line, a large word under them, then a rule. The word is a level 2 or 3 heading, or a paragraph when
-  a level 1 heading follows it.
+- **Phase heading** (`phase-heading.liquid`): opens an About page chapter with a referee's call: its English meaning
+  on one line, the call in large type under it, then a rule. The call is a level 2 or 3 heading, or a paragraph when a
+  level 1 heading follows it.
 
 ## Section shells
 
@@ -66,8 +66,8 @@ title and `id`. With structured data on, the page is a schema.org `FAQPage` in m
 shared Breadcrumbs section, the template's first section.
 
 The About page (`templates/page.about.json`) follows the About Us board in the Pen. Five of its sections are
-chapters named after the phases of a bout, each opening with a static Phase heading: About hero (En garde), Principles
-(Prêt), Timeline (Allez), Stats (Touché) and Closing (La belle). Our story, Clubs and Programs sit between them, and
+chapters named after the calls of a bout, each opening with a static Phase heading: About hero (En garde), Principles
+(Prêts), Timeline (Allez), Stats (Touché) and Closing (La belle). Our story, Clubs and Programs sit between them, and
 Brand logos is the homepage section. Clubs are `_club` blocks, with the static `_clubs-callout` band under them;
 program cards are `_program` blocks, timeline steps `_milestone` blocks and figures `_stat` blocks. Principles are
 Feature blocks, which the section stands icon over text. Stats, the callout and the closing panel are dark: their

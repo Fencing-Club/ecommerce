@@ -14,8 +14,8 @@ export default {
   parameters: { layout: 'fullscreen' },
   render: section('about-principles', {
     staticBlocks: [
-      phaseHeading('Phase 01', 'Ready, what we stand for', 'Prêt'),
-      text('lead', 'Before the bout, you settle into your stance. Here is ours.', 'body'),
+      phaseHeading('Ready', 'Prêts'),
+      text('lead', 'Before a bout begins, you set your stance. Here’s ours.', 'body'),
       { id: 'operations_heading', type: 'heading', settings: { heading: 'How we operate', tag: 'h3', size: 'sm' } },
       text('operations_start', 'We hold our own inventory rather than dropship.', 'lead'),
       text('operations_end', 'Our own team handles every question, order and return.', 'lead'),
@@ -31,8 +31,8 @@ export default {
 
 export const Principles = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { level: 2, name: 'Prêt' })).toBeVisible();
-    await expect(canvas.getByText('Before the bout, you settle into your stance. Here is ours.')).toBeVisible();
+    await expect(canvas.getByRole('heading', { level: 2, name: 'Prêts' })).toBeVisible();
+    await expect(canvas.getByText('Before a bout begins, you set your stance. Here’s ours.')).toBeVisible();
     for (const label of ['Fencing only', 'Fair pricing', 'Direct sourcing', 'Real support']) await expect(canvas.getByText(label)).toBeVisible();
     await expect(canvas.getByRole('heading', { level: 3, name: 'How we operate' })).toBeVisible();
     await expect(canvas.getByText('We hold our own inventory rather than dropship.')).toBeVisible();
