@@ -156,7 +156,7 @@
                   "type": "button",
                   "settings": {
                     "label": "Shop Novus",
-                    "link": "shopify://collections/clothing",
+                    "link": "/search?q=novus&type=product",
                     "style": "secondary",
                     "size": "lg"
                   }
