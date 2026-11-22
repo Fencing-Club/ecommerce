@@ -1,7 +1,8 @@
 /**
  * Header account menu. A plain click on the account link opens the menu instead of following the link; a modified click,
  * or a browser without dialog support, still follows it. Wider screens get a popover under the icon, phones a bottom
- * sheet. Close, Escape and a tap outside close it, and focus goes back to the account link.
+ * sheet. Close, Escape and a tap outside close it, and focus goes back to the account link. Only the sheet locks page
+ * scroll; the popover stays under the icon as the page scrolls, so the scrollbar never goes and the page never shifts.
  */
 if (!customElements.get('account-menu')) {
   class AccountMenu extends HTMLElement {
@@ -44,6 +45,11 @@ if (!customElements.get('account-menu')) {
         this.release(true);
       };
       this.onResize = () => {
+        if (!this.dialog.open) return;
+        this.lockScrollOnPhones();
+        this.place();
+      };
+      this.onScroll = () => {
         if (this.dialog.open) this.place();
       };
       this.addEventListener('click', this.onClick);
@@ -51,6 +57,7 @@ if (!customElements.get('account-menu')) {
       this.dialog.addEventListener('cancel', this.onCancel);
       this.dialog.addEventListener('close', this.onClose);
       window.addEventListener('resize', this.onResize);
+      window.addEventListener('scroll', this.onScroll, { passive: true });
     }
 
     disconnectedCallback() {
@@ -63,6 +70,7 @@ if (!customElements.get('account-menu')) {
       this.dialog.removeEventListener('cancel', this.onCancel);
       this.dialog.removeEventListener('close', this.onClose);
       window.removeEventListener('resize', this.onResize);
+      window.removeEventListener('scroll', this.onScroll);
       this.initialized = false;
     }
 
@@ -70,7 +78,7 @@ if (!customElements.get('account-menu')) {
       if (!this.initialized || typeof this.dialog.showModal !== 'function') return false;
       if (this.dialog.open && this.dataset.state !== 'closing') return true;
       if (!this.dialog.open) {
-        this.lockScroll();
+        this.lockScrollOnPhones();
         try {
           this.dialog.showModal();
         } catch {
@@ -147,6 +155,12 @@ if (!customElements.get('account-menu')) {
       previous?.cancel();
     }
 
+    /** The sheet holds the page still under its scrim. The popover doesn't, so hiding the scrollbar never shifts the page. */
+    lockScrollOnPhones() {
+      if (this.phone.matches) this.lockScroll();
+      else this.unlockScroll();
+    }
+
     lockScroll() {
       if (AccountMenu.lockedStyles) return;
       AccountMenu.lockedStyles = ['overflow', 'padding-right'].map(name => ({
@@ -162,16 +176,19 @@ if (!customElements.get('account-menu')) {
       document.body.style.setProperty('overflow', 'hidden');
     }
 
+    unlockScroll() {
+      if (!AccountMenu.lockedStyles) return;
+      AccountMenu.lockedStyles.forEach(({ name, value, priority }) => {
+        if (value) document.body.style.setProperty(name, value, priority);
+        else document.body.style.removeProperty(name);
+      });
+      AccountMenu.lockedStyles = undefined;
+    }
+
     release(restoreFocus) {
       this.dataset.state = 'closed';
       this.trigger.setAttribute('aria-expanded', 'false');
-      if (AccountMenu.lockedStyles) {
-        AccountMenu.lockedStyles.forEach(({ name, value, priority }) => {
-          if (value) document.body.style.setProperty(name, value, priority);
-          else document.body.style.removeProperty(name);
-        });
-        AccountMenu.lockedStyles = undefined;
-      }
+      this.unlockScroll();
       if (restoreFocus && this.trigger.isConnected) this.trigger.focus({ preventScroll: true });
     }
   }

@@ -110,8 +110,7 @@ describe('account menu markup', () => {
 });
 
 describe('account menu behavior', () => {
-  it('opens on a plain click, focuses close and locks scroll, then restores everything on close', async () => {
-    document.body.style.setProperty('overflow', 'auto', 'important');
+  it('opens on a plain click and focuses close, then returns focus on close', async () => {
     const { trigger, dialog, close } = mount(alex);
     trigger.focus();
     expect(click(trigger)).toBe(false);
@@ -119,12 +118,27 @@ describe('account menu behavior', () => {
     expect(dialog.showModal).toHaveBeenCalledOnce();
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
     expect(document.activeElement).toBe(close);
-    expect(document.body.style.overflow).toBe('hidden');
     click(close);
     await settle();
     expect(dialog.open).toBe(false);
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it('leaves the page scrolling under the popover', () => {
+    const { trigger } = mount(alex);
+    click(trigger);
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('locks page scroll under the phone sheet, then restores it on close', async () => {
+    phone.matches = true;
+    document.body.style.setProperty('overflow', 'auto', 'important');
+    const { trigger, close } = mount(alex);
+    click(trigger);
+    expect(document.body.style.overflow).toBe('hidden');
+    click(close);
+    await settle();
     expect(document.body.style.overflow).toBe('auto');
     expect(document.body.style.getPropertyPriority('overflow')).toBe('important');
   });
@@ -160,6 +174,7 @@ describe('account menu behavior', () => {
   });
 
   it('releases the page when the browser closes the dialog itself', () => {
+    phone.matches = true;
     const { trigger, dialog } = mount(alex);
     click(trigger);
     dialog.open = false;
@@ -176,6 +191,15 @@ describe('account menu behavior', () => {
     click(trigger);
     expect(dialog.style.getPropertyValue('--account-menu-top')).toBe('172px');
     expect(dialog.style.getPropertyValue('--account-menu-end')).toBe('98px');
+  });
+
+  it('keeps the popover under the account link as the page scrolls', () => {
+    const { trigger, dialog } = mount(undefined);
+    trigger.getBoundingClientRect = () => ({ top: 120, bottom: 164, left: 1240, right: 1284 });
+    click(trigger);
+    trigger.getBoundingClientRect = () => ({ top: 20, bottom: 64, left: 1240, right: 1284 });
+    window.dispatchEvent(new Event('scroll'));
+    expect(dialog.style.getPropertyValue('--account-menu-top')).toBe('72px');
   });
 
   it('leaves phones to the bottom sheet', () => {
