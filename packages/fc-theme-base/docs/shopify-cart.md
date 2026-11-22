@@ -4,8 +4,7 @@ The cart flyout (`snippets/cart-drawer.liquid`) and the cart page (`sections/mai
 the same snippets and follow the Cart flyout and Cart page lanes in `FencingClubWebsite.pen`. The flyout is a 520px
 drawer on tablet and desktop and fills the screen on phones. Its "Your cart" title links to the cart page. The order summary is the footer at every width: it
 sticks to the bottom of the flyout and, on phones, of the cart page. All cart styles live in `cart-experience.css`; the
-Dawn cart stylesheets are gone. The theme's cart type setting chooses the flyout or the cart page; Dawn's cart
-notification popup is gone too.
+Dawn cart stylesheets are gone.
 
 ## Parts
 
