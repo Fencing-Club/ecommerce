@@ -75,8 +75,6 @@
     endfor
   endunless
 
-  assign vendor_handle = product.vendor | handle
-  assign brand_logo = shop.metaobjects.brand[vendor_handle].logo.value
   assign subtitle = product.metafields.custom.subtitle.value
   assign fit_note = product.metafields.custom.fit_note.value
   assign rating = product.metafields.reviews.rating.value
@@ -90,14 +88,9 @@
 
     <div class="product-page__buy">
       <div class="product-page__head">
-        <div class="product-page__brand">
-          {%- if brand_logo -%}
-            {{ brand_logo | image_url: height: 40 | image_tag: class: 'product-page__brand-logo', alt: product.vendor, height: 20 }}
-          {%- endif -%}
-          <a class="product-page__brand-link" href="{{ product.vendor | url_for_vendor }}">
-            {{- 'products.product.shop_all' | t: brand: product.vendor -}}
-          </a>
-        </div>
+        <a class="product-page__brand" href="{{ product.vendor | url_for_vendor }}">
+          {{- 'products.product.shop_all' | t: brand: product.vendor -}}
+        </a>
         <h1 class="product-page__title">{{ product.title | escape }}</h1>
         {%- if subtitle != blank -%}
           <p class="product-page__subtitle">{{ subtitle | escape }}</p>
@@ -109,7 +102,7 @@
 
       <product-options class="product-page__options" data-section="{{ section.id }}" data-url="{{ product.url }}" data-update-url>
         <div class="product-page__price">
-          {%- render 'ui-price', price: current.price, compare_at_price: current.compare_at_price -%}
+          {%- render 'ui-price', price: current.price, compare_at_price: current.compare_at_price, size: 'lg' -%}
           {%- assign installments_id = 'ProductInstallments-' | append: section.id -%}
           {%- form 'product', product, id: installments_id, class: 'product-page__installments' -%}
             <input type="hidden" name="id" value="{{ current.id }}">

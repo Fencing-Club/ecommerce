@@ -124,15 +124,14 @@
 }
 
 .product-page__head { display: flex; flex-direction: column; gap: 0.8rem; }
-.product-page__brand { display: flex; gap: 0.8rem; align-items: center; }
-.product-page__brand-logo { display: block; width: 4rem; height: 2rem; object-fit: contain; }
-.product-page__brand-link {
+.product-page__brand {
+  align-self: flex-start;
   color: var(--muted-foreground);
   font-size: 1.3rem;
   text-decoration: underline;
   text-underline-offset: 0.3rem;
 }
-.product-page__brand-link:hover { color: var(--foreground); }
+.product-page__brand:hover { color: var(--foreground); }
 .product-page__title { margin: 0; font-size: 2.6rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.06rem; }
 .product-page__subtitle { margin: 0; color: var(--muted-foreground); font-size: 1.5rem; line-height: 1.55; }
 
@@ -143,13 +142,10 @@
 }
 
 .product-page__price { display: flex; flex-direction: column; gap: 0.4rem; }
-.product-page__price .ui-price__amount { font-size: 2.6rem; font-weight: 700; letter-spacing: -0.04rem; }
-.product-page__price .ui-price__compare { font-size: 1.7rem; }
 .product-page__installments { color: var(--muted-foreground); font-size: 1.3rem; }
 
 @media screen and (min-width: 990px) {
   .product-page__price { gap: 0.6rem; }
-  .product-page__price .ui-price__amount { font-size: 2.8rem; }
 }
 
 .product-page__rule { width: 100%; height: 1px; margin: 0; border: 0; background: var(--border); }
@@ -185,13 +181,12 @@
 .product-page__add { flex: 1; min-width: 0; border-radius: 1rem; font-size: 1.5rem; font-weight: 600; }
 .product-page__add[aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }
 
-/* Shopify draws the express checkout button; these set its height and corners to match Add to cart. */
-.product-page__express {
+/* UI/Express checkout styles Shopify's button; these match its size to Add to cart. */
+.product-page__express .shopify-payment-button {
   --shopify-accelerated-checkout-button-block-size: 5.2rem;
   --shopify-accelerated-checkout-button-border-radius: 1rem;
 }
-.product-page__express .shopify-payment-button__button { min-height: 5.2rem; border-radius: 1rem; }
-.product-page__express .shopify-payment-button__more-options { margin-top: 0.8rem; color: var(--muted-foreground); font-size: 1.3rem; }
+.product-page__express .shopify-payment-button .shopify-payment-button__button--unbranded { font-size: 1.5rem; }
 
 .product-page__error { display: flex; gap: 0.8rem; align-items: center; margin: 1rem 0 0; color: var(--destructive); font-size: 1.3rem; }
 .product-page__error[hidden] { display: none; }

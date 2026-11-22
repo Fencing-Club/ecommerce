@@ -35,13 +35,8 @@ const pauseMedia = (root) => {
  */
 class ProductPage extends HTMLElement {
   connectedCallback() {
-    this.buyRowVisible = true;
-    this.buyRowAbove = false;
-    this.observer = new IntersectionObserver(([entry]) => {
-      this.buyRowVisible = entry.isIntersecting;
-      this.buyRowAbove = entry.boundingClientRect.bottom < 0;
-      this.showBar();
-    });
+    window.addEventListener('scroll', this.onScroll, { passive: true });
+    window.addEventListener('resize', this.onScroll, { passive: true });
     this.addEventListener('click', this.onClick);
     this.addEventListener('keydown', this.onKeyDown);
     this.addEventListener('product-options:variant', this.onVariant);
@@ -55,7 +50,9 @@ class ProductPage extends HTMLElement {
   }
 
   disconnectedCallback() {
-    this.observer.disconnect();
+    window.removeEventListener('scroll', this.onScroll);
+    window.removeEventListener('resize', this.onScroll);
+    cancelAnimationFrame(this.frame);
     clearInterval(this.timer);
     this.removeEventListener('click', this.onClick);
     this.removeEventListener('keydown', this.onKeyDown);
@@ -68,9 +65,6 @@ class ProductPage extends HTMLElement {
   }
 
   refresh() {
-    this.observer.disconnect();
-    const row = this.querySelector('[data-product-add-row]');
-    if (row) this.observer.observe(row);
     this.showBar();
     this.buildNav();
     this.updateDispatch();
@@ -140,10 +134,18 @@ class ProductPage extends HTMLElement {
     gallery.mark();
   };
 
+  // A jump, such as a link to a section further down, can carry Add to cart from below the screen to above it in one
+  // scroll without ever crossing it, so the bar checks where Add to cart is on every scroll.
+  onScroll = () => {
+    cancelAnimationFrame(this.frame);
+    this.frame = requestAnimationFrame(() => this.showBar());
+  };
+
   showBar() {
     const bar = this.querySelector('[data-product-sticky]');
     if (!bar) return;
-    const visible = !this.buyRowVisible && this.buyRowAbove;
+    const row = this.querySelector('[data-product-add-row]');
+    const visible = Boolean(row) && row.getBoundingClientRect().bottom < 0;
     bar.inert = !visible;
     bar.toggleAttribute('data-visible', visible);
   }

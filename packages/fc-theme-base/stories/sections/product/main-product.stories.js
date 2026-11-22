@@ -1,10 +1,10 @@
 import { expect, waitFor, within } from 'storybook/test';
-import { image, productPageProduct } from '../../fixtures.js';
-import { loadModule, loadScript, section } from '../../liquid.js';
+import { productPageProduct } from '../../fixtures.js';
+import { loadModule, loadScript, loadStylesheet, section } from '../../liquid.js';
 
-// A US shopper paying in dollars, so the ships line gives arrival dates, on a store that has FWF's logo.
+// A US shopper paying in dollars, so the ships line gives arrival dates.
 const store = {
-  shop: { currency: 'USD', metaobjects: { brand: { fwf: { logo: { value: image('fwf.png', 'FWF') } } } } },
+  shop: { currency: 'USD' },
   cart: { currency: { iso_code: 'USD', symbol: '$' } },
   localization: { country: { iso_code: 'US' } },
 };
@@ -41,7 +41,9 @@ const buyBar = (canvasElement) => canvasElement.querySelector('[data-product-sti
 export default {
   title: 'Sections/Product/Main product',
   parameters: { layout: 'fullscreen' },
+  // The section's own stylesheet tag loads as it renders, so the play tests could start before its styles apply.
   loaders: [
+    loadStylesheet('section-main-product.css'),
     loadScript('product-form.js'),
     loadScript('ui-drawer.js'),
     loadModule('photo-gallery.js'),

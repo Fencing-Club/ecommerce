@@ -149,3 +149,22 @@ export const loadScript = (file) => () =>
  * @param {string} file A file in the theme's assets.
  */
 export const loadModule = (file) => () => import(/* @vite-ignore */ assetUrl(file));
+
+/**
+ * A story loader that loads a theme stylesheet before the story renders. A section's own stylesheet tag loads as the
+ * story renders, so without this a play test can run before the section's styles apply.
+ *
+ * @param {string} file A file in the theme's assets.
+ */
+export const loadStylesheet = (file) => () =>
+  document.querySelector(`link[data-theme-stylesheet="${file}"]`)
+    ? Promise.resolve()
+    : new Promise((resolve, reject) => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = assetUrl(file);
+        link.dataset.themeStylesheet = file;
+        link.onload = resolve;
+        link.onerror = reject;
+        document.head.append(link);
+      });

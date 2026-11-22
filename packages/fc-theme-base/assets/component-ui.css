@@ -108,6 +108,35 @@
   opacity: 0.7;
 }
 
+/* UI/Express checkout: Shopify draws these buttons. Its plain Buy it now, shown when no wallet applies, takes the
+   outline button's look, and wallet buttons keep their own. Two classes outrank Shopify's one. */
+.shopify-payment-button {
+  --shopify-accelerated-checkout-button-block-size: var(--spacing-11);
+  --shopify-accelerated-checkout-button-border-radius: var(--radius-md);
+  --shopify-accelerated-checkout-button-box-shadow: none;
+}
+.shopify-payment-button .shopify-payment-button__button--unbranded {
+  padding: 0 var(--spacing-6);
+  border: 0.1rem solid var(--input);
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: var(--text-base);
+  font-weight: 600;
+  line-height: 1.25;
+  transition: background-color var(--default-transition-duration) var(--ease-out), color var(--default-transition-duration) var(--ease-out);
+}
+@media (hover: hover) {
+  .shopify-payment-button .shopify-payment-button__button--unbranded:hover:not([disabled]) { background-color: var(--accent); color: var(--accent-foreground); }
+}
+.shopify-payment-button .shopify-payment-button__more-options {
+  margin-top: var(--spacing-2);
+  color: var(--muted-foreground);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  text-underline-offset: 0.3rem;
+}
+
 .ui-breadcrumbs {
   display: flex;
   align-items: center;
@@ -561,7 +590,6 @@
   gap: 0.8rem;
 }
 
-/* The sale price leads and the regular price follows it, struck through. */
 .ui-product-card .ui-price__amount {
   font-size: 1.5rem;
   font-weight: 700;
@@ -569,13 +597,8 @@
 }
 
 .ui-product-card .ui-price__compare {
-  order: 1;
   font-size: 1.3rem;
   line-height: 1.3;
-}
-
-.ui-product-card .ui-price__compare + .ui-price__amount {
-  color: #b91c1c; /* red-700 */
 }
 
 .ui-product-card__price-label {
@@ -1760,7 +1783,7 @@ input:disabled + .ui-checkbox-field__copy {
 }
 
 
-/* UI/Price */
+/* UI/Price: on sale, the sale price leads in red and the regular price follows it, struck through. */
 .ui-price { display: flex; flex-direction: column; gap: var(--spacing-0-5); }
 .ui-price__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-2-5); }
 .ui-price__amount {
@@ -1769,6 +1792,7 @@ input:disabled + .ui-checkbox-field__copy {
   font-weight: var(--font-weight-semibold);
   line-height: var(--text-base--line-height);
 }
+.ui-price__amount--sale { color: #b91c1c; /* red-700 */ }
 .ui-price__compare {
   color: var(--muted-foreground);
   font-size: var(--text-sm);
@@ -1782,6 +1806,12 @@ input:disabled + .ui-checkbox-field__copy {
 }
 .ui-price--sm .ui-price__amount { font-size: var(--text-sm); line-height: var(--text-sm--line-height); }
 .ui-price--sm .ui-price__compare { font-size: var(--text-xs); line-height: var(--text-xs--line-height); }
+.ui-price--lg .ui-price__amount { font-size: 2.4rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.04rem; }
+.ui-price--lg .ui-price__compare { font-size: 1.5rem; }
+@media screen and (min-width: 990px) {
+  .ui-price--lg .ui-price__amount { font-size: 2.8rem; }
+  .ui-price--lg .ui-price__compare { font-size: 1.7rem; }
+}
 
 /* UI/Accordion: motion.js grows and fades the content. While it closes, [data-closing] keeps the icon closed. */
 .ui-accordion__summary {
@@ -1996,11 +2026,12 @@ a.ui-rating__count { text-decoration: underline; text-underline-offset: 0.3rem; 
   gap: 0.6rem;
   color: var(--foreground);
   font-size: 1.4rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.4;
-  text-decoration: underline;
+  text-decoration: none;
   text-underline-offset: 0.3rem;
 }
+.ui-variant-picker__guide:is(:hover, :focus-visible) { text-decoration: underline; }
 /* Choices such as sizes fill the row in equal columns, so the row ends where Size guide does. Hand and color choices
    keep their own width. */
 .ui-variant-picker__options {
@@ -2022,7 +2053,6 @@ a.ui-rating__count { text-decoration: underline; text-underline-offset: 0.3rem; 
 .ui-variant-picker--compact .ui-variant-picker__guide { font-size: 1.3rem; }
 .ui-variant-picker--compact .ui-variant-picker__name { font-weight: 700; }
 .ui-variant-picker--compact .ui-variant-picker__name::after { content: none; }
-.ui-variant-picker--compact .ui-variant-picker__guide { font-weight: 600; text-decoration: none; }
 /* Columns are at least 6.4rem, or as wide as the longest value needs. */
 .ui-variant-picker--compact .ui-variant-picker__options { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(6.4rem, calc(var(--choice-chars, 2) * 1.2ch + 2rem)), 1fr)); font-size: 1.3rem; font-weight: 600; }
 .ui-variant-picker--compact.ui-variant-picker--swatch .ui-variant-picker__options { display: flex; }
