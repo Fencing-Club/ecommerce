@@ -433,7 +433,7 @@
           "settings": {
             "date": "2024",
             "title": "An authorized dealer",
-            "text": "We become an authorized dealer for nine leading brands, sourced direct.",
+            "text": "We become an authorized dealer for four leading brands, sourced direct.",
             "planned": false
           }
         },
@@ -652,7 +652,7 @@
         "brands": {
           "type": "_stat",
           "settings": {
-            "number": "8",
+            "number": "4",
             "label": "Authorized brands"
           }
         },
