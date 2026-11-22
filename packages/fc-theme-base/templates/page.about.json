@@ -513,7 +513,7 @@
             "header-text": {
               "type": "text",
               "settings": {
-                "text": "<p>Every product is genuine, fully warrantied, and homologated. Sourced direct from the makers, never grey market.</p>",
+                "text": "<p>Every product is genuine and homologated. Sourced direct from the makers, never grey market.</p>",
                 "style": "lead"
               }
             }
