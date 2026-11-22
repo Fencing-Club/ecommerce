@@ -2001,7 +2001,16 @@ a.ui-rating__count { text-decoration: underline; text-underline-offset: 0.3rem; 
   text-decoration: underline;
   text-underline-offset: 0.3rem;
 }
-.ui-variant-picker__options { clear: both; display: flex; flex-wrap: wrap; gap: 0.8rem; }
+/* Choices such as sizes fill the row in equal columns, so the row ends where Size guide does. Hand and color choices
+   keep their own width. */
+.ui-variant-picker__options {
+  clear: both;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(8.6rem, calc(var(--choice-chars, 2) * 1.2ch + 4rem)), 1fr));
+  gap: 0.8rem;
+}
+.ui-variant-picker--hand .ui-variant-picker__options,
+.ui-variant-picker--swatch .ui-variant-picker__options { display: flex; flex-wrap: wrap; }
 .ui-variant-picker .ui-choice { min-width: 8.6rem; min-height: 4.4rem; padding: 0 2rem; border-radius: 1rem; font-size: 1.4rem; font-weight: 500; }
 .ui-variant-picker .ui-choice__input[data-unavailable] + .ui-choice { border-color: var(--border); background: var(--muted); color: var(--muted-foreground); text-decoration: line-through; }
 .ui-variant-picker .ui-choice__input:checked + .ui-choice { border-color: var(--primary); background: var(--primary); color: var(--primary-foreground); }
