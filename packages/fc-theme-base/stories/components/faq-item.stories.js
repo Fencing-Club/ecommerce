@@ -1,9 +1,13 @@
-import { expect } from 'storybook/test';
-import { snippet } from '../liquid.js';
+import { expect, waitFor } from 'storybook/test';
+import { loadScript, snippet } from '../liquid.js';
 
-/** `snippets/ui-faq-item.liquid`: one question and answer that opens in place. */
+/**
+ * `snippets/ui-faq-item.liquid`: one question and answer that opens in place, with the shared show/hide motion from
+ * `motion.js`.
+ */
 export default {
   title: 'Components/FAQ item',
+  loaders: [loadScript('motion.js')],
   render: snippet('ui-faq-item', { stylesheets: ['section-faq.css'] }),
   args: {
     question: 'Which size should I choose?',
@@ -16,7 +20,9 @@ export const Closed = {
     const question = canvas.getByText('Which size should I choose?');
     await expect(canvas.getByText(/Measure your chest/)).not.toBeVisible();
     await userEvent.click(question);
-    await expect(canvas.getByText(/Measure your chest/)).toBeVisible();
+    await waitFor(() => expect(canvas.getByText(/Measure your chest/)).toBeVisible());
+    await userEvent.click(question);
+    await waitFor(() => expect(canvas.getByText(/Measure your chest/)).not.toBeVisible());
   },
 };
 

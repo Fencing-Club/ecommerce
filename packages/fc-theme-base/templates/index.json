@@ -569,7 +569,7 @@
                 "label": "Fast Shipping",
                 "detail": "Ships in 1 business day",
                 "link_label": "Shipping policy",
-                "link": "shopify://policies/shipping-policy"
+                "link": "shopify://pages/shipping-policy"
               }
             },
             "features-point-3": {
@@ -579,7 +579,7 @@
                 "label": "Hassle-Free Returns",
                 "detail": "30-day, postage-paid",
                 "link_label": "Returns policy",
-                "link": "shopify://policies/refund-policy"
+                "link": "shopify://pages/refund-policy"
               }
             }
           },

@@ -347,6 +347,7 @@
       this.header.classList.add('shopify-section-header-hidden', 'shopify-section-header-sticky');
       this.closeMenuDisclosure();
       this.closeSearchModal();
+      this.closeAccountMenu();
     }
 
     reveal() {
@@ -365,6 +366,11 @@
     closeMenuDisclosure() {
       this.disclosures = this.disclosures || this.header.querySelectorAll('header-menu');
       this.disclosures.forEach((disclosure) => disclosure.close());
+    }
+
+    closeAccountMenu() {
+      this.accountMenus = this.accountMenus || this.header.querySelectorAll('account-menu');
+      this.accountMenus.forEach((menu) => menu.hide?.());
     }
 
     closeSearchModal() {
@@ -424,7 +430,7 @@
       "name": "t:sections.header.name",
       "blocks": [
         { "type": "_utility-link", "settings": { "label": "Contact", "link": "/pages/contact" } },
-        { "type": "_utility-link", "settings": { "label": "Returns", "link": "/policies/refund-policy" } }
+        { "type": "_utility-link", "settings": { "label": "Returns", "link": "/pages/refund-policy" } }
       ]
     }
   ]

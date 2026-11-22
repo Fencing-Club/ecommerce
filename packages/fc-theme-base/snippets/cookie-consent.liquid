@@ -7,7 +7,7 @@
 {% endcomment %}
 
 {%- liquid
-  assign privacy_url = '/policies/privacy-policy'
+  assign privacy_url = '/pages/privacy-policy'
   if shop.privacy_policy != blank
     assign privacy_url = shop.privacy_policy.url
   endif

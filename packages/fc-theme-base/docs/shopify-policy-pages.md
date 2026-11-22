@@ -17,6 +17,10 @@ The menus are Shopify resources with handles `footer-support` and `footer-compan
 section. Policy entries use `PAGE` resource references, not hardcoded URLs. Preserve unrelated entries when updating
 menus: Shopify's `menuUpdate` replaces the supplied item list.
 
+The theme's own policy links go to these pages too: the header's Returns link, announcements, homepage features and
+FAQ answers. Shopify's `/policies/` routes only exist once the store's legal policies are filled in, so a link there
+can 404. The cookie banner links to the store's privacy policy when one is set, and to `/pages/privacy-policy` when not.
+
 These custom pages do not replace Shopify's system `/policies/` routes or checkout policy settings. Keep those legal
 settings consistent when policy wording changes. The initial content was taken from the published `fencing.club`
 policies on September 6, 2026. Only markup and internal policy link destinations changed; the wording was preserved.

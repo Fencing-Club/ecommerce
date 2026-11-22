@@ -23,7 +23,10 @@ theme can't hide. The design lives in the Account menu area of `packages/fc-them
   run in reverse to close. Reduced motion skips it, a hidden tab never holds it up, and a click while closing reopens
   it.
 - Focus starts on Close and returns to the account icon. Close, Escape and a tap outside close it; a drag that ends
-  outside does not. Page scroll is locked while it's open.
+  outside does not.
+- The sheet locks page scroll. The popover doesn't, because hiding the scrollbar would leave an empty strip beside
+  full-width sections: the page keeps scrolling, the popover stays under the account icon, and it closes when the
+  sticky header hides.
 
 ## Verification
 

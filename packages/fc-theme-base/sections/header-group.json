@@ -25,7 +25,7 @@
             "title": "Hassle-free returns",
             "message": "30-day postage paid returns",
             "tone": "default",
-            "link": "shopify://policies/refund-policy",
+            "link": "shopify://pages/refund-policy",
             "link_label": "See policy"
           }
         },
@@ -45,7 +45,7 @@
             "title": "Summer nationals",
             "message": "Visit us at booth 14",
             "tone": "event",
-            "link": "shopify://pages/about",
+            "link": "shopify://pages/about-us",
             "link_label": "Event details"
           }
         },
@@ -55,7 +55,7 @@
             "title": "Traveling to our factories",
             "message": "Orders ship from July 20",
             "tone": "vacation",
-            "link": "shopify://policies/shipping-policy",
+            "link": "shopify://pages/shipping-policy",
             "link_label": "Learn more"
           }
         }
@@ -82,7 +82,7 @@
           "type": "_utility-link",
           "settings": {
             "label": "About us",
-            "link": "shopify://pages/about"
+            "link": "shopify://pages/about-us"
           }
         },
         "contact": {
@@ -96,14 +96,14 @@
           "type": "_utility-link",
           "settings": {
             "label": "Order tracking",
-            "link": "/pages/order-tracking"
+            "link": "/account/orders"
           }
         },
         "returns": {
           "type": "_utility-link",
           "settings": {
             "label": "Returns",
-            "link": "shopify://policies/refund-policy"
+            "link": "shopify://pages/refund-policy"
           }
         }
       },

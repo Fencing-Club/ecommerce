@@ -1,6 +1,11 @@
 /**
- * Row motion shared across the theme. Rows open as they appear and close as they go, with a fade, so a list never
- * jumps. It uses the entrance timing (220ms, standard easing), and reduced motion skips it.
+ * Motion shared across the theme, on the entrance timing (220ms, standard easing). Reduced motion skips it, and a hidden
+ * tab never holds it up.
+ * - Rows open as they appear and close as they go, with a fade, so a list never jumps (window.RowMotion).
+ * - A `<details data-motion>` shows and hides its content the same way: the element after its summary grows from no
+ *   height and fades in, and shrinks and fades out. While it closes, the details keeps `open`, so its content stays
+ *   visible, and has `data-closing`; style what marks it open with `[open]:not([data-closing])`. A click while it moves
+ *   turns it around from where it is.
  */
 (() => {
   const DURATION = 220;
@@ -9,19 +14,27 @@
 
   const moves = element => typeof element.animate === 'function' && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-  function run(element, opening) {
+  /** The element's size and opacity as it looks now, partway through an animation included. */
+  function frame(element) {
     const style = getComputedStyle(element);
-    const open = {
+    return {
       height: `${element.getBoundingClientRect().height}px`,
       paddingTop: style.paddingTop,
       paddingBottom: style.paddingBottom,
       borderBottomWidth: style.borderBottomWidth,
-      opacity: 1,
+      opacity: Number(style.opacity),
     };
-    element.style.overflow = 'hidden';
-    const animation = element.animate(opening ? [CLOSED, open] : [open, CLOSED], { duration: DURATION, easing: EASING, fill: opening ? 'none' : 'forwards' });
-    // A hidden tab pauses animations, so nothing waits on one for longer than it should take.
+  }
+
+  /** Resolves when the animation ends. A hidden tab pauses animations, so nothing waits on one for longer than it should take. */
+  function settle(animation) {
     return Promise.race([animation.finished.catch(() => {}), new Promise(resolve => setTimeout(resolve, DURATION + 80))]);
+  }
+
+  function run(element, opening) {
+    const open = { ...frame(element), opacity: 1 };
+    element.style.overflow = 'hidden';
+    return settle(element.animate(opening ? [CLOSED, open] : [open, CLOSED], { duration: DURATION, easing: EASING, fill: opening ? 'none' : 'forwards' }));
   }
 
   /** Opens a row that just appeared, from no height to its own. */
@@ -71,4 +84,42 @@
   }
 
   window.RowMotion = { openRow, closeRow, currentRows, animateListChanges };
+
+  /** The disclosures moving now, each with its animation and which way it goes. */
+  const disclosures = new WeakMap();
+
+  /** Shows or hides a disclosure's content, starting from wherever it is now. */
+  function toggleDisclosure(details, content) {
+    const moving = disclosures.get(details);
+    const opening = moving ? !moving.opening : !details.open;
+    const from = moving || details.open ? frame(content) : CLOSED;
+    moving?.animation.cancel();
+    details.open = true;
+    details.toggleAttribute('data-closing', !opening);
+    const to = opening ? { ...frame(content), opacity: 1 } : CLOSED;
+    content.style.overflow = 'hidden';
+    const animation = content.animate([from, to], { duration: DURATION, easing: EASING, fill: 'forwards' });
+    const motion = { animation, opening };
+    disclosures.set(details, motion);
+    settle(animation).then(() => {
+      if (disclosures.get(details) !== motion) return;
+      disclosures.delete(details);
+      if (!opening) {
+        details.open = false;
+        details.removeAttribute('data-closing');
+      }
+      animation.cancel();
+      content.style.overflow = '';
+    });
+  }
+
+  document.addEventListener('click', event => {
+    const summary = event.target.closest?.('summary');
+    const details = summary?.parentElement;
+    if (event.defaultPrevented || !details?.matches('details[data-motion]') || event.target.closest('a, button, input, select, textarea')) return;
+    const content = summary.nextElementSibling;
+    if (!content || !moves(content)) return;
+    event.preventDefault();
+    toggleDisclosure(details, content);
+  });
 })();

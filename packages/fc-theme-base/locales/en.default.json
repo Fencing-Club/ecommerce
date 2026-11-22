@@ -438,7 +438,7 @@
     },
     "footer": {
       "menus": "Footer",
-      "copyright": "© {{ year }} {{ name }}. All rights reserved.",
+      "copyright": "© {{ year }} {{ name }}",
       "payment": "Payment methods"
     },
     "featured_blog": {

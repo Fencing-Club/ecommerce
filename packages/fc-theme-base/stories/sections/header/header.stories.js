@@ -13,10 +13,10 @@ const utilityLink = (id, label, link) => ({ id, type: '_utility-link', settings:
 
 const blocks = [
   utilityLink('home', 'Home', '/'),
-  utilityLink('about', 'About us', '/pages/about'),
+  utilityLink('about', 'About us', '/pages/about-us'),
   utilityLink('contact', 'Contact', '/pages/contact'),
-  utilityLink('order-tracking', 'Order tracking', '/pages/order-tracking'),
-  utilityLink('returns', 'Returns', '/policies/refund-policy'),
+  utilityLink('order-tracking', 'Order tracking', '/account/orders'),
+  utilityLink('returns', 'Returns', '/pages/refund-policy'),
 ];
 
 const variables = {
@@ -60,7 +60,7 @@ export const Default = {
       'Order tracking',
       'Returns',
     ]);
-    await expect(within(utility).getByRole('link', { name: 'Returns' })).toHaveAttribute('href', '/policies/refund-policy');
+    await expect(within(utility).getByRole('link', { name: 'Returns' })).toHaveAttribute('href', '/pages/refund-policy');
     await expect(canvas.getAllByRole('button', { name: /United States \(USD \$\)/ }).length).toBeGreaterThan(0);
     await expect(canvas.getByRole('link', { name: /Cart/ })).toHaveAttribute('href', '/cart');
   },
