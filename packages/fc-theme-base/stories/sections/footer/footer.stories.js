@@ -6,7 +6,7 @@ const menu = (heading, links) => ({ id: heading.toLowerCase(), type: '_footer-me
 
 const blocks = [
   menu('Shop', [{ ...link('Masks'), current: true }, link('Jackets'), link('Weapons'), link('Blades'), link('Gloves'), link('Footwear')]),
-  menu('Support', [link('Contact us'), link('FAQ'), link('Shipping'), link('Returns'), link('Size guides'), link('Track order')]),
+  menu('Support', [link('Contact us'), link('Shipping'), link('Returns'), link('Size guides'), link('Track order'), link('FAQ')]),
   menu('Company', [
     link('Our story'),
     link('The Journal'),
