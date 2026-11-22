@@ -262,10 +262,6 @@
     display: none;
   }
 
-  .header__icons .desktop-localization-wrapper {
-    display: none;
-  }
-
   .header__icon,
   .header__icon--cart .icon {
     width: 2.2rem;

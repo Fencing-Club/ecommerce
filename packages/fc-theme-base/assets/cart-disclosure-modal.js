@@ -162,7 +162,6 @@ if (!customElements.get('cart-disclosure-modal')) {
 
     restoreFocusTrap() {
       const cartDrawer = this.opener?.closest('cart-drawer.active');
-      const cartNotification = this.opener?.closest('cart-notification')?.querySelector('#cart-notification.active');
 
       if (cartDrawer && typeof trapFocus === 'function') {
         const containerToTrapFocusOn = cartDrawer.classList.contains('is-empty')
@@ -173,11 +172,6 @@ if (!customElements.get('cart-disclosure-modal')) {
           trapFocus(containerToTrapFocusOn, this.opener);
           return;
         }
-      }
-
-      if (cartNotification && typeof trapFocus === 'function') {
-        trapFocus(cartNotification, this.opener);
-        return;
       }
 
       if (typeof removeTrapFocus === 'function') {

@@ -1,5 +1,5 @@
 window.routes = { search_url: '/lab/search', predictive_search_url: '/lab/search' };
-window.accessibilityStrings = { imageAvailable: 'Image [index] is available', shareSuccess: 'Link copied', playSlideshow: 'Play slideshow', pauseSlideshow: 'Pause slideshow' };
+window.accessibilityStrings = { imageAvailable: 'Image [index] is available', shareSuccess: 'Link copied' };
 const navigation = document.querySelector('.lab-nav');
 for (const [id, label] of [['mobile-navigation', 'Mobile menu'], ['media', 'Media'], ['sizing', 'Sizing'], ['reading', 'Reading'], ['utilities', 'Utilities']]) {
   const link = document.createElement('a');

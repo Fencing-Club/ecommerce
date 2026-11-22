@@ -72,37 +72,11 @@
       }
     },
     "blog_cards": {
-      "name": "Blog cards",
-      "settings": {
-        "style": {
-          "options__1": {
-            "label": "Standard"
-          },
-          "options__2": {
-            "label": "Card"
-          },
-          "label": "Style"
-        }
-      }
+      "name": "Blog cards"
     },
     "badges": {
       "name": "Badges",
       "settings": {
-        "position": {
-          "options__1": {
-            "label": "Bottom left"
-          },
-          "options__2": {
-            "label": "Bottom right"
-          },
-          "options__3": {
-            "label": "Top left"
-          },
-          "options__4": {
-            "label": "Top right"
-          },
-          "label": "Position on cards"
-        },
         "sale_badge_color_scheme": {
           "label": "Sale badge color scheme"
         },
@@ -167,17 +141,11 @@
         "paragraph": {
           "content": "Displays in the footer's brand information block"
         },
-        "brand_headline": {
-          "label": "Headline"
-        },
         "brand_description": {
           "label": "Description"
         },
         "brand_image": {
           "label": "Image"
-        },
-        "brand_image_width": {
-          "label": "Image width"
         }
       }
     },
@@ -245,9 +213,6 @@
     "social-media": {
       "name": "Social media",
       "settings": {
-        "header": {
-          "content": "Social accounts"
-        },
         "social_twitter_link": {
           "label": "X / Twitter",
           "info": "https://x.com/shopify"
@@ -292,10 +257,6 @@
         "predictive_search_enabled": {
           "label": "Search suggestions"
         },
-        "predictive_search_show_vendor": {
-          "label": "Product vendor",
-          "info": "Shown when search suggestions enabled"
-        },
         "predictive_search_show_price": {
           "label": "Product price",
           "info": "Shown when search suggestions enabled"
@@ -321,9 +282,6 @@
           },
           "page": {
             "label": "Page"
-          },
-          "notification": {
-            "label": "Popup notification"
           }
         },
         "show_vendor": {
@@ -333,11 +291,7 @@
           "label": "Cart note"
         },
         "cart_drawer": {
-          "header": "Cart drawer",
-          "collection": {
-            "label": "Collection",
-            "info": "Shown when cart drawer is empty"
-          }
+          "header": "Cart drawer"
         },
         "cart_rewards": {
           "header": "Rewards",
@@ -407,30 +361,11 @@
   },
   "sections": {
     "all": {
-      "animation": {
-        "content": "Animations",
-        "image_behavior": {
-          "options__1": {
-            "label": "None"
-          },
-          "options__2": {
-            "label": "Ambient movement"
-          },
-          "options__3": {
-            "label": "Fixed background position"
-          },
-          "options__4": {
-            "label": "Zoom in on scroll"
-          },
-          "label": "Animation"
-        }
-      },
       "padding": {
         "section_padding_heading": "Padding",
         "padding_top": "Top",
         "padding_bottom": "Bottom"
       },
-      "spacing": "Spacing",
       "colors": {
         "label": "Color scheme",
         "has_cards_info": "To change the card color scheme, update your theme settings."
@@ -492,18 +427,6 @@
         "name": "Apps"
       }
     },
-    "contact-form": {
-      "name": "Contact Form",
-      "presets": {
-        "name": "Contact form"
-      },
-      "settings": {
-        "title": {
-          "default": "Contact form",
-          "label": "Heading"
-        }
-      }
-    },
     "custom-liquid": {
       "name": "Custom Liquid",
       "settings": {
@@ -511,9 +434,6 @@
           "label": "Liquid code",
           "info": "Add app snippets or other code to create advanced customizations. [Learn more](https://shopify.dev/docs/api/liquid)"
         }
-      },
-      "presets": {
-        "name": "Custom Liquid"
       }
     },
     "footer": {
@@ -601,80 +521,17 @@
         }
       }
     },
-    "main-blog": {
-      "name": "Blog posts",
-      "settings": {
-        "show_image": {
-          "label": "Featured image"
-        },
-        "show_date": {
-          "label": "Date"
-        },
-        "show_author": {
-          "label": "Author"
-        },
-        "layout": {
-          "label": "Layout",
-          "options__1": {
-            "label": "Grid"
-          },
-          "options__2": {
-            "label": "Collage"
-          }
-        },
-        "image_height": {
-          "label": "Image height",
-          "options__1": {
-            "label": "Adapt to image"
-          },
-          "options__2": {
-            "label": "Small"
-          },
-          "options__3": {
-            "label": "Medium"
-          },
-          "options__4": {
-            "label": "Large"
-          }
-        }
-      }
-    },
-    "main-cart-footer": {
-      "name": "Subtotal",
-      "blocks": {
-        "subtotal": {
-          "name": "Subtotal price"
-        },
-        "buttons": {
-          "name": "Checkout button"
-        }
-      }
-    },
     "main-cart-items": {
       "name": "Cart"
     },
     "main-collection-banner": {
-      "name": "Collection banner",
-      "settings": {
-        "paragraph": {
-          "content": "Collection details are [managed in your admin](https://help.shopify.com/manual/products/collections/collection-layout)"
-        },
-        "show_collection_description": {
-          "label": "Description"
-        },
-        "show_collection_image": {
-          "label": "Image"
-        }
-      }
+      "name": "Collection banner"
     },
     "main-collection-product-grid": {
       "name": "Product grid",
       "settings": {
         "products_per_page": {
           "label": "Products per page"
-        },
-        "columns_desktop": {
-          "label": "Columns"
         },
         "enable_filtering": {
           "label": "Filters",
@@ -695,44 +552,14 @@
         "enable_sorting": {
           "label": "Sorting"
         },
-        "image_ratio": {
-          "label": "Image ratio",
-          "options__1": {
-            "label": "Adapt to image"
-          },
-          "options__2": {
-            "label": "Portrait"
-          },
-          "options__3": {
-            "label": "Square"
-          }
-        },
-        "show_secondary_image": {
-          "label": "Show second image on hover"
-        },
-        "show_vendor": {
-          "label": "Vendor"
-        },
-        "show_rating": {
-          "label": "Product rating",
-          "info": "An app is required for product ratings. [Learn more](https://help.shopify.com/manual/online-store/themes/theme-structure/page-types/collection-pages#product-grid-show-product-rating)"
-        },
         "header__1": {
           "content": "Filtering and sorting"
-        },
-        "header__3": {
-          "content": "Product card"
-        },
-        "enable_tags": {
-          "label": "Filters",
-          "info": "Customize filters with the [Search & Discovery app](https://help.shopify.com/manual/online-store/search-and-discovery/filters)"
         },
         "quick_add": {
           "label": "Quick add",
           "options": {
             "option_1": "None",
-            "option_2": "Standard",
-            "option_3": "Bulk"
+            "option_2": "Standard"
           }
         },
         "columns_mobile": {
@@ -788,9 +615,6 @@
         },
         "columns_desktop": {
           "label": "Columns"
-        },
-        "header_mobile": {
-          "content": "Mobile layout"
         },
         "columns_mobile": {
           "label": "Mobile columns",

@@ -7,11 +7,6 @@
   <script src="{{ 'facets.js' | asset_url }}" type="module"></script>
 {%- endif -%}
 
-{%- if section.settings.enable_sorting -%}
-{%- endif -%}
-
-<script src="{{ 'main-search.js' | asset_url }}" defer="defer"></script>
-
 {%- liquid
   assign sort_by = search.sort_by | default: search.default_sort_by
   assign terms = search.terms | escape

@@ -756,22 +756,6 @@
     "name": "t:settings_schema.blog_cards.name",
     "settings": [
       {
-        "type": "select",
-        "id": "blog_card_style",
-        "options": [
-          {
-            "value": "standard",
-            "label": "t:settings_schema.blog_cards.settings.style.options__1.label"
-          },
-          {
-            "value": "card",
-            "label": "t:settings_schema.blog_cards.settings.style.options__2.label"
-          }
-        ],
-        "default": "standard",
-        "label": "t:settings_schema.blog_cards.settings.style.label"
-      },
-      {
         "type": "range",
         "id": "blog_card_image_padding",
         "min": 0,
@@ -800,12 +784,6 @@
         ],
         "default": "left",
         "label": "t:settings_schema.global.settings.text_alignment.label"
-      },
-      {
-        "type": "color_scheme",
-        "id": "blog_card_color_scheme",
-        "label": "t:sections.all.colors.label",
-        "default": "scheme-2"
       },
       {
         "type": "header",
@@ -1217,30 +1195,6 @@
     "name": "t:settings_schema.badges.name",
     "settings": [
       {
-        "type": "select",
-        "id": "badge_position",
-        "options": [
-          {
-            "value": "bottom left",
-            "label": "t:settings_schema.badges.settings.position.options__1.label"
-          },
-          {
-            "value": "bottom right",
-            "label": "t:settings_schema.badges.settings.position.options__2.label"
-          },
-          {
-            "value": "top left",
-            "label": "t:settings_schema.badges.settings.position.options__3.label"
-          },
-          {
-            "value": "top right",
-            "label": "t:settings_schema.badges.settings.position.options__4.label"
-          }
-        ],
-        "default": "bottom left",
-        "label": "t:settings_schema.badges.settings.position.label"
-      },
-      {
         "type": "range",
         "id": "badge_corner_radius",
         "min": 0,
@@ -1272,11 +1226,6 @@
         "content": "t:settings_schema.brand_information.settings.paragraph.content"
       },
       {
-        "type": "inline_richtext",
-        "id": "brand_headline",
-        "label": "t:settings_schema.brand_information.settings.brand_headline.label"
-      },
-      {
         "type": "richtext",
         "id": "brand_description",
         "label": "t:settings_schema.brand_information.settings.brand_description.label"
@@ -1285,16 +1234,6 @@
         "type": "image_picker",
         "id": "brand_image",
         "label": "t:settings_schema.brand_information.settings.brand_image.label"
-      },
-      {
-        "type": "range",
-        "id": "brand_image_width",
-        "min": 50,
-        "max": 550,
-        "step": 5,
-        "default": 100,
-        "unit": "px",
-        "label": "t:settings_schema.brand_information.settings.brand_image_width.label"
       }
     ]
   },
@@ -1365,13 +1304,6 @@
         "id": "predictive_search_enabled",
         "default": true,
         "label": "t:settings_schema.search_input.settings.predictive_search_enabled.label"
-      },
-      {
-        "type": "checkbox",
-        "id": "predictive_search_show_vendor",
-        "default": false,
-        "label": "t:settings_schema.search_input.settings.predictive_search_show_vendor.label",
-        "info": "t:settings_schema.search_input.settings.predictive_search_show_vendor.info"
       },
       {
         "type": "checkbox",
@@ -1446,13 +1378,9 @@
           {
             "value": "page",
             "label": "t:settings_schema.cart.settings.cart_type.page.label"
-          },
-          {
-            "value": "notification",
-            "label": "t:settings_schema.cart.settings.cart_type.notification.label"
           }
         ],
-        "default": "notification",
+        "default": "drawer",
         "label": "t:settings_schema.cart.settings.cart_type.label"
       },
       {
@@ -1470,18 +1398,6 @@
       {
         "type": "header",
         "content": "t:settings_schema.cart.settings.cart_drawer.header"
-      },
-      {
-        "type": "collection",
-        "id": "cart_drawer_collection",
-        "label": "t:settings_schema.cart.settings.cart_drawer.collection.label",
-        "info": "t:settings_schema.cart.settings.cart_drawer.collection.info"
-      },
-      {
-        "type": "color_scheme",
-        "id": "cart_color_scheme",
-        "label": "t:sections.all.colors.label",
-        "default": "scheme-1"
       },
       { "type": "header", "content": "t:settings_schema.cart.settings.cart_rewards.header" },
       { "type": "number", "id": "cart_free_shipping_threshold", "label": "t:settings_schema.cart.settings.cart_rewards.free_shipping.label", "info": "t:settings_schema.cart.settings.cart_rewards.free_shipping.info" },

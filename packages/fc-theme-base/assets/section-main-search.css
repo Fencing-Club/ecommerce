@@ -317,13 +317,6 @@
   display: none;
 }
 
-.search-results__controls .facets__price .field + .field-currency,
-.search-results__controls .facets__price .field-currency {
-  align-self: flex-end;
-  margin: 0 0 1.2rem;
-  color: var(--muted-foreground);
-}
-
 .search-results__controls .facets__price .field__input {
   height: 4rem;
   padding: 0 1.2rem;

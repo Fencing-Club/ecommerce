@@ -16,7 +16,7 @@
 
 // Cart custom elements that advertise sections via getSectionsToRender().
 // If Dawn adds a new cart custom element, add its tag here.
-const DAWN_CART_TAGS = ['cart-drawer', 'cart-items', 'cart-drawer-items', 'cart-notification'];
+const DAWN_CART_TAGS = ['cart-drawer', 'cart-items', 'cart-drawer-items'];
 
 // Sections that Dawn's own pubsub subscribers refresh (cart.js's
 // CartItems#onCartUpdate fetches and replaces these directly when
@@ -55,7 +55,7 @@ function collectCartSections() {
       // Two patterns coexist in getSectionsToRender():
       //   - cart-items style: entry.section is the parent Liquid section
       //     id, entry.selector is a child node inside it.
-      //   - cart-drawer / cart-notification style: entry.id IS the mount;
+      //   - cart-drawer style: entry.id IS the mount;
       //     there is no parent wrapper.
       const root = entry.section ? document.getElementById(entry.id) : document;
       if (!root) continue;
@@ -80,9 +80,8 @@ function collectCartSections() {
 // publish 'cart-update' so the subscribers run.
 //
 // We always fetch /cart.js (with sections= when we have any) so that
-// `cartData` is defined for subscribers. quick-add-bulk.js reads
-// `event.cartData.items` unconditionally — publishing without cartData
-// makes it throw.
+// `cartData` is defined for subscribers. price-per-item.js reads
+// `event.cartData.items` to recount the product's cart quantity.
 async function refreshDawnCartUI() {
   const sections = collectCartSections();
   const sectionsQuery = sections.size
@@ -108,7 +107,7 @@ async function refreshDawnCartUI() {
 
   // Hand off to Dawn's existing subscribers. cartData is the full
   // Cart Ajax payload (items, item_count, token, …) plus sections;
-  // quick-add-bulk.js and price-per-item.js read it directly.
+  // price-per-item.js reads it directly.
   publish(PUB_SUB_EVENTS.cartUpdate, {
     source: 'external-refresh',
     cartData: cartData ?? undefined,

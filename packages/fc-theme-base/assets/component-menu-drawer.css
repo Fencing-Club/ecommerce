@@ -151,26 +151,6 @@ details[open].menu-opening > .menu-drawer__submenu {
   overflow-y: auto;
 }
 
-.menu-drawer__close-button {
-  margin-top: 1.5rem;
-  padding: 1.2rem 2.6rem 1.2rem 3rem;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  font-size: 1.4rem;
-  width: 100%;
-  background-color: transparent;
-  font-family: var(--font-body-family);
-  font-style: var(--font-body-style);
-  text-align: left;
-}
-
-.menu-drawer__close-button .svg-wrapper {
-  transform: rotate(180deg);
-  margin-right: 1rem;
-  width: 15px;
-}
-
 .menu-drawer__utility-links {
   padding: 0;
   background-color: rgba(var(--color-foreground), 0.03);
