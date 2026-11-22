@@ -1,9 +1,10 @@
 {% doc %}
   Emits the storefront's server-rendered JSON-LD graph from native Shopify data.
 
-  @param {boolean} [collection_item_list_enabled] - Whether to emit a collection ItemList.
-  @param {product[]} [collection_item_list] - Products visible in the current collection page.
-  @param {number} [collection_item_count] - Total products in the collection.
+  @param {boolean} [collection_item_list_enabled] - Whether to emit an ItemList of what the page lists.
+  @param {object[]} [collection_item_list] - The products a collection page shows, or the collections the collection
+    list shows; each needs a title and url.
+  @param {number} [collection_item_count] - Total items across the list's pages.
   @param {number} [collection_position_offset] - Zero-based offset for absolute list positions.
 {% enddoc %}
 
@@ -209,9 +210,21 @@
 
 {%- liquid
   assign supported_page = false
-  if request.page_type == 'index' or request.page_type == 'product' or request.page_type == 'collection' or request.page_type == 'page' or request.page_type == 'blog' or request.page_type == 'article'
+  if request.page_type == 'index' or request.page_type == 'product' or request.page_type == 'collection' or request.page_type == 'list-collections' or request.page_type == 'page' or request.page_type == 'blog' or request.page_type == 'article'
     assign supported_page = true
   endif
+
+  # Every social profile set in the theme settings.
+  assign same_as = ''
+  assign social_networks = 'facebook,instagram,youtube,tiktok,pinterest,twitter,tumblr,snapchat,vimeo' | split: ','
+  for social_network in social_networks
+    assign social_setting = 'social_' | append: social_network | append: '_link'
+    assign social_link = settings[social_setting] | strip
+    if social_link != blank
+      assign same_as = same_as | append: social_link | append: '|'
+    endif
+  endfor
+  assign same_as = same_as | split: '|'
 
   assign site_url = shop.url
   assign organization_id = site_url | append: '/#organization'
@@ -288,12 +301,25 @@
       when 'discontinued'
         assign product_availability = 'https://schema.org/Discontinued'
     endcase
+
+    # The reviews app (Judge.me) writes the product's rating to Shopify's standard reviews fields, the same ones the
+    # product page shows as stars.
+    assign product_rating = product.metafields.reviews.rating.value
+    assign product_rating_count = product.metafields.reviews.rating_count.value | default: 0
+  endif
+
+  # A shop account writing articles is the store itself, not a person.
+  assign article_author_is_store = false
+  if request.page_type == 'article'
+    if article.author == blank or article.author == shop.name
+      assign article_author_is_store = true
+    endif
   endif
 
   assign webpage_type = 'WebPage'
   if request.page_type == 'product'
     assign webpage_type = 'ItemPage'
-  elsif request.page_type == 'collection' or request.page_type == 'blog'
+  elsif request.page_type == 'collection' or request.page_type == 'list-collections' or request.page_type == 'blog'
     assign webpage_type = 'CollectionPage'
   elsif request.page_type == 'page' and page.handle == 'about-us'
     assign webpage_type = 'AboutPage'
@@ -301,6 +327,18 @@
     assign webpage_type = 'ContactPage'
   endif
 -%}
+
+{%- if product_rating != blank and product_rating_count > 0 -%}
+  {%- capture aggregate_rating -%}
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": {{ product_rating.rating | json }},
+      "bestRating": {{ product_rating.scale_max | json }},
+      "worstRating": {{ product_rating.scale_min | json }},
+      "ratingCount": {{ product_rating_count | json }}
+    }
+  {%- endcapture -%}
+{%- endif -%}
 
 {%- if supported_page -%}
   {%- capture graph_json -%}
@@ -365,16 +403,8 @@
             {%- if shipping_policy_url != blank -%},
               "hasShippingService": { "@id": {{ shipping_service_id | json }} }
             {%- endif -%}
-            {%- if settings.social_facebook_link != blank or settings.social_instagram_link != blank -%},
-              "sameAs": [
-                {%- if settings.social_facebook_link != blank -%}
-                  {{ settings.social_facebook_link | json }}
-                {%- endif -%}
-                {%- if settings.social_facebook_link != blank and settings.social_instagram_link != blank -%},{%- endif -%}
-                {%- if settings.social_instagram_link != blank -%}
-                  {{ settings.social_instagram_link | json }}
-                {%- endif -%}
-              ]
+            {%- if same_as.size > 0 -%},
+              "sameAs": {{ same_as | json }}
             {%- endif -%}
           }
           {%- if return_policy_url != blank -%},
@@ -451,7 +481,7 @@
           {%- endif -%}
           {%- if request.page_type == 'product' -%},
             "mainEntity": { "@id": {{ product_schema_id | json }} }
-          {%- elsif request.page_type == 'collection' and collection_item_list_enabled -%},
+          {%- elsif collection_item_list_enabled -%},
             "mainEntity": { "@id": {{ canonical_url | append: '#item-list' | json }} }
           {%- elsif request.page_type == 'blog' -%},
             "mainEntity": { "@id": {{ canonical_url | append: '#blog' | json }} }
@@ -482,7 +512,7 @@
           {%- endif -%}
         }
         {%- comment -%} The visible breadcrumbs write their own BreadcrumbList; see ui-breadcrumbs. {%- endcomment -%}
-        {%- if request.page_type == 'collection' and collection_item_list_enabled -%},
+        {%- if collection_item_list_enabled -%},
           {
             "@type": "ItemList",
             "@id": {{ canonical_url | append: '#item-list' | json }},
@@ -548,6 +578,9 @@
               {%- endif -%}
               {%- if valid_gtin -%},
                 "gtin{{ barcode_length }}": {{ barcode | json }}
+              {%- endif -%}
+              {%- if aggregate_rating != blank -%},
+                {{ aggregate_rating }}
               {%- endif -%},
               "offers": {
                 "@type": "Offer",
@@ -603,6 +636,9 @@
               {%- endif -%}
               {%- if product.featured_image -%},
                 "image": [{{ product.featured_image | image_url: width: product.featured_image.width | prepend: 'https:' | json }}]
+              {%- endif -%}
+              {%- if aggregate_rating != blank -%},
+                {{ aggregate_rating }}
               {%- endif -%}
               {%- if varies_by_count > 0 -%},
                 "variesBy": [
@@ -660,9 +696,7 @@
                     "url": {{ variant_url | json }},
                     "name": {{ product.title | append: ' - ' | append: variant.title | json }},
                     "inProductGroupWithID": {{ product.id | append: '' | json }}
-                    {%- if product.description != blank -%},
-                      "description": {{ product.description | strip_html | json }}
-                    {%- endif -%}
+                    {%- comment -%} Variants share the group's description, so they don't repeat it. {%- endcomment -%}
                     {%- if variant.featured_image -%},
                       "image": [{{ variant.featured_image | image_url: width: variant.featured_image.width | prepend: 'https:' | json }}]
                     {%- elsif product.featured_image -%},
@@ -769,10 +803,9 @@
             "url": {{ canonical_url | json }},
             "mainEntityOfPage": { "@id": {{ webpage_id | json }} },
             "headline": {{ article.title | json }},
-            "articleBody": {{ article.content | strip_html | json }},
-            "datePublished": {{ article.published_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
-            "dateModified": {{ article.updated_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
-            "author": { "@type": "Person", "name": {{ article.author | json }} },
+            "datePublished": {{ article.published_at | date: '%Y-%m-%dT%H:%M:%S%:z' | json }},
+            "dateModified": {{ article.updated_at | date: '%Y-%m-%dT%H:%M:%S%:z' | json }},
+            "author": {% if article_author_is_store %}{ "@id": {{ organization_id | json }} }{% else %}{ "@type": "Person", "name": {{ article.author | json }} }{% endif %},
             "publisher": { "@id": {{ organization_id | json }} },
             "inLanguage": {{ request.locale.iso_code | json }}
             {%- if article.excerpt != blank -%},

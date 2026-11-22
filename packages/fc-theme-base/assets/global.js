@@ -6,7 +6,12 @@ function getFocusableElements(container) {
   ).filter((element) => element.getAttribute('tabindex') !== '-1');
 }
 
-document.querySelectorAll('[id^="Details-"] summary').forEach((summary) => {
+// Markup added after load, such as the header drawer's menu, runs this on its own root.
+function initDetailsSummaries(root = document) {
+  root.querySelectorAll('[id^="Details-"] summary').forEach(initDetailsSummary);
+}
+
+function initDetailsSummary(summary) {
   summary.setAttribute('role', 'button');
   summary.setAttribute('aria-expanded', summary.parentNode.hasAttribute('open'));
 
@@ -20,7 +25,9 @@ document.querySelectorAll('[id^="Details-"] summary').forEach((summary) => {
 
   if (summary.closest('header-drawer, menu-drawer')) return;
   summary.parentElement.addEventListener('keyup', onKeyUpEscape);
-});
+}
+
+initDetailsSummaries();
 
 const trapFocusHandlers = {};
 
@@ -194,13 +201,15 @@ class MenuDrawer extends HTMLElement {
     this.bindEvents();
   }
 
-  bindEvents() {
-    this.querySelectorAll('summary').forEach((summary) =>
+  bindEvents(root = this) {
+    root.querySelectorAll('summary').forEach((summary) =>
       summary.addEventListener('click', this.onSummaryClick.bind(this))
     );
-    this.querySelectorAll(
-      'button:not(.localization-selector):not(.country-selector__close-button):not(.country-filter__reset-button)'
-    ).forEach((button) => button.addEventListener('click', this.onCloseButtonClick.bind(this)));
+    root
+      .querySelectorAll(
+        'button:not(.localization-selector):not(.country-selector__close-button):not(.country-filter__reset-button)'
+      )
+      .forEach((button) => button.addEventListener('click', this.onCloseButtonClick.bind(this)));
   }
 
   onKeyUp(event) {
@@ -317,6 +326,7 @@ class HeaderDrawer extends MenuDrawer {
   }
 
   openMenuDrawer(summaryElement) {
+    this.renderContent();
     this.header = this.header || document.querySelector('.section-header');
     this.borderOffset =
       this.borderOffset || this.closest('.header-wrapper').classList.contains('header-wrapper--border-bottom') ? 1 : 0;
@@ -336,6 +346,16 @@ class HeaderDrawer extends MenuDrawer {
     window.addEventListener('resize', this.onResize);
     trapFocus(this.mainDetailsToggle, summaryElement);
     document.body.classList.add(`overflow-hidden-${this.dataset.breakpoint}`);
+  }
+
+  // The drawer's menu waits in a template until the drawer first opens; the mega menu carries the same links.
+  renderContent() {
+    const template = this.querySelector('template[data-menu-drawer-content]');
+    if (!template) return;
+    const container = template.parentElement;
+    template.replaceWith(template.content.cloneNode(true));
+    initDetailsSummaries(container);
+    this.bindEvents(container);
   }
 
   closeMenuDrawer(event, elementToFocus) {
