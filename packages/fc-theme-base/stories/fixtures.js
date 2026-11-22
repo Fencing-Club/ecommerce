@@ -142,3 +142,121 @@ export function sectionHeader(eyebrow, heading, link) {
     ],
   };
 }
+
+/**
+ * One value of a Shopify collection filter, with the URLs that add or remove it.
+ *
+ * @param {string} param
+ * @param {string} label
+ * @param {number} count
+ * @param {{ active?: boolean, value?: string, swatch?: object | null }} [options]
+ */
+const filterValue = (param, label, count, { active = false, value = label, swatch = null } = {}) => {
+  const slug = `${param.split('.').pop()}-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  return { param_name: param, label, value, count, active, swatch, url_to_add: `#add-${slug}`, url_to_remove: `#remove-${slug}` };
+};
+
+/** A list filter as `collection.filters` holds it: `values` are `[label, count, options]`. */
+const listFilter = (label, param, values, presentation = 'text') => {
+  const all = values.map(([valueLabel, count, options]) => filterValue(param, valueLabel, count, options));
+  return { label, type: 'list', param_name: param, presentation, values: all, active_values: all.filter((value) => value.active) };
+};
+
+/** Collection filters shaped like Shopify's, named by what they filter. Pass the labels to switch on. */
+export const collectionFilters = {
+  weapon: (on = []) => listFilter('Weapon', 'filter.p.m.custom.weapon', [['Foil', 64], ['Épée', 71], ['Sabre', 58]].map(([l, c]) => [l, c, { active: on.includes(l) }])),
+  protection: (on = []) => listFilter('Safety Level', 'filter.p.m.custom.protection_rating', [['350N', 46], ['800N', 50], ['1600N', 0]].map(([l, c]) => [l, c, { active: on.includes(l) }])),
+  fie: (on = []) => listFilter('FIE Rating', 'filter.p.m.custom.fie_status', [['FIE', 55], ['Non-FIE', 41]].map(([l, c]) => [l, c, { active: on.includes(l) }])),
+  hand: (on = []) => listFilter('Hand', 'filter.v.option.hand', [['Left-handed', 9], ['Right-handed', 41]].map(([l, c]) => [l, c, { active: on.includes(l) }])),
+  size: (on = []) => listFilter('Size', 'filter.v.option.size', ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'Kids'].map((l, i) => [l, i === 6 ? 14 : 20, { active: on.includes(l) }])),
+  color: (on = []) =>
+    listFilter(
+      'Color',
+      'filter.v.option.color',
+      [['White', '#ffffff'], ['Black', '#101012'], ['Navy', '#1e2a44'], ['Grey', '#9aa0a6'], ['Red', '#c10007'], ['Blue', '#1447e6']].map(([l, hex]) => [
+        l,
+        12,
+        { active: on.includes(l), swatch: { color: { rgb: [1, 3, 5].map((start) => parseInt(hex.slice(start, start + 2), 16)).join(' ') } } },
+      ]),
+      'swatch',
+    ),
+  brand: (on = []) =>
+    listFilter('Brand', 'filter.p.vendor', [['Fencing Club', 81], ['FWF', 22], ['Blaise', 14], ['NEPS', 9], ['Allstar', 8], ['Uhlmann', 6], ['PBT', 4], ['Absolute', 2]].map(([l, c]) => [l, c, { active: on.includes(l) }])),
+  availability: (inStock = false) => listFilter('Availability', 'filter.v.availability', [['In stock', 120, { active: inStock, value: '1' }], ['Out of stock', 17, { value: '0' }]]),
+  price: (max = null) => ({
+    label: 'Price',
+    type: 'price_range',
+    range_max: 38900,
+    url_to_remove: '#remove-price',
+    min_value: { param_name: 'filter.v.price.gte', value: null },
+    max_value: { param_name: 'filter.v.price.lte', value: max },
+  }),
+};
+
+const menuLink = (title, handle, links = []) => ({ title, url: `/collections/${handle}`, type: 'collection_link', links });
+
+/** The main menu branch the collection page's tiles and tree read, and the collections its items link to. */
+export const collectionMenu = {
+  linklists: {
+    'main-menu': {
+      links: [
+        menuLink('Weapons', 'weapons', [menuLink('Blades', 'blades')]),
+        menuLink('Clothing', 'clothing', [
+          menuLink('Jackets', 'jackets', [menuLink("Men's", 'mens-jackets'), menuLink("Women's", 'womens-jackets'), menuLink("Kids'", 'kids-jackets')]),
+          menuLink('Pants and knickers', 'pants', [menuLink("Men's", 'mens-pants')]),
+          menuLink('Plastrons', 'plastrons'),
+          menuLink('Chest protectors', 'chest-protectors'),
+          menuLink('Gloves', 'gloves'),
+          menuLink('Socks', 'socks'),
+          menuLink('Lames', 'lames'),
+        ]),
+      ],
+    },
+  },
+  collections: Object.fromEntries(
+    [
+      ['weapons', 64, null],
+      ['blades', 30, null],
+      ['clothing', 137, null],
+      ['jackets', 24, 'collection-aero-competition-jacket.jpg'],
+      ['mens-jackets', 11, null],
+      ['womens-jackets', 9, null],
+      ['kids-jackets', 4, null],
+      ['pants', 18, 'collection-knicker-pants-350n.jpg'],
+      ['mens-pants', 10, null],
+      ['plastrons', 8, 'collection-underarm-plastron-800n.jpg'],
+      ['chest-protectors', 9, 'collection-fie-800n-jacket.jpg'],
+      ['gloves', 12, 'collection-grip-fencing-glove.jpg'],
+      ['socks', 6, 'collection-fencing-socks-2-pack.jpg'],
+      ['lames', 0, null],
+    ].map(([handle, count, file]) => [handle, { handle, all_products_count: count, featured_image: file ? image(file, '') : null }]),
+  ),
+  routes: { root_url: '/', search_url: '/search', cart_url: '/cart', all_products_collection_url: '/collections/all' },
+};
+
+/**
+ * A collection as its page sees it.
+ *
+ * @param {{ handle?: string, title?: string, products?: object[], filters?: object[], count?: number }} [details]
+ */
+export const collectionPage = ({ handle = 'clothing', title = 'Clothing', products: items = Object.values(cardProducts), filters = [], count } = {}) => ({
+  id: 9001,
+  handle,
+  title,
+  url: `/collections/${handle}`,
+  description:
+    '<p>Jackets, knickers, plastrons and gloves for every level, from 350N club kit to 800N FIE for international events. We stock every item in our Woodinville warehouse, and our own team packs your order.</p>',
+  products: items,
+  products_count: count ?? items.length,
+  all_products_count: 137,
+  filters,
+  all_vendors: ['Fencing Club', 'FWF', 'Blaise', 'Favero'],
+  sort_by: '',
+  default_sort_by: 'best-selling',
+  sort_options: [
+    { name: 'Featured', value: 'manual' },
+    { name: 'Best selling', value: 'best-selling' },
+    { name: 'Price, low to high', value: 'price-ascending' },
+    { name: 'Price, high to low', value: 'price-descending' },
+  ],
+});

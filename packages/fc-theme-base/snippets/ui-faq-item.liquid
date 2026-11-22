@@ -8,10 +8,11 @@
   - link_label: {String} Optional related link label
   - link_url: {String} Optional related link target
   - structured_data: {Boolean} Mark the item up as a schema.org Question, for a page marked up as an FAQPage
+  - variant: {String} plain drops the Q and A badges and shows plus and minus, as in a collection's buying guide
   - block: {Block} Optional Theme Editor block
 {%- endcomment -%}
 <details
-  class="ui-faq-item"
+  class="ui-faq-item{% if variant == 'plain' %} ui-faq-item--plain{% endif %}"
   data-motion
   {% if open %}
     open
@@ -24,10 +25,17 @@
   {% endif %}
 >
   <summary class="ui-faq-item__question">
-    <span class="ui-faq-item__badge ui-faq-item__badge--question" aria-hidden="true">Q</span>
+    {%- unless variant == 'plain' -%}
+      <span class="ui-faq-item__badge ui-faq-item__badge--question" aria-hidden="true">Q</span>
+    {%- endunless -%}
     <span class="ui-faq-item__question-text"{% if structured_data %} itemprop="name"{% endif %}>{{ question | escape }}</span>
     <span class="ui-faq-item__chevron" aria-hidden="true">
-      {%- render 'ui-icon', icon: 'chevron-down', size: 18 -%}
+      {%- if variant == 'plain' -%}
+        {%- render 'ui-icon', icon: 'plus', size: 18 -%}
+        {%- render 'ui-icon', icon: 'minus', size: 18 -%}
+      {%- else -%}
+        {%- render 'ui-icon', icon: 'chevron-down', size: 18 -%}
+      {%- endif -%}
     </span>
   </summary>
   <div
@@ -36,7 +44,9 @@
       itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"
     {% endif %}
   >
-    <span class="ui-faq-item__badge ui-faq-item__badge--answer" aria-hidden="true">A</span>
+    {%- unless variant == 'plain' -%}
+      <span class="ui-faq-item__badge ui-faq-item__badge--answer" aria-hidden="true">A</span>
+    {%- endunless -%}
     <div class="ui-faq-item__answer-copy">
       <div class="ui-faq-item__answer-text rte"{% if structured_data %} itemprop="text"{% endif %}>{{ answer }}</div>
       {%- if link_label != blank and link_url != blank -%}

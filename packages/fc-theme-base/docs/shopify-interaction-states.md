@@ -85,11 +85,8 @@ the full-bleed header's 96px desktop gutters are scoped to the header rather tha
 - The announcement bar is `_announcement` blocks on `ui-banner`. Each announcement's tone colours the whole bar while
   it shows. Longer copy wraps, and every announcement sits in the same grid cell, so the bar keeps the tallest one's
   height and never jumps. Autoplay pauses on hover and focus.
-- `collection-filter-header` is rendered by both the storefront and lab. Filters and Clear all share one row; its
-  69px minimum height and 12px vertical padding match the collection toolbar, align their bottom rules, and keep
-  the sort control clear of the divider. The first facet group adds no
-  duplicate top border. The mobile disclosure keeps its own Clear all action. Collections do not show a second row
-  of active-filter pills: deselect checkboxes/swatches, clear the price fields, or use Clear all in the sidebar.
+- Collection filters show in a sidebar beside the grid, under the sticky toolbar band, with the filters in use as
+  removable chips over the grid and one Clear all. The phone drawer keeps its own Remove all.
   Curated collections use full-page URL navigation, not Dawn's AJAX facet refresh (which requires different markup).
   Sorting retains active filters and breadcrumb context; price changes retain other filters and sorting. Both reset
   pagination. Clear all is a native link that removes filters and pagination while retaining sorting and breadcrumbs.

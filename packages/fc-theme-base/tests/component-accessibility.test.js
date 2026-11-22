@@ -3,6 +3,7 @@ import { Window } from 'happy-dom';
 import { Liquid } from 'liquidjs';
 import { resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
+import { registerShopifyLiquid } from './helpers/shopify-liquid.mjs';
 
 beforeAll(async () => {
   vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
@@ -140,7 +141,7 @@ describe('component accessibility contracts', () => {
     expect(checkbox.labels[0].textContent.trim()).toBe('In stock');
     expect(checkbox.dataset.action).toBe('consent-category');
     expect(checkbox.dataset.value).toBe('stock');
-    expect(form.querySelector('.ui-checkbox-field__count').textContent).toBe('(12)');
+    expect(form.querySelector('.ui-checkbox-field__count').textContent).toBe('12');
     expect(new FormData(form).get('filter')).toBe('stock');
     checkbox.labels[0].click();
     expect(checkbox.checked).toBe(false);
@@ -251,7 +252,7 @@ describe('component accessibility contracts', () => {
     expect(selected.disabled).toBe(false);
     expect(selected.dataset.filterUrl).toBe('/collections/all');
     expect(container.querySelector('details').open).toBe(true);
-    expect(container.querySelector('summary h3').textContent).toBe('BRAND');
+    expect(container.querySelector('summary h3').textContent).toBe('Brand');
   });
   it('prioritizes native swatch artwork and never treats arbitrary color labels as CSS', () => {
     const engine = new Liquid({ root: resolve('snippets'), extname: '.liquid' });
@@ -277,9 +278,8 @@ describe('component accessibility contracts', () => {
     await isolated.happyDOM.close();
   });
   it('clears collection filters without Dawn AJAX and preserves sorting and breadcrumb context', async () => {
-    const engine = new Liquid({ root: resolve('snippets'), extname: '.liquid' });
     const isolated = new Window({ url: 'https://example.test/collections/masks?filter.v.availability=1&sort_by=price-ascending&page=2&breadcrumb_current=Masks' });
-    isolated.document.body.innerHTML = engine.renderFileSync('collection-filter-header', { heading_id: 'filters', heading: 'Filters', clear_label: 'Clear all', clear_url: '/collections/masks' });
+    isolated.document.body.innerHTML = '<a class="collection-active-filters__clear" href="/collections/masks" data-clear-collection-filters>Clear all</a>';
     isolated.eval(readFileSync(resolve('assets/collection-breadcrumbs.js'), 'utf8'));
     expect(isolated.document.querySelector('facet-remove')).toBeNull();
     expect(isolated.document.querySelector('a').getAttribute('href')).toBe('/collections/masks?breadcrumb_current=Masks&sort_by=price-ascending');
@@ -321,34 +321,40 @@ describe('component accessibility contracts', () => {
     expect(select.options[1].disabled).toBe(true);
     expect(container.querySelector('.ui-icon').getAttribute('aria-hidden')).toBe('true');
   });
-  it('keeps the price controller bounds and form values on shared text fields', async () => {
+  it('keeps the price slider, fields and form values in step', async () => {
     const engine = new Liquid({ root: resolve('snippets'), extname: '.liquid' });
-    engine.registerFilter('t', key => ({ 'products.facets.from': 'From', 'products.facets.to': 'To' })[key]);
-    engine.registerFilter('money_without_currency', amount => (amount / 100).toFixed(2));
+    registerShopifyLiquid(engine, { locale: JSON.parse(readFileSync(resolve('locales/en.default.json'), 'utf8')) });
     const filter = { label: 'Price', range_max: 25000, min_value: { param_name: 'filter.v.price.gte', value: 0 }, max_value: { param_name: 'filter.v.price.lte', value: 15000 } };
     const isolated = new Window();
-    isolated.document.body.innerHTML = `<form>${engine.renderFileSync('price-facet', { filter, id_prefix: 'Filter-' }, { globals: { cart: { currency: { symbol: '$' } } } })}</form>`;
+    isolated.document.body.innerHTML = `<form><price-range>${engine.renderFileSync('price-facet', { filter, id_prefix: 'Filter-' }, { globals: { cart: { currency: { symbol: '$' } } } })}</price-range></form>`;
     isolated.eval(readFileSync(resolve('assets/facets.js'), 'utf8'));
-    const prototype = isolated.customElements.get('price-range').prototype;
-    const controller = { querySelectorAll: selector => isolated.document.querySelectorAll(selector) };
-    controller.adjustToValidValues = input => prototype.adjustToValidValues.call(controller, input);
-    controller.setMinAndMaxValues = () => prototype.setMinAndMaxValues.call(controller);
-    controller.setMinAndMaxValues();
-    const [minimum, maximum] = isolated.document.querySelectorAll('input');
-    expect(minimum.value).toBe('0.00');
-    expect(maximum.value).toBe('150.00');
+    const field = name => isolated.document.querySelector(`input[name="${name}"]`);
+    const thumb = name => isolated.document.querySelector(`input[aria-label="${name}"]`);
+    const [minimum, maximum] = [field('filter.v.price.gte'), field('filter.v.price.lte')];
     expect(minimum.labels[0].textContent).toBe('From ($)');
     expect(maximum.labels[0].textContent).toBe('To ($)');
-    expect(minimum.dataset.max).toBe('150.00');
+    expect([thumb('Lowest price').value, thumb('Highest price').value]).toEqual(['0', '150']);
+    expect(thumb('Highest price').getAttribute('aria-valuetext')).toBe('$150');
+
+    // A field can't pass the other end of the range.
     minimum.value = '200';
-    prototype.onRangeChange.call(controller, { currentTarget: minimum });
+    minimum.dispatchEvent(new isolated.Event('change', { bubbles: true }));
     expect(minimum.value).toBe('150');
-    maximum.value = '400';
-    prototype.onRangeChange.call(controller, { currentTarget: maximum });
-    expect(maximum.value).toBe('250');
+
+    // Dragging a handle fills its field, and typing in a field moves its handle.
+    thumb('Lowest price').value = '40';
+    thumb('Lowest price').dispatchEvent(new isolated.Event('input', { bubbles: true }));
+    expect(minimum.value).toBe('40');
+    expect(thumb('Lowest price').getAttribute('aria-valuetext')).toBe('$40');
+    maximum.value = '120';
+    maximum.dispatchEvent(new isolated.Event('input', { bubbles: true }));
+    expect(thumb('Highest price').value).toBe('120');
+
+    // Only the fields reach the filter; the slider has no name.
     const data = new isolated.FormData(isolated.document.querySelector('form'));
-    expect(data.get('filter.v.price.gte')).toBe('150');
-    expect(data.get('filter.v.price.lte')).toBe('250');
+    expect([...data.keys()]).toEqual(['filter.v.price.gte', 'filter.v.price.lte']);
+    expect(data.get('filter.v.price.gte')).toBe('40');
+    expect(data.get('filter.v.price.lte')).toBe('120');
     await isolated.happyDOM.close();
   });
   it('uses one dropdown controller for selection, disabled options and native form events', async () => {

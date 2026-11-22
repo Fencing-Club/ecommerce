@@ -58,7 +58,7 @@ if (desktopForm !== null) addBreadcrumbInputs(desktopForm);
 const mobileForm = document.querySelector('#FacetFiltersFormMobile');
 if (mobileForm !== null) addBreadcrumbInputs(mobileForm);
 
-for (const link of document.querySelectorAll('.collection-filter-option a[href], .ui-pagination a[href]')) {
+for (const link of document.querySelectorAll('.collection-filter-option a[href], .ui-pagination a[href], .collection-active-filter, .collection-no-results__suggestion')) {
   copyBreadcrumbContext(link);
 }
 
@@ -99,9 +99,9 @@ document.addEventListener('click', event => {
 document.addEventListener('change', event => {
   const input = event.target;
   if (input.closest(deferredFilters)) return;
-  if (input.matches('.collection-curated-filters price-range input')) {
+  if (input.matches('.collection-curated-filters price-range input[name]')) {
     const destination = new URL(window.location.href);
-    for (const field of input.closest('price-range').querySelectorAll('input')) {
+    for (const field of input.closest('price-range').querySelectorAll('input[name]')) {
       destination.searchParams.delete(field.name);
       if (field.value.trim()) destination.searchParams.set(field.name, field.value);
     }
@@ -109,7 +109,7 @@ document.addEventListener('change', event => {
     window.location.assign(`${destination.pathname}${destination.search}`);
     return;
   }
-  if (!input.matches('.collection-curated-filters input[data-filter-url]') || input.disabled) return;
+  if (!input.matches('input[data-filter-url]') || input.disabled) return;
   const destination = { href: input.dataset.filterUrl };
   copyBreadcrumbContext(destination);
   window.location.assign(destination.href);

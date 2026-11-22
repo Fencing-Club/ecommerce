@@ -1126,14 +1126,91 @@
   border-color: var(--destructive);
 }
 
-.ui-price-fields {
+/* Price filter: a two-handle slider over the lowest and highest price fields. --low and --high are each handle's
+   share of the range, from 0 to 1. */
+.ui-price-range {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--spacing-3);
   width: 100%;
   min-width: 0;
   flex: 1 1 auto;
+  --thumb: 1.8rem;
 }
+
+.ui-price-range__slider { position: relative; height: 2rem; }
+
+.ui-price-range__slider::before,
+.ui-price-range__slider::after {
+  position: absolute;
+  top: 50%;
+  height: 0.4rem;
+  border-radius: 0.2rem;
+  content: '';
+  transform: translateY(-50%);
+}
+
+.ui-price-range__slider::before { inset-inline: 0; background: var(--border); }
+
+.ui-price-range__slider::after {
+  left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--low));
+  right: calc(var(--thumb) / 2 + (100% - var(--thumb)) * (1 - var(--high)));
+  background: var(--foreground);
+}
+
+.ui-price-range__thumb {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  appearance: none;
+}
+
+.ui-price-range__thumb::-webkit-slider-runnable-track { height: 100%; background: none; }
+.ui-price-range__thumb::-moz-range-track { height: 100%; background: none; }
+
+.ui-price-range__thumb::-webkit-slider-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: calc((2rem - var(--thumb)) / 2);
+  border: 2px solid var(--foreground);
+  border-radius: 50%;
+  background: var(--background);
+  cursor: grab;
+  pointer-events: auto;
+  appearance: none;
+}
+
+.ui-price-range__thumb::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--thumb);
+  height: var(--thumb);
+  border: 2px solid var(--foreground);
+  border-radius: 50%;
+  background: var(--background);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.ui-price-range__thumb:focus-visible { outline: none; }
+.ui-price-range__thumb:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring); }
+.ui-price-range__thumb:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring); }
+
+.ui-price-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--spacing-2);
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.ui-price-fields__to { color: var(--muted-foreground); font-size: 1.3rem; }
+.ui-price-fields .ui-text-field__control { gap: 0; min-height: 3.6rem; padding: 0 var(--spacing-3); border-radius: var(--radius-md); }
+.ui-price-fields .ui-text-field__prefix { color: var(--foreground); }
 
 @media (prefers-reduced-motion: reduce) {
   .ui-text-field__control, .ui-select__input, .ui-select__trigger { transition: none; }
@@ -1376,7 +1453,9 @@
 }
 .ui-checkbox-field--radio { grid-template-columns: 2rem minmax(0, 1fr) auto; }
 .ui-checkbox-field + .ui-checkbox-field { margin-block-start: var(--spacing-1-5); }
-.ui-checkbox-field--filter:has(input:checked) { background: var(--muted); }
+/* Filter rows sit close together, as in the collection page's filter panel, with the count at the end. */
+.ui-checkbox-field--filter { gap: 1rem; min-height: 2rem; padding: 0; border-radius: 0; }
+.ui-checkbox-field--filter .ui-checkbox-field__count { font-size: var(--text-xs); }
 
 /* Specificity must beat Dawn's base.css `input[type="checkbox"] { width: auto }`. */
 input.ui-checkbox,
@@ -1453,10 +1532,8 @@ input:disabled + .ui-checkbox-field__copy {
 .ui-checkbox-field__count { font-size: var(--text-sm); line-height: 1.35; color: var(--muted-foreground); }
 
 @media (hover: hover) {
-  .ui-checkbox-field--filter:has(input:not(:disabled)):hover { background: var(--muted); }
   .ui-checkbox-field:has(input:not(:disabled)):hover > input { border-color: var(--foreground); }
 }
-.ui-checkbox-field--filter:has(input:not(:disabled)):active { background: var(--secondary); }
 .ui-checkbox-field:has(input:not(:disabled)):active > input { transform: scale(0.92); }
 .ui-checkbox-field:has(input[aria-invalid='true']) > input { border-color: var(--destructive); }
 @media (prefers-reduced-motion: reduce) {

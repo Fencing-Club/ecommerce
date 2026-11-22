@@ -1,0 +1,25 @@
+{% doc %}
+  A category under a collection's title: a photo, the category's name and how many products it holds. Phones show
+  a smaller pill with the photo and name.
+
+  @param {string} url - The category's address.
+  @param {string} label - The category's name.
+  @param {number} [count] - How many products it holds.
+  @param {object} [image] - The category's photo.
+
+  @example
+  {% render 'ui-category-tile', url: link.url, label: link.title, count: link.object.all_products_count, image: link.object.featured_image %}
+{% enddoc %}
+<a class="ui-category-tile" href="{{ url }}">
+  <span class="ui-category-tile__thumb">
+    {%- if image != blank -%}
+      {{ image | image_url: width: 120 | image_tag: loading: 'lazy', alt: '', width: 48, height: 48 }}
+    {%- endif -%}
+  </span>
+  <span class="ui-category-tile__text">
+    <span class="ui-category-tile__label">{{ label | escape }}</span>
+    {%- if count != blank -%}
+      <span class="ui-category-tile__count">{{ 'products.facets.product_count_simple' | t: count: count }}</span>
+    {%- endif -%}
+  </span>
+</a>

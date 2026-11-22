@@ -173,6 +173,17 @@
   box-shadow: 0 0 0 0.3rem var(--background);
 }
 
+/* Plain: the question and a plus that turns to minus, with the answer under the question. */
+.ui-faq-item--plain .ui-faq-item__question { grid-template-columns: minmax(0, 1fr) 1.8rem; gap: 2.4rem; }
+.ui-faq-item--plain .ui-faq-item__question::after { content: none; }
+.ui-faq-item--plain .ui-faq-item__chevron { color: var(--foreground); }
+.ui-faq-item--plain[open]:not([data-closing]) .ui-faq-item__chevron { transform: none; }
+.ui-faq-item--plain .ui-faq-item__chevron .ui-icon:last-child,
+.ui-faq-item--plain[open]:not([data-closing]) .ui-faq-item__chevron .ui-icon:first-child { display: none; }
+.ui-faq-item--plain[open]:not([data-closing]) .ui-faq-item__chevron .ui-icon:last-child { display: inline-flex; }
+.ui-faq-item--plain .ui-faq-item__answer { display: block; max-width: 64rem; padding: 0 0 1.8rem; }
+.ui-faq-item--plain .ui-faq-item__answer-copy { padding-top: 0; }
+
 .faq-page__contact {
   margin: 0 var(--page-gutter) 7.2rem;
 }

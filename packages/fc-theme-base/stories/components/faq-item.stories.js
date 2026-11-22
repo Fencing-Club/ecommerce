@@ -39,3 +39,12 @@ export const WithLink = {
     await expect(canvas.getByRole('link', { name: 'Size charts' })).toHaveAttribute('href', '#size-charts');
   },
 };
+
+export const Plain = {
+  args: { variant: 'plain', open: true },
+  play: async ({ canvas }) => {
+    // The buying guide's style: no Q and A badges, and a plus that turns to minus.
+    await expect(canvas.queryByText('Q')).toBeNull();
+    await expect(canvas.getByText(/Measure your chest/)).toBeVisible();
+  },
+};

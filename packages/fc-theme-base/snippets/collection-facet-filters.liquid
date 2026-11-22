@@ -1,22 +1,49 @@
-{{ 'component-swatch-input.css' | asset_url | stylesheet_tag }}
 {%- comment -%}
-  Renders the collection's real Shopify filters in the curated filter styling.
+  Renders the collection's real Shopify filters in the Clothing design's filter panel: the category tree, then each
+  filter Shopify supplies. Protection rating and FIE status share one Protection level group.
 
   Accepts:
   - results: {Collection} Collection whose filters are rendered (required)
   - section_id: {String} Owning section id, for unique ids (required)
+  - show_categories: {Boolean} Shows the category tree first
 
   Native inputs carry Shopify add/remove URLs; collection-breadcrumbs.js navigates
   those URLs with the current breadcrumb context. Links remain available without JavaScript.
 {%- endcomment -%}
+{{ 'component-swatch-input.css' | asset_url | stylesheet_tag }}
+{%- assign more_after = 4 -%}
 <nav class="collection-curated-filters" aria-label="{{ 'products.facets.filter_by_label' | t }}">
+  {%- if show_categories -%}
+    {%- capture tree -%}{% render 'collection-category-tree', collection: results, style: 'tree', id_prefix: section_id %}{%- endcapture -%}
+    {%- if tree != blank -%}
+      <section class="collection-filter-group collection-filter-group--categories" aria-labelledby="CollectionFilter-{{ section_id }}-category">
+        <details class="collection-filter-group__disclosure" open>
+          <summary>
+            <h3 id="CollectionFilter-{{ section_id }}-category">{{ 'collections.filters.category' | t }}</h3>
+            {% render 'ui-icon', icon: 'chevron-down', size: 16 %}
+          </summary>
+          {{ tree }}
+        </details>
+      </section>
+    {%- endif -%}
+  {%- endif -%}
+
   {%- for filter in results.filters -%}
     {%- liquid
       assign group_key = filter.label | handle
       assign presentation = 'checkbox'
       assign parameter_name = filter.param_name | default: filter.values.first.param_name
+      if parameter_name == 'filter.p.m.custom.fie_status'
+        continue
+      endif
+      if parameter_name == 'filter.p.m.custom.protection_rating'
+        assign presentation = 'protection'
+      endif
       if parameter_name == 'filter.v.option.size'
         assign presentation = 'choice'
+      endif
+      if parameter_name == 'filter.v.option.hand'
+        assign presentation = 'hand'
       endif
       if parameter_name == 'filter.v.option.color' or parameter_name == 'filter.v.option.colour'
         assign presentation = 'swatch'
@@ -24,7 +51,19 @@
       if filter.presentation == 'swatch'
         assign presentation = 'swatch'
       endif
-      if filter.type == 'price_range'
+      if parameter_name == 'filter.v.availability'
+        assign presentation = 'switch'
+      endif
+      assign group_label = filter.label
+      if presentation == 'protection'
+        capture protection_options
+          render 'collection-protection-filter', results: results, section_id: section_id, style: 'list'
+        endcapture
+        if protection_options == blank
+          continue
+        endif
+        assign group_label = 'collections.filters.protection_level' | t
+      elsif filter.type == 'price_range'
         assign presentation = 'price'
       else
         assign visible_values = 0
@@ -37,6 +76,9 @@
               if swatch_background == blank
                 continue
               endif
+            endif
+            if presentation == 'switch' and value.value != '1'
+              continue
             endif
             assign visible_values = visible_values | plus: 1
           endif
@@ -52,62 +94,81 @@
     >
       <details class="collection-filter-group__disclosure" open>
         <summary>
-          <h3 id="CollectionFilter-{{ section_id }}-{{ group_key }}">{{ filter.label | escape | upcase }}</h3>
+          <h3 id="CollectionFilter-{{ section_id }}-{{ group_key }}">{{ group_label | escape }}</h3>
           {% render 'ui-icon', icon: 'chevron-down', size: 16 %}
         </summary>
 
-      {%- if filter.type == 'price_range' -%}
-        <price-range class="collection-filter-group__price">
-          {%- assign price_prefix = 'CollectionFilter-' | append: section_id | append: '-' -%}
-          {%- render 'price-facet', filter: filter, id_prefix: price_prefix, filter_type: 'vertical' -%}
-        </price-range>
-      {%- else -%}
-        <ul class="collection-filter-group__options list-unstyled">
-          {%- for value in filter.values -%}
-            {%- liquid
-              assign is_disabled = false
-              if value.count == 0 and value.active == false
-                continue
-              endif
-              if presentation == 'swatch' and value.active == false
-                capture swatch_background
-                  render 'swatch-background', swatch: value.swatch, color_name: value.label
-                endcapture
-                if swatch_background == blank
+        {%- if presentation == 'protection' -%}
+          {{ protection_options }}
+        {%- elsif presentation == 'price' -%}
+          <price-range class="collection-filter-group__price">
+            {%- assign price_prefix = 'CollectionFilter-' | append: section_id | append: '-' -%}
+            {%- render 'price-facet', filter: filter, id_prefix: price_prefix -%}
+          </price-range>
+        {%- else -%}
+          {%- assign shown = 0 -%}
+          <ul class="collection-filter-group__options list-unstyled">
+            {%- for value in filter.values -%}
+              {%- liquid
+                if value.count == 0 and value.active == false
                   continue
                 endif
-              endif
-              assign option_url = value.url_to_add
-              if value.active
-                assign option_url = value.url_to_remove
-              endif
-            -%}
-            <li
-              class="collection-filter-option collection-filter-option--{{ presentation }}
-                {%- if value.active %} collection-filter-option--active{% endif %}
-                {%- if is_disabled %} collection-filter-option--disabled{% endif %}"
-            >
-              {%- if presentation == 'choice' -%}
-                {%- assign choice_id = 'CollectionChoice-' | append: section_id | append: '-' | append: group_key | append: '-' | append: forloop.index -%}
-                {%- capture choice_attributes -%}data-filter-url="{{ option_url | escape }}"{%- endcapture -%}
-                {% render 'ui-choice', type: 'checkbox', id: choice_id, name: value.param_name, value: value.value, label: value.label, checked: value.active, disabled: is_disabled, additional_props: choice_attributes %}
-                {% unless is_disabled %}<noscript><a href="{{ option_url | escape }}">{{ value.label | escape }}</a></noscript>{% endunless %}
-              {%- elsif presentation == 'swatch' -%}
-                {%- assign swatch_id = 'CollectionSwatch-' | append: section_id | append: '-' | append: group_key | append: '-' | append: forloop.index -%}
-                {%- capture swatch_attributes -%}data-filter-url="{{ option_url | escape }}"{%- endcapture -%}
-                {%- capture swatch_label -%}<span class="visually-hidden">{{ value.label | escape }}</span>{%- endcapture -%}
-                {% render 'swatch-input', type: 'checkbox', id: swatch_id, name: value.param_name, value: value.value, label: value.label, color_name: value.label, swatch: value.swatch, checked: value.active, disabled: is_disabled, help_text: swatch_label, additional_props: swatch_attributes %}
-                {% unless is_disabled %}<noscript><a href="{{ option_url | escape }}">{{ value.label | escape }}</a></noscript>{% endunless %}
-              {%- else -%}
-                {%- assign checkbox_id = 'CollectionCheckbox-' | append: section_id | append: '-' | append: group_key | append: '-' | append: forloop.index -%}
-                {%- capture checkbox_attributes -%}data-filter-url="{{ option_url | escape }}"{%- endcapture -%}
-                {% render 'ui-checkbox-field', variant: 'filter', id: checkbox_id, name: value.param_name, value: value.value, label: value.label, checked: value.active, disabled: is_disabled, count: value.count, additional_props: checkbox_attributes %}
-                {% unless is_disabled %}<noscript><a href="{{ option_url | escape }}">{{ value.label | escape }}</a></noscript>{% endunless %}
-              {%- endif -%}
-            </li>
-          {%- endfor -%}
-        </ul>
-      {%- endif -%}
+                if presentation == 'switch' and value.value != '1'
+                  continue
+                endif
+                if presentation == 'swatch' and value.active == false
+                  capture swatch_background
+                    render 'swatch-background', swatch: value.swatch, color_name: value.label
+                  endcapture
+                  if swatch_background == blank
+                    continue
+                  endif
+                endif
+                assign shown = shown | plus: 1
+                assign option_url = value.url_to_add
+                if value.active
+                  assign option_url = value.url_to_remove
+                endif
+                assign input_id = 'CollectionFilter-' | append: section_id | append: '-' | append: group_key | append: '-' | append: forloop.index
+              -%}
+              {%- capture filter_attributes -%}data-filter-url="{{ option_url | escape }}"{%- endcapture -%}
+              <li
+                class="collection-filter-option collection-filter-option--{{ presentation }}{% if value.active %} collection-filter-option--active{% endif %}"
+                {% if presentation == 'checkbox' and visible_values > 5 and shown > more_after %}hidden data-filter-extra{% endif %}
+              >
+                {%- case presentation -%}
+                  {%- when 'choice', 'hand' -%}
+                    {% render 'ui-choice', type: 'checkbox', id: input_id, name: value.param_name, value: value.value, label: value.label, checked: value.active, additional_props: filter_attributes %}
+                  {%- when 'swatch' -%}
+                    {%- capture swatch_label -%}<span class="visually-hidden">{{ value.label | escape }}</span>{%- endcapture -%}
+                    {% render 'swatch-input', type: 'checkbox', id: input_id, name: value.param_name, value: value.value, label: value.label, color_name: value.label, swatch: value.swatch, checked: value.active, help_text: swatch_label, additional_props: filter_attributes %}
+                  {%- when 'switch' -%}
+                    <label class="collection-filter-switch" for="{{ input_id }}">
+                      <span>{{ 'collections.filters.in_stock_only' | t }}</span>
+                      <input type="checkbox" role="switch" class="collection-filter-switch__input" id="{{ input_id }}" name="{{ value.param_name | escape }}" value="{{ value.value | escape }}"{% if value.active %} checked{% endif %} {{ filter_attributes }}>
+                    </label>
+                  {%- else -%}
+                    {% render 'ui-checkbox-field', variant: 'filter', id: input_id, name: value.param_name, value: value.value, label: value.label, checked: value.active, count: value.count, additional_props: filter_attributes %}
+                {%- endcase -%}
+                <noscript><a href="{{ option_url | escape }}">{{ value.label | escape }}</a></noscript>
+              </li>
+            {%- endfor -%}
+          </ul>
+          {%- if presentation == 'checkbox' and visible_values > 5 -%}
+            {%- assign hidden_count = visible_values | minus: more_after -%}
+            <button type="button" class="collection-filter-more" aria-expanded="false" data-filter-more>
+              {%- render 'ui-icon', icon: 'plus', size: 14 -%}
+              <span data-more-closed>{{ 'collections.filters.show_more' | t: count: hidden_count }}</span>
+              <span data-more-open hidden>{{ 'collections.filters.show_fewer' | t }}</span>
+            </button>
+          {%- endif -%}
+          {%- if presentation == 'choice' and pages['size-charts'] != blank -%}
+            <a class="collection-filter-guide" href="{{ pages['size-charts'].url }}">
+              {%- render 'ui-icon', icon: 'ruler', size: 14 -%}
+              {{- 'collections.filters.size_guide' | t -}}
+            </a>
+          {%- endif -%}
+        {%- endif -%}
       </details>
     </section>
   {%- endfor -%}
