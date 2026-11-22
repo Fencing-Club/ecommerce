@@ -1,15 +1,12 @@
 {% doc %}
   The chosen variant's stock. Plain, as quick view shows it: where it ships from while it's in stock, our Woodinville
   store when Shopify lists the variant as available there for pickup, otherwise the partner warehouse. Detailed, as the
-  product page shows it: a dot and the same place, how many are left when few are, or that it's sold out, then when it
-  ships and, for US shoppers, when it arrives. `assets/product-page.js` counts down to the day's cutoff and works out
-  the dates; until it runs, the line says how soon each place ships.
+  product page shows it: a dot and the same place, how many are left when few are, or that it's sold out. The product
+  page's ships row is `snippets/product-ships-line.liquid`.
 
   @param {object} variant - The chosen variant.
   @param {boolean} [detailed] - The product page's version.
   @param {string} [size] - The chosen size, which low stock and sold out name.
-  @param {object} [dispatch] - The product section's settings: cutoff_hour, transit_min, transit_max, partner_min and
-    partner_max. Without it the detailed version has no ships line.
 
   @example
   {% render 'product-stock-line', variant: product.selected_or_first_available_variant %}
@@ -52,37 +49,6 @@
       {%- endcase -%}
     </span>
   </p>
-  {%- if variant.available and dispatch -%}
-    {%- liquid
-      assign ships = 'partner'
-      if local
-        assign ships = 'local'
-      endif
-      assign partner_text = 'products.stock.ships_partner' | t: min: dispatch.partner_min, max: dispatch.partner_max
-    -%}
-    <p
-      class="product-stock-line product-stock-line--dispatch"
-      data-dispatch="{{ ships }}"
-      data-cutoff="{{ dispatch.cutoff_hour }}"
-      data-offset="{{ 'now' | date: '%z' }}"
-      data-transit="{{ dispatch.transit_min }},{{ dispatch.transit_max }}"
-      data-partner="{{ dispatch.partner_min }},{{ dispatch.partner_max }}"
-      data-countdown="{{ 'products.stock.ships_today' | t: time: '[time]' | escape }}"
-      data-ships-on="{{ 'products.stock.ships_on' | t: day: '[day]' | escape }}"
-      data-tomorrow="{{ 'products.stock.tomorrow' | t | escape }}"
-      data-time="{{ 'products.stock.time_left' | t: hours: '[hours]', minutes: '[minutes]' | escape }}"
-      data-minutes="{{ 'products.stock.minutes_left' | t: minutes: '[minutes]' | escape }}"
-      data-partner-text="{{ partner_text | escape }}"
-      {% if localization.country.iso_code == 'US' %}
-        data-arrives="{{ 'products.stock.arrives' | t: start: '[start]', end: '[end]' | escape }}"
-      {% endif %}
-    >
-      {%- render 'ui-icon', icon: 'truck', size: 15 -%}
-      <span data-dispatch-text>
-        {%- if ships == 'local' -%}{{ 'products.stock.ships_same_day' | t }}{%- else -%}{{ partner_text }}{%- endif -%}
-      </span>
-    </p>
-  {%- endif -%}
 {%- elsif variant.available -%}
   <p class="product-stock-line">
     {%- if local -%}

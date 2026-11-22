@@ -168,11 +168,13 @@ class ProductPage extends HTMLElement {
   }
 
   // Woodinville stock ships the same business day before the cutoff; partner stock a set number of business days later.
+  // US shoppers see the arrival dates first, then how long is left to ship today or the day Woodinville stock ships.
   updateDispatch() {
-    const line = this.querySelector('[data-dispatch]');
-    const text = line?.querySelector('[data-dispatch-text]');
-    if (!line || !text) return;
-    const data = line.dataset;
+    const row = this.querySelector('[data-dispatch]');
+    const title = row?.querySelector('[data-dispatch-title]');
+    const detail = row?.querySelector('[data-dispatch-detail]');
+    if (!row || !title || !detail) return;
+    const data = row.dataset;
     const locale = document.documentElement.lang || undefined;
     const formatDay = (date, format) => new Intl.DateTimeFormat(locale, { ...format, timeZone: 'UTC' }).format(date);
     const now = shopNow(data.offset ?? '+0000');
@@ -180,6 +182,7 @@ class ProductPage extends HTMLElement {
     const beforeCutoff = isBusinessDay(now) && now.getUTCHours() < cutoff;
     const firstDay = beforeCutoff ? now : addBusinessDays(now, 1);
     let ships = data.partnerText;
+    let hurry = '';
     let shipStart = firstDay;
     let shipEnd = firstDay;
     if (data.dispatch === 'local' && beforeCutoff) {
@@ -187,7 +190,8 @@ class ProductPage extends HTMLElement {
       const hours = Math.floor(left / 60);
       const minutes = String(left % 60);
       const time = hours > 0 ? data.time.replace('[hours]', String(hours)).replace('[minutes]', minutes) : data.minutes.replace('[minutes]', minutes);
-      ships = data.countdown.replace('[time]', time);
+      ships = data.shipsToday;
+      hurry = data.orderWithin.replace('[time]', time);
     } else if (data.dispatch === 'local') {
       const tomorrow = new Date(now.getTime() + DAY).getUTCDate() === firstDay.getUTCDate();
       ships = data.shipsOn.replace('[day]', tomorrow ? data.tomorrow : formatDay(firstDay, { weekday: 'long' }));
@@ -204,7 +208,11 @@ class ProductPage extends HTMLElement {
         .replace('[start]', formatDay(addBusinessDays(shipStart, transitMin), format))
         .replace('[end]', formatDay(addBusinessDays(shipEnd, transitMax), format));
     }
-    text.textContent = arrives ? `${ships} ${arrives}` : ships;
+    // Partner arrival dates already allow for its dispatch days, so they stand alone and the row stays one line.
+    const [lead, rest] = arrives ? [arrives, hurry || (data.dispatch === 'local' ? ships : '')] : [ships, hurry];
+    title.textContent = lead;
+    detail.textContent = rest;
+    detail.hidden = !rest;
   }
 }
 

@@ -1,0 +1,52 @@
+{% doc %}
+  The product page's ships row, first among its trust notes: when the chosen variant ships and, for US shoppers, when
+  it arrives. Woodinville stock, which Shopify lists as available at our store, ships the same business day before the
+  cutoff. Partner warehouse stock ships a set number of business days later. `assets/product-page.js` counts down to
+  the cutoff and works out the days and dates; until it runs, the row says how soon each place ships. Renders nothing
+  once the variant is sold out.
+
+  @param {object} variant - The chosen variant.
+  @param {object} dispatch - The product section's settings: cutoff_hour, transit_min, transit_max, partner_min and
+    partner_max.
+
+  @example
+  {% render 'product-ships-line', variant: current, dispatch: section.settings %}
+{% enddoc %}
+{%- if variant.available -%}
+  {%- liquid
+    assign ships = 'partner'
+    for availability in variant.store_availabilities
+      if availability.available
+        assign ships = 'local'
+        break
+      endif
+    endfor
+    assign partner_text = 'products.stock.ships_partner' | t: min: dispatch.partner_min, max: dispatch.partner_max
+  -%}
+  <li
+    class="product-page__trust-item"
+    data-dispatch="{{ ships }}"
+    data-cutoff="{{ dispatch.cutoff_hour }}"
+    data-offset="{{ 'now' | date: '%z' }}"
+    data-transit="{{ dispatch.transit_min }},{{ dispatch.transit_max }}"
+    data-partner="{{ dispatch.partner_min }},{{ dispatch.partner_max }}"
+    data-ships-today="{{ 'products.stock.ships_today' | t | escape }}"
+    data-order-within="{{ 'products.stock.order_within' | t: time: '[time]' | escape }}"
+    data-ships-on="{{ 'products.stock.ships_on' | t: day: '[day]' | escape }}"
+    data-tomorrow="{{ 'products.stock.tomorrow' | t | escape }}"
+    data-time="{{ 'products.stock.time_left' | t: hours: '[hours]', minutes: '[minutes]' | escape }}"
+    data-minutes="{{ 'products.stock.minutes_left' | t: minutes: '[minutes]' | escape }}"
+    data-partner-text="{{ partner_text | escape }}"
+    {% if localization.country.iso_code == 'US' %}
+      data-arrives="{{ 'products.stock.arrives' | t: start: '[start]', end: '[end]' | escape }}"
+    {% endif %}
+  >
+    {%- render 'ui-icon', icon: 'truck', size: 16 -%}
+    <span class="product-page__trust-text">
+      <span class="product-page__trust-title" data-dispatch-title>
+        {%- if ships == 'local' -%}{{ 'products.stock.ships_same_day' | t }}{%- else -%}{{ partner_text }}{%- endif -%}
+      </span>
+      <span class="product-page__trust-detail" data-dispatch-detail hidden></span>
+    </span>
+  </li>
+{%- endif -%}

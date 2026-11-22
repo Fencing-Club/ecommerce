@@ -15,10 +15,12 @@ products below. The sections further down the Pen (Overview, Specs, Size and fit
 - `snippets/product-option-pickers.liquid`: the same pickers quick view uses. Size starts unpicked
   (`snippets/product-size-unpicked.liquid`), so Add to cart asks for a size first. Size guide opens the size chart
   drawer (`snippets/size-chart-flyout.liquid`) and is a link to the chart page without JavaScript.
-- `snippets/product-stock-line.liquid`, detailed: a dot and the stock, with how many are left at five or fewer, then
-  the ships line. Woodinville stock counts down to the day's cutoff and ships that business day. Partner warehouse
-  stock ships a set number of business days later. US shoppers also see an arrival range. The section's Shipping
-  settings hold the cutoff hour and the day ranges.
+- `snippets/product-stock-line.liquid`, detailed: a dot and the stock, with how many are left at five or fewer, above
+  Add to cart.
+- `snippets/product-ships-line.liquid`: the ships row, first among the trust notes under the buttons. Woodinville stock
+  counts down to the day's cutoff and ships that business day. Partner warehouse stock ships a set number of business
+  days later. US shoppers see the arrival range first, then the countdown or the day Woodinville stock ships; partner
+  stock's arrival range stands alone. The section's Shipping settings hold the cutoff hour and the day ranges.
 - `snippets/product-sticky-bar.liquid`: the buy bar, shown once the page's Add to cart scrolls away. Desktop has it
   across the top with the photo, name, choice, price and Add to cart. Phones have it along the bottom with the
   price, choice and Add to cart. Before a size is picked its button reads Choose a size and goes back to the sizes.
@@ -26,7 +28,8 @@ products below. The sections further down the Pen (Overview, Specs, Size and fit
 - The buy row: quantity, Add to cart and, once a size is picked and in stock, Shopify's express checkout button.
   Shopify draws Buy with Shop Pay. Where Shop Pay is off, its plain Buy it now takes the primary button's look
   (UI/Express checkout in `assets/component-ui.css`). App blocks, such as a back-in-stock form, sit under it, then
-  the trust notes (the section's **Trust note** blocks) and the description.
+  the trust notes, one line each: the ships row, then the section's **Trust note** blocks (Free returns by default).
+  The description comes last.
 
 ## Scripts
 

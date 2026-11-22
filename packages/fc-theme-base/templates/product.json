@@ -14,28 +14,10 @@
             "title": "Free returns",
             "detail": "30 days in the US"
           }
-        },
-        "dealer": {
-          "type": "trust",
-          "settings": {
-            "icon": "badge-check",
-            "title": "Authorized dealer",
-            "detail": "Genuine gear from the brand"
-          }
-        },
-        "help": {
-          "type": "trust",
-          "settings": {
-            "icon": "message-circle",
-            "title": "Fencers on hand",
-            "detail": "Ask us about sizing"
-          }
         }
       },
       "block_order": [
-        "returns",
-        "dealer",
-        "help"
+        "returns"
       ],
       "settings": {
         "cutoff_hour": 14,
