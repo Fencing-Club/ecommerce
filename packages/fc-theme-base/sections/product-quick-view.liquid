@@ -22,14 +22,12 @@
   assign rating = product.metafields.reviews.rating.value
   assign rating_count = product.metafields.reviews.rating_count.value
 
+  capture size_unpicked_text
+    render 'product-size-unpicked', product: product
+  endcapture
   assign size_unpicked = false
-  if product.selected_variant == blank and product.has_only_default_variant == false
-    for option in product.options_with_values
-      assign option_handle = option.name | handle
-      if option_handle contains 'size' and option.values.size > 1
-        assign size_unpicked = true
-      endif
-    endfor
+  if size_unpicked_text contains 'true'
+    assign size_unpicked = true
   endif
 
   assign summary = product.metafields.custom.subtitle.value

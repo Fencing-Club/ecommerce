@@ -387,3 +387,39 @@ export const quickViewProduct = (variantId) => {
     },
   };
 };
+
+const productPagePhotos = [
+  'collection-underarm-plastron-800n.jpg',
+  'collection-fie-800n-jacket.jpg',
+  'collection-aero-competition-jacket.jpg',
+  'collection-mens-chest-protector.jpg',
+  'collection-knicker-pants-350n.jpg',
+  'collection-grip-fencing-glove.jpg',
+].map((file, index) => {
+  const photo = image(file, `Novus Underarm Protector 350N, photo ${index + 1}`);
+  return { ...photo, id: 9100 + index, media_type: 'image', preview_image: photo };
+});
+
+/**
+ * The product page's product: quick view's protector with six photos. Size M right-handed has its own photo, the
+ * third, and size S right-handed has two left.
+ *
+ * @param {number} [variantId]
+ */
+export const productPageProduct = (variantId) => {
+  const product = quickViewProduct(variantId);
+  const variants = product.variants.map((variant) => {
+    if (variant.id === 9202) return { ...variant, inventory_management: 'shopify', inventory_policy: 'deny', inventory_quantity: 2 };
+    if (variant.id === 9204) return { ...variant, featured_media: productPagePhotos[2] };
+    return variant;
+  });
+  const find = (variant) => variant && variants.find((candidate) => candidate.id === variant.id);
+  return {
+    ...product,
+    featured_image: productPagePhotos[0],
+    media: productPagePhotos,
+    variants,
+    selected_variant: find(product.selected_variant) ?? null,
+    selected_or_first_available_variant: find(product.selected_or_first_available_variant),
+  };
+};

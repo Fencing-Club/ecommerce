@@ -1,0 +1,87 @@
+{% doc %}
+  The product page's photos. Desktop shows the first photo large and the next four in a grid of two, with View all
+  photos when there are more. Phones get a carousel that peeks at the next photo, with dots. Every photo opens the photo
+  viewer (`snippets/product-photo-viewer.liquid`) at that photo; `assets/product-page.js` opens it. Videos show their
+  poster with a play icon and play in the viewer. Picking a variant brings its photo to the front, so the zoom icon
+  shows on whichever photo is first and the protection badge sits over the gallery rather than one photo.
+
+  @param {object} product - The product.
+  @param {string} viewer_id - The photo viewer dialog's id.
+
+  @example
+  {% render 'product-gallery', product: product, viewer_id: viewer_id %}
+{% enddoc %}
+{%- assign count = product.media.size -%}
+{%- if count > 0 -%}
+  <photo-gallery class="product-gallery" data-product-gallery>
+    <ul class="product-gallery__track list-unstyled" data-photo-track aria-label="{{ 'products.gallery.photos' | t }}">
+      {%- for media in product.media -%}
+        {%- liquid
+          assign loading = 'lazy'
+          assign sizes = '(min-width: 1200px) 352px, (min-width: 990px) 27vw, 90vw'
+          if forloop.first
+            assign loading = 'eager'
+            assign sizes = '(min-width: 1200px) 720px, (min-width: 990px) 56vw, 90vw'
+          endif
+          assign alt = media.alt | default: product.title
+          assign open_label = 'products.gallery.open_photo' | t: index: forloop.index, count: count
+        -%}
+        <li class="product-gallery__item" data-media-id="{{ media.id }}">
+          <button
+            type="button"
+            class="product-gallery__open"
+            data-photo-open="{{ forloop.index0 }}"
+            aria-label="{{ open_label | escape }}"
+            aria-haspopup="dialog"
+            aria-controls="{{ viewer_id }}"
+          >
+            {%- if media.preview_image -%}
+              {{
+                media.preview_image
+                | image_url: width: 1440
+                | image_tag: loading: loading, widths: '360, 540, 720, 1080, 1440', sizes: sizes, alt: alt
+              }}
+            {%- endif -%}
+            {%- if media.media_type == 'video' or media.media_type == 'external_video' -%}
+              <span class="product-gallery__play" aria-hidden="true">{%- render 'ui-icon', icon: 'play', size: 22 -%}</span>
+            {%- endif -%}
+            <span class="product-gallery__zoom" aria-hidden="true">{%- render 'ui-icon', icon: 'maximize-2', size: 18 -%}</span>
+          </button>
+        </li>
+      {%- endfor -%}
+    </ul>
+    {%- capture badge -%}{%- render 'ui-protection-badge', product: product -%}{%- endcapture -%}
+    {%- if badge != blank -%}
+      <span class="product-gallery__badge">{{ badge }}</span>
+    {%- endif -%}
+    {%- if count > 5 -%}
+      {%- liquid
+        assign all_label = 'products.gallery.view_all' | t: count: count
+        assign all_props = 'data-photo-open="0" aria-haspopup="dialog" aria-controls="' | append: viewer_id | append: '"'
+      -%}
+      {%- render 'ui-button',
+        label: all_label,
+        variant: 'outline',
+        size: 'md',
+        icon: 'images',
+        class: 'product-gallery__all',
+        additional_props: all_props
+      -%}
+    {%- endif -%}
+    {%- if count > 1 -%}
+      <div class="product-gallery__dots">
+        {%- for media in product.media -%}
+          <button
+            type="button"
+            class="product-gallery__dot"
+            data-photo-index="{{ forloop.index0 }}"
+            aria-label="{{ 'products.gallery.show_photo' | t: index: forloop.index }}"
+            {% if forloop.first %}
+              aria-current="true"
+            {% endif %}
+          ></button>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  </photo-gallery>
+{%- endif -%}

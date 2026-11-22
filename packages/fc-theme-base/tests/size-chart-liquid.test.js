@@ -49,9 +49,8 @@ describe('production size-chart Liquid', () => {
     const directory = htmlFragment(await shopifyEngine.renderFile('size-chart-directory', context));
     expect(directory.querySelectorAll('a')).toHaveLength(valid ? 1 : 0);
     const product = { metafields: { custom: { size_chart: { value: chart } } } };
-    const block = { id: 'chart', settings: { label: 'Size chart' } };
-    const drawer = htmlFragment(await shopifyEngine.renderFile('size-chart-flyout', { ...context, product, block, section_id: 'product' }));
-    expect(drawer.querySelectorAll('[data-drawer-open]')).toHaveLength(valid ? 1 : 0);
+    const drawer = htmlFragment(await shopifyEngine.renderFile('size-chart-flyout', { ...context, product, id: 'SizeChart-product' }));
+    expect(drawer.querySelectorAll('dialog')).toHaveLength(valid ? 1 : 0);
   });
 
   it.each(source.charts.map((chart, index) => [chart.handle, index]))('renders every published value for %s without JavaScript', async (_handle, index) => {
@@ -273,18 +272,16 @@ describe('production size-chart Liquid', () => {
     expect(fallback.querySelector('.fc-mega-feature').getAttribute('href')).toBe('/en-ca/pages/size-charts');
   });
 
-  it('uses only the product metadata assignment and hides an unassigned trigger', async () => {
+  it('uses only the product metadata assignment and leaves out an unassigned chart', async () => {
     const context = sizingContext();
     const product = { title: 'Assigned product', metafields: { custom: { size_chart: { value: context.chart } } } };
-    const block = { id: 'chart-block', settings: { label: 'Size chart' } };
-    const assigned = htmlFragment(await engine.renderFile('size-chart-flyout', { ...context, product, block, section_id: 'product' }));
-    expect(assigned.querySelector('[data-drawer-open]').getAttribute('href')).toBe(context.chart.system.url);
+    const assigned = htmlFragment(await engine.renderFile('size-chart-flyout', { ...context, product, id: 'SizeChart-product' }));
+    expect(assigned.querySelector('dialog').id).toBe('SizeChart-product');
     expect(assigned.querySelector('dialog [data-chart-content]')).not.toBeNull();
     expect(assigned.querySelector('ui-drawer .ui-drawer--wide')).not.toBeNull();
     expect(assigned.querySelector('.ui-drawer__description')).toBeNull();
     expect(assigned.querySelector('.ui-drawer__title').textContent).toBe('Size chart: Mens jackets');
     expect(assigned.querySelector('.ui-drawer__body .size-chart__heading h2')).toBeNull();
-    expect(assigned.querySelector('[data-drawer-open]').getAttribute('aria-controls')).toBe(assigned.querySelector('dialog').id);
     expect(assigned.querySelector('dialog').getAttribute('aria-labelledby')).toBe(assigned.querySelector('.ui-drawer__title').id);
     const fullChart = assigned.querySelector('.ui-drawer__footer .ui-link--with-icon');
     expect(fullChart.textContent.trim()).toBe('View full chart');
@@ -292,16 +289,15 @@ describe('production size-chart Liquid', () => {
     expect(fullChart.querySelector('.ui-icon')).not.toBeNull();
     expect(assigned.querySelector('[data-chart-content]').dataset.fullChartLinkId).toBe(fullChart.id);
     expect(assigned.querySelector('.ui-drawer__body .size-chart__full-link')).toBeNull();
-    const absent = htmlFragment(await engine.renderFile('size-chart-flyout', { ...context, product: { title: 'Mens jacket' }, block }));
-    expect(absent.querySelector('[data-drawer-open]')).toBeNull();
+    const absent = htmlFragment(await engine.renderFile('size-chart-flyout', { ...context, product: { title: 'Mens jacket' }, id: 'SizeChart-product' }));
+    expect(absent.querySelector('dialog')).toBeNull();
   });
 
   it.each(source.charts.map((chart, index) => [chart.handle, index]))('uses one record-derived drawer heading for %s', async (_handle, index) => {
     const context = sizingContext();
     const chart = chartFixtures()[index];
     const product = { title: 'Not a chart title', metafields: { custom: { size_chart: { value: chart } } } };
-    const block = { id: 'chart-block', settings: { label: 'Size chart' } };
-    const fragment = htmlFragment(await engine.renderFile('size-chart-flyout', { ...context, product, block, section_id: 'product' }));
+    const fragment = htmlFragment(await engine.renderFile('size-chart-flyout', { ...context, product, id: 'SizeChart-product' }));
     expect(fragment.querySelector('.ui-drawer__title').textContent).toBe(`Size chart: ${source.charts[index].title}`);
     expect(fragment.querySelector('.ui-drawer__description')).toBeNull();
     expect(fragment.querySelectorAll('.ui-drawer__body h1, .ui-drawer__body .size-chart__heading h2')).toHaveLength(0);

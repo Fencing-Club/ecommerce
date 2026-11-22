@@ -9,17 +9,22 @@
   endif
 -%}
 {%- comment -%}
-  The breadcrumb band under the header, on the page gutter. A page template adds it as its first section.
+  The breadcrumb band under the header, on the page gutter. A page or product template adds it as its first section.
+  A product's breadcrumbs follow the main menu down to the deepest collection holding it.
 {%- endcomment -%}
 <div class="page-breadcrumbs">
   {%- assign home_label = 'general.breadcrumb_home' | t -%}
-  {%- render 'ui-breadcrumbs',
-    root_label: home_label,
-    root_url: routes.root_url,
-    parent_label: parent_page.title,
-    parent_url: parent_page.url,
-    current_label: current_label
-  -%}
+  {%- if request.page_type == 'product' -%}
+    {%- render 'collection-category-tree', product: product, style: 'breadcrumbs', home_label: home_label -%}
+  {%- else -%}
+    {%- render 'ui-breadcrumbs',
+      root_label: home_label,
+      root_url: routes.root_url,
+      parent_label: parent_page.title,
+      parent_url: parent_page.url,
+      current_label: current_label
+    -%}
+  {%- endif -%}
 </div>
 
 {% stylesheet %}

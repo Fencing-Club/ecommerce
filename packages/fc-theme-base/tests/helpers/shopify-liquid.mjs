@@ -211,6 +211,22 @@ export function registerShopifyLiquid(engine, { locale = {}, readAsset, readBloc
     const options = Object.fromEntries(attributes);
     return `<svg class="${escapeAttribute(options.class ?? '')}" viewBox="0 0 38 24" role="img" aria-labelledby="pi-${type}"><title id="pi-${type}">${escapeAttribute(name)}</title><rect width="37" height="23" x="0.5" y="0.5" rx="3" fill="#fff" stroke="#d4d4d8"/></svg>`;
   });
+  // Shopify draws the installments line and the express checkout button itself; these are plain stand-ins. The button
+  // is Shopify's plain Buy it now, the one the theme styles. Wallet buttons such as Shop Pay keep Shopify's own look.
+  engine.registerFilter('payment_terms', () => '<shopify-payment-terms>Or 4 interest-free payments with Shop Pay</shopify-payment-terms>');
+  engine.registerFilter(
+    'payment_button',
+    () => '<div class="shopify-payment-button"><button type="button" class="shopify-payment-button__button shopify-payment-button__button--unbranded">Buy it now</button></div>',
+  );
+  engine.registerFilter('video_tag', (media, ...attributes) => {
+    const options = Object.fromEntries(attributes);
+    const sources = (media.sources ?? []).map((source) => `<source src="${escapeAttribute(source.url)}" type="${escapeAttribute(source.mime_type)}">`).join('');
+    return `<video${options.controls ? ' controls' : ''} playsinline preload="${options.preload ?? 'metadata'}" poster="${escapeAttribute(media.preview_image?.src ?? '')}">${sources}</video>`;
+  });
+  engine.registerFilter('external_video_tag', (media, ...attributes) => {
+    const options = Object.fromEntries(attributes);
+    return `<iframe class="${escapeAttribute(options.class ?? '')}" src="https://www.youtube.com/embed/${escapeAttribute(media.external_id ?? '')}" title="${escapeAttribute(media.alt ?? '')}" loading="lazy" allowfullscreen></iframe>`;
+  });
   engine.registerFilter('money', money);
   engine.registerFilter('money_without_currency', (amount) => (amount / 100).toFixed(2));
   engine.registerFilter('money_with_currency', (amount) => `${money(amount)} USD`);
@@ -222,7 +238,8 @@ export function registerShopifyLiquid(engine, { locale = {}, readAsset, readBloc
   engine.registerFilter('handle', (value) => String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-'));
   engine.registerFilter('url_for_vendor', (vendor) => `/collections/vendors?q=${encodeURIComponent(vendor)}`);
   engine.registerFilter('pluralize', (count, singular, plural) => (count === 1 ? singular : plural));
-  engine.registerFilter('json', JSON.stringify);
+  // Shopify prints nil as null.
+  engine.registerFilter('json', (value) => JSON.stringify(value ?? null));
   engine.registerFilter('item_count_for_variant', () => 1);
   engine.registerFilter('standard_event_data', () => '{}');
 }

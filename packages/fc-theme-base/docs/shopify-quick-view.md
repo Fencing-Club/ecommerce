@@ -11,7 +11,7 @@ button opens it for products with options.
 - `sections/product-quick-view.liquid` is the product inside it. `assets/quick-view.js` fetches it through the section
   rendering API (`?section_id=product-quick-view`) when a card's button is pressed.
 - The options are `snippets/product-option-pickers.liquid` on `ui-variant-picker`, and `assets/product-options.js`
-  loads the chosen variant. The product page uses the same pickers and script.
+  loads the chosen variant. The [product page](shopify-product-page.md) uses the same pickers and script.
 
 ## What it shows
 

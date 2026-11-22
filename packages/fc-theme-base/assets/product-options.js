@@ -2,7 +2,8 @@
  * `<product-options>` wraps a product's option pickers, its add to cart form and what depends on the chosen variant.
  * Picking a value names it in the option's label. Once every option has a value, it finds the variant and swaps in
  * the section's fresh markup for it, so price, stock and the button come from Liquid. Add to cart before a value is
- * picked asks for it instead. It announces the variant with a `product-options:variant` event.
+ * picked asks for it instead. It announces the variant with a `product-options:variant` event, and the fresh markup
+ * with `product-options:render`. With `data-update-url`, as on the product page, the address follows the variant.
  */
 class ProductOptions extends HTMLElement {
   connectedCallback() {
@@ -49,7 +50,8 @@ class ProductOptions extends HTMLElement {
   };
 
   onSubmit = (event) => {
-    const variantInput = this.querySelector('input[name="id"]');
+    // The product page has a second product form, for the installments line, so read the one being sent.
+    const variantInput = event.target.querySelector('input[name="id"]');
     if (!variantInput || variantInput.value) return;
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -74,6 +76,12 @@ class ProductOptions extends HTMLElement {
       const fresh = page.querySelector(`product-options[data-section="${this.dataset.section}"]`);
       if (!fresh) return;
       this.innerHTML = fresh.innerHTML;
+      if (this.hasAttribute('data-update-url')) {
+        const pageUrl = new URL(window.location.href);
+        pageUrl.searchParams.set('variant', variantId);
+        history.replaceState(history.state, '', pageUrl);
+      }
+      this.dispatchEvent(new CustomEvent('product-options:render', { bubbles: true }));
       if (focusId) document.getElementById(focusId)?.focus();
     } catch {
       // The pickers still show the choice; the shopper can try again or open the product page.

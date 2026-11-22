@@ -13,9 +13,9 @@ initial draft charts. The theme does not embed copies of the published measureme
 - Both templates place a separate **Page breadcrumbs** section before their main content. The sizing directory
   and chart sections do not render breadcrumbs themselves. The breadcrumb section uses the Page or chart title;
   its optional parent page defaults to the shared sizing directory on chart pages.
-- Add the **Size chart** block to the product section; it is included in the default product template. Assign the
-  product's `custom.size_chart` metafield to one chart record. Products without a complete, published assignment
-  have no customer-facing size-chart trigger. The editor shows an assignment reminder instead.
+- Assign the product's `custom.size_chart` metafield to one chart record. The product page's Size guide link, in the
+  size picker's label, opens the chart in a drawer. Products without a complete, published assignment show no Size
+  guide.
 - The chart page and product drawer both render `snippets/size-chart-content.liquid`. The drawer uses one heading,
   `Size chart: {chart.title}`, with no product subtitle or repeated body title. Supported units appear above the size
   selectors; charts without imperial values have no empty title/units row. Full pages retain their chart heading.
@@ -23,7 +23,7 @@ initial draft charts. The theme does not embed copies of the published measureme
 
 Definitions must exist before the theme's custom metaobject settings can be used on a new store. Install the draft
 content first, then upload the theme and verify the store preview before publishing. Upload the product section
-schema before templates that use its new block when using incremental theme uploads.
+schema before templates that use it when using incremental theme uploads.
 
 ## Merchant Controls
 
@@ -34,7 +34,6 @@ is not inferred: the inch switch appears only when complete published imperial d
 
 **Size charts directory section** controls the page heading and one, two, or three columns on larger screens.
 An empty heading uses the Page title. Phones always use one column; the three-column setting starts at desktop width.
-The product block label is configurable in the product template.
 
 **Content > Metaobjects > Size chart group** owns the menu-aligned headings: Masks, Jackets, Pants, Gloves,
 Underarm Protectors, Chest Protectors, and Footwear. Jackets and Pants remain separate chart families within
@@ -96,8 +95,8 @@ with no valid groups shows the empty state instead of an empty container.
   There is no divider between the two accordions. Hiding downloads removes the entire printable-tape accordion.
 - The product view uses the [shared drawer](shopify-drawers.md), with a 250ms panel slide and backdrop fade on open
   and close. Reduced motion skips transitions. Native focus containment and scroll locking remain active through
-  dismissal, then focus returns to the trigger. The header and compact footer stay visible while the body scrolls.
-  Without JavaScript the trigger is a normal link to the assigned chart page. Closing and reopening preserves chart selections.
+  dismissal, then focus returns to Size guide. The header and compact footer stay visible while the body scrolls.
+  Without JavaScript Size guide is a normal link to the assigned chart page. Closing and reopening preserves chart selections.
 - Initial HTML contains all size columns, and help is open without JavaScript. Printing includes every size column,
   expands help, and hides interaction controls. Screen-only column hiding never discards measurement data.
 

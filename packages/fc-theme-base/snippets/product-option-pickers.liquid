@@ -7,7 +7,7 @@
   @param {string} form_id - The product form the inputs belong to.
   @param {boolean} [size_unpicked] - Shows size with no value chosen yet.
   @param {string} [size_guide_url] - Where Size guide goes.
-  @param {string} [hand_help] - HTML after the chosen hand, such as the Which hand? button.
+  @param {string} [size_guide_dialog] - The id of a dialog on the page that Size guide opens instead.
   @param {boolean} [compact] - The smaller choices quick view and quick add use.
 
   @example
@@ -34,13 +34,11 @@
       endif
       assign unpicked = false
       assign guide = ''
+      assign guide_dialog = ''
       if is_size
         assign unpicked = size_unpicked
         assign guide = size_guide_url
-      endif
-      assign help = ''
-      if group == 2
-        assign help = hand_help
+        assign guide_dialog = size_guide_dialog
       endif
     -%}
     {%- render 'ui-variant-picker',
@@ -50,7 +48,7 @@
       form_id: form_id,
       unpicked: unpicked,
       size_guide_url: guide,
-      help: help,
+      size_guide_dialog: guide_dialog,
       compact: compact
     -%}
   {%- endfor -%}

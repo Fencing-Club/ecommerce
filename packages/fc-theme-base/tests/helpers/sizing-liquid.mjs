@@ -35,7 +35,10 @@ export function chartFixtures() {
 
 export function createSizingLiquid({ cache = false, fs } = {}) {
   const engine = new Liquid({ root: [`${themeRoot}/snippets`, `${themeRoot}/sections`], extname: '.liquid', cache, ...(fs ? { fs } : {}) });
-  registerShopifyLiquid(engine, { readAsset: (name) => readFileSync(resolve(themeRoot, 'assets', name), 'utf8') });
+  registerShopifyLiquid(engine, {
+    readAsset: (name) => readFileSync(resolve(themeRoot, 'assets', name), 'utf8'),
+    locale: JSON.parse(readFileSync(resolve(themeRoot, 'locales', 'en.default.json'), 'utf8')),
+  });
   return {
     async renderTemplate(name, context) {
       const template = JSON.parse(await readFile(resolve(themeRoot, 'templates', `${name}.json`), 'utf8'));
