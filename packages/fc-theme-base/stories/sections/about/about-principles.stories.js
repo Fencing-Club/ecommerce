@@ -7,7 +7,7 @@ const feature = (id, icon, label, detail) => ({ id, type: 'feature', settings: {
 
 /**
  * `sections/about-principles.liquid`: what the shop stands for, as feature blocks with their icons above the text,
- * then how it operates in two columns.
+ * then how it operates in two columns and the company behind it.
  */
 export default {
   title: 'Sections/About/Principles',
@@ -15,10 +15,11 @@ export default {
   render: section('about-principles', {
     staticBlocks: [
       phaseHeading('Ready', 'Prêts'),
-      text('lead', 'Before a bout begins, you set your stance. Here’s ours.', 'body'),
+      text('lead', 'Before the bout, you settle into your stance. Here’s ours.', 'body'),
       { id: 'operations_heading', type: 'heading', settings: { heading: 'How we operate', tag: 'h3', size: 'sm' } },
       text('operations_start', 'We hold our own inventory rather than dropship.', 'lead'),
       text('operations_end', 'Our own team handles every question, order and return.', 'lead'),
+      text('company', 'Fencing Club is operated by Fencing Club LLC, a Washington limited liability company.', 'subtle'),
     ],
     blocks: [
       feature('fencing-only', 'target', 'Fencing only', 'Every product is chosen for the piste.'),
@@ -32,10 +33,11 @@ export default {
 export const Principles = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('heading', { level: 2, name: 'Prêts' })).toBeVisible();
-    await expect(canvas.getByText('Before a bout begins, you set your stance. Here’s ours.')).toBeVisible();
+    await expect(canvas.getByText('Before the bout, you settle into your stance. Here’s ours.')).toBeVisible();
     for (const label of ['Fencing only', 'Fair pricing', 'Direct sourcing', 'Real support']) await expect(canvas.getByText(label)).toBeVisible();
     await expect(canvas.getByRole('heading', { level: 3, name: 'How we operate' })).toBeVisible();
     await expect(canvas.getByText('We hold our own inventory rather than dropship.')).toBeVisible();
     await expect(canvas.getByText('Our own team handles every question, order and return.')).toBeVisible();
+    await expect(canvas.getByText(/operated by Fencing Club LLC/)).toBeVisible();
   },
 };

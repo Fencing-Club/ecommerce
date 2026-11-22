@@ -11,14 +11,14 @@ export default {
   render: section('about-timeline', {
     staticBlocks: [
       phaseHeading('Fence', 'Allez'),
-      { id: 'lead', type: 'heading', settings: { heading: 'We haven’t stopped moving since the first allez.', tag: 'h3', size: 'sm' } },
+      { id: 'lead', type: 'heading', settings: { heading: 'We haven’t stopped moving since our first allez.', tag: 'h3', size: 'sm' } },
     ],
     blocks: [
       milestone('founded', '2023', 'Fencing Club is founded', 'A fencing-only retailer launches in Woodinville.'),
-      milestone('dealer', '2024', 'Authorized dealer', 'We become an authorized dealer for four brands and buy from them directly.'),
-      milestone('masks', 'Late 2026', 'Our own certified masks', 'Masks for foil, épée, and sabre, rated 350N and 1600N.', 'in_progress'),
+      milestone('dealer', '2024', 'Authorized dealer', 'We become an authorized dealer for four leading brands and buy from them direct.'),
+      milestone('masks', 'Late 2026', 'Our own certified masks', 'Our own 350N and 1600N masks for foil, épée, and sabre. We’re placing the first orders now.', 'in_progress'),
       milestone('blades', '2027', 'FIE blades from UNIC', 'We start carrying UNIC’s FIE-homologated blades.', 'planned'),
-      milestone('uniform', '2027', 'An 800N uniform', 'An 800N competition uniform completes the kit.', 'planned'),
+      milestone('uniform', '2027', 'An 800N uniform', 'An 800N competition uniform rounds out the kit.', 'planned'),
     ],
   }),
 };

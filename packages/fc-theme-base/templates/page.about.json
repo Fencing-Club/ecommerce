@@ -35,7 +35,7 @@
         "mission": {
           "type": "text",
           "settings": {
-            "text": "<p>Since 2023, we've supplied clubs, schools, and individual fencers with dependable gear at honest prices. Our team fences too, so our advice holds up from your first lesson to your first podium.</p>",
+            "text": "<p>We're a fencing-only shop in Woodinville, Washington. Since 2023 we've equipped clubs, schools, and fencers at every level, from a first lesson to the finals. We fence too, so we only sell gear we'd trust on the piste.</p>",
             "style": "lead"
           }
         },
@@ -98,7 +98,7 @@
             "heading": {
               "type": "heading",
               "settings": {
-                "heading": "It started at the clubs",
+                "heading": "It started in other people's clubs",
                 "tag": "h2",
                 "size": "lg"
               }
@@ -113,21 +113,28 @@
         "paragraph-1": {
           "type": "text",
           "settings": {
-            "text": "<p>We started Fencing Club in 2023, after years of visiting clubs, schools, and training halls around the world. Everywhere we went, fencers struggled to get proper gear. Stock was thin, quality was uneven, and long supply chains pushed prices up.</p>",
+            "text": "<p>Before Fencing Club, we spent years visiting fencing clubs, schools, and training halls around the world. Everywhere we went, we saw the same problem. The gear fencers needed was hard to find, quality changed from one batch to the next, and long, indirect supply chains pushed prices up.</p>",
             "style": "lead"
           }
         },
         "paragraph-2": {
           "type": "text",
           "settings": {
-            "text": "<p>We came home convinced that cost and access should never decide who gets to fence.</p>",
+            "text": "<p>It didn't matter whether someone was picking up a foil for the first time or training for the finals. Getting reliable equipment was slow, expensive, or a gamble.</p>",
+            "style": "lead"
+          }
+        },
+        "belief": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Cost and access should never stand between a fencer and the sport.</p>",
             "style": "lead"
           }
         },
         "paragraph-3": {
           "type": "text",
           "settings": {
-            "text": "<p>So we built a shop that sells only fencing gear, for every level. We buy direct to keep prices fair, and we answer every question ourselves.</p>",
+            "text": "<p>So in 2023 we opened Fencing Club in Woodinville, near Seattle: one shop for fencing gear and nothing else, buying direct from the makers and answering every question ourselves. We sold our first 1,000 orders offline, before the web store even opened.</p>",
             "style": "lead"
           }
         }
@@ -135,6 +142,7 @@
       "block_order": [
         "paragraph-1",
         "paragraph-2",
+        "belief",
         "paragraph-3"
       ]
     },
@@ -166,7 +174,7 @@
             "intro": {
               "type": "text",
               "settings": {
-                "text": "<p>Our team trains at these clubs most weeks. If you fence there too, come say hello.</p>",
+                "text": "<p>You'll find our team on the piste most weeks, fencing épée at Kaizen Academy and Olympic Epee Masters, foil at Rain City Fencing Center, and open fencing at Salle Auriol. If you train at one of them, come say hello.</p>",
                 "style": "lead"
               }
             }
@@ -183,7 +191,7 @@
           "static": true,
           "settings": {
             "title": "Free delivery to our home clubs",
-            "text": "We're at these clubs most weeks, so we'll drop off your order at any of them for free."
+            "text": "We're there most weeks anyway, so we'll drop off your order at any of these four clubs for free."
           }
         },
         "kaizen": {
@@ -245,7 +253,7 @@
         "lead": {
           "type": "text",
           "settings": {
-            "text": "<p>Before a bout begins, you set your stance. Here's ours.</p>",
+            "text": "<p>Before the bout, you settle into your stance. Here's ours.</p>",
             "style": "body"
           },
           "static": true
@@ -262,7 +270,7 @@
         "operations_start": {
           "type": "text",
           "settings": {
-            "text": "<p>We're a direct retailer. We hold our own stock instead of dropshipping, and we work with manufacturing partners and established brands worldwide to keep quality consistent.</p>",
+            "text": "<p>We're a true direct retailer. We keep our own inventory at our own facility instead of dropshipping, and we work directly with manufacturing partners and established fencing brands around the world to keep quality consistent.</p>",
             "style": "lead"
           },
           "static": true
@@ -270,8 +278,16 @@
         "operations_end": {
           "type": "text",
           "settings": {
-            "text": "<p>Orders ship from U.S. fulfillment centers. A logistics partner sometimes delivers them, but never a reseller. Our own team answers every question and handles every order and return.</p>",
+            "text": "<p>Orders ship from fulfillment locations in the U.S. Sometimes a logistics partner handles delivery, but they only move the boxes; they never resell. Every question, order, and return comes back to our own team.</p>",
             "style": "lead"
+          },
+          "static": true
+        },
+        "company": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Fencing Club is operated by Fencing Club LLC, a Washington limited liability company.</p>",
+            "style": "subtle"
           },
           "static": true
         },
@@ -280,7 +296,7 @@
           "settings": {
             "icon": "target",
             "label": "Fencing only",
-            "detail": "We sell fencing gear and nothing else. Every product is picked for the piste."
+            "detail": "We're a specialist shop, not a sporting-goods aisle. We choose every product for the piste."
           }
         },
         "fair-pricing": {
@@ -288,7 +304,7 @@
           "settings": {
             "icon": "tag",
             "label": "Fair pricing",
-            "detail": "Short supply chains keep prices fair, so cost doesn't stop anyone from fencing."
+            "detail": "We buy direct and keep the supply chain short, so price never keeps anyone from fencing."
           }
         },
         "direct-sourcing": {
@@ -296,7 +312,7 @@
           "settings": {
             "icon": "git-branch",
             "label": "Direct sourcing",
-            "detail": "We buy straight from the makers, so every product is genuine."
+            "detail": "We buy straight from authorized makers, the brands your club and your referees already trust."
           }
         },
         "real-support": {
@@ -304,7 +320,7 @@
           "settings": {
             "icon": "life-buoy",
             "label": "Real support",
-            "detail": "Ask us anything. The people who answer fence too."
+            "detail": "Ask us about sizing, blades, or your first tournament kit. The people who answer fence too."
           }
         }
       },
@@ -335,7 +351,7 @@
             "heading": {
               "type": "heading",
               "settings": {
-                "heading": "Pricing for clubs, schools, and teams",
+                "heading": "Pricing built for clubs, schools, and teams",
                 "tag": "h2",
                 "size": "lg"
               }
@@ -343,7 +359,7 @@
             "intro": {
               "type": "text",
               "settings": {
-                "text": "<p>Clubs, schools, and nonprofits can equip their fencers for less with member pricing and bulk discounts. Wholesale partnerships are coming soon.</p>",
+                "text": "<p>Equipping a whole club adds up fast. We help clubs, schools, and nonprofits do it for less, with member pricing and bulk discounts today and club partnerships on the way.</p>",
                 "style": "lead"
               }
             }
@@ -360,7 +376,7 @@
           "settings": {
             "icon": "badge-percent",
             "title": "Club member pricing",
-            "text": "Club members save on Fencing Club house-brand gear every day. Name brands such as UNIC and FWF aren't included.",
+            "text": "Club members get everyday pricing on Fencing Club house-brand gear. Name brands such as UNIC and FWF aren't included.",
             "note": "Up to 15% off house-brand gear"
           }
         },
@@ -369,7 +385,7 @@
           "settings": {
             "icon": "boxes",
             "title": "Bulk and team kitting",
-            "text": "Orders of $1,500 or more get bulk pricing.",
+            "text": "Kitting out a full squad? Kitting out a full squad? Orders of $1,500 or more get bulk pricing.",
             "note": "Up to 10% off"
           }
         },
@@ -378,7 +394,7 @@
           "settings": {
             "icon": "plug",
             "title": "Club partnerships",
-            "text": "Feature our gear on your club's website, with a custom checkout for your approved starter kits.",
+            "text": "Show our gear on your club's website, with a custom checkout for the starter kits you approve.",
             "badge": "Coming soon"
           }
         }
@@ -404,7 +420,7 @@
         "lead": {
           "type": "heading",
           "settings": {
-            "heading": "We haven't stopped moving since the first allez.",
+            "heading": "We haven't stopped moving since our first allez.",
             "tag": "h3",
             "size": "sm"
           },
@@ -415,7 +431,7 @@
           "settings": {
             "date": "2023",
             "title": "Fencing Club is founded",
-            "text": "We open as a fencing-only shop in Woodinville, near Seattle."
+            "text": "We open in Woodinville, near Seattle, selling fencing gear and nothing else."
           }
         },
         "online": {
@@ -423,7 +439,7 @@
           "settings": {
             "date": "2023",
             "title": "Online only, on purpose",
-            "text": "Without a storefront to pay for, we pass the savings to fencers."
+            "text": "No storefront, so the savings go straight to fencers."
           }
         },
         "dealer": {
@@ -431,7 +447,7 @@
           "settings": {
             "date": "2024",
             "title": "Authorized dealer",
-            "text": "We become an authorized dealer for four brands and buy from them directly."
+            "text": "We become an authorized dealer for four leading brands and buy from them direct."
           }
         },
         "kitting": {
@@ -439,7 +455,7 @@
           "settings": {
             "date": "2025",
             "title": "Club and team kits",
-            "text": "Clubs, schools, and nonprofits get team kits and member pricing."
+            "text": "Club and team kitting arrives, with member pricing for clubs, schools, and nonprofits."
           }
         },
         "blades": {
@@ -456,7 +472,7 @@
           "settings": {
             "date": "Late 2026",
             "title": "Our own certified masks",
-            "text": "Masks for foil, épée, and sabre, rated 350N and 1600N.",
+            "text": "Our own 350N and 1600N masks for foil, épée, and sabre. We're placing the first orders now.",
             "status": "in_progress"
           }
         },
@@ -465,7 +481,7 @@
           "settings": {
             "date": "2027",
             "title": "An 800N uniform",
-            "text": "An 800N competition uniform completes the kit.",
+            "text": "An 800N competition uniform rounds out the kit.",
             "status": "planned"
           }
         },
@@ -474,7 +490,7 @@
           "settings": {
             "date": "Early 2028",
             "title": "Club management platform",
-            "text": "A white-label portal, built with clubs, for booking classes and private lessons and taking payments.",
+            "text": "We're building a white-label portal with clubs for scheduling classes and private lessons and taking payments.",
             "status": "planned"
           }
         }
@@ -519,7 +535,7 @@
             "header-text": {
               "type": "text",
               "settings": {
-                "text": "<p>Every product is genuine and comes straight from the maker, never from the grey market.</p>",
+                "text": "<p>Every product is genuine and homologated, bought straight from the makers and never from the grey market.</p>",
                 "style": "lead"
               }
             }
@@ -627,7 +643,7 @@
         "caption": {
           "type": "text",
           "settings": {
-            "text": "<p>Most of what we sell is our own brand, bought straight from the factory, so your money goes into the gear instead of markups.</p>",
+            "text": "<p>Most of what we sell is our own brand, ordered straight from the factories that make it. You pay for the gear, not a chain of markups.</p>",
             "style": "subtle"
           },
           "static": true
@@ -698,7 +714,7 @@
             "heading": {
               "type": "heading",
               "settings": {
-                "heading": "We back the people building this sport.",
+                "heading": "We're just getting started.",
                 "tag": "h3",
                 "size": "md"
               }
@@ -706,7 +722,7 @@
             "body": {
               "type": "text",
               "settings": {
-                "text": "<p>If you're building something for fencers, you can sell it in our store and ship it through our distribution network.</p>",
+                "text": "<p>There's more to come, from our own certified masks to a platform for clubs, and we'd love to build it with the fencing community.</p>",
                 "style": "lead"
               }
             }
@@ -727,7 +743,7 @@
             "statement": {
               "type": "heading",
               "settings": {
-                "heading": "Tell us what you're building.",
+                "heading": "We back the people building this sport.",
                 "tag": "h3",
                 "size": "md"
               }
@@ -735,7 +751,7 @@
             "body": {
               "type": "text",
               "settings": {
-                "text": "<p>Ask about selling with us or shipping through our network, or just say hello.</p>",
+                "text": "<p>If you're making gear, building an app, or want to reach fencers through our sales channel, we can sell it in our store and ship it through our distribution network. Tell us what you're working on.</p>",
                 "style": "lead"
               }
             }

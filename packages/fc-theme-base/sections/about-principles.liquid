@@ -10,6 +10,7 @@
       {%- content_for 'block', type: 'text', id: 'operations_start' -%}
       {%- content_for 'block', type: 'text', id: 'operations_end' -%}
     </div>
+    {%- content_for 'block', type: 'text', id: 'company' -%}
   </div>
 </div>
 
@@ -66,11 +67,12 @@
           "type": "text",
           "id": "lead",
           "static": true,
-          "settings": { "text": "<p>Before a bout begins, you set your stance. Here's ours.</p>", "style": "body" }
+          "settings": { "text": "<p>Before the bout, you settle into your stance. Here's ours.</p>", "style": "body" }
         },
         { "type": "heading", "id": "operations_heading", "static": true, "settings": { "heading": "How we operate", "tag": "h3", "size": "sm" } },
         { "type": "text", "id": "operations_start", "static": true, "settings": { "text": "<p>We hold our own inventory.</p>", "style": "lead" } },
         { "type": "text", "id": "operations_end", "static": true, "settings": { "text": "<p>Our own team handles every order.</p>", "style": "lead" } },
+        { "type": "text", "id": "company", "static": true, "settings": { "text": "<p>Fencing Club is operated by Fencing Club LLC, a Washington limited liability company.</p>", "style": "subtle" } },
         { "type": "feature", "settings": { "icon": "target", "label": "Fencing only", "detail": "Every product is chosen for the piste." } },
         { "type": "feature", "settings": { "icon": "tag", "label": "Fair pricing", "detail": "Short supply chains keep prices down." } }
       ]
