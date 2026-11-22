@@ -87,7 +87,7 @@
           "type": "_faq-item",
           "settings": {
             "question": "Do you offer free returns?",
-            "answer": "<p>We offer a free 30-day return policy from the date of receipt of the purchased item, during which you may request a refund or exchange. A shipping label will be provided free of charge.</p><p>Review the full <a href=\"/policies/refund-policy\">Return Policy</a> for details.</p>",
+            "answer": "<p>We offer a free 30-day return policy from the date of receipt of the purchased item, during which you may request a refund or exchange. A shipping label will be provided free of charge.</p><p>Review the full <a href=\"/pages/refund-policy\">Return Policy</a> for details.</p>",
             "open": true
           }
         },
@@ -127,7 +127,7 @@
           "type": "_faq-item",
           "settings": {
             "question": "Where can I find the return policy?",
-            "answer": "<p>Refer to our official <a href=\"/policies/refund-policy\">Return Policy</a> for more specific terms and conditions related to returns.</p>",
+            "answer": "<p>Refer to our official <a href=\"/pages/refund-policy\">Return Policy</a> for more specific terms and conditions related to returns.</p>",
             "open": false
           }
         },

@@ -15,7 +15,7 @@ const blocks = [
   topic('returns', 'Returns'),
   question('free', 'Are returns free?', 'Returns within 30 days are free in the US.', {
     link_label: 'Read the returns policy',
-    link_url: '/policies/refund-policy',
+    link_url: '/pages/refund-policy',
   }),
   topic('sizing', 'Sizing & gear'),
   question('size', 'Which size should I choose?', 'Measure yourself and compare with the size chart on the product page.'),
