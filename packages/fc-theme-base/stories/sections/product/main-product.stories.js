@@ -11,8 +11,6 @@ const store = {
 
 const trust = [
   { id: 'returns', type: 'trust', settings: { icon: 'rotate-ccw', title: 'Free returns', detail: '30 days in the US' } },
-  { id: 'dealer', type: 'trust', settings: { icon: 'badge-check', title: 'Authorized dealer', detail: 'Genuine gear from the brand' } },
-  { id: 'help', type: 'trust', settings: { icon: 'message-circle', title: 'Fencers on hand', detail: 'Ask us about sizing' } },
 ];
 
 const renderSection = (variantId) =>
@@ -91,7 +89,10 @@ export const PartnerWarehouse = {
   args: { variant: 9206 },
   play: async ({ canvas }) => {
     await expect(canvas.getByText('In stock at our partner warehouse')).toBeVisible();
-    await expect(canvas.getByText(/^Ships in 1 to 2 business days\. Arrives \w{3} \d+ to \w{3} \d+\.$/)).toBeVisible();
+    // The ships row leads the trust notes. US shoppers see partner stock's arrival dates, which allow for its dispatch.
+    const [ships, returns] = canvas.getAllByRole('listitem').filter((item) => item.closest('.product-page__trust'));
+    await expect(ships).toHaveTextContent(/^Arrives \w{3} \d+ to \w{3} \d+$/);
+    await expect(returns).toHaveTextContent(/^Free returns\s*30 days in the US$/);
   },
 };
 

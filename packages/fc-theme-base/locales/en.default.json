@@ -116,14 +116,15 @@
       "sold_out_size": "Sold out in size {{ size }}",
       "low": "Only {{ count }} left",
       "low_size": "Only {{ count }} left in size {{ size }}",
-      "ships_same_day": "Ships within one business day.",
-      "ships_today": "Order in the next {{ time }} and it ships today.",
+      "ships_same_day": "Ships within one business day",
+      "ships_today": "Ships today",
+      "order_within": "Order within {{ time }}",
       "time_left": "{{ hours }}h {{ minutes }}m",
       "minutes_left": "{{ minutes }}m",
-      "ships_on": "Ships {{ day }}.",
+      "ships_on": "Ships {{ day }}",
       "tomorrow": "tomorrow",
-      "ships_partner": "Ships in {{ min }} to {{ max }} business days.",
-      "arrives": "Arrives {{ start }} to {{ end }}."
+      "ships_partner": "Ships in {{ min }} to {{ max }} business days",
+      "arrives": "Arrives {{ start }} to {{ end }}"
     },
     "rating": {
       "label": "Rated {{ rating }} out of {{ max }}",
