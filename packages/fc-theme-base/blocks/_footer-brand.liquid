@@ -1,0 +1,118 @@
+{%- comment -%}
+  The footer's brand column: the logo, tagline and social links from the theme's brand and social settings.
+{%- endcomment -%}
+<div class="footer-brand" {{ block.shopify_attributes }}>
+  {%- if settings.brand_image != blank -%}
+    {{
+      settings.brand_image
+      | image_url: width: 240
+      | image_tag:
+        class: 'footer-brand__logo',
+        alt: shop.name,
+        loading: 'lazy',
+        widths: '96, 112, 192, 224',
+        sizes: '(min-width: 990px) 112px, 96px'
+    }}
+  {%- endif -%}
+  <div class="footer-brand__copy">
+    {%- if settings.brand_description != blank -%}
+      <div class="footer-brand__tagline">{{ settings.brand_description }}</div>
+    {%- endif -%}
+    {%- if block.settings.show_social -%}
+      {%- render 'social-icons', class: 'footer-brand__social' -%}
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-5);
+    align-items: flex-start;
+  }
+  .footer-brand__logo {
+    display: block;
+    width: 11.2rem;
+    height: 11.2rem;
+    object-fit: contain;
+  }
+  .footer-brand__copy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-5);
+    min-width: 0;
+  }
+  .footer-brand__tagline {
+    max-width: 30rem;
+    font-size: var(--text-sm);
+    line-height: 1.55;
+    color: var(--muted-foreground);
+  }
+  .footer-brand__tagline p {
+    margin: 0;
+  }
+  .footer-brand__social {
+    display: flex;
+    gap: var(--spacing-2-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .footer-brand__social:empty {
+    display: none;
+  }
+  .footer-brand__social .list-social__link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.8rem;
+    height: 3.8rem;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--foreground);
+    transition: background-color var(--duration-enter) var(--ease-in-out);
+  }
+  .footer-brand__social .list-social__link:hover {
+    background: color-mix(in srgb, var(--foreground) 16%, transparent);
+  }
+  .footer-brand__social .svg-wrapper {
+    width: 1.7rem;
+    height: 1.7rem;
+  }
+  /* Tablet and phone put the logo beside the tagline and social links. */
+  @media (max-width: 989px) {
+    .footer-brand {
+      flex-direction: row;
+      gap: var(--spacing-4);
+    }
+    .footer-brand__logo {
+      flex: none;
+      width: 9.6rem;
+      height: 9.6rem;
+    }
+    .footer-brand__copy {
+      gap: var(--spacing-3-5);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.footer_brand.name",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:blocks.footer_brand.settings.paragraph.content"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_social",
+      "label": "t:blocks.footer_brand.settings.show_social.label",
+      "info": "t:blocks.footer_brand.settings.show_social.info",
+      "default": true
+    }
+  ],
+  "presets": [{ "name": "t:blocks.footer_brand.name" }]
+}
+{% endschema %}

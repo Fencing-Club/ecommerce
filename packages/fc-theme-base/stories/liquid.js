@@ -23,16 +23,38 @@ export const assetUrl = (name) => `/theme-assets/${name}`;
 
 export const settings = themeSettings({ schema, data });
 
-const globals = { settings, routes: { root_url: '/', search_url: '/search', cart_url: '/cart' }, cart: { currency: { symbol: '$' } } };
+// The store's details from Settings > Store details, which the footer and contact page show.
+const shop = {
+  name: 'Fencing Club',
+  email: 'support@fencing.club',
+  phone: '4252602501',
+  address: { street: '17190 128th Pl NE', city: 'Woodinville', province_code: 'WA', zip: '98072' },
+  enabled_payment_types: ['visa', 'master', 'american_express', 'paypal', 'diners_club', 'discover'],
+  customer_accounts_enabled: true,
+};
+
+// The shopper's market and language, with a second of each so the header's selectors show.
+const unitedStates = { iso_code: 'US', name: 'United States', currency: { iso_code: 'USD', symbol: '$' } };
+const english = { iso_code: 'en', endonym_name: 'English' };
+const localization = {
+  country: unitedStates,
+  language: english,
+  available_countries: [{ iso_code: 'CA', name: 'Canada', currency: { iso_code: 'CAD', symbol: '$' } }, unitedStates],
+  available_languages: [english, { iso_code: 'fr', endonym_name: 'français' }],
+};
+
+const globals = { settings, shop, localization, routes: { root_url: '/', search_url: '/search', cart_url: '/cart' }, cart: { currency: { symbol: '$' } } };
 
 /**
  * Renders a snippet or section with the given variables, as `{% render name, ...variables %}` would.
  *
  * @param {string} name The file name without `.liquid`.
  * @param {Record<string, unknown>} [variables]
+ * @param {Record<string, unknown>} [extraGlobals] Globals such as `cart` or `shop` that replace the defaults. Unlike
+ *   variables, every snippet the render reaches can read them.
  */
-export function renderLiquid(name, variables = {}) {
-  return engine.renderFileSync(name, variables, { globals });
+export function renderLiquid(name, variables = {}, extraGlobals = {}) {
+  return engine.renderFileSync(name, variables, { globals: { ...globals, ...extraGlobals } });
 }
 
 /** The CSS variables layout/theme.liquid writes in its `{% style %}` block. */
@@ -42,15 +64,17 @@ export function themeCss() {
 
 /**
  * A story `render` function for a snippet: its args become the snippet's variables. `stylesheets` are the theme CSS
- * files the section that renders it would load, beyond the layout's.
+ * files the section that renders it would load, beyond the layout's. `globals` replaces default globals such as
+ * `cart`, `shop` or `routes`; as a function it gets the story's args.
  *
  * @param {string} name
- * @param {{ stylesheets?: string[] }} [options]
+ * @param {{ stylesheets?: string[], globals?: Record<string, unknown> | ((args: object) => Record<string, unknown>) }} [options]
  */
 export const snippet =
-  (name, { stylesheets = [] } = {}) =>
+  (name, { stylesheets = [], globals: extra = {} } = {}) =>
   (args) =>
-    stylesheets.map((file) => `<link rel="stylesheet" href="${assetUrl(file)}">`).join('') + renderLiquid(name, args);
+    stylesheets.map((file) => `<link rel="stylesheet" href="${assetUrl(file)}">`).join('') +
+    renderLiquid(name, args, typeof extra === 'function' ? extra(args) : extra);
 
 /**
  * A story `render` function for a theme block: its args become the block's settings, over its schema defaults. The
@@ -74,11 +98,18 @@ export const block =
  */
 export const section =
   (name, { blocks = [], staticBlocks = [], variables = {} } = {}) =>
-  (settings) =>
-    renderLiquid(name, {
-      ...variables,
-      section: { id: 'story', settings: { ...schemaDefaults(templates[`${name}.liquid`]), ...settings }, blocks, static_blocks: staticBlocks },
-    });
+  (settings) => {
+    // As on a store, the section sees each theme block's id but not its type or settings; `content_for` renders them.
+    const current = {
+      id: 'story',
+      settings: { ...schemaDefaults(templates[`${name}.liquid`]), ...settings },
+      blocks: blocks.map(({ id }) => ({ id, type: '@theme', settings: {} })),
+      theme_blocks: blocks,
+      static_blocks: staticBlocks,
+    };
+    // On a store the snippets a section renders can read `section` too, so it is a global for the render.
+    return engine.renderFileSync(name, { ...variables, section: current }, { globals: { ...globals, section: current } });
+  };
 
 /**
  * A story loader that runs a theme script once, as the section that renders a snippet would load it. Markup a story

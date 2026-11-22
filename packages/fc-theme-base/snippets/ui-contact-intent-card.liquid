@@ -10,7 +10,7 @@
 {%- endcomment -%}
 <a
   class="ui-contact-intent-card"
-  href="#ContactForm"
+  href="#ContactFormCard"
   data-contact-topic="{{ topic | escape }}"
   {% if block %}{{ block.shopify_attributes }}{% endif %}
 >
@@ -18,7 +18,7 @@
   <strong>{{ title | escape }}</strong>
   <span class="ui-contact-intent-card__description">{{ description | escape }}</span>
   <span class="ui-contact-intent-card__action">
-    Go
+    {{ 'sections.contact.go' | t }}
     {%- render 'ui-icon', icon: 'arrow-right', size: 14 -%}
   </span>
 </a>

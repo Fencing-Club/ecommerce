@@ -40,7 +40,7 @@ const accountCustomer = { first_name: 'Alex', name: 'Alex Morgan', email: 'alex@
 
 export async function renderLibrary() {
   const settings = labSettings();
-  const section = { id: 'component-lab', settings: { menu: { links: navigation.menus[0].items.map(menuLink) }, menu_color_scheme: 'scheme-1', image_zoom: 'modal' } };
+  const section = { id: 'component-lab', settings: { menu: { links: navigation.menus[0].items.map(menuLink) }, image_zoom: 'modal' } };
   const values = ['S', 'M', 'L', 'XL'].map((label, index) => {
     const value = new String(label);
     Object.assign(value, { id: index + 1, available: index !== 3, selected: index === 1, product_url: '#selection' });

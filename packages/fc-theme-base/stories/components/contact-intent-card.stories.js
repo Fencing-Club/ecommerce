@@ -20,7 +20,7 @@ export const Default = {
   render: () => `${styles}<div style="max-width: 30rem">${card(topics[0])}</div>`,
   play: async ({ canvas }) => {
     const link = canvas.getByRole('link', { name: /Orders & shipping/ });
-    await expect(link).toHaveAttribute('href', '#ContactForm');
+    await expect(link).toHaveAttribute('href', '#ContactFormCard');
     await expect(link).toHaveAttribute('data-contact-topic', 'orders');
   },
 };

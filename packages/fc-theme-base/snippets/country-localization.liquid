@@ -25,7 +25,6 @@
     aria-controls="{{ localPosition }}-country-results"
     aria-describedby="{{ localPosition }}Label"
   >
-    <span class="currency-flag currency-flag--{{ localization.country.iso_code | downcase }}" aria-hidden="true"></span>
     <span>
       {{- localization.country.name }}
       ({{ localization.country.currency.iso_code }}
