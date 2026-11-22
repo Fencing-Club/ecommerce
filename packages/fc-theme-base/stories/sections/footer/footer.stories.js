@@ -45,7 +45,7 @@ export const Default = {
     await expect(canvas.getByRole('link', { name: 'Instagram' })).toBeVisible();
 
     await expect(within(canvas.getByRole('list', { name: 'Payment methods' })).getAllByRole('img')).toHaveLength(6);
-    await expect(canvas.getByText(/^© \d{4} Fencing Club\. All rights reserved\.$/)).toBeVisible();
+    await expect(canvas.getByText(/^© \d{4} Fencing Club$/)).toBeVisible();
   },
 };
 
@@ -53,6 +53,6 @@ export const WithoutPaymentIcons = {
   args: { payment_enable: false },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole('list', { name: 'Payment methods' })).toBeNull();
-    await expect(canvas.getByText(/All rights reserved\./)).toBeVisible();
+    await expect(canvas.getByText(/^© \d{4} Fencing Club$/)).toBeVisible();
   },
 };
