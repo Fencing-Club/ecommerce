@@ -8,8 +8,9 @@ Shared blocks live in `blocks/`. A section lists the blocks it accepts in its sc
 
 - **Heading** (`heading.liquid`): the heading text, its level (`h1` to `h4`, `h2` by default), a size from small to
   extra large, and its alignment. Level sets the document outline and size sets the look, so pick them separately.
-- **Text** (`text.liquid`): rich text in one of three styles: body, subtle (smaller, muted, for supporting detail)
-  or eyebrow (the small uppercase label above a heading), and its alignment. Merchants type eyebrows in normal case;
+- **Text** (`text.liquid`): rich text in one of four styles: body, lead (larger and muted, for intros and story
+  paragraphs), subtle (smaller, muted, for supporting detail) or eyebrow (the small uppercase label above a heading),
+  and its alignment. Merchants type eyebrows in normal case;
   the style makes them uppercase.
 - **Button** (`button.liquid`): a label, a link, a style (primary, secondary or outline), a size and an optional
   trailing arrow. It renders through `ui-button`. Without a link it shows disabled, so it stays visible in the editor.
@@ -24,6 +25,9 @@ Shared blocks live in `blocks/`. A section lists the blocks it accepts in its sc
 - **Feature** (`feature.liquid`): a short selling point: an icon, a label, a line of detail and an optional link.
 - **Product card** (`product-card.liquid`): one chosen product, shown through `ui-product-card`, with an optional
   badge and add button.
+- **Phase heading** (`phase-heading.liquid`): opens an About page chapter like a phase of a bout: the phase and what
+  it means on one line, a large word under them, then a rule. The word is a level 2 or 3 heading, or a paragraph when
+  a level 1 heading follows it.
 
 ## Section shells
 
@@ -60,6 +64,15 @@ heading. The section captures the rendered blocks and builds the topic links fro
 title and `id`. With structured data on, the page is a schema.org `FAQPage` in microdata and each question a
 `Question` inside it. The page heading and the contact card stay section settings. The breadcrumbs above it are the
 shared Breadcrumbs section, the template's first section.
+
+The About page (`templates/page.about.json`) follows the About Us board in the Pen. Five of its sections are
+chapters named after the phases of a bout, each opening with a static Phase heading: About hero (En garde), Principles
+(Prêt), Timeline (Allez), Stats (Touché) and Closing (La belle). Our story, Clubs and Programs sit between them, and
+Brand logos is the homepage section. Clubs are `_club` blocks, with the static `_clubs-callout` band under them;
+program cards are `_program` blocks, timeline steps `_milestone` blocks and figures `_stat` blocks. Principles are
+Feature blocks, which the section stands icon over text. Stats, the callout and the closing panel are dark: their
+shared shell in `assets/section-about.css` turns the roles light inside them, so the blocks need no dark variants.
+The hero's "Read our story" button links to `#our-story`, the Our story section's id.
 
 The Contact page has two sets of blocks in different places, so each sits in a static block that renders its own
 children: `_contact-topics` holds the `_contact-topic` cards above the form, shown through `ui-contact-intent-card`,

@@ -1,0 +1,57 @@
+{{ 'section-about.css' | asset_url | stylesheet_tag }}
+
+<div class="about-section about-section--muted about-programs">
+  {%- content_for 'block', type: 'group', id: 'header' -%}
+  <div class="about-programs__grid">{%- content_for 'blocks' -%}</div>
+</div>
+
+{% stylesheet %}
+  .about-programs__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--spacing-6);
+  }
+  .about-programs__grid > * {
+    display: flex;
+  }
+  @media (max-width: 989px) {
+    .about-programs__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 749px) {
+    .about-programs__grid { grid-template-columns: minmax(0, 1fr); }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.about_programs.name",
+  "tag": "section",
+  "blocks": [{ "type": "_program" }],
+  "presets": [
+    {
+      "name": "t:sections.about_programs.name",
+      "blocks": [
+        {
+          "type": "group",
+          "id": "header",
+          "static": true,
+          "settings": { "direction": "column", "gap": "md" },
+          "blocks": [
+            { "type": "text", "settings": { "text": "<p>Programs we offer</p>", "style": "eyebrow" } },
+            { "type": "heading", "settings": { "heading": "Pricing built for clubs, schools & teams", "size": "lg" } },
+            { "type": "text", "settings": { "text": "<p>We help clubs, schools and nonprofits equip their athletes for less.</p>", "style": "lead" } }
+          ]
+        },
+        {
+          "type": "_program",
+          "settings": { "icon": "badge-percent", "title": "Club member pricing", "text": "Everyday member pricing on house-brand gear.", "note": "Up to 15% off house brand" }
+        },
+        {
+          "type": "_program",
+          "settings": { "icon": "boxes", "title": "Bulk & team kitting", "text": "Large orders unlock bulk pricing.", "note": "Up to 10% off" }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,88 @@
+{%- comment -%}
+  A club in the About page's clubs section: the weapon fenced there, the club's name, where it is and a link to its site.
+{%- endcomment -%}
+<div class="about-club" {{ block.shopify_attributes }}>
+  {%- if block.settings.discipline != blank -%}
+    <p class="about-club__discipline">{{ block.settings.discipline | escape }}</p>
+  {%- endif -%}
+  <h3 class="about-club__name">{{ block.settings.name | escape }}</h3>
+  {%- if block.settings.location != blank -%}
+    <p class="about-club__location">{{ block.settings.location | escape }}</p>
+  {%- endif -%}
+  {%- if block.settings.link != blank -%}
+    {%- liquid
+      assign link_label = 'sections.about_clubs.visit_site' | t
+      assign link_name = 'sections.about_clubs.visit_site_label' | t: club: block.settings.name
+    -%}
+    {%- render 'ui-link', label: link_label, url: block.settings.link, icon: 'arrow-up-right', aria_label: link_name, class: 'about-club__link' -%}
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  .about-club {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    min-width: 0;
+  }
+  .about-club__discipline {
+    margin: 0;
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .about-club__name {
+    margin: 0;
+    font-family: var(--font-heading-family);
+    font-size: var(--text-xl);
+    line-height: var(--leading-tight);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--tracking-tight);
+    color: var(--foreground);
+    overflow-wrap: anywhere;
+  }
+  .about-club__location {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+    color: var(--muted-foreground);
+  }
+  .about-club__link {
+    margin-top: var(--spacing-1-5);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.club.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "discipline",
+      "label": "t:blocks.club.settings.discipline.label",
+      "info": "t:blocks.club.settings.discipline.info"
+    },
+    {
+      "type": "text",
+      "id": "name",
+      "label": "t:blocks.club.settings.name.label",
+      "default": "t:blocks.club.settings.name.default"
+    },
+    {
+      "type": "text",
+      "id": "location",
+      "label": "t:blocks.club.settings.location.label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:blocks.club.settings.link.label"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.club.name" }]
+}
+{% endschema %}

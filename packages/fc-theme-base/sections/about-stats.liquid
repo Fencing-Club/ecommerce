@@ -1,0 +1,64 @@
+{{ 'section-about.css' | asset_url | stylesheet_tag }}
+
+<div class="about-section about-section--phase about-dark about-stats">
+  {%- content_for 'block', type: 'phase-heading', id: 'phase' -%}
+  {%- content_for 'block', type: 'group', id: 'header' -%}
+  {%- content_for 'block', type: 'text', id: 'caption' -%}
+  <div class="about-stats__grid">{%- content_for 'blocks' -%}</div>
+</div>
+
+{% stylesheet %}
+  .about-stats__grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--spacing-4);
+  }
+  .about-stats__grid > * {
+    display: flex;
+  }
+  @media (max-width: 989px) {
+    .about-stats__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 749px) {
+    .about-stats__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.about_stats.name",
+  "tag": "section",
+  "blocks": [{ "type": "_stat" }],
+  "presets": [
+    {
+      "name": "t:sections.about_stats.name",
+      "blocks": [
+        {
+          "type": "phase-heading",
+          "id": "phase",
+          "static": true,
+          "settings": { "phase": "Phase 03", "meaning": "The point lands", "word": "Touché" }
+        },
+        {
+          "type": "group",
+          "id": "header",
+          "static": true,
+          "settings": { "direction": "column", "gap": "sm" },
+          "blocks": [
+            { "type": "text", "settings": { "text": "<p>Touché, the point lands</p>", "style": "eyebrow" } },
+            { "type": "heading", "settings": { "heading": "Measured, not marketed.", "tag": "h3", "size": "lg" } }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "caption",
+          "static": true,
+          "settings": { "text": "<p>Most of what we sell is our own brand.</p>", "style": "subtle" }
+        },
+        { "type": "_stat", "settings": { "number": "8,300+", "label": "Orders shipped" } },
+        { "type": "_stat", "settings": { "number": "0", "label": "Middlemen" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

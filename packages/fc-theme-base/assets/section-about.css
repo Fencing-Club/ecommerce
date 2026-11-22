@@ -1,0 +1,52 @@
+/* About page section shells. Each section puts its blocks on the page gutter, one under another. */
+
+.about-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-10);
+  padding: calc(var(--spacing) * 22) var(--page-gutter);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.about-section--muted {
+  background: var(--muted);
+}
+
+/* A section that opens with a phase heading sits closer to the section above it. */
+.about-section--phase {
+  padding-top: calc(var(--spacing) * 18);
+}
+
+/* A dark panel or section, like the support band. Text and borders turn light, and inside it a primary button is
+   light with dark text. A custom property reads the values its own element sets, so the button text is set one
+   level in. */
+.about-dark {
+  --background: #09090b; /* zinc-950 */
+  --foreground: var(--primary-foreground);
+  --primary: var(--primary-foreground);
+  --muted: color-mix(in srgb, var(--primary-foreground) 6%, transparent);
+  --muted-foreground: #9f9fa9; /* zinc-400 */
+  --border: color-mix(in srgb, var(--primary-foreground) 12%, transparent);
+  --input: color-mix(in srgb, var(--primary-foreground) 40%, transparent);
+  --accent: color-mix(in srgb, var(--primary-foreground) 8%, transparent);
+  --accent-foreground: var(--primary-foreground);
+  --ring: var(--primary-foreground);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.about-dark > * {
+  --primary-foreground: #09090b; /* zinc-950 */
+}
+
+@media (max-width: 749px) {
+  .about-section {
+    gap: var(--spacing-8);
+    padding-block: var(--spacing-14);
+  }
+
+  .about-section--phase {
+    padding-top: var(--spacing-12);
+  }
+}

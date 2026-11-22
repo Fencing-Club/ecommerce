@@ -1,0 +1,139 @@
+{%- comment -%}
+  A program card on the About page: an icon, an optional badge such as "Coming soon", a title, a description and an
+  optional note, such as the discount, under a tag icon.
+{%- endcomment -%}
+<div class="about-program" {{ block.shopify_attributes }}>
+  <div class="about-program__top">
+    <span class="about-program__icon">{%- render 'ui-icon', icon: block.settings.icon, size: 22 -%}</span>
+    {%- if block.settings.badge != blank -%}
+      <span class="about-program__badge">{{ block.settings.badge | escape }}</span>
+    {%- endif -%}
+  </div>
+  <div class="about-program__body">
+    <h3 class="about-program__title">{{ block.settings.title | escape }}</h3>
+    {%- if block.settings.text != blank -%}
+      <p class="about-program__text">{{ block.settings.text | escape }}</p>
+    {%- endif -%}
+  </div>
+  {%- if block.settings.note != blank -%}
+    <p class="about-program__note">
+      {%- render 'ui-icon', icon: 'tag', size: 16 -%}
+      <span>{{ block.settings.note | escape }}</span>
+    </p>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  .about-program {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--spacing-5);
+    min-width: 0;
+    padding: var(--spacing-8);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--background);
+  }
+  .about-program__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+  }
+  .about-program__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--spacing-12);
+    height: var(--spacing-12);
+    border: 1px solid var(--input);
+    border-radius: 50%;
+    background: var(--muted);
+    color: var(--foreground);
+  }
+  .about-program__badge {
+    padding: var(--spacing-1-5) var(--spacing-3);
+    border-radius: 999px;
+    background: var(--foreground);
+    color: var(--background);
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+    font-weight: var(--font-weight-semibold);
+  }
+  .about-program__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--spacing-2-5);
+  }
+  .about-program__title {
+    margin: 0;
+    font-family: var(--font-heading-family);
+    font-size: var(--text-lg);
+    line-height: var(--leading-snug);
+    font-weight: var(--font-weight-bold);
+    color: var(--foreground);
+  }
+  .about-program__text {
+    margin: 0;
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
+    color: var(--muted-foreground);
+  }
+  .about-program__note {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+    font-weight: var(--font-weight-semibold);
+    color: var(--foreground);
+  }
+  .about-program__note .ui-icon { flex: 0 0 auto; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.program.name",
+  "settings": [
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "t:blocks.program.settings.icon.label",
+      "default": "badge-percent",
+      "options": [
+        { "value": "badge-percent", "label": "t:blocks.program.settings.icon.options.badge_percent" },
+        { "value": "boxes", "label": "t:blocks.program.settings.icon.options.boxes" },
+        { "value": "plug", "label": "t:blocks.program.settings.icon.options.plug" },
+        { "value": "users", "label": "t:blocks.program.settings.icon.options.users" }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "badge",
+      "label": "t:blocks.program.settings.badge.label",
+      "info": "t:blocks.program.settings.badge.info"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:blocks.program.settings.title.label",
+      "default": "t:blocks.program.settings.title.default"
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "t:blocks.program.settings.text.label"
+    },
+    {
+      "type": "text",
+      "id": "note",
+      "label": "t:blocks.program.settings.note.label",
+      "info": "t:blocks.program.settings.note.info"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.program.name" }]
+}
+{% endschema %}

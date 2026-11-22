@@ -1,0 +1,76 @@
+{{ 'section-about.css' | asset_url | stylesheet_tag }}
+
+<div class="about-section about-clubs">
+  {%- content_for 'block', type: 'group', id: 'header' -%}
+  <div class="about-clubs__grid">{%- content_for 'blocks' -%}</div>
+  {%- content_for 'block', type: '_clubs-callout', id: 'callout' -%}
+</div>
+
+{% stylesheet %}
+  /* Clubs sit in columns under one rule, each after the first set off by a line. */
+  .about-clubs__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: 1px solid var(--border);
+  }
+  .about-clubs__grid > * {
+    padding: var(--spacing-6);
+    border-inline-start: 1px solid var(--border);
+  }
+  .about-clubs__grid > :nth-child(4n + 1) {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+  .about-clubs__grid > :nth-child(n + 5) {
+    border-top: 1px solid var(--border);
+  }
+  @media (max-width: 989px) {
+    .about-clubs__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .about-clubs__grid > :nth-child(n) {
+      padding-inline-start: var(--spacing-6);
+      border-inline-start: 1px solid var(--border);
+    }
+    .about-clubs__grid > :nth-child(2n + 1) {
+      padding-inline-start: 0;
+      border-inline-start: 0;
+    }
+    .about-clubs__grid > :nth-child(n + 3) { border-top: 1px solid var(--border); }
+  }
+  @media (max-width: 749px) {
+    .about-clubs__grid { grid-template-columns: minmax(0, 1fr); }
+    .about-clubs__grid > :nth-child(n) {
+      padding-inline: 0;
+      border-inline-start: 0;
+    }
+    .about-clubs__grid > :nth-child(n + 2) { border-top: 1px solid var(--border); }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.about_clubs.name",
+  "tag": "section",
+  "blocks": [{ "type": "_club" }],
+  "presets": [
+    {
+      "name": "t:sections.about_clubs.name",
+      "blocks": [
+        {
+          "type": "group",
+          "id": "header",
+          "static": true,
+          "settings": { "direction": "column", "gap": "md" },
+          "blocks": [
+            { "type": "text", "settings": { "text": "<p>Our home pistes</p>", "style": "eyebrow" } },
+            { "type": "heading", "settings": { "heading": "The clubs we call home", "size": "lg" } },
+            { "type": "text", "settings": { "text": "<p>Most weeks you'll find our team on the piste at these clubs.</p>", "style": "lead" } }
+          ]
+        },
+        { "type": "_clubs-callout", "id": "callout", "static": true },
+        { "type": "_club", "settings": { "discipline": "Épée", "name": "Club name", "location": "City, State" } },
+        { "type": "_club", "settings": { "discipline": "Foil", "name": "Club name", "location": "City, State" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

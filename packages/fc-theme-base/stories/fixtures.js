@@ -42,6 +42,32 @@ export const articles = [
 export const brandLogos = ['fwf', 'favero', 'blaise', 'asics'].map((name) => image(`${name}.png`, name.toUpperCase()));
 
 /**
+ * The static phase heading an About page chapter opens with.
+ *
+ * @param {string} phase
+ * @param {string} meaning
+ * @param {string} word
+ * @param {string} [tag]
+ */
+export const phaseHeading = (phase, meaning, word, tag = 'h2') => ({ id: 'phase', type: 'phase-heading', settings: { phase, meaning, word, tag } });
+
+/**
+ * The static header group an About page section opens with: an eyebrow, a heading and an optional lead paragraph.
+ *
+ * @param {string} eyebrow
+ * @param {string} heading
+ * @param {string} [lead]
+ */
+export function aboutHeader(eyebrow, heading, lead) {
+  const blocks = [
+    { id: 'eyebrow', type: 'text', settings: { text: `<p>${eyebrow}</p>`, style: 'eyebrow' } },
+    { id: 'heading', type: 'heading', settings: { heading, size: 'lg' } },
+  ];
+  if (lead) blocks.push({ id: 'lead', type: 'text', settings: { text: `<p>${lead}</p>`, style: 'lead' } });
+  return { id: 'header', type: 'group', settings: { direction: 'column', gap: 'md' }, blocks };
+}
+
+/**
  * The static header group a homepage section opens with: an eyebrow and a heading, and a link beside them when given.
  *
  * @param {string} eyebrow

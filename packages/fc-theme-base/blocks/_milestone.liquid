@@ -1,0 +1,122 @@
+{%- comment -%}
+  A milestone on the About page's timeline: when, what happened and a line about it. A planned one has a hollow dot,
+  muted text and a Planned pill.
+{%- endcomment -%}
+<div class="about-milestone{% if block.settings.planned %} about-milestone--planned{% endif %}" {{ block.shopify_attributes }}>
+  <span class="about-milestone__dot" aria-hidden="true"></span>
+  <div class="about-milestone__content">
+    <p class="about-milestone__meta">
+      <span class="about-milestone__date">{{ block.settings.date | escape }}</span>
+      {%- if block.settings.planned -%}
+        <span class="about-milestone__pill">{{ 'sections.about_timeline.planned' | t }}</span>
+      {%- endif -%}
+    </p>
+    <h3 class="about-milestone__title">{{ block.settings.title | escape }}</h3>
+    {%- if block.settings.text != blank -%}
+      <p class="about-milestone__text">{{ block.settings.text | escape }}</p>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .about-milestone {
+    display: grid;
+    grid-template-columns: var(--spacing-5) minmax(0, 1fr);
+    gap: var(--spacing-6);
+  }
+  .about-milestone__dot {
+    position: relative;
+    z-index: 1;
+    justify-self: center;
+    width: var(--spacing-3);
+    height: var(--spacing-3);
+    margin-top: var(--spacing-1-5);
+    border: 2px solid var(--foreground);
+    border-radius: 50%;
+    background: var(--foreground);
+  }
+  .about-milestone--planned .about-milestone__dot {
+    border-color: var(--muted-foreground);
+    background: var(--background);
+  }
+  .about-milestone__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+    min-width: 0;
+  }
+  .about-milestone__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-3);
+    align-items: center;
+    margin: 0;
+  }
+  .about-milestone__date {
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--tracking-wide);
+    color: var(--foreground);
+  }
+  .about-milestone__pill {
+    padding: var(--spacing-0-5) var(--spacing-2);
+    border-radius: 999px;
+    background: var(--muted);
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .about-milestone__title {
+    margin: 0;
+    font-size: var(--text-lg);
+    line-height: var(--leading-snug);
+    font-weight: var(--font-weight-semibold);
+    color: var(--foreground);
+  }
+  .about-milestone__text {
+    margin: 0;
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
+    color: var(--muted-foreground);
+  }
+  .about-milestone--planned :is(.about-milestone__date, .about-milestone__title) {
+    color: var(--muted-foreground);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.milestone.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "date",
+      "label": "t:blocks.milestone.settings.date.label",
+      "default": "t:blocks.milestone.settings.date.default"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:blocks.milestone.settings.title.label",
+      "default": "t:blocks.milestone.settings.title.default"
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "t:blocks.milestone.settings.text.label"
+    },
+    {
+      "type": "checkbox",
+      "id": "planned",
+      "label": "t:blocks.milestone.settings.planned.label",
+      "info": "t:blocks.milestone.settings.planned.info",
+      "default": false
+    }
+  ],
+  "presets": [{ "name": "t:blocks.milestone.name" }]
+}
+{% endschema %}

@@ -1,0 +1,69 @@
+{{ 'section-about.css' | asset_url | stylesheet_tag }}
+
+<div class="about-section about-section--phase about-closing">
+  {%- content_for 'block', type: 'phase-heading', id: 'phase' -%}
+  <div class="about-closing__intro">{%- content_for 'block', type: 'group', id: 'intro' -%}</div>
+  <div class="about-closing__panel about-dark">{%- content_for 'block', type: 'group', id: 'panel' -%}</div>
+</div>
+
+{% stylesheet %}
+  .about-closing__intro {
+    max-width: calc(var(--spacing) * 180);
+  }
+  .about-closing__panel {
+    padding: var(--spacing-14);
+    border-radius: var(--radius-xl);
+  }
+  @media (max-width: 749px) {
+    .about-closing__panel { padding: var(--spacing-8) var(--spacing-6); }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.about_closing.name",
+  "tag": "section",
+  "presets": [
+    {
+      "name": "t:sections.about_closing.name",
+      "blocks": [
+        {
+          "type": "phase-heading",
+          "id": "phase",
+          "static": true,
+          "settings": { "phase": "Phase 04", "meaning": "The deciding touch", "word": "La belle" }
+        },
+        {
+          "type": "group",
+          "id": "intro",
+          "static": true,
+          "settings": { "direction": "column", "gap": "md" },
+          "blocks": [
+            { "type": "text", "settings": { "text": "<p>La belle, the deciding touch</p>", "style": "eyebrow" } },
+            { "type": "heading", "settings": { "heading": "We are just getting started.", "tag": "h3", "size": "md" } },
+            { "type": "text", "settings": { "text": "<p>We are glad to back the people building this sport.</p>", "style": "lead" } }
+          ]
+        },
+        {
+          "type": "group",
+          "id": "panel",
+          "static": true,
+          "settings": { "direction": "column", "gap": "lg" },
+          "blocks": [
+            { "type": "heading", "settings": { "heading": "Building something for fencing? Let's talk.", "tag": "h3", "size": "md" } },
+            { "type": "text", "settings": { "text": "<p>Sell on our platform, use our distribution, or just say hello.</p>", "style": "lead" } },
+            {
+              "type": "group",
+              "settings": { "direction": "row", "gap": "md", "align": "center" },
+              "blocks": [
+                { "type": "button", "settings": { "label": "Get in touch", "link": "/pages/contact", "style": "primary", "size": "lg" } },
+                { "type": "button", "settings": { "label": "Shop all gear", "link": "/collections/all", "style": "outline", "size": "lg" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

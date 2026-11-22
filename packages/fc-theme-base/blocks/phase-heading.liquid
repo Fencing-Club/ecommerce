@@ -1,0 +1,97 @@
+{%- comment -%}
+  Opens a chapter of the About page like a phase of a bout: the phase and what it means on one line, a large word under
+  them and a rule.
+{%- endcomment -%}
+{%- liquid
+  assign tag = block.settings.tag | default: 'h2'
+-%}
+<div class="block-phase-heading" {{ block.shopify_attributes }}>
+  {%- if block.settings.phase != blank or block.settings.meaning != blank -%}
+    <p class="block-phase-heading__meta">
+      <span>{{ block.settings.phase | escape }}</span>
+      <span>{{ block.settings.meaning | escape }}</span>
+    </p>
+  {%- endif -%}
+  {%- if block.settings.word != blank -%}
+    <{{ tag }} class="block-phase-heading__word">{{ block.settings.word | escape }}</{{ tag }}>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  .block-phase-heading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3-5);
+    padding-bottom: var(--spacing-3-5);
+    border-bottom: 1px solid var(--border);
+    color: var(--foreground);
+  }
+  .block-phase-heading__meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--spacing-1) var(--spacing-4);
+    margin: 0;
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .block-phase-heading__word {
+    margin: 0;
+    font-family: var(--font-heading-family);
+    font-size: calc(var(--text-5xl) * 2);
+    font-weight: var(--font-weight-bold);
+    line-height: 1;
+    letter-spacing: var(--tracking-tight);
+    color: var(--foreground);
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 989px) {
+    .block-phase-heading__word { font-size: calc(var(--text-5xl) * 1.5); }
+  }
+  @media (max-width: 749px) {
+    .block-phase-heading__word { font-size: calc(var(--text-5xl) * 1.25); }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.phase_heading.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "phase",
+      "label": "t:blocks.phase_heading.settings.phase.label",
+      "default": "t:blocks.phase_heading.settings.phase.default"
+    },
+    {
+      "type": "text",
+      "id": "meaning",
+      "label": "t:blocks.phase_heading.settings.meaning.label",
+      "default": "t:blocks.phase_heading.settings.meaning.default"
+    },
+    {
+      "type": "text",
+      "id": "word",
+      "label": "t:blocks.phase_heading.settings.word.label",
+      "default": "t:blocks.phase_heading.settings.word.default"
+    },
+    {
+      "type": "select",
+      "id": "tag",
+      "label": "t:blocks.phase_heading.settings.tag.label",
+      "info": "t:blocks.phase_heading.settings.tag.info",
+      "default": "h2",
+      "options": [
+        { "value": "h2", "label": "t:blocks.phase_heading.settings.tag.options.h2" },
+        { "value": "h3", "label": "t:blocks.phase_heading.settings.tag.options.h3" },
+        { "value": "p", "label": "t:blocks.phase_heading.settings.tag.options.p" }
+      ]
+    }
+  ],
+  "presets": [{ "name": "t:blocks.phase_heading.name" }]
+}
+{% endschema %}

@@ -1,0 +1,58 @@
+{{ 'section-about.css' | asset_url | stylesheet_tag }}
+
+<div class="about-section about-section--phase about-timeline">
+  {%- content_for 'block', type: 'phase-heading', id: 'phase' -%}
+  {%- content_for 'block', type: 'heading', id: 'lead' -%}
+  <div class="about-timeline__list">{%- content_for 'blocks' -%}</div>
+</div>
+
+{% stylesheet %}
+  /* A line joins each milestone's dot to the next one's, across the gap. The dots are 12px, 6px down from the top of a
+     row, in a 20px rail. */
+  .about-timeline__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-11);
+  }
+  .about-timeline__list > * {
+    position: relative;
+  }
+  .about-timeline__list > :not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: var(--spacing-3);
+    bottom: calc((var(--spacing-11) + var(--spacing-3)) * -1);
+    left: calc(var(--spacing-2-5) - 1px);
+    width: 2px;
+    background: var(--border);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.about_timeline.name",
+  "tag": "section",
+  "blocks": [{ "type": "_milestone" }],
+  "presets": [
+    {
+      "name": "t:sections.about_timeline.name",
+      "blocks": [
+        {
+          "type": "phase-heading",
+          "id": "phase",
+          "static": true,
+          "settings": { "phase": "Phase 02", "meaning": "Go, the journey so far", "word": "Allez" }
+        },
+        {
+          "type": "heading",
+          "id": "lead",
+          "static": true,
+          "settings": { "heading": "Allez, and we have not stopped moving since.", "tag": "h3", "size": "sm" }
+        },
+        { "type": "_milestone", "settings": { "date": "2023", "title": "Fencing Club is founded", "text": "A fencing-only retailer launches." } },
+        { "type": "_milestone", "settings": { "date": "2027", "title": "What comes next", "text": "A milestone still to come.", "planned": true } }
+      ]
+    }
+  ]
+}
+{% endschema %}

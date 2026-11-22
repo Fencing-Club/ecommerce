@@ -1,0 +1,67 @@
+{{ 'section-about.css' | asset_url | stylesheet_tag }}
+
+<div class="about-section about-section--phase about-hero">
+  {%- content_for 'block', type: 'phase-heading', id: 'phase' -%}
+  <div class="about-hero__row">
+    <div class="about-hero__copy">{%- content_for 'blocks' -%}</div>
+    <div class="about-hero__media">{%- content_for 'block', type: 'image', id: 'image' -%}</div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .about-hero__row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-16);
+    align-items: center;
+  }
+  .about-hero__copy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-5);
+  }
+  @media (max-width: 989px) {
+    .about-hero__row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--spacing-10);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.about_hero.name",
+  "tag": "section",
+  "blocks": [{ "type": "@theme" }],
+  "presets": [
+    {
+      "name": "t:sections.about_hero.name",
+      "blocks": [
+        {
+          "type": "phase-heading",
+          "id": "phase",
+          "static": true,
+          "settings": { "phase": "Phase 00", "meaning": "Take your stance", "word": "En garde", "tag": "p" }
+        },
+        { "type": "image", "id": "image", "static": true, "settings": { "aspect_ratio": "landscape" } },
+        { "type": "heading", "settings": { "heading": "Everything for fencing, and only fencing.", "tag": "h1", "size": "xl" } },
+        {
+          "type": "text",
+          "settings": {
+            "text": "<p>A specialty shop serving clubs, schools and individual athletes since 2023.</p>",
+            "style": "lead"
+          }
+        },
+        {
+          "type": "group",
+          "settings": { "direction": "row", "gap": "sm", "align": "center" },
+          "blocks": [
+            { "type": "button", "settings": { "label": "Shop all gear", "link": "/collections/all", "style": "primary", "size": "lg" } },
+            { "type": "button", "settings": { "label": "Read our story", "link": "#our-story", "style": "outline", "size": "lg" } }
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

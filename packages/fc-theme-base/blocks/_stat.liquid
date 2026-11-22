@@ -1,0 +1,61 @@
+{%- comment -%}
+  A figure in the About page's stats: a number and what it counts.
+{%- endcomment -%}
+<div class="about-stat" {{ block.shopify_attributes }}>
+  <p class="about-stat__number">{{ block.settings.number | escape }}</p>
+  <p class="about-stat__label">{{ block.settings.label | escape }}</p>
+</div>
+
+{% stylesheet %}
+  .about-stat {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--spacing-2-5);
+    min-width: 0;
+    padding: var(--spacing-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--muted);
+  }
+  .about-stat__number {
+    margin: 0;
+    font-family: var(--font-heading-family);
+    font-size: var(--text-5xl);
+    line-height: 1;
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--tracking-tight);
+    color: var(--foreground);
+    overflow-wrap: anywhere;
+  }
+  .about-stat__label {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+    color: var(--muted-foreground);
+  }
+  @media (max-width: 749px) {
+    .about-stat__number { font-size: var(--text-4xl); }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:blocks.stat.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "number",
+      "label": "t:blocks.stat.settings.number.label",
+      "default": "t:blocks.stat.settings.number.default"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:blocks.stat.settings.label.label",
+      "default": "t:blocks.stat.settings.label.default"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.stat.name" }]
+}
+{% endschema %}

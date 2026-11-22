@@ -532,6 +532,13 @@
       "email": "Email",
       "phone": "Phone",
       "message": "Anything we should know?"
+    },
+    "about_clubs": {
+      "visit_site": "Visit site",
+      "visit_site_label": "Visit site: {{ club }}"
+    },
+    "about_timeline": {
+      "planned": "Planned"
     }
   },
   "localization": {

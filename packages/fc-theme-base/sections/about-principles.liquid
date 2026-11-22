@@ -1,0 +1,80 @@
+{{ 'section-about.css' | asset_url | stylesheet_tag }}
+
+<div class="about-section about-section--phase about-section--muted about-principles">
+  {%- content_for 'block', type: 'phase-heading', id: 'phase' -%}
+  {%- content_for 'block', type: 'text', id: 'lead' -%}
+  <div class="about-principles__grid">{%- content_for 'blocks' -%}</div>
+  <div class="about-principles__operations">
+    {%- content_for 'block', type: 'heading', id: 'operations_heading' -%}
+    <div class="about-principles__columns">
+      {%- content_for 'block', type: 'text', id: 'operations_start' -%}
+      {%- content_for 'block', type: 'text', id: 'operations_end' -%}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  /* Each principle stands its icon over its text. */
+  .about-principles__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--spacing-8);
+  }
+  .about-principles__grid .block-feature {
+    flex-direction: column;
+    gap: var(--spacing-3-5);
+  }
+  .about-principles__operations {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+    padding-top: var(--spacing-5);
+  }
+  .about-principles__columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-12);
+  }
+  @media (max-width: 989px) {
+    .about-principles__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 749px) {
+    .about-principles__grid,
+    .about-principles__columns {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--spacing-6);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.about_principles.name",
+  "tag": "section",
+  "blocks": [{ "type": "feature" }],
+  "presets": [
+    {
+      "name": "t:sections.about_principles.name",
+      "blocks": [
+        {
+          "type": "phase-heading",
+          "id": "phase",
+          "static": true,
+          "settings": { "phase": "Phase 01", "meaning": "Ready, what we stand for", "word": "Prêt" }
+        },
+        {
+          "type": "text",
+          "id": "lead",
+          "static": true,
+          "settings": { "text": "<p>Before the bout, you settle into your stance. Here is ours.</p>", "style": "body" }
+        },
+        { "type": "heading", "id": "operations_heading", "static": true, "settings": { "heading": "How we operate", "tag": "h3", "size": "sm" } },
+        { "type": "text", "id": "operations_start", "static": true, "settings": { "text": "<p>We hold our own inventory.</p>", "style": "lead" } },
+        { "type": "text", "id": "operations_end", "static": true, "settings": { "text": "<p>Our own team handles every order.</p>", "style": "lead" } },
+        { "type": "feature", "settings": { "icon": "target", "label": "Fencing only", "detail": "Every product is chosen for the piste." } },
+        { "type": "feature", "settings": { "icon": "tag", "label": "Fair pricing", "detail": "Short supply chains keep prices down." } }
+      ]
+    }
+  ]
+}
+{% endschema %}

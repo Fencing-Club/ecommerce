@@ -24,6 +24,12 @@
     line-height: var(--leading-relaxed);
     color: var(--foreground);
   }
+  .block-text--lead {
+    max-width: calc(var(--spacing) * 205);
+    font-size: var(--text-lg);
+    line-height: var(--leading-relaxed);
+    color: var(--muted-foreground);
+  }
   .block-text--subtle {
     font-size: var(--text-sm);
     line-height: var(--leading-normal);
@@ -59,6 +65,7 @@
       "default": "body",
       "options": [
         { "value": "body", "label": "t:blocks.text.settings.style.options.body" },
+        { "value": "lead", "label": "t:blocks.text.settings.style.options.lead" },
         { "value": "subtle", "label": "t:blocks.text.settings.style.options.subtle" },
         { "value": "eyebrow", "label": "t:blocks.text.settings.style.options.eyebrow" }
       ]

@@ -1,0 +1,51 @@
+{{ 'section-about.css' | asset_url | stylesheet_tag }}
+
+{%- comment -%} The id is where the hero's "Read our story" button points. {%- endcomment -%}
+<div class="about-section about-story" id="our-story">
+  {%- content_for 'block', type: 'group', id: 'header' -%}
+  <div class="about-story__body">{%- content_for 'blocks' -%}</div>
+</div>
+
+{% stylesheet %}
+  .about-story {
+    scroll-margin-top: var(--header-height, 0px);
+  }
+  .about-story__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-5);
+    max-width: calc(var(--spacing) * 205);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.about_story.name",
+  "tag": "section",
+  "blocks": [{ "type": "@theme" }],
+  "presets": [
+    {
+      "name": "t:sections.about_story.name",
+      "blocks": [
+        {
+          "type": "group",
+          "id": "header",
+          "static": true,
+          "settings": { "direction": "column", "gap": "md" },
+          "blocks": [
+            { "type": "text", "settings": { "text": "<p>Our story</p>", "style": "eyebrow" } },
+            { "type": "heading", "settings": { "heading": "It started at the clubs", "size": "lg" } }
+          ]
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "<p>We started Fencing Club after years of visiting clubs, schools and training halls around the world.</p>",
+            "style": "lead"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
