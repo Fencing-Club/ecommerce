@@ -121,6 +121,8 @@
             aria-label="{{ 'collections.toolbar.filters' | t }}"
             data-id="{{ section.id }}"
           >
+            {%- comment -%} The filter groups' h3 names sit under this heading, not straight under the page's h1. {%- endcomment -%}
+            <h2 class="visually-hidden">{{ 'collections.toolbar.filters' | t }}</h2>
             {%- assign desktop_filter_id = section.id | append: '-desktop' -%}
             {%- render 'collection-facet-filters', results: collection, section_id: desktop_filter_id, show_categories: true -%}
           </aside>
@@ -138,6 +140,8 @@
             -%}
           {%- else -%}
             <div class="loading-overlay gradient"></div>
+            {%- comment -%} The cards' h3 names sit under this heading, not straight under the page's h1. {%- endcomment -%}
+            <h2 class="visually-hidden">{{ 'collections.grid_heading' | t }}</h2>
             <ul id="product-grid" data-id="{{ section.id }}" class="collection-product-grid list-unstyled">
               {%- for product in collection.products -%}
                 {%- liquid

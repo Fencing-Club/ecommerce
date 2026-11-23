@@ -23,6 +23,9 @@ export const Default = {
     await expect(canvas.getByRole('complementary', { name: 'Filters' })).toBeVisible();
     await expect(canvas.getByRole('heading', { level: 3, name: 'FIE 800N Competition Jacket' })).toBeVisible();
     await expect(canvas.getAllByRole('heading', { level: 3, name: 'Category' })[0]).toBeVisible();
+    // The filter groups and cards sit under their own level 2 headings, not straight under the page's h1.
+    await expect(canvas.getByRole('heading', { level: 2, name: 'Filters' })).toBeInTheDocument();
+    await expect(canvas.getByRole('heading', { level: 2, name: 'Products' })).toBeInTheDocument();
     await expect(canvas.getAllByRole('status')[0]).toHaveTextContent('137 products');
   },
 };

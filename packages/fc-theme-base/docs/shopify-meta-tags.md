@@ -14,6 +14,12 @@ page.
   wins.
 - Link previews use the same description, or the shop's description on pages without one.
 
+## Robots
+
+Shopify's automatic vendor and type pages (`/collections/vendors?q=…`, `/collections/types?q=…`) carry
+`noindex, follow`: search engines follow their links but leave them out of results, since they have no description
+and compete with real collections. Every other page is indexable.
+
 ## Icons and social
 
 - The favicon is served at 96px for search results and 180px for phones' home screens.

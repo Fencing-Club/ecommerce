@@ -536,6 +536,7 @@
     }
   },
   "collections": {
+    "grid_heading": "Products",
     "hero": {
       "categories": "{{ title }} categories",
       "read_more": "Read more",

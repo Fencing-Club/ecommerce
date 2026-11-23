@@ -1,7 +1,10 @@
 {% doc %}
   Collections suggested when the cart is empty, chosen in the theme's cart settings.
+
+  @param {string} [image_sizes] - The tiles' image sizes attribute. Default the drawer's fixed 150px tiles.
 {% enddoc %}
 {%- liquid
+  assign image_sizes = image_sizes | default: '150px'
   assign tiles = 0
   for index in (1..3)
     assign key = 'cart_popular_collection_' | append: index
@@ -23,7 +26,7 @@
         {%- if collection != blank -%}
           <li>
             <a class="fc-popular__tile" href="{{ collection.url }}">
-              <span class="fc-popular__image">{%- if image -%}{{ image | image_url: width: 600 | image_tag: loading: 'lazy', widths: '200, 400, 600', sizes: '(min-width: 990px) 400px, 33vw', alt: '' }}{%- endif -%}</span>
+              <span class="fc-popular__image">{%- if image -%}{{ image | image_url: width: 800 | image_tag: loading: 'lazy', widths: '150, 300, 450, 600, 800', sizes: image_sizes, alt: '' }}{%- endif -%}</span>
               <span class="fc-popular__label">
                 <span class="fc-popular__name">{{ collection.title | escape }}</span>
                 {% render 'ui-icon', icon: 'arrow-right', size: 14 %}

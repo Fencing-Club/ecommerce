@@ -5,6 +5,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="canonical" href="{{ canonical_url }}">
+    {%- comment -%}
+      Shopify's automatic vendor and type pages have no description and compete with real collections, so search
+      engines follow their links but leave them out of results.
+    {%- endcomment -%}
+    {%- if request.page_type == 'collection' -%}
+      {%- if collection.handle == 'vendors' or collection.handle == 'types' -%}
+        <meta name="robots" content="noindex, follow">
+      {%- endif -%}
+    {%- endif -%}
 
     {%- comment -%} Search results show the icon at 48px or more, and phones use 180px for their home screen. {%- endcomment -%}
     {%- if settings.favicon != blank -%}

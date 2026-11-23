@@ -43,6 +43,12 @@
         {{ article.content | strip_html | truncatewords: 18 }}
       {%- endif -%}
     </p>
-    {%- render 'ui-link', label: read_label, url: article.url, icon: 'arrow-right', class: 'ui-article-card__link' -%}
+    {%- render 'ui-link',
+      label: read_label,
+      hidden_label: article.title,
+      url: article.url,
+      icon: 'arrow-right',
+      class: 'ui-article-card__link'
+    -%}
   </div>
 </article>
