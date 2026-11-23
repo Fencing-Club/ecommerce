@@ -3816,7 +3816,7 @@
                 "children": [
                   {
                     "type": "text",
-                    "value": "Once your order ships, you’ll receive tracking information by email. If your package appears delayed or tracking hasn’t updated for an extended period, please contact "
+                    "value": "Email "
                   },
                   {
                     "type": "link",
@@ -3830,7 +3830,7 @@
                   },
                   {
                     "type": "text",
-                    "value": " and we’ll help look into it with the carrier."
+                    "value": " with your order number and the new address as soon as you can. If your order hasn’t shipped yet, we’ll update it for you."
                   }
                 ]
               }
@@ -4474,90 +4474,6 @@
       }
     },
     {
-      "key": "question.where-is-my-order",
-      "kind": "metaobject",
-      "dependsOn": [
-        "definition.question"
-      ],
-      "data": {
-        "type": "question",
-        "handle": "where-is-my-order",
-        "fields": {
-          "question": "Where is my order?",
-          "answer": {
-            "type": "root",
-            "children": [
-              {
-                "type": "paragraph",
-                "children": [
-                  {
-                    "type": "text",
-                    "value": "Sign in to view your order history and tracking. If tracking has stalled, include your order number in your message so we can check with the carrier."
-                  }
-                ]
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "key": "question.can-i-change-my-size",
-      "kind": "metaobject",
-      "dependsOn": [
-        "definition.question"
-      ],
-      "data": {
-        "type": "question",
-        "handle": "can-i-change-my-size",
-        "fields": {
-          "question": "Can I change my size?",
-          "answer": {
-            "type": "root",
-            "children": [
-              {
-                "type": "paragraph",
-                "children": [
-                  {
-                    "type": "text",
-                    "value": "Start a free return within 30 days, then order the size you need. Contact us if you need help."
-                  }
-                ]
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "key": "question.do-you-supply-clubs",
-      "kind": "metaobject",
-      "dependsOn": [
-        "definition.question"
-      ],
-      "data": {
-        "type": "question",
-        "handle": "do-you-supply-clubs",
-        "fields": {
-          "question": "Do you supply clubs?",
-          "answer": {
-            "type": "root",
-            "children": [
-              {
-                "type": "paragraph",
-                "children": [
-                  {
-                    "type": "text",
-                    "value": "Yes. Clubs, schools, and nonprofits can ask about bulk orders, wholesale pricing, and qualifying discounts."
-                  }
-                ]
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
       "key": "question.what-size-fencing-jacket-should-i-buy",
       "kind": "metaobject",
       "dependsOn": [
@@ -4605,62 +4521,6 @@
                   {
                     "type": "text",
                     "value": "350N fabric is right for club training and most domestic events. 800N resists more than twice the force, and FIE events ask for 800N FIE clothing."
-                  }
-                ]
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "key": "question.do-clubs-get-special-pricing",
-      "kind": "metaobject",
-      "dependsOn": [
-        "definition.question"
-      ],
-      "data": {
-        "type": "question",
-        "handle": "do-clubs-get-special-pricing",
-        "fields": {
-          "question": "Do clubs get special pricing?",
-          "answer": {
-            "type": "root",
-            "children": [
-              {
-                "type": "paragraph",
-                "children": [
-                  {
-                    "type": "text",
-                    "value": "Yes. Clubs, schools and nonprofits get member pricing and bulk discounts. Contact us with what your club needs."
-                  }
-                ]
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "key": "question.can-i-return-clothing-that-doesnt-fit",
-      "kind": "metaobject",
-      "dependsOn": [
-        "definition.question"
-      ],
-      "data": {
-        "type": "question",
-        "handle": "can-i-return-clothing-that-doesnt-fit",
-        "fields": {
-          "question": "Can I return clothing that doesn't fit?",
-          "answer": {
-            "type": "root",
-            "children": [
-              {
-                "type": "paragraph",
-                "children": [
-                  {
-                    "type": "text",
-                    "value": "Yes. Returns are free within 30 days of delivery, as long as it's unworn, with its tags and in its original packaging."
                   }
                 ]
               }
@@ -7952,13 +7812,13 @@
         "type": "list.metaobject_reference",
         "value": [
           {
-            "$ref": "question.where-is-my-order"
+            "$ref": "question.how-do-i-track-my-order"
           },
           {
-            "$ref": "question.can-i-change-my-size"
+            "$ref": "question.can-i-exchange-an-item"
           },
           {
-            "$ref": "question.do-you-supply-clubs"
+            "$ref": "question.can-you-supply-our-club-store-with-gear"
           }
         ]
       }
@@ -7984,10 +7844,10 @@
             "$ref": "question.whats-the-difference-between-350n-and-800n"
           },
           {
-            "$ref": "question.do-clubs-get-special-pricing"
+            "$ref": "question.do-you-offer-free-returns"
           },
           {
-            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+            "$ref": "question.do-you-offer-club-discounts"
           }
         ]
       }
@@ -8013,10 +7873,10 @@
             "$ref": "question.whats-the-difference-between-350n-and-800n"
           },
           {
-            "$ref": "question.do-clubs-get-special-pricing"
+            "$ref": "question.do-you-offer-free-returns"
           },
           {
-            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+            "$ref": "question.do-you-offer-club-discounts"
           }
         ]
       }
@@ -8042,10 +7902,10 @@
             "$ref": "question.whats-the-difference-between-350n-and-800n"
           },
           {
-            "$ref": "question.do-clubs-get-special-pricing"
+            "$ref": "question.do-you-offer-free-returns"
           },
           {
-            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+            "$ref": "question.do-you-offer-club-discounts"
           }
         ]
       }
@@ -8071,10 +7931,10 @@
             "$ref": "question.whats-the-difference-between-350n-and-800n"
           },
           {
-            "$ref": "question.do-clubs-get-special-pricing"
+            "$ref": "question.do-you-offer-free-returns"
           },
           {
-            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+            "$ref": "question.do-you-offer-club-discounts"
           }
         ]
       }
@@ -8100,10 +7960,10 @@
             "$ref": "question.whats-the-difference-between-350n-and-800n"
           },
           {
-            "$ref": "question.do-clubs-get-special-pricing"
+            "$ref": "question.do-you-offer-free-returns"
           },
           {
-            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+            "$ref": "question.do-you-offer-club-discounts"
           }
         ]
       }
@@ -8129,10 +7989,10 @@
             "$ref": "question.whats-the-difference-between-350n-and-800n"
           },
           {
-            "$ref": "question.do-clubs-get-special-pricing"
+            "$ref": "question.do-you-offer-free-returns"
           },
           {
-            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+            "$ref": "question.do-you-offer-club-discounts"
           }
         ]
       }
@@ -8158,10 +8018,10 @@
             "$ref": "question.whats-the-difference-between-350n-and-800n"
           },
           {
-            "$ref": "question.do-clubs-get-special-pricing"
+            "$ref": "question.do-you-offer-free-returns"
           },
           {
-            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+            "$ref": "question.do-you-offer-club-discounts"
           }
         ]
       }
@@ -8187,10 +8047,10 @@
             "$ref": "question.whats-the-difference-between-350n-and-800n"
           },
           {
-            "$ref": "question.do-clubs-get-special-pricing"
+            "$ref": "question.do-you-offer-free-returns"
           },
           {
-            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+            "$ref": "question.do-you-offer-club-discounts"
           }
         ]
       }
@@ -8216,10 +8076,1436 @@
             "$ref": "question.whats-the-difference-between-350n-and-800n"
           },
           {
-            "$ref": "question.do-clubs-get-special-pricing"
+            "$ref": "question.do-you-offer-free-returns"
           },
           {
-            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.mens-chest-protectors.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.mens-chest-protectors"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "mens-chest-protectors",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.mens-lames.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.mens-lames"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "mens-lames",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.fencing-underarm-protectors.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.fencing-underarm-protectors"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "fencing-underarm-protectors",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.womens-chest-protectors.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.womens-chest-protectors"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "womens-chest-protectors",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.womens-lames.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.womens-lames"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "womens-lames",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.socks.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.socks"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "socks",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.shoes.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.shoes"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "shoes",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.gloves.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.gloves"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "gloves",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.masks.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.masks"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "masks",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.foil-masks.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.foil-masks"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "foil-masks",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.epee-masks.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.epee-masks"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "epee-masks",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.saber-masks.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.saber-masks"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "saber-masks",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.mask-parts.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.mask-parts"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "mask-parts",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.complete-masks.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.complete-masks"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "complete-masks",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.mask-cords.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.mask-cords"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "mask-cords",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.mask-bibs.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.mask-bibs"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "mask-bibs",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.kids.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.kids"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "kids",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.bags.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.bags"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "bags",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.starter-kits.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.starter-kits"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "starter-kits",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.foil-kits.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.foil-kits"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "foil-kits",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.epee-kits.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.epee-kits"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "epee-kits",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.saber-kits.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.saber-kits"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "saber-kits",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.weapons.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.weapons"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "weapons",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.complete-weapons.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.complete-weapons"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "complete-weapons",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.blades.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.blades"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "blades",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.foil-weapons.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.foil-weapons"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "foil-weapons",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.epee-weapons.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.epee-weapons"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "epee-weapons",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.saber-weapons.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.saber-weapons"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "saber-weapons",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.foil-blades.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.foil-blades"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "foil-blades",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.epee-blades.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.epee-blades"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "epee-blades",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.saber-blades.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.saber-blades"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "saber-blades",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.weapon-parts.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.weapon-parts"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "weapon-parts",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.points.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.points"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "points",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.grips.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.grips"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "grips",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.pommels-and-nuts.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.pommels-and-nuts"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "pommels-and-nuts",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.guards.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.guards"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "guards",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.pads.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.pads"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "pads",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.sockets.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.sockets"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "sockets",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.body-cords.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.body-cords"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "body-cords",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.tip-screws.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.tip-screws"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "tip-screws",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.tools.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.tools"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "tools",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.innovations.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.innovations"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "innovations",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.more.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.more"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "more",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.scoring.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.scoring"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "scoring",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.fencing-club.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.fencing-club"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "fencing-club",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.branded-blades.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.branded-blades"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "branded-blades",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.branded-blades-fie.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.branded-blades-fie"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "branded-blades-fie",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.branded-products.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.branded-products"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "branded-products",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.scoring-systems.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.scoring-systems"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "scoring-systems",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.reels-floor-cables.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.reels-floor-cables"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "reels-floor-cables",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.footwear.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.footwear"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "footwear",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.club-gear.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.club-gear"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "club-gear",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.wheel-bags.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.wheel-bags"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "wheel-bags",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.carry-bags.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.carry-bags"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "carry-bags",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.chest-protectors.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.chest-protectors"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "chest-protectors",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.lames.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.lames"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "lames",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.kids-lames.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.kids-lames"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "kids-lames",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.foil-body-cords.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.foil-body-cords"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "foil-body-cords",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.epee-body-cords.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.epee-body-cords"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "epee-body-cords",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.saber-body-cords.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.saber-body-cords"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "saber-body-cords",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.foil-epee-gloves.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.foil-epee-gloves"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "foil-epee-gloves",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.saber-gloves.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.saber-gloves"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "saber-gloves",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.do-you-offer-free-returns"
+          },
+          {
+            "$ref": "question.do-you-offer-club-discounts"
           }
         ]
       }

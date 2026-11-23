@@ -22,5 +22,7 @@ Questions are managed under Content > Metaobjects in Shopify admin, and linked f
 metafields. The theme editor doesn't hold question text.
 
 The content pack defines both metaobjects and the fields, creates the store's current questions from
-`content/questions-source.json`, and links them to the FAQ page, the Contact page and the clothing collections. See
+`content/questions-source.json`, and links them to the FAQ page, the Contact page and the collections. The Contact
+page and the collection guides link FAQ entries rather than their own copies. Every collection's guide gets the
+returns and club discount questions, and clothing collections get sizing and protection level questions first. See
 [content installation](shopify-content-installation.md).

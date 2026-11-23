@@ -44,7 +44,7 @@ It defines the product page's fields too: the Product feature metaobject and `cu
 `custom.care_symbols`, `custom.care_note`, `custom.features` and `custom.questions`; see
 [product specs](../docs/shopify-product-specs.md). `questions-source.json` holds the store's questions: the pack
 creates them as Question entries, groups the FAQ page's into FAQ topics, and links them to the FAQ page, the Contact
-page and the clothing collections; see [questions](../docs/shopify-questions.md). Definitions do not populate missing product values or enable
+page and the collections; see [questions](../docs/shopify-questions.md). Definitions do not populate missing product values or enable
 Search & Discovery filters. See [collection filters](../docs/shopify-collection-filters.md).
 `theme-configuration.json` contains the separate menu-attachment and ordered-group settings. Creating records
 and attaching them to the theme are separate steps.
