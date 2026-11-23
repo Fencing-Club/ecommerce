@@ -24,7 +24,8 @@
         "transit_min": 2,
         "transit_max": 5,
         "partner_min": 1,
-        "partner_max": 2
+        "partner_max": 2,
+        "restock_form": true
       }
     },
     "details": {
@@ -79,6 +80,47 @@
         "padding_top": 36,
         "padding_bottom": 28
       }
+    },
+    "journal": {
+      "type": "journal-highlights",
+      "blocks": {
+        "header": {
+          "type": "group",
+          "static": true,
+          "settings": {
+            "direction": "row",
+            "gap": "lg",
+            "align": "end",
+            "justify": "between"
+          },
+          "blocks": {
+            "header-heading": {
+              "type": "heading",
+              "settings": {
+                "heading": "From the Journal",
+                "tag": "h2",
+                "size": "xl"
+              }
+            },
+            "header-link": {
+              "type": "link",
+              "settings": {
+                "label": "View all",
+                "link": "shopify://blogs/journal"
+              }
+            }
+          },
+          "block_order": [
+            "header-heading",
+            "header-link"
+          ]
+        }
+      },
+      "block_order": [],
+      "settings": {
+        "source": "product",
+        "read_label": "Read more"
+      }
     }
   },
   "order": [
@@ -86,6 +128,7 @@
     "main",
     "details",
     "disclosures",
-    "related-products"
+    "related-products",
+    "journal"
   ]
 }

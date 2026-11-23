@@ -1,0 +1,55 @@
+{% doc %}
+  The product page's back-in-stock form, shown under the buttons while the chosen variant is sold out. A shopper
+  leaves an email, and `<product-restock>` (`assets/product-restock.js`) signs it up with the store's STOQ app for
+  that variant. A signed-in shopper's email is filled in.
+
+  @param {object} product - The product.
+  @param {object} variant - The sold-out variant.
+  @param {string} [size] - The chosen size, which the line under the heading names.
+
+  @example
+  {% render 'product-restock', product: product, variant: current, size: chosen_size %}
+{% enddoc %}
+{%- liquid
+  assign field_id = 'RestockEmail-' | append: variant.id
+  if size != blank
+    assign text = 'products.restock.text_size' | t: size: size
+  else
+    assign text = 'products.restock.text' | t
+  endif
+  assign email_label = 'products.restock.email_label' | t
+  assign placeholder = 'products.restock.placeholder' | t
+  assign button_label = 'products.restock.button' | t
+-%}
+<product-restock
+  class="product-restock"
+  data-shop="{{ shop.permanent_domain }}"
+  data-product-id="{{ product.id }}"
+  data-variant-id="{{ variant.id }}"
+  data-product-title="{{ product.title | escape }}"
+  data-variant-title="{{ variant.title | escape }}"
+  data-invalid-message="{{ 'products.restock.invalid' | t | escape }}"
+  data-error-message="{{ 'products.restock.error' | t | escape }}"
+  data-success-message="{{ 'products.restock.success' | t | escape }}"
+>
+  <p class="product-restock__heading">
+    {%- render 'ui-icon', icon: 'bell', size: 16 -%}
+    <span>{{ 'products.restock.heading' | t }}</span>
+  </p>
+  <p class="product-restock__text">{{ text }}</p>
+  <form class="product-restock__form" novalidate data-restock-form>
+    {%- render 'ui-text-field',
+      id: field_id,
+      name: 'email',
+      type: 'email',
+      label: email_label,
+      hide_label: true,
+      placeholder: placeholder,
+      autocomplete: 'email',
+      value: customer.email,
+      required: true
+    -%}
+    {%- render 'ui-button', label: button_label, type: 'submit', variant: 'primary', size: 'lg', spinner: true -%}
+  </form>
+  <p class="product-restock__message" id="RestockMessage-{{ variant.id }}" role="status" data-restock-message></p>
+</product-restock>

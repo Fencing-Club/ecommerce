@@ -3575,6 +3575,20 @@
       }
     },
     {
+      "key": "definition.articles",
+      "kind": "metafield-definition",
+      "data": {
+        "namespace": "custom",
+        "key": "articles",
+        "name": "Journal articles",
+        "type": "list.article_reference",
+        "ownerType": "PRODUCT",
+        "access": {
+          "storefront": "PUBLIC_READ"
+        }
+      }
+    },
+    {
       "key": "definition.page.faq_topics",
       "kind": "metafield-definition",
       "data": {

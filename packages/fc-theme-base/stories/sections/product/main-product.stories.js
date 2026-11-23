@@ -4,7 +4,7 @@ import { loadModule, loadScript, loadStylesheet, section } from '../../liquid.js
 
 // A US shopper paying in dollars, so the ships line gives arrival dates.
 const store = {
-  shop: { currency: 'USD' },
+  shop: { currency: 'USD', permanent_domain: 'example.myshopify.com' },
   cart: { currency: { iso_code: 'USD', symbol: '$' } },
   localization: { country: { iso_code: 'US' } },
 };
@@ -14,7 +14,10 @@ const trust = [
 ];
 
 const renderSection = (variantId) =>
-  section('main-product', { sectionBlocks: trust, variables: { product: productPageProduct(variantId) }, globals: store })({});
+  section('main-product', { sectionBlocks: trust, variables: { product: productPageProduct(variantId) }, globals: store })({ restock_form: true });
+
+// Back-in-stock signups the stories sent, with STOQ's answer: the email `fail@example.com` gets an error.
+const signups = [];
 
 /** Answers `product-options` as the store would, by rendering the section again for the `?variant=` asked for. */
 const serveVariants = () => {
@@ -23,6 +26,12 @@ const serveVariants = () => {
   const storeFetch = window.fetch.bind(window);
   window.fetch = async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
+    if (url.hostname === 'app.stoqapp.com') {
+      const body = JSON.parse(init.body);
+      signups.push({ headers: init.headers, body });
+      const intents = body.customer.email === 'fail@example.com' ? [] : [{ id: signups.length }];
+      return new Response(JSON.stringify({ intents, errors: intents.length ? [] : ['Signup failed'] }), { status: intents.length ? 201 : 200 });
+    }
     if (url.searchParams.get('section_id') !== 'story' || !url.pathname.startsWith('/products/')) return storeFetch(input, init);
     return new Response(renderSection(Number(url.searchParams.get('variant'))), { headers: { 'Content-Type': 'text/html' } });
   };
@@ -47,6 +56,7 @@ export default {
     loadModule('photo-gallery.js'),
     loadModule('product-options.js'),
     loadModule('product-page.js'),
+    loadModule('product-restock.js'),
     serveVariants,
   ],
   // The theme hides empty divs, so the space holds a non-breaking space.
@@ -102,6 +112,34 @@ export const SoldOut = {
     await expect(canvas.getByText('Sold out in size XL')).toBeVisible();
     await expect(canvas.getAllByRole('button', { name: 'Sold out' })[0]).toHaveAttribute('aria-disabled', 'true');
     await expect(canvas.queryByRole('button', { name: 'Buy it now' })).toBeNull();
+    await expect(canvas.getByText('Notify me when it’s back')).toBeVisible();
+    await expect(canvas.getByText('We’ll email you as soon as size XL is restocked.')).toBeVisible();
+  },
+};
+
+export const BackInStockSignup = {
+  args: { variant: 9208 },
+  play: async ({ canvas, userEvent }) => {
+    const email = canvas.getByRole('textbox', { name: 'Email' });
+    const notify = canvas.getByRole('button', { name: 'Notify me' });
+
+    await userEvent.click(notify);
+    await expect(canvas.getByRole('status')).toHaveTextContent('Enter a valid email.');
+    await expect(email).toHaveAttribute('aria-invalid', 'true');
+
+    await userEvent.type(email, 'fail@example.com');
+    await userEvent.click(notify);
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('We couldn’t sign you up. Try again.'));
+
+    await userEvent.clear(email);
+    await userEvent.type(email, 'fencer@example.com');
+    await userEvent.click(notify);
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Thanks. We’ll email you when it’s back.'));
+    await expect(canvas.queryByRole('textbox', { name: 'Email' })).toBeNull();
+    const { headers, body } = signups.at(-1);
+    await expect(headers['X-Shopify-Shop-Domain']).toBe('example.myshopify.com');
+    await expect(body.intent).toMatchObject({ shopify_variant_id: 9208, channel: 'email', quantity: 1, source: 'api' });
+    await expect(body.customer.email).toBe('fencer@example.com');
   },
 };
 

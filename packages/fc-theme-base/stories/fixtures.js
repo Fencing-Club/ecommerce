@@ -133,7 +133,7 @@ export const phaseHeading = (meaning, word, tag = 'h2', style = 'call') => ({ id
 /**
  * The static header group an About page section opens with: an eyebrow, a heading and an optional lead paragraph.
  *
- * @param {string} eyebrow
+ * @param {string | null} eyebrow
  * @param {string} heading
  * @param {string} [lead]
  */
@@ -147,17 +147,18 @@ export function aboutHeader(eyebrow, heading, lead) {
 }
 
 /**
- * The static header group a homepage section opens with: an eyebrow and a heading, and a link beside them when given.
+ * The static header group a homepage section opens with: a heading under an optional eyebrow, and a link beside them
+ * when given.
  *
- * @param {string} eyebrow
+ * @param {string | null} eyebrow
  * @param {string} heading
  * @param {{ label: string, link: string }} [link]
  */
 export function sectionHeader(eyebrow, heading, link) {
   const title = [
-    { id: 'eyebrow', type: 'text', settings: { text: `<p>${eyebrow}</p>`, style: 'eyebrow' } },
+    eyebrow && { id: 'eyebrow', type: 'text', settings: { text: `<p>${eyebrow}</p>`, style: 'eyebrow' } },
     { id: 'heading', type: 'heading', settings: { heading, size: 'xl' } },
-  ];
+  ].filter(Boolean);
   if (!link) return { id: 'header', type: 'group', settings: { direction: 'column', gap: 'md', align: 'start' }, blocks: title };
   return {
     id: 'header',

@@ -1,8 +1,8 @@
 {%- comment -%}
   The product page's top: the photos beside the buy box. The buy box has the brand, name and rating, then the price
   and the options inside `product-options`, which reloads this section for each variant so price, stock and the
-  buttons come from Liquid. Size starts unpicked, so nobody adds a size they didn't choose. Under the buttons sit app
-  blocks, such as a back-in-stock form, then one-line trust notes led by the ships row. The description is in the
+  buttons come from Liquid. Size starts unpicked, so nobody adds a size they didn't choose. Under the buttons sit the
+  back-in-stock form while the chosen variant is sold out, app blocks, then one-line trust notes led by the ships row. The description is in the
   Product details section's Overview. The sticky buy bar, the size chart drawer and the photo viewer belong to the
   section too. `<product-page>`
   (`assets/product-page.js`) runs the viewer, the bar, Size guide and the ships line.
@@ -12,6 +12,7 @@
 <script src="{{ 'photo-gallery.js' | asset_url }}" type="module"></script>
 <script src="{{ 'product-options.js' | asset_url }}" type="module"></script>
 <script src="{{ 'product-page.js' | asset_url }}" type="module"></script>
+<script src="{{ 'product-restock.js' | asset_url }}" type="module"></script>
 {%- liquid
   assign current = product.selected_or_first_available_variant
   assign form_id = 'ProductForm-' | append: section.id
@@ -181,6 +182,10 @@
           </p>
         </product-form>
 
+        {%- if section.settings.restock_form and current.available == false and size_unpicked == false -%}
+          {%- render 'product-restock', product: product, variant: current, size: chosen_size -%}
+        {%- endif -%}
+
         {%- for block in section.blocks -%}
           {%- if block.type == '@app' -%}
             <div class="product-page__app">{% render block %}</div>
@@ -276,6 +281,17 @@
       "step": 1,
       "default": 2,
       "label": "t:sections.main-product.settings.partner_max.label"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main-product.settings.restock.content"
+    },
+    {
+      "type": "checkbox",
+      "id": "restock_form",
+      "default": false,
+      "label": "t:sections.main-product.settings.restock_form.label",
+      "info": "t:sections.main-product.settings.restock_form.info"
     }
   ],
   "blocks": [
