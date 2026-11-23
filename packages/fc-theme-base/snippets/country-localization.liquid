@@ -35,9 +35,10 @@
   <div class="disclosure__list-wrapper country-selector" hidden>
     {%- comment -%}
       Every market is listed, so the list stays out of the page until the picker first opens; localization-form.js
-      puts it in then.
+      puts it in then. The flag sprite's stylesheet comes in with it.
     {%- endcomment -%}
     <template data-country-list>
+    {{ 'country-flags.css' | asset_url | stylesheet_tag }}
     <ul
       role="list"
       class="disclosure__list country-selector__list list-unstyled"

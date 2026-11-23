@@ -16,5 +16,6 @@ The header renders one search panel, beside the account and cart icons. A second
 renders without a menu or customer accounts, the layouts where the header CSS shows it.
 
 The country picker lists every market, so `country-localization` keeps the list in a `<template>` until the picker
-first opens, when `assets/localization-form.js` puts it in. The flags only show in that list, so
-`country-flags.css` loads without holding up the page.
+first opens, when `assets/localization-form.js` puts it in. The flags only show in that list, so the template also
+holds the `country-flags.css` link and the sprite loads on first open. `section-header.css` sizes the flag box, so the
+list doesn't shift when the sprite arrives.
