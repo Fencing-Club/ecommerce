@@ -7,7 +7,8 @@
 
 <link rel="stylesheet" href="{{ 'component-mega-menu.css' | asset_url }}" media="print" onload="this.media='all'">
 
-{{ 'country-flags.css' | asset_url | stylesheet_tag }}
+{%- comment -%} Flags only show in the country list, which starts closed, so their sprite doesn't hold up the page. {%- endcomment -%}
+<link rel="stylesheet" href="{{ 'country-flags.css' | asset_url }}" media="print" onload="this.media='all'">
 <style>
   header-drawer {
     justify-self: start;
@@ -150,7 +151,11 @@
         render 'header-drawer', show_social_links: social_links
       endif
 
-      render 'header-search', input_id: 'Search-In-Modal-1'
+      # This copy of search sits beside the menu button. With a menu and accounts, the header CSS hides it at every
+      # width and shows the one by the account and cart icons, so it only renders when it can show.
+      unless section.settings.menu != blank and shop.customer_accounts_enabled
+        render 'header-search', input_id: 'Search-In-Modal-1'
+      endunless
     -%}
 
     {%- comment -%}

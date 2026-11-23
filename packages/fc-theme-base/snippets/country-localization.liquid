@@ -33,6 +33,11 @@
     {{ 'icon-caret.svg' | inline_asset_content }}
   </button>
   <div class="disclosure__list-wrapper country-selector" hidden>
+    {%- comment -%}
+      Every market is listed, so the list stays out of the page until the picker first opens; localization-form.js
+      puts it in then.
+    {%- endcomment -%}
+    <template data-country-list>
     <ul
       role="list"
       class="disclosure__list country-selector__list list-unstyled"
@@ -60,6 +65,7 @@
         </li>
       {%- endfor -%}
     </ul>
+    </template>
   </div>
 </div>
 <input type="hidden" name="country_code" value="{{ localization.country.iso_code }}">
