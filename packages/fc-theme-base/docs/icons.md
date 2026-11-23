@@ -10,6 +10,19 @@ and every icon goes through it:
 `size` is the width and height in pixels and defaults to 16. Buttons and links size their own icons. Icons are
 decorative (`aria-hidden`), so the control around one carries its accessible name.
 
+## How they draw
+
+Pages show a lot of icons, so each one is kept small:
+
+- Each icon is one `<path>`. `icons:build` joins a Lucide icon's shapes (paths, circles, rectangles, lines) into a
+  single path. Lucide's few small filled dots stay separate elements with their own fill.
+- The paint isn't repeated on every icon. The `.ui-icon` rules in `component-ui.css` give every icon Lucide's look, a
+  2px rounded stroke in the current text color, and `.ui-icon--star` fills the star. To restyle an icon, set `fill`,
+  `stroke` or `stroke-width` on its `.ui-icon`.
+
+Markup that shows icons needs `component-ui.css` loaded. Both layouts load it, and so do Storybook and the component
+lab. Without it an icon draws as a solid black shape.
+
 ## Adding an icon
 
 `ui-icon.liquid` is generated, so don't edit it by hand. A theme has no build step, so the icons have to live in a

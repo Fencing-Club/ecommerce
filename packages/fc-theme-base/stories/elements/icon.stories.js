@@ -29,10 +29,11 @@ export const DefaultSize = {
   },
 };
 
+/** The star is the one filled icon; `.ui-icon--star` in component-ui.css fills it. */
 export const Filled = {
   args: { icon: 'star' },
   play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelector('svg')).toHaveAttribute('fill', 'currentColor');
+    await expect(canvasElement.querySelector('svg')).toHaveClass('ui-icon', 'ui-icon--star');
   },
 };
 
