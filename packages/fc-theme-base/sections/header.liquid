@@ -153,7 +153,10 @@
       render 'header-search', input_id: 'Search-In-Modal-1'
     -%}
 
-    {%- comment -%} The logo PNGs are print size; the CDN resizes them for the mark's slot, about 82px wide. {%- endcomment -%}
+    {%- comment -%}
+      The logo PNGs are print size; the CDN resizes them for the mark's slot, about 82px wide. The fallback marks' width
+      and height keep the PNGs' 200 by 243 shape.
+    {%- endcomment -%}
     {%- capture logo_srcset -%}
       {{- 'fencing-club-logo.png' | asset_img_url: '200x' }} 2x, {{ 'fencing-club-logo.png' | asset_img_url: '300x' }} 3x
     {%- endcapture -%}
@@ -200,7 +203,7 @@
             srcset="{{ logo_srcset }}"
             class="header__heading-logo motion-reduce"
             width="80"
-            height="100"
+            height="97"
             alt="{{ shop.name | escape }}"
             loading="eager"
           >
@@ -211,7 +214,7 @@
               srcset="{{ logo_light_srcset }}"
               class="header__heading-logo header__heading-logo--light motion-reduce"
               width="80"
-              height="100"
+              height="97"
               alt=""
               loading="eager"
             >

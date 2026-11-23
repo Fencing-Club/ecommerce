@@ -172,6 +172,27 @@ describe('component accessibility contracts', () => {
     expect(details.open).toBe(false);
     expect([...details.querySelectorAll('summary')].map(summary => summary.getAttribute('aria-expanded'))).toEqual(['false', 'false']);
   });
+  it('builds the phone menu when it first opens, with working submenus', () => {
+    const engine = new Liquid({ root: resolve('snippets'), extname: '.liquid' });
+    registerShopifyLiquid(engine, { readAsset: name => readFileSync(resolve('assets', name), 'utf8') });
+    const epee = { title: 'Epee', handle: 'epee', url: '/collections/epee-masks', links: [] };
+    const menu = { links: [{ title: 'Masks', handle: 'masks', url: '/collections/masks', links: [epee] }] };
+    const globals = { section: { settings: { menu } }, settings: {}, localization: { available_languages: [], available_countries: [] } };
+    // As on the store, the page is parsed before the deferred theme scripts define the drawer.
+    const isolated = new Window({ url: 'https://example.test/' });
+    isolated.document.body.innerHTML = `<div class="section-header"><div class="header-wrapper">${engine.renderFileSync('header-drawer', {}, { globals })}</div></div>`;
+    isolated.eval(['constants.js', 'pubsub.js', 'global.js'].map(name => readFileSync(resolve('assets', name), 'utf8')).join('\n'));
+    const drawer = isolated.document.querySelector('header-drawer');
+    // The mega menu carries these links; the drawer's copy isn't on the page until a shopper opens it.
+    expect(drawer.querySelector('a[href="/collections/epee-masks"]')).toBeNull();
+    drawer.querySelector('summary').click();
+    const masks = drawer.querySelector('#Details-menu-drawer-menu-item-1 > summary');
+    expect(masks.getAttribute('role')).toBe('button');
+    expect(masks.getAttribute('aria-expanded')).toBe('false');
+    masks.click();
+    expect(masks.getAttribute('aria-expanded')).toBe('true');
+    expect(drawer.querySelector('a[href="/collections/epee-masks"]')).not.toBeNull();
+  });
   it('reuses the same choice renderer for radio options and multi-select buttons', () => {
     const engine = new Liquid({ root: resolve('snippets'), extname: '.liquid' });
     const container = document.createElement('div');

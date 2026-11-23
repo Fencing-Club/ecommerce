@@ -35,7 +35,7 @@
   </div>
   <div class="fc-cart-page__empty">
     {% render 'cart-message', kind: 'empty', context: 'page' %}
-    {% render 'cart-popular' %}
+    {% render 'cart-popular', image_sizes: '(min-width: 750px) min(31vw, 410px), 150px' %}
   </div>
   <div class="fc-cart-page__failed">{% render 'cart-message', kind: 'failed', context: 'page' %}</div>
   <div class="fc-cart-page__loading">

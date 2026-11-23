@@ -13,7 +13,8 @@ export const Default = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('heading', { level: 3, name: 'Choosing your first fencing kit' })).toBeVisible();
     await expect(canvas.getByText('August 10, 2026')).toBeVisible();
-    await expect(canvas.getByRole('link', { name: /Read more/ })).toHaveAttribute('href', '#article-kit');
+    // The short link names the article it opens.
+    await expect(canvas.getByRole('link', { name: 'Read more Choosing your first fencing kit' })).toHaveAttribute('href', '#article-kit');
   },
 };
 

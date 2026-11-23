@@ -50,7 +50,8 @@ only settings that belong to the whole section, such as a carousel's timing. Eve
   that class in its selector (`.home-section.why-us`).
 
 The homepage sections are built this way: Hero, Featured picks, Category grid, Best sellers, Why us, Testimonials,
-Brand logos and Journal highlights. Their shared shell and carousel dots are in `assets/section-home.css`.
+Brand logos and Journal highlights. Their shared shell and carousel dots are in `assets/section-home.css`. Only the
+Hero's first slide can hold the page's level 1 heading; a later slide's level 1 heading renders as level 2.
 
 So are the announcement bar and header in the header group, and the newsletter band and footer in the footer group.
 The header's utility row links are `_utility-link` blocks; its logo, main menu, selectors and icons come from the

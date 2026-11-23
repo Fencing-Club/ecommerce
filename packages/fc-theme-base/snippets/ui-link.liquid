@@ -9,6 +9,8 @@
   - reverse_icon: {Boolean} Rotate the icon 180 degrees.
   - class: {String} Optional extra classes for section-level sizing.
   - label_class: {String} Optional class for the label span.
+  - hidden_label: {String} Optional text after the label that only screen readers and search engines get, such as
+    what a short "Read more" opens.
   - tabindex: {String} Optional tabindex value.
   - download: {String} Optional download filename.
   - type: {String} Optional destination MIME type.
@@ -39,6 +41,7 @@
     {%- render 'ui-icon', icon: icon -%}
   {%- endif -%}
   <span class="ui-link__label{% if label_class %} {{ label_class }}{% endif %}">{{ label | escape }}</span>
+  {%- if hidden_label != blank -%}<span class="visually-hidden"> {{ hidden_label | escape }}</span>{%- endif -%}
   {%- if icon and icon_position != 'before' -%}
     {%- render 'ui-icon', icon: icon -%}
   {%- endif -%}

@@ -4757,10 +4757,10 @@
       }
     },
     {
-      "key": "collection.fencing-club-producs",
+      "key": "collection.fencing-club",
       "kind": "collection",
       "data": {
-        "handle": "fencing-club-producs",
+        "handle": "fencing-club",
         "title": "Fencing Club Products",
         "descriptionHtml": "",
         "sortOrder": "BEST_SELLING",

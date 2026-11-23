@@ -7,6 +7,15 @@ const render = snippet('collection-category-tree', {
   globals: { linklists: collectionMenu.linklists, collections: collectionMenu.collections, routes: collectionMenu.routes },
 });
 
+// A menu whose column heading links to the same collection as the item above it, as Masks does on the store.
+const masksLink = (title, handle, links = []) => ({ title, url: `/collections/${handle}`, links });
+const renderRepeatedHeading = snippet('collection-category-tree', {
+  globals: {
+    linklists: { 'main-menu': { links: [masksLink('Masks', 'masks', [masksLink('Masks', 'masks', [masksLink('Epee', 'epee-masks')])])] } },
+    routes: collectionMenu.routes,
+  },
+});
+
 /**
  * `snippets/collection-category-tree.liquid`: where a collection sits in the main menu. As tiles it lists the
  * categories under the collection; as a tree, the whole branch opened down to it. Empty categories drop out, and
@@ -91,5 +100,21 @@ export const ProductBreadcrumbs = {
     await expect(canvas.getByRole('link', { name: 'Jackets' })).toHaveAttribute('href', '/collections/jackets');
     await expect(canvas.getByRole('link', { name: "Men's" })).toHaveAttribute('href', '/collections/mens-jackets');
     await expect(canvas.getByText('Novus Mens Jacket 350N')).toHaveAttribute('aria-current', 'page');
+  },
+};
+
+export const BreadcrumbsSkipRepeatedHeading = {
+  render: renderRepeatedHeading,
+  args: {
+    collection: null,
+    style: 'breadcrumbs',
+    home_label: 'Home',
+    product: { title: 'Novus Epee Mask 350N', collections: [{ url: '/collections/masks' }, { url: '/collections/epee-masks' }] },
+  },
+  play: async ({ canvas }) => {
+    // The Masks heading under Masks links to the same collection, so the trail names it once.
+    await expect(canvas.getAllByRole('link', { name: 'Masks' })).toHaveLength(1);
+    await expect(canvas.getByRole('link', { name: 'Epee' })).toHaveAttribute('href', '/collections/epee-masks');
+    await expect(canvas.getByText('Novus Epee Mask 350N')).toHaveAttribute('aria-current', 'page');
   },
 };

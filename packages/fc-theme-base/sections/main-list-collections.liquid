@@ -24,6 +24,16 @@
     endif
   -%}
   {%- paginate collections by paginate_by -%}
+    {%- comment -%} The page's structured data lists the collections this page shows, as a collection page lists its products. {%- endcomment -%}
+    {%- if settings.structured_data_enabled -%}
+      {%- assign structured_data_position_offset = paginate.current_page | minus: 1 | times: paginate.page_size -%}
+      {%- render 'structured-data',
+        collection_item_list_enabled: true,
+        collection_item_list: collections,
+        collection_item_count: paginate.items,
+        collection_position_offset: structured_data_position_offset
+      -%}
+    {%- endif -%}
     <ul
       class="collection-list grid grid--{{ section.settings.columns_desktop }}-col-desktop grid--{{ section.settings.columns_mobile }}-col-tablet-down"
       role="list"

@@ -1,0 +1,11 @@
+# Shopify Header Menu
+
+The header renders the main menu twice: the mega menu (`snippets/header-mega-menu.liquid`) for wide screens and the
+drawer (`snippets/header-drawer.liquid`) for phones and tablets. CSS shows one or the other.
+
+The mega menu is always on the page, so its links are the ones search engines follow. The drawer keeps its copy of
+the menu, with its language and country pickers, inside a `<template>` until a shopper first opens it. `HeaderDrawer`
+in `assets/global.js` then builds the menu and wires its submenus. This keeps several hundred elements off every page.
+
+Anything that reads the drawer's menu has to wait for it to open, or call `renderContent()` on the `header-drawer`
+first.

@@ -19,6 +19,12 @@
       </span>
     </summary>
     <div id="menu-drawer" class="gradient menu-drawer motion-reduce">
+      {%- comment -%}
+        The mega menu already carries every menu link for search engines, so the drawer's copy, with its language and
+        country pickers, stays inert in a template until the drawer first opens. That keeps hundreds of elements off
+        every page.
+      {%- endcomment -%}
+      <template data-menu-drawer-content>
       <div class="menu-drawer__inner-container">
         <div class="menu-drawer__navigation-container">
           <nav class="menu-drawer__navigation">
@@ -250,6 +256,7 @@
           </div>
         </div>
       </div>
+      </template>
     </div>
   </details>
 </header-drawer>

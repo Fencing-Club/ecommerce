@@ -1,0 +1,35 @@
+{% doc %}
+  Outputs the page's meta description, escaped for an attribute: the description Shopify gives the page, or for a
+  collection or blog without one, a sentence built from its own facts.
+
+  @example
+  {% capture meta_description %}{% render 'meta-description' %}{% endcapture %}
+{% enddoc %}
+{%- liquid
+  # Translations come back escaped, so the description is escaped here once.
+  assign description = page_description | strip_html | escape
+  if description == blank and request.page_type == 'collection' and collection.products_count > 0
+    assign brands = collection.all_vendors
+    assign and_word = 'general.meta.and' | t
+    assign brand_list = ''
+    if brands.size == 1
+      assign brand_list = brands[0]
+    elsif brands.size == 2
+      assign brand_list = brands[0] | append: ' ' | append: and_word | append: ' ' | append: brands[1]
+    elsif brands.size == 3
+      assign brand_list = brands[0] | append: ', ' | append: brands[1] | append: ', ' | append: and_word | append: ' ' | append: brands[2]
+    elsif brands.size > 3
+      assign and_more = 'general.meta.and_more' | t
+      assign brand_list = brands[0] | append: ', ' | append: brands[1] | append: ', ' | append: brands[2] | append: ', ' | append: and_more
+    endif
+    if brand_list == blank
+      assign description = 'general.meta.collection_description' | t: title: collection.title, shop: shop.name, count: collection.products_count
+    else
+      assign description = 'general.meta.collection_description_with_brands' | t: title: collection.title, shop: shop.name, count: collection.products_count, brands: brand_list
+    endif
+  elsif description == blank and request.page_type == 'blog' and blog.articles_count > 0
+    assign latest_article = blog.articles.first
+    assign description = 'general.meta.blog_description' | t: title: blog.title, shop: shop.name, latest: latest_article.title
+  endif
+  echo description
+-%}

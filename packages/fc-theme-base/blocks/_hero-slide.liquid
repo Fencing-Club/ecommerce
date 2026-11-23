@@ -32,8 +32,16 @@
         style: focal_style
     }}
   {%- endif -%}
+  {%- comment -%}
+    A page has one level 1 heading. Only the first slide's heading can be it, so later slides step a level 1 heading
+    down to level 2.
+  {%- endcomment -%}
+  {%- capture slide_blocks -%}{%- content_for 'blocks' -%}{%- endcapture -%}
+  {%- unless section.blocks.first.id == block.id -%}
+    {%- assign slide_blocks = slide_blocks | replace: '<h1 ', '<h2 ' | replace: '<h1>', '<h2>' | replace: '</h1>', '</h2>' -%}
+  {%- endunless -%}
   <div class="hero-slide__content">
-    <div class="hero-slide__inner">{%- content_for 'blocks' -%}</div>
+    <div class="hero-slide__inner">{{ slide_blocks }}</div>
   </div>
 </div>
 

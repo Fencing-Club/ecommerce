@@ -94,6 +94,8 @@
     if level > 0
       assign current_label = current.title
     endif
+    # A menu heading that links to the same collection as the level above it, like Masks under Masks, would repeat
+    # that link, so the trail leaves it out.
     if product
       # The product's own collection becomes the last link.
       assign current_label = product.title
@@ -101,18 +103,20 @@
         assign parent_label = current.title
         assign parent_url = current.url
       endif
-      if level == 2
-        assign ancestors = linklists[menu_handle].links | where: 'url', branch.url
-      elsif level == 3
+      if level == 3 and open.url != branch.url and open.url != current.url
         assign top = linklists[menu_handle].links | where: 'url', branch.url
         assign middle = branch.links | where: 'url', open.url
         assign ancestors = top | concat: middle
+      elsif level > 1 and branch.url != current.url
+        assign ancestors = linklists[menu_handle].links | where: 'url', branch.url
       endif
     elsif level == 2
       assign parent_label = branch.title
       assign parent_url = branch.url
     elsif level == 3
-      assign ancestors = linklists[menu_handle].links | where: 'url', branch.url
+      if open.url != branch.url
+        assign ancestors = linklists[menu_handle].links | where: 'url', branch.url
+      endif
       assign parent_label = open.title
       assign parent_url = open.url
     endif

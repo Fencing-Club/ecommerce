@@ -15,6 +15,7 @@ The new Fencing Club Shopify theme, built on Dawn.
 
 - [Accordion](shopify-accordion.md)
 - [Account menu](shopify-account-menu.md)
+- [Brand pages](shopify-brand-pages.md)
 - [Buying guide](shopify-buying-guide.md)
 - [Cart](shopify-cart.md)
 - [Collection categories](shopify-collection-categories.md)
@@ -22,13 +23,16 @@ The new Fencing Club Shopify theme, built on Dawn.
 - [Collection grid](shopify-collection-grid.md)
 - [Collection hero](shopify-collection-hero.md)
 - [Drawers](shopify-drawers.md)
+- [Header menu](shopify-header-menu.md)
 - [Interaction states](shopify-interaction-states.md)
+- [Meta tags](shopify-meta-tags.md)
 - [Policy pages](shopify-policy-pages.md)
 - [Product card](shopify-product-card.md)
 - [Product page](shopify-product-page.md)
 - [Quick view](shopify-quick-view.md)
 - [Recently viewed](shopify-recently-viewed.md)
 - [Size charts](shopify-size-charts.md)
+- [Structured data](shopify-structured-data.md)
 
 ## Content and rehearsal
 

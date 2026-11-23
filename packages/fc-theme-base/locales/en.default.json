@@ -42,7 +42,22 @@
       "success_message": "Link copied to clipboard"
     },
     "breadcrumb_home": "Home",
-    "free_shipping": "Free US shipping over {{ amount }}"
+    "free_shipping": "Free US shipping over {{ amount }}",
+    "meta": {
+      "tagged": "tagged \"{{ tags }}\"",
+      "page": "Page {{ page }}",
+      "and": "and",
+      "and_more": "and more",
+      "collection_description": {
+        "one": "{{ title }} at {{ shop }}. Browse {{ count }} product.",
+        "other": "{{ title }} at {{ shop }}. Browse {{ count }} products."
+      },
+      "collection_description_with_brands": {
+        "one": "{{ title }} at {{ shop }}. Browse {{ count }} product from {{ brands }}.",
+        "other": "{{ title }} at {{ shop }}. Browse {{ count }} products from {{ brands }}."
+      },
+      "blog_description": "{{ title }} from {{ shop }}. Latest article: {{ latest }}."
+    }
   },
   "newsletter": {
     "label": "Email",
@@ -521,6 +536,7 @@
     }
   },
   "collections": {
+    "grid_heading": "Products",
     "hero": {
       "categories": "{{ title }} categories",
       "read_more": "Read more",

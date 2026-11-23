@@ -82,8 +82,9 @@
         {%- assign vendor_handle = vendor | handle -%}
         {%- assign brand = shop.metaobjects.brand[vendor_handle] -%}
         {%- if brand.logo.value != blank -%}
+          {%- capture brand_url -%}{%- render 'brand-url', vendor: vendor -%}{%- endcapture -%}
           <li>
-            <a class="collection-guide__brand" href="{{ vendor | url_for_vendor }}">
+            <a class="collection-guide__brand" href="{{ brand_url | strip }}">
               {{ brand.logo.value | image_url: width: 240 | image_tag: loading: 'lazy', alt: vendor, width: 120, height: 40 }}
             </a>
           </li>

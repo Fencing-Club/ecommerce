@@ -8,7 +8,16 @@
     assign cart_state = 'empty'
   endif
 -%}
-{{ 'cart-experience.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  The drawer stays closed until a shopper opens it, so its stylesheet loads without holding up the page's first
+  paint. The rule that keeps the closed drawer hidden is inline, so it can't flash before the stylesheet arrives.
+  The cart page loads the same stylesheet normally.
+{%- endcomment -%}
+<style>
+  .fc-cart-panel { position: fixed; inset: 0; z-index: 1000; visibility: hidden; }
+</style>
+<link rel="stylesheet" href="{{ 'cart-experience.css' | asset_url }}" media="print" onload="this.media='all'">
+<noscript>{{ 'cart-experience.css' | asset_url | stylesheet_tag }}</noscript>
 <script src="{{ 'cart.js' | asset_url }}" defer="defer"></script>
 <script src="{{ 'cart-controls.js' | asset_url }}" defer="defer"></script>
 <cart-drawer class="drawer fc-cart-panel" data-cart-state="{{ cart_state }}">

@@ -18,9 +18,12 @@
       {%- for media in product.media -%}
         {%- liquid
           assign loading = 'lazy'
+          assign fetchpriority = 'auto'
           assign sizes = '(min-width: 1200px) 352px, (min-width: 990px) 27vw, 90vw'
+          # The first photo is the page's largest image, so it loads first and at high priority.
           if forloop.first
             assign loading = 'eager'
+            assign fetchpriority = 'high'
             assign sizes = '(min-width: 1200px) 720px, (min-width: 990px) 56vw, 90vw'
           endif
           assign alt = media.alt | default: product.title
@@ -39,7 +42,12 @@
               {{
                 media.preview_image
                 | image_url: width: 1440
-                | image_tag: loading: loading, widths: '360, 540, 720, 1080, 1440', sizes: sizes, alt: alt
+                | image_tag:
+                  loading: loading,
+                  fetchpriority: fetchpriority,
+                  widths: '360, 540, 720, 1080, 1440',
+                  sizes: sizes,
+                  alt: alt
               }}
             {%- endif -%}
             {%- if media.media_type == 'video' or media.media_type == 'external_video' -%}

@@ -14,7 +14,16 @@
 
   Usage:
   {% render 'ui-breadcrumbs', root_label: 'Home', root_url: routes.root_url, current_label: page.title %}
+
+  With structured data turned on, the trail also writes itself as BreadcrumbList JSON-LD, so search results show the
+  same trail as the page. Render it once per page.
 {%- endcomment -%}
+{%- liquid
+  assign has_parent = false
+  if parent_label != blank and parent_url != blank
+    assign has_parent = true
+  endif
+-%}
 <nav
   class="ui-breadcrumbs{% if class %} {{ class }}{% endif %}"
   aria-label="{{ aria_label | default: 'Breadcrumb' | escape }}"
@@ -25,9 +34,56 @@
     <a href="{{ ancestor.url }}">{{ ancestor.title | escape }}</a>
     {%- render 'ui-icon', icon: 'chevron-right', size: 14 -%}
   {%- endfor -%}
-  {%- if parent_label != blank and parent_url != blank -%}
+  {%- if has_parent -%}
     <a href="{{ parent_url }}">{{ parent_label | escape }}</a>
     {%- render 'ui-icon', icon: 'chevron-right', size: 14 -%}
   {%- endif -%}
   <span aria-current="page">{{ current_label | escape }}</span>
+  {%- if settings.structured_data_enabled -%}
+    {%- liquid
+      # Search engines need absolute links. Later pages of a collection share the first page's trail.
+      assign current_url = canonical_url | split: '?' | first
+      assign root_href = root_url
+      assign first_character = root_href | slice: 0, 1
+      if first_character == '/'
+        assign root_href = request.origin | append: root_href
+      endif
+      assign parent_href = parent_url
+      assign first_character = parent_href | slice: 0, 1
+      if first_character == '/'
+        assign parent_href = request.origin | append: parent_href
+      endif
+      assign position = 1
+    -%}
+    {%- capture breadcrumb_json -%}
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "@id": {{ current_url | append: '#breadcrumb' | json }},
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": {{ root_label | json }}, "item": {{ root_href | json }} }
+          {%- for ancestor in ancestors -%}
+            {%- liquid
+              assign position = position | plus: 1
+              assign ancestor_href = ancestor.url
+              assign first_character = ancestor_href | slice: 0, 1
+              if first_character == '/'
+                assign ancestor_href = request.origin | append: ancestor_href
+              endif
+            -%},
+            { "@type": "ListItem", "position": {{ position }}, "name": {{ ancestor.title | json }}, "item": {{ ancestor_href | json }} }
+          {%- endfor -%}
+          {%- if has_parent -%}
+            {%- assign position = position | plus: 1 -%},
+            { "@type": "ListItem", "position": {{ position }}, "name": {{ parent_label | json }}, "item": {{ parent_href | json }} }
+          {%- endif -%}
+          {%- assign position = position | plus: 1 -%},
+          { "@type": "ListItem", "position": {{ position }}, "name": {{ current_label | json }}, "item": {{ current_url | json }} }
+        ]
+      }
+    {%- endcapture -%}
+    <script type="application/ld+json" data-structured-data-provider="fencing-club-theme">
+      {{- breadcrumb_json | replace: '&', '&' | replace: '<', '<' | replace: '>', '>' -}}
+    </script>
+  {%- endif -%}
 </nav>
