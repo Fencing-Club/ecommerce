@@ -20,38 +20,6 @@
   {%- endif -%}
 </div>
 
-{% stylesheet %}
-  .about-story {
-    gap: var(--spacing-20);
-  }
-  .about-story__text {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-10);
-  }
-  .about-story__body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-10);
-    max-width: calc(var(--spacing) * 190);
-  }
-  .about-story__photo {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 208 / 100;
-    object-fit: cover;
-    border-radius: var(--radius-xl);
-    background: var(--muted);
-  }
-  @media (max-width: 749px) {
-    .about-story { gap: var(--spacing-6); }
-    .about-story__text,
-    .about-story__body { gap: var(--spacing-6); }
-    .about-story__photo { aspect-ratio: 16 / 9; }
-  }
-{% endstylesheet %}
-
 {% schema %}
 {
   "name": "t:sections.about_story.name",

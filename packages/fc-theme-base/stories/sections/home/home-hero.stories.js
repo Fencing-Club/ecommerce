@@ -1,6 +1,6 @@
 import { expect, waitFor } from 'storybook/test';
 import { image } from '../../fixtures.js';
-import { loadScript, section } from '../../liquid.js';
+import { loadScript, loadStylesheet, section } from '../../liquid.js';
 
 const slide = (id, file, heading, tag) => ({
   id,
@@ -31,7 +31,7 @@ const slides = [
 export default {
   title: 'Sections/Home/Hero',
   args: { autoplay: false },
-  loaders: [loadScript('fc-carousel.js')],
+  loaders: [loadStylesheet('section-home.css'), loadScript('fc-carousel.js')],
   parameters: { layout: 'fullscreen' },
 };
 

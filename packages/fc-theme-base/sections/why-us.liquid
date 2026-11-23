@@ -5,33 +5,6 @@
   <div class="why-us__content">{%- content_for 'blocks' -%}</div>
 </div>
 
-{% stylesheet %}
-  .home-section.why-us {
-    display: grid;
-    grid-template-columns: calc(var(--spacing) * 130) minmax(0, 1fr);
-    gap: var(--spacing-14);
-    align-items: start;
-    padding-block: var(--spacing-20);
-  }
-  .why-us__content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-5);
-  }
-  @media (max-width: 1199px) {
-    .home-section.why-us {
-      grid-template-columns: calc(var(--spacing) * 100) minmax(0, 1fr);
-      gap: var(--spacing-10);
-    }
-  }
-  @media (max-width: 989px) {
-    .home-section.why-us { grid-template-columns: minmax(0, 1fr); }
-  }
-  @media (max-width: 749px) {
-    .home-section.why-us { padding-block: var(--spacing-14); }
-  }
-{% endstylesheet %}
-
 {% schema %}
 {
   "name": "t:sections.why_us.name",

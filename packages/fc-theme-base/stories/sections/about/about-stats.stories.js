@@ -1,6 +1,6 @@
 import { expect } from 'storybook/test';
 import { phaseHeading } from '../../fixtures.js';
-import { section } from '../../liquid.js';
+import { loadStylesheet, section } from '../../liquid.js';
 
 const stat = (id, number, label) => ({ id, type: '_stat', settings: { number, label } });
 
@@ -10,6 +10,7 @@ const stat = (id, number, label) => ({ id, type: '_stat', settings: { number, la
  */
 export default {
   title: 'Sections/About/Stats',
+  loaders: [loadStylesheet('section-about.css')],
   parameters: { layout: 'fullscreen' },
   render: section('about-stats', {
     staticBlocks: [

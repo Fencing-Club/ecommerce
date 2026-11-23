@@ -1,6 +1,6 @@
 import { expect } from 'storybook/test';
 import { aboutHeader, image } from '../../fixtures.js';
-import { section } from '../../liquid.js';
+import { loadStylesheet, section } from '../../liquid.js';
 
 const paragraph = (id, text) => ({ id, type: 'text', settings: { text: `<p>${text}</p>`, style: 'lead' } });
 
@@ -10,6 +10,7 @@ const paragraph = (id, text) => ({ id, type: 'text', settings: { text: `<p>${tex
  */
 export default {
   title: 'Sections/About/Story',
+  loaders: [loadStylesheet('section-about.css')],
   parameters: { layout: 'fullscreen' },
   args: { image: image('collection-aero-competition-jacket.jpg', 'Fencers training at a club') },
   render: section('about-story', {

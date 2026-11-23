@@ -1,12 +1,13 @@
 import { expect } from 'storybook/test';
 import { image } from '../../fixtures.js';
-import { section } from '../../liquid.js';
+import { loadStylesheet, section } from '../../liquid.js';
 
 const feature = (id, icon, label, detail, link_label) => ({ id, type: 'feature', settings: { icon, label, detail, link_label, link: `#${id}` } });
 
 /** `sections/why-us.liquid`: a photo beside the shop's case. The photo is a static image block; the rest are theme blocks. */
 export default {
   title: 'Sections/Home/Why us',
+  loaders: [loadStylesheet('section-home.css')],
   parameters: { layout: 'fullscreen' },
   render: section('why-us', {
     staticBlocks: [{ id: 'image', type: 'image', settings: { image: image('collection-fie-800n-jacket.jpg', 'Fencers training'), aspect_ratio: 'landscape' } }],

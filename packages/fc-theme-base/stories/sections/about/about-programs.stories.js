@@ -1,6 +1,6 @@
 import { expect, within } from 'storybook/test';
 import { aboutHeader } from '../../fixtures.js';
-import { section } from '../../liquid.js';
+import { loadStylesheet, section } from '../../liquid.js';
 
 const program = (id, settings) => ({ id, type: '_program', settings });
 
@@ -10,6 +10,7 @@ const program = (id, settings) => ({ id, type: '_program', settings });
  */
 export default {
   title: 'Sections/About/Programs',
+  loaders: [loadStylesheet('section-about.css')],
   parameters: { layout: 'fullscreen' },
   render: section('about-programs', {
     staticBlocks: [aboutHeader('Programs', 'Pricing built for clubs, schools, and teams', 'We help clubs, schools and nonprofits equip their athletes for less.')],

@@ -1,6 +1,6 @@
 import { expect, within } from 'storybook/test';
 import { aboutHeader } from '../../fixtures.js';
-import { section } from '../../liquid.js';
+import { loadStylesheet, section } from '../../liquid.js';
 
 const club = (id, discipline, name, location, link = '') => ({ id, type: '_club', settings: { discipline, name, location, link } });
 
@@ -10,6 +10,7 @@ const club = (id, discipline, name, location, link = '') => ({ id, type: '_club'
  */
 export default {
   title: 'Sections/About/Clubs',
+  loaders: [loadStylesheet('section-about.css')],
   parameters: { layout: 'fullscreen' },
   render: section('about-clubs', {
     staticBlocks: [

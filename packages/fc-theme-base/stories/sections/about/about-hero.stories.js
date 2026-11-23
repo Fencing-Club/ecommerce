@@ -1,6 +1,6 @@
 import { expect, within } from 'storybook/test';
 import { image, phaseHeading } from '../../fixtures.js';
-import { section } from '../../liquid.js';
+import { loadStylesheet, section } from '../../liquid.js';
 
 const button = (id, label, link, style) => ({ id, type: 'button', settings: { label, link, style, size: 'lg' } });
 const chapter = (id, call, topic, link) => ({ id, type: '_bout-link', settings: { call, topic, link } });
@@ -12,6 +12,7 @@ const chapter = (id, call, topic, link) => ({ id, type: '_bout-link', settings: 
  */
 export default {
   title: 'Sections/About/Hero',
+  loaders: [loadStylesheet('section-about.css')],
   parameters: { layout: 'fullscreen' },
   args: { image: image('collection-fie-800n-jacket.jpg', 'A fencer lunging in a white jacket') },
   render: section('about-hero', {

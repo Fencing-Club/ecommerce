@@ -1,12 +1,13 @@
 import { expect } from 'storybook/test';
 import { phaseHeading } from '../../fixtures.js';
-import { section } from '../../liquid.js';
+import { loadStylesheet, section } from '../../liquid.js';
 
 const button = (id, label, link, style) => ({ id, type: 'button', settings: { label, link, style, size: 'lg', show_arrow: true } });
 
 /** `sections/about-closing.liquid`: the About page's last chapter, an invitation to get in touch, on a dark panel. */
 export default {
   title: 'Sections/About/Closing',
+  loaders: [loadStylesheet('section-about.css')],
   parameters: { layout: 'fullscreen' },
   render: section('about-closing', {
     staticBlocks: [

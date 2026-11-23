@@ -1,6 +1,6 @@
 import { expect, within } from 'storybook/test';
 import { phaseHeading } from '../../fixtures.js';
-import { section } from '../../liquid.js';
+import { loadStylesheet, section } from '../../liquid.js';
 
 const milestone = (id, date, title, text, status = 'done') => ({ id, type: '_milestone', settings: { date, title, text, status } });
 
@@ -10,6 +10,7 @@ const milestone = (id, date, title, text, status = 'done') => ({ id, type: '_mil
  */
 export default {
   title: 'Sections/About/Timeline',
+  loaders: [loadStylesheet('section-about.css')],
   parameters: { layout: 'fullscreen' },
   render: section('about-timeline', {
     staticBlocks: [
