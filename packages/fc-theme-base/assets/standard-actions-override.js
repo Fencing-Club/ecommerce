@@ -80,8 +80,7 @@ function collectCartSections() {
 // publish 'cart-update' so the subscribers run.
 //
 // We always fetch /cart.js (with sections= when we have any) so that
-// `cartData` is defined for subscribers. price-per-item.js reads
-// `event.cartData.items` to recount the product's cart quantity.
+// `cartData` is defined for subscribers.
 async function refreshDawnCartUI() {
   const sections = collectCartSections();
   const sectionsQuery = sections.size
@@ -106,8 +105,7 @@ async function refreshDawnCartUI() {
   }
 
   // Hand off to Dawn's existing subscribers. cartData is the full
-  // Cart Ajax payload (items, item_count, token, …) plus sections;
-  // price-per-item.js reads it directly.
+  // Cart Ajax payload (items, item_count, token, …) plus sections.
   publish(PUB_SUB_EVENTS.cartUpdate, {
     source: 'external-refresh',
     cartData: cartData ?? undefined,

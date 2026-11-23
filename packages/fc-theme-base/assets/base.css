@@ -1049,8 +1049,7 @@ summary::-webkit-details-marker {
   background-color: transparent;
 }
 
-.media > *:not(.zoom):not(.deferred-media__poster-button),
-.media model-viewer {
+.media > *:not(.zoom) {
   display: block;
   max-width: 100%;
   position: absolute;
@@ -1068,10 +1067,6 @@ summary::-webkit-details-marker {
 
 .media.media--hover-effect > img + img {
   opacity: 0;
-}
-
-deferred-media {
-  display: block;
 }
 
 /* component-button */
@@ -1960,14 +1955,6 @@ input[type='checkbox'] {
   align-items: center;
 }
 
-.media-modal {
-  cursor: zoom-out;
-}
-
-.media-modal .deferred-media {
-  cursor: initial;
-}
-
 /* component-cart-count-bubble */
 .cart-count-bubble:empty {
   display: none;
@@ -2769,8 +2756,7 @@ details-disclosure > details {
   .animate--hover-3d-lift .card-wrapper .card--standard .card__inner,
   .animate--hover-3d-lift .button:not(.button--tertiary),
   .animate--hover-3d-lift .shopify-challenge__button,
-  .animate--hover-3d-lift .customer button,
-  .animate--hover-3d-lift .deferred-media .deferred-media__poster-button {
+  .animate--hover-3d-lift .customer button {
     transition: transform var(--duration-long) ease, box-shadow var(--duration-long) ease;
     transform-origin: center;
   }
@@ -2779,16 +2765,11 @@ details-disclosure > details {
   .animate--hover-3d-lift .card-wrapper:hover .card--standard .card__inner,
   .animate--hover-3d-lift .button:not(.button--tertiary):not([disabled]):hover,
   .animate--hover-3d-lift .shopify-challenge__button:not([disabled]):hover,
-  .animate--hover-3d-lift .customer button:not([disabled]):hover,
-  .animate--hover-3d-lift .deferred-media:hover .deferred-media__poster-button {
+  .animate--hover-3d-lift .customer button:not([disabled]):hover {
     transition: transform var(--duration-extended) ease, box-shadow var(--duration-long) ease; /* Slow the card transition speed while hover is active. */
     transform: rotate(1deg);
     box-shadow: -1rem -1rem 1rem -1rem rgba(0, 0, 0, 0.05), 1rem 1rem 1rem -1rem rgba(0, 0, 0, 0.05),
       0 0 0.5rem 0 rgba(255, 255, 255, 0), 0 2rem 3.5rem -2rem rgba(0, 0, 0, 0.5);
-  }
-
-  .animate--hover-3d-lift .deferred-media:hover .deferred-media__poster-button {
-    transform: translate(-50%, -50%) scale(1.05); /* Apply a specialized transform to the video play button. */
   }
 
   .animate--hover-3d-lift .product-grid .grid__item:hover,

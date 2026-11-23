@@ -487,18 +487,6 @@ describe('component accessibility contracts', () => {
     expect(parent.querySelector('[name="minus"]').disabled).toBe(true);
     expect(parent.querySelector('[name="plus"]').disabled).toBe(true);
   });
-  it('disables unavailable values in pills, swatches and select options', () => {
-    const engine = new Liquid({ root: resolve('snippets'), extname: '.liquid' });
-    engine.registerFilter('t', key => key);
-    const value = new String('XL');
-    Object.assign(value, { available: false, id: 'unavailable', selected: false, swatch: { color: { rgb: '255,255,255' } } });
-    for (const picker_type of ['button', 'swatch', 'dropdown']) {
-      const html = engine.renderFileSync('product-variant-options', { option: { name: 'Size', position: 1, values: [value] }, picker_type }, { globals: { section: { id: 'disabled-options' } } });
-      const container = document.createElement('div');
-      container.innerHTML = html;
-      expect(container.querySelector('input, option').disabled).toBe(true);
-    }
-  });
   it('prevents repeat consent writes while busy and keeps failed choices visible', async () => {
     let callback;
     window.Shopify = { customerPrivacy: {

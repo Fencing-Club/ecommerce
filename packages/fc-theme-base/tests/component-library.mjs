@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Liquid } from 'liquidjs';
-import { products, articles, localization, catalogProducts, catalogFixture, commerce, gallery, policy } from './component-library/fixtures.mjs';
+import { products, articles, localization, catalogProducts, catalogFixture, policy } from './component-library/fixtures.mjs';
 import { chartFixtures } from './helpers/sizing-liquid.mjs';
 import { registerShopifyLiquid, themeSettings } from './helpers/shopify-liquid.mjs';
 import { cartGifts, cartPageStates, cartSettings, cartState, cartStates } from './component-library/cart-states.mjs';
@@ -40,16 +40,11 @@ const accountCustomer = { first_name: 'Alex', name: 'Alex Morgan', email: 'alex@
 
 export async function renderLibrary() {
   const settings = labSettings();
-  const section = { id: 'component-lab', settings: { menu: { links: navigation.menus[0].items.map(menuLink) }, image_zoom: 'modal' } };
-  const values = ['S', 'M', 'L', 'XL'].map((label, index) => {
-    const value = new String(label);
-    Object.assign(value, { id: index + 1, available: index !== 3, selected: index === 1, product_url: '#selection' });
-    return value;
-  });
+  const section = { id: 'component-lab', settings: { menu: { links: navigation.menus[0].items.map(menuLink) } } };
   return engine.renderFileSync('page', {
-    section, settings, products, articles, search_page: { title: 'Size guides', url: '#cards', content: 'Measure before selecting your equipment.' }, option: { name: 'Size', position: 1, values },
+    section, settings, products, articles, search_page: { title: 'Size guides', url: '#cards', content: 'Measure before selecting your equipment.' },
     variant: { id: 'lab-quantity', title: 'Practice glove', quantity_rule: { min: 1, max: 5, increment: 1 } },
-    cart: { currency: { symbol: '$' } }, localization, commerce, gallery, policy, dropdown_section: { id: 'lab-dropdown' }, share_block: { id: 'lab-share', settings: { share_label: 'Share' } }, chart: chartFixtures()[0], catalog: catalogFixture(), routes: labRoutes, account_customer: accountCustomer,
+    cart: { currency: { symbol: '$' } }, localization, policy, share_block: { id: 'lab-share', settings: { share_label: 'Share' } }, chart: chartFixtures()[0], catalog: catalogFixture(), routes: labRoutes, account_customer: accountCustomer,
   }, { globals: { section, settings, linklists, localization, cart: { currency: { symbol: '$' } }, routes: labRoutes, pages: {}, collections: {}, shop: { privacy_policy: { url: '#privacy' } } } });
 }
 

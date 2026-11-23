@@ -31,21 +31,9 @@ export const catalogProducts = [
   product(804, 'Training pants', 'Pants', 'collection-knicker-pants-350n.jpg', 5495),
   product(805, 'Competition fencing jacket', 'Jackets', 'collection-fie-800n-jacket.jpg', 14995),
   { ...product(806, 'Stretch fencing pants', 'Pants', 'collection-stretch-fencing-pants.jpg', 7995), available: false },
-].map((item, index) => ({ ...item, color: index === 1 ? 'Black' : 'White', size: ['S', 'M', 'L'][index % 3], url: '#product-details' }));
+].map((item, index) => ({ ...item, color: index === 1 ? 'Black' : 'White', size: ['S', 'M', 'L'][index % 3], url: '#cards' }));
 
-export const commerce = {
-  regular: { ...products[0], price_varies: false },
-  sale: { ...products[1], compare_at_price: 3495, price_varies: false },
-  soldOut: { ...products[2], available: false, price_varies: false },
-  swatches: [{ label: 'White', color: { rgb: '255, 255, 255' } }, { label: 'Black', color: { rgb: '16, 16, 18' } }, { label: 'Unavailable', color: { rgb: '180, 180, 185' } }],
-};
 
-const galleryImages = [products[0].featured_image, image('collection-fie-800n-jacket.jpg', 'Competition fencing jacket')];
-const galleryMedia = galleryImages.map((preview, index) => ({ id: 910 + index, media_type: 'image', aspect_ratio: 1, preview_image: preview, src: preview.src, alt: preview.alt }));
-export const gallery = {
-  section: section('media', { gallery_layout: 'thumbnail_slider', mobile_thumbnails: 'show', media_size: 'medium', image_zoom: 'modal', media_fit: 'contain', color_scheme: 'scheme-1' }),
-  product: { ...products[0], media: galleryMedia, selected_or_first_available_variant: { featured_media: galleryMedia[0] } },
-};
 export const policy = {
   section: section('policy', { home_label: 'Home', breadcrumb_label: 'Breadcrumb', contents_label: 'On this page', top_label: 'Back to top' }),
   page: { title: 'Policy layout example', content: '<h2>Overview</h2><p>Sample content for checking a readable policy layout. This is not a store policy.</p><h2>Delivery information</h2><p>Delivery terms belong to the store policy.</p><h2>Data categories</h2><table><thead><tr><th scope="col">Category</th><th scope="col">Purpose</th></tr></thead><tbody><tr><td>Order information</td><td>Example table content for layout review</td></tr><tr><td>Contact information</td><td>Example of a longer description that wraps on small screens</td></tr></tbody></table>' },

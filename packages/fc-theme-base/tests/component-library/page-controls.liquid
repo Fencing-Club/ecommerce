@@ -2,12 +2,6 @@
   <div class="specimen lab-mobile-menu section-header"><div class="header-wrapper">{% render 'header-drawer' %}</div></div>
   <output id="mobile-menu-status" role="status">No destination selected</output>
 </section>
-<section id="media" class="lab-section"><h2>Media and zoom <code>product-media-gallery / product-media-modal</code></h2>
-  <div class="specimen shopify-section lab-gallery" id="shopify-section-lab-media"><div class="product product--thumbnail_slider"><div class="product__media-wrapper">
-    {% render 'product-media-gallery', product: gallery.product, section: gallery.section, limit: 10 %}
-    {% render 'product-media-modal', product: gallery.product, section: gallery.section %}
-  </div></div><p id="ProductInfo-lab-media" tabindex="-1">Equipment photo examples</p></div>
-</section>
 <section id="sizing" class="lab-section"><h2>Sizing and downloads <code>size-chart-content / measuring-tape-downloads</code></h2>
   <div class="specimen">{% render 'size-chart-content', chart: chart, instance_id: 'lab-sizing', is_flyout: true %}</div>
 </section>

@@ -17,7 +17,7 @@ afterAll(async () => {
 });
 
 describe('local component library', () => {
-  it('renders production primitives, variant values and all menu families', async () => {
+  it('renders production primitives and all menu families', async () => {
     const html = await renderLibrary();
     expect(html).not.toContain('data-appearance');
     expect(html).not.toContain('name="appearance"');
@@ -26,7 +26,6 @@ describe('local component library', () => {
     for (const token of ['ui-button--primary', 'ui-checkbox-field', 'ui-faq-item', '<ui-drawer', '<header-menu>', '<quantity-input', 'fc-mega__cards', 'fc-mega__columns', 'fc-mega-tool', 'fc-mega__body--panels', '<account-menu', 'data-account-example="signed-in"']) {
       expect(html).toContain(token);
     }
-    expect(html).toContain('value="XL"');
     expect(html).toContain('<time datetime="2026-08-17">August 17, 2026</time>');
     expect(html).not.toContain('>2026-08-17</time>');
     expect(html).not.toContain('[object Object]');
@@ -36,10 +35,9 @@ describe('local component library', () => {
     for (const stylesheet of ['section-contact-form.css', 'section-main-search.css']) expect(html).toContain(`/assets/${stylesheet}`);
     for (const token of ['--inputs-border-width: 1px', '--buttons-radius: 14px', '--font-heading-family: var(--font-body-family)', '--popup-border-width: 1px']) expect(html).toContain(token);
     for (const token of ['cookie-consent', 'ui-product-card--search', 'ui-article-card', 'ui-page-link-card', 'ui-contact-intent-card', 'data-section-example="support"', 'aria-disabled="true"']) expect(html).toContain(token);
-    for (const token of ['<ui-select', '<price-range', '<localization-form', '<predictive-search', '<header-drawer', '<media-gallery', '<product-modal', '<size-chart', '<policy-page', '<share-button', 'href="/lab/cart"']) expect(html).toContain(token);
+    for (const token of ['<ui-select', '<price-range', '<localization-form', '<predictive-search', '<header-drawer', '<size-chart', '<policy-page', '<share-button', 'href="/lab/cart"']) expect(html).toContain(token);
     expect(html).toContain('LabCountry-country-results');
     expect(html).toContain('LabLanguageList');
-    expect(html).toContain('<img id="Thumbnail-lab-media-0"');
     expect(html).not.toContain('&lt;img');
     expect(html).toContain('Mens');
     expect(html).toContain('class="ui-select__input"');
