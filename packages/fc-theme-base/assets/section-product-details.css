@@ -70,7 +70,8 @@
   .product-care__symbols { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--spacing-3); }
 }
 
-@media screen and (min-width: 990px) {
+/* From tablets up every part shows open as its own section. Tablets keep the parts a little tighter. */
+@media screen and (min-width: 750px) {
   .product-details__nav { display: block; border-block: 0.1rem solid var(--border); }
   .product-details__links { display: flex; gap: var(--spacing-12); margin-block: 0; }
   .product-details__link {
@@ -139,4 +140,13 @@
 
   .product-questions { display: grid; grid-template-columns: 2fr 3fr; gap: var(--spacing-16); align-items: start; }
   .product-questions__text { font-size: var(--text-base); }
+}
+
+@media screen and (min-width: 750px) and (max-width: 989px) {
+  .product-details__links { gap: var(--spacing-8); }
+  .product-details__part { padding-block: var(--spacing-14); }
+  .product-details__heading { font-size: 2.8rem; }
+  .product-overview { gap: var(--spacing-12); }
+  .product-overview__features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .product-questions { grid-template-columns: minmax(0, 1fr); gap: var(--spacing-8); }
 }

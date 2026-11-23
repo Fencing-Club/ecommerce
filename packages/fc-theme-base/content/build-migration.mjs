@@ -79,6 +79,8 @@ export function buildMigrationManifest(sizing, navigation, assignments, pages, c
     ['features', 'Features', 'list.metaobject_reference', entries('definition.product_feature')],
     ['questions', 'Questions', 'list.metaobject_reference', entries('definition.question')],
     ['articles', 'Journal articles', 'list.article_reference'],
+    ['kit', 'Complete the kit', 'list.product_reference'],
+    ['add_ons', 'Add-ons', 'list.product_reference'],
   ]) {
     resources.push({ key: `definition.${key}`, kind: 'metafield-definition', data: {
       namespace: 'custom', key, name, type, ownerType: 'PRODUCT', ...(validations ? { validations } : {}), access: { storefront: 'PUBLIC_READ' },

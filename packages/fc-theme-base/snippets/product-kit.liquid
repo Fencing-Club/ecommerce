@@ -1,0 +1,117 @@
+{% doc %}
+  Complete the kit, under the buy row: the matching pieces from custom.kit, each ticked, with a picker on pieces that
+  come in more than one variant. A piece starts in the size already picked here when it has one. Its button sends the
+  buy row's form with the ticked pieces, so this product and the pieces go to the cart together, and it shows how many
+  and the total. `<product-kit>` (`assets/product-modules.js`) keeps the count and total current. Renders nothing
+  without pieces that can be bought.
+
+  @param {object} product - The product.
+  @param {object} variant - The chosen variant of the product.
+  @param {string} form_id - The buy row's form, which adds everything.
+  @param {string} [size] - The size picked on this product.
+
+  @example
+  {% render 'product-kit', product: product, variant: current, form_id: form_id, size: chosen_size %}
+{% enddoc %}
+{%- assign pieces = product.metafields.custom.kit.value | where: 'available' -%}
+{%- if pieces.size > 0 -%}
+  {%- liquid
+    assign heading_id = 'Kit-' | append: product.id
+    assign kit_total = variant.price
+    assign kit_count = pieces.size | plus: 1
+  -%}
+  <product-kit
+    class="product-kit"
+    data-form="{{ form_id }}"
+    data-price="{{ variant.price }}"
+    data-currency="{{ cart.currency.iso_code }}"
+    data-label="{{ 'products.kit.add' | t: count: '[count]', total: '[total]' | escape }}"
+  >
+    <h2 class="product-kit__heading" id="{{ heading_id }}">{{ 'products.kit.heading' | t }}</h2>
+    <ul class="product-kit__items list-unstyled" aria-labelledby="{{ heading_id }}">
+      {%- for piece in pieces -%}
+        {%- liquid
+          assign row_id = 'KitPiece-' | append: product.id | append: '-' | append: piece.id
+          assign start = piece.selected_or_first_available_variant
+          if size != blank
+            for candidate in piece.variants
+              if candidate.available and candidate.options contains size
+                assign start = candidate
+                break
+              endif
+            endfor
+          endif
+          assign kit_total = kit_total | plus: start.price
+        -%}
+        <li class="product-kit__item" data-kit-row>
+          <input
+            type="checkbox"
+            class="ui-checkbox"
+            id="{{ row_id }}"
+            form="{{ form_id }}"
+            value="{{ start.id }}"
+            checked
+            data-extra="kit"
+            data-price="{{ start.price }}"
+            aria-label="{{ piece.title | escape }}"
+          >
+          <span class="product-kit__thumb">
+            {%- if piece.featured_image -%}
+              {{ piece.featured_image | image_url: width: 120 | image_tag: loading: 'lazy', alt: '', width: 44, height: 44 }}
+            {%- endif -%}
+          </span>
+          <span class="product-kit__info">
+            <a class="product-kit__name" href="{{ piece.url }}">{{ piece.title | escape }}</a>
+            {%- unless piece.has_only_default_variant -%}
+              {%- capture options -%}
+                {%- for option_variant in piece.variants -%}
+                  <option
+                    value="{{ option_variant.id }}"
+                    data-price="{{ option_variant.price }}"
+                    {% if option_variant.id == start.id %}selected{% endif %}
+                    {% unless option_variant.available %}disabled{% endunless %}
+                  >
+                    {{- option_variant.title | escape -}}
+                  </option>
+                {%- endfor -%}
+              {%- endcapture -%}
+              {%- liquid
+                assign select_id = row_id | append: '-option'
+                assign select_label = 'products.kit.option' | t: product: piece.title
+                assign select_prefix = ''
+                if piece.options.size == 1
+                  assign select_prefix = piece.options.first
+                endif
+              -%}
+              <span class="product-kit__option">
+                {%- render 'ui-select',
+                  id: select_id,
+                  label: select_label,
+                  hide_label: true,
+                  prefix: select_prefix,
+                  options: options
+                -%}
+              </span>
+            {%- endunless -%}
+          </span>
+          <span class="product-kit__price" data-kit-price>{{ start.price | money }}</span>
+        </li>
+      {%- endfor -%}
+    </ul>
+    {%- liquid
+      assign kit_money = kit_total | money
+      assign kit_label = 'products.kit.add' | t: count: kit_count, total: kit_money
+      assign kit_props = 'form="' | append: form_id | append: '" data-with-kit'
+    -%}
+    {%- render 'ui-button',
+      label: kit_label,
+      type: 'submit',
+      variant: 'outline',
+      size: 'md',
+      full_width: true,
+      spinner: true,
+      class: 'product-kit__add',
+      additional_props: kit_props
+    -%}
+  </product-kit>
+{%- endif -%}

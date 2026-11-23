@@ -413,6 +413,40 @@ const productPagePhotos = [
  *
  * @param {number} [variantId]
  */
+/** A product the buy box's modules offer with the main one: one variant per size, or a single default variant. */
+const buyBoxProduct = ({ id, title, photo, price, sizes }) => {
+  const variants = (sizes ?? ['Default Title']).map((size, index) => ({
+    id: id * 10 + index,
+    title: size,
+    options: [size],
+    available: true,
+    price,
+  }));
+  return {
+    id,
+    title,
+    url: `/products/${title.toLowerCase().replaceAll(' ', '-')}`,
+    available: true,
+    featured_image: image(photo, title),
+    has_only_default_variant: !sizes,
+    options: sizes ? ['Size'] : ['Title'],
+    variants,
+    selected_or_first_available_variant: variants[0],
+  };
+};
+
+/** Complete the kit's pieces for the product page story, in the main product's sizes. */
+export const kitPieces = [
+  buyBoxProduct({ id: 9401, title: 'Novus Jacket 350N', photo: 'collection-fie-800n-jacket.jpg', price: 6900, sizes: quickViewSizes }),
+  buyBoxProduct({ id: 9402, title: 'Knicker Pants 350N', photo: 'collection-knicker-pants-350n.jpg', price: 8900, sizes: quickViewSizes }),
+];
+
+/** Add to your order's extras for the product page story. */
+export const addOnProducts = [
+  buyBoxProduct({ id: 9411, title: 'Chest protector', photo: 'collection-mens-chest-protector.jpg', price: 3900 }),
+  buyBoxProduct({ id: 9412, title: 'Fencing socks', photo: 'collection-fencing-socks-2-pack.jpg', price: 1800 }),
+];
+
 export const productPageProduct = (variantId) => {
   const product = quickViewProduct(variantId);
   const variants = product.variants.map((variant) => {
@@ -430,3 +464,64 @@ export const productPageProduct = (variantId) => {
     selected_or_first_available_variant: find(product.selected_or_first_available_variant),
   };
 };
+
+const detailsPhoto = (file, alt) => ({ ...image(file, alt), media_type: 'image' });
+const feature = (file, heading, text) => ({ image: { value: image(file, '') }, heading: { value: heading }, text: { value: text } });
+const labelValues = (...labels) => ({ value: labels.map((label) => ({ label })) });
+
+const detailsDescription =
+  "<p>The Novus jacket moves with you. Four-way stretch fabric lets you lunge, recover and parry without the jacket pulling at your shoulders, and the back zip keeps the front smooth where touches land.</p><p>It's light enough to wear through a full evening of club bouts, and it washes at home.</p>";
+
+const detailsQuestions = [
+  question('Can I wear this jacket at USA Fencing tournaments?', 'Yes, at most domestic events. Wear it with an 800N underarm protector and check your event’s rules.'),
+  question('How do I choose between right and left hand?', 'Pick the hand you hold your weapon in. The zip sits on the other side.'),
+  question('How should I wash it?', 'Close the back zip and machine wash it cold with a color-safe detergent.'),
+  question('Can I return it if the size is wrong?', 'Yes. Unworn gear comes back free within 30 days in the US.'),
+  question('When will my order ship?', 'Orders placed by 2pm Pacific time on a business day ship that day.'),
+  question('Does it come in kids sizes?', 'Yes. The kids Novus jacket is a separate listing.'),
+  question('Is it machine washable at 40°C?', 'Wash it cold to keep the stretch fabric in shape.'),
+];
+
+const knickers = { title: "Novus Men's Knickers 350N", url: '/products/novus-mens-knickers-350n' };
+const protector = { title: 'Novus Underarm Protector 800N', url: '/products/novus-underarm-protector-800n' };
+
+/** The product details stories' product: every part's data, a reviews count and paired products. */
+export const detailsJacket = {
+  title: "Novus Men's Jacket 350N",
+  description: detailsDescription,
+  // Shipping weights in grams, which differ by size.
+  variants: [{ weight: 600 }, { weight: 625 }, { weight: 650 }, { weight: 0 }],
+  media: [detailsPhoto('collection-fie-800n-jacket.jpg', 'Novus jacket, front'), detailsPhoto('collection-aero-competition-jacket.jpg', 'A fencer wearing the Novus jacket')],
+  metafields: {
+    custom: {
+      protection_rating: { value: '350N' },
+      fie_status: { value: 'Non-FIE' },
+      closure: { value: 'Back zip with collar strap' },
+      features: {
+        value: [
+          feature('collection-stretch-fencing-pants.jpg', 'Four-way stretch', 'Moves with every lunge and recovery, so the jacket never pulls.'),
+          feature('collection-fie-800n-jacket.jpg', 'Back zip', 'A smooth front with nothing to catch a blade.'),
+          feature('collection-mens-chest-protector.jpg', 'Soft lined collar', 'Comfortable against your neck under a mask bib.'),
+          feature('collection-underarm-plastron-800n.jpg', '350N protection', 'Meets EN 13567 Level 1 for club training and domestic events.'),
+        ],
+      },
+      care_symbols: { value: ['wash-cold', 'line-dry', 'no-bleach', 'no-tumble-dry', 'no-iron', 'no-dry-clean'] },
+      care_note: { value: 'Use a color-safe detergent with no bleach. Close the back zip before washing.' },
+      questions: { value: detailsQuestions },
+    },
+    shopify: { 'gear-material': labelValues('Polyester', 'Elastane'), handedness: labelValues('Right', 'Left') },
+    'shopify--discovery--product_recommendation': { complementary_products: { value: [knickers, protector] } },
+    reviews: { rating_count: { value: 126 } },
+  },
+};
+
+// A reviews app's block stands in for the app the store installs.
+const reviewsApp = { id: 'reviews-app', type: 'text', settings: { text: '<p>Reviews from the reviews app</p>' } };
+/** Every product details part, with a stand-in for the reviews app's block. */
+export const detailsParts = [
+  { id: 'overview', type: '_product-overview', settings: {} },
+  { id: 'specs', type: '_product-specs', settings: {} },
+  { id: 'care', type: '_product-care', settings: {} },
+  { id: 'reviews', type: '_product-reviews', settings: {}, blocks: [reviewsApp] },
+  { id: 'questions', type: '_product-questions', settings: {} },
+];

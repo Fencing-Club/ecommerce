@@ -14,7 +14,8 @@
   - full_width: {Boolean} Stretch to fill the container.
   - disabled: {Boolean} Prevent activation and show the disabled state.
   - busy: {Boolean} Prevent activation and announce a pending action.
-  - spinner: {Boolean} Include the loading spinner that product-form.js shows while it adds to the cart.
+  - spinner: {Boolean} Include the loading spinner that product-form.js shows while it adds to the cart. With busy,
+    the spinner shows from the start.
   - class: {String} Optional extra classes.
   - additional_props: {String} Optional extra attributes, such as data hooks or form and name.
 {% endcomment %}
@@ -34,6 +35,9 @@
   endif
   if class
     assign classes = classes | append: ' ' | append: class
+  endif
+  if busy and spinner
+    assign classes = classes | append: ' loading'
   endif
 -%}
 {%- if url != blank -%}
@@ -66,7 +70,11 @@
     {%- render 'ui-icon', icon: trailing_icon -%}
   {%- endif -%}
   {%- if spinner -%}
-    {%- render 'loading-spinner' -%}
+    {%- if busy -%}
+      {%- render 'loading-spinner', class: 'loading__spinner' -%}
+    {%- else -%}
+      {%- render 'loading-spinner' -%}
+    {%- endif -%}
   {%- endif -%}
 {%- if url != blank -%}
   </a>

@@ -94,6 +94,16 @@ export const Busy = {
   },
 };
 
+// What product-form.js shows while it adds to the cart: the spinner over the label, which still names the button.
+export const Loading = {
+  args: { size: 'lg', busy: true, spinner: true },
+  play: async ({ canvas }) => {
+    const button = canvas.getByRole('button', { name: 'Add to cart' });
+    await expect(button).toHaveAttribute('aria-busy', 'true');
+    await expect(button).toBeDisabled();
+  },
+};
+
 export const DisabledLink = {
   args: { label: 'Shop clothing', url: '#clothing', disabled: true },
   play: async ({ canvas }) => {

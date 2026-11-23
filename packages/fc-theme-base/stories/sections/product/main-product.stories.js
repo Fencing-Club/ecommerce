@@ -1,5 +1,5 @@
 import { expect, waitFor, within } from 'storybook/test';
-import { productPageProduct } from '../../fixtures.js';
+import { addOnProducts, kitPieces, productPageProduct } from '../../fixtures.js';
 import { loadModule, loadScript, loadStylesheet, section } from '../../liquid.js';
 
 // A US shopper paying in dollars, so the ships line gives arrival dates.
@@ -13,16 +13,30 @@ const trust = [
   { id: 'returns', type: 'trust', settings: { icon: 'rotate-ccw', title: 'Free returns', detail: '30 days in the US' } },
 ];
 
-const renderSection = (variantId) =>
-  section('main-product', { sectionBlocks: trust, variables: { product: productPageProduct(variantId) }, globals: store })({ restock_form: true });
+// The product's buy box module fields, which the story being shown sets, so a variant it loads keeps them.
+let moduleFields = {};
+
+const renderSection = (variantId) => {
+  const product = productPageProduct(variantId);
+  const custom = { ...product.metafields.custom, ...moduleFields };
+  return section('main-product', {
+    sectionBlocks: trust,
+    variables: { product: { ...product, metafields: { ...product.metafields, custom } } },
+    globals: store,
+  })({ restock_form: true });
+};
 
 // Back-in-stock signups the stories sent, with STOQ's answer: the email `fail@example.com` gets an error.
 const signups = [];
+// The lines each add to the cart asked for. The cart never answers, so the button keeps showing its progress.
+const cartAdds = [];
 
 /** Answers `product-options` as the store would, by rendering the section again for the `?variant=` asked for. */
 const serveVariants = () => {
   if (window.productPageStoryFetch) return;
   window.productPageStoryFetch = true;
+  // layout/theme.liquid sets the store's routes on every page.
+  window.routes ??= { cart_add_url: '/cart/add', cart_url: '/cart' };
   const storeFetch = window.fetch.bind(window);
   window.fetch = async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
@@ -31,6 +45,11 @@ const serveVariants = () => {
       signups.push({ headers: init.headers, body });
       const intents = body.customer.email === 'fail@example.com' ? [] : [{ id: signups.length }];
       return new Response(JSON.stringify({ intents, errors: intents.length ? [] : ['Signup failed'] }), { status: intents.length ? 201 : 200 });
+    }
+    if (url.pathname === '/cart/add') {
+      const items = init.body.getAll('items[][id]').map((id, index) => [Number(id), Number(init.body.getAll('items[][quantity]')[index])]);
+      cartAdds.push(items.length ? items : [[Number(init.body.get('id')), Number(init.body.get('quantity'))]]);
+      return new Promise(() => {});
     }
     if (url.searchParams.get('section_id') !== 'story' || !url.pathname.startsWith('/products/')) return storeFetch(input, init);
     return new Response(renderSection(Number(url.searchParams.get('variant'))), { headers: { 'Content-Type': 'text/html' } });
@@ -57,11 +76,16 @@ export default {
     loadModule('product-options.js'),
     loadModule('product-page.js'),
     loadModule('product-restock.js'),
+    loadModule('product-modules.js'),
+    loadScript('ui-select.js'),
     serveVariants,
   ],
   // The theme hides empty divs, so the space holds a non-breaking space.
-  render: ({ variant }) => `${renderSection(variant)}<div style="height: 150vh" aria-hidden="true">&nbsp;</div>`,
-  args: { variant: undefined },
+  render: ({ variant, kit, add_ons }) => {
+    moduleFields = { ...(kit && { kit: { value: kit } }), ...(add_ons && { add_ons: { value: add_ons } }) };
+    return `${renderSection(variant)}<div style="height: 150vh" aria-hidden="true">&nbsp;</div>`;
+  },
+  args: { variant: undefined, kit: undefined, add_ons: undefined },
 };
 
 export const PickASize = {
@@ -140,6 +164,45 @@ export const BackInStockSignup = {
     await expect(headers['X-Shopify-Shop-Domain']).toBe('example.myshopify.com');
     await expect(body.intent).toMatchObject({ shopify_variant_id: 9208, channel: 'email', quantity: 1, source: 'api' });
     await expect(body.customer.email).toBe('fencer@example.com');
+  },
+};
+
+export const CompleteTheKit = {
+  args: { variant: 9204, kit: kitPieces },
+  play: async ({ canvas, userEvent }) => {
+    const kit = within(canvas.getByRole('list', { name: 'Complete the kit' }));
+    // Both pieces start ticked in the size picked here, and the button counts this product with them.
+    await expect(kit.getByRole('checkbox', { name: 'Novus Jacket 350N' })).toBeChecked();
+    await expect(kit.getByRole('combobox', { name: /Knicker Pants 350N/ })).toHaveTextContent('Size M');
+    await expect(canvas.getByRole('button', { name: 'Add 3 to cart, $179.95' })).toBeVisible();
+
+    await userEvent.click(kit.getByRole('checkbox', { name: 'Novus Jacket 350N' }));
+    await expect(canvas.getByRole('button', { name: 'Add 2 to cart, $110.95' })).toBeVisible();
+
+    await userEvent.click(kit.getByRole('combobox', { name: /Knicker Pants 350N/ }));
+    await userEvent.click(canvas.getByRole('option', { name: 'L' }));
+
+    // The kit's button adds this product and the ticked piece in the size chosen, in one go, and shows its progress.
+    const add = canvas.getByRole('button', { name: 'Add 2 to cart, $110.95' });
+    await userEvent.click(add);
+    await waitFor(() => expect(cartAdds.at(-1)).toEqual([[9204, 1], [94023, 1]]));
+    await expect(add).toHaveAttribute('aria-disabled', 'true');
+    await expect(canvas.getAllByRole('button', { name: 'Add to cart' })[0]).not.toHaveAttribute('aria-disabled');
+  },
+};
+
+export const AddOns = {
+  args: { variant: 9204, add_ons: addOnProducts },
+  play: async ({ canvas, userEvent }) => {
+    const extras = within(canvas.getByRole('group', { name: 'Add to your order' }));
+    await expect(extras.getByRole('checkbox', { name: 'Chest protector +$39.00' })).not.toBeChecked();
+
+    // A ticked extra adds its price to Add to cart, and goes to the cart with this product.
+    await userEvent.click(extras.getByRole('checkbox', { name: 'Chest protector +$39.00' }));
+    const add = canvas.getByRole('button', { name: 'Add to cart, $60.95' });
+    await userEvent.click(add);
+    await waitFor(() => expect(cartAdds.at(-1)).toEqual([[9204, 1], [94110, 1]]));
+    await expect(add).toHaveAttribute('aria-disabled', 'true');
   },
 };
 

@@ -1,0 +1,43 @@
+{% doc %}
+  Add to your order, inside the buy row's form above Add to cart: extras from custom.add_ons that ride along with
+  this product, such as a spare blade, each a row to tick. A ticked extra goes to the cart with this product, and
+  `<product-add-ons>` (`assets/product-modules.js`) adds the total to the Add to cart button. Each extra adds its
+  first available variant. Renders nothing without extras that can be bought.
+
+  @param {object} product - The product.
+  @param {object} variant - The chosen variant of the product.
+
+  @example
+  {% render 'product-add-ons', product: product, variant: current %}
+{% enddoc %}
+{%- assign extras = product.metafields.custom.add_ons.value | where: 'available' -%}
+{%- if extras.size > 0 -%}
+  {%- assign heading_id = 'AddOns-' | append: product.id -%}
+  <product-add-ons
+    class="product-add-ons"
+    data-price="{{ variant.price }}"
+    data-currency="{{ cart.currency.iso_code }}"
+    data-label="{{ 'products.add_ons.add' | t: total: '[total]' | escape }}"
+    role="group"
+    aria-labelledby="{{ heading_id }}"
+  >
+    <h2 class="product-add-ons__heading" id="{{ heading_id }}">{{ 'products.add_ons.heading' | t }}</h2>
+    {%- for extra in extras -%}
+      {%- liquid
+        assign extra_variant = extra.selected_or_first_available_variant
+        assign extra_id = 'AddOn-' | append: product.id | append: '-' | append: extra.id
+        assign extra_money = extra_variant.price | money
+        assign extra_price = 'products.add_ons.price' | t: price: extra_money
+        assign extra_props = 'data-extra="add-on" data-price="' | append: extra_variant.price | append: '"'
+      -%}
+      {%- render 'ui-checkbox-field',
+        id: extra_id,
+        label: extra.title,
+        trailing: extra_price,
+        value: extra_variant.id,
+        variant: 'option',
+        additional_props: extra_props
+      -%}
+    {%- endfor -%}
+  </product-add-ons>
+{%- endif -%}

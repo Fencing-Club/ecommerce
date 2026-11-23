@@ -3589,6 +3589,34 @@
       }
     },
     {
+      "key": "definition.kit",
+      "kind": "metafield-definition",
+      "data": {
+        "namespace": "custom",
+        "key": "kit",
+        "name": "Complete the kit",
+        "type": "list.product_reference",
+        "ownerType": "PRODUCT",
+        "access": {
+          "storefront": "PUBLIC_READ"
+        }
+      }
+    },
+    {
+      "key": "definition.add_ons",
+      "kind": "metafield-definition",
+      "data": {
+        "namespace": "custom",
+        "key": "add_ons",
+        "name": "Add-ons",
+        "type": "list.product_reference",
+        "ownerType": "PRODUCT",
+        "access": {
+          "storefront": "PUBLIC_READ"
+        }
+      }
+    },
+    {
       "key": "definition.page.faq_topics",
       "kind": "metafield-definition",
       "data": {

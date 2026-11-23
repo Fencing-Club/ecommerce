@@ -68,6 +68,8 @@ Question is written once, so any page that asks it links to the same entry.
 | `custom.care_note` | Multi-line text | Note under the care symbols. | Built |
 | `custom.questions` | List of [Question entries](shopify-questions.md) | Questions. A list set per product type for products without their own is designed, not built. | Built |
 | `custom.articles` | List of blog posts | From the Journal: the first three. Without them, the section is left out. | Built |
+| `custom.kit` | List of products | Complete the kit under the buy row, for uniform pieces. Takes the place of add-ons. | Built |
+| `custom.add_ons` | List of products | Add to your order above Add to cart, for weapons and masks. | Built |
 
 Filters only appear once a field is turned on in **Search & Discovery > Filters**; see
 [collection filters](shopify-collection-filters.md). The old `custom.safety_level` mixes ratings with approval labels
