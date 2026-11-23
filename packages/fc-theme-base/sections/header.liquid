@@ -1,5 +1,9 @@
 <link rel="stylesheet" href="{{ 'component-menu-drawer.css' | asset_url }}" media="print" onload="this.media='all'">
-{{ 'section-header.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  The header's styles hold up the first paint, but this tag sits in the body, where Shopify's automatic Early Hints
+  don't look. Preloading sends the file with the hints, so it downloads while the page is still rendering.
+{%- endcomment -%}
+{{ 'section-header.css' | asset_url | stylesheet_tag: preload: true }}
 
 {%- if settings.predictive_search_enabled -%}
   <link rel="stylesheet" href="{{ 'component-price.css' | asset_url }}" media="print" onload="this.media='all'">
