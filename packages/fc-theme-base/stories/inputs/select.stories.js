@@ -1,5 +1,5 @@
 import { expect, waitFor } from 'storybook/test';
-import { snippet } from '../liquid.js';
+import { loadScript, snippet } from '../liquid.js';
 
 const options = ['Featured', 'Best selling', 'Price, low to high', 'Price, high to low']
   .map((label, index) => `<option value="sort-${index}"${index === 0 ? ' selected' : ''}>${label}</option>`)
@@ -13,6 +13,7 @@ const nativeSelect = (canvasElement) => canvasElement.querySelector('ui-select s
  */
 export default {
   title: 'Inputs/Select',
+  loaders: [loadScript('ui-select.js')],
   render: snippet('ui-select'),
   args: { id: 'SortBy', name: 'sort_by', label: 'Sort by', options },
 };

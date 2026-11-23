@@ -64,6 +64,7 @@ the full-bleed header's 96px desktop gutters are scoped to the header rather tha
   commit, and Escape/outside click cancel. Disabled options are skipped. Input/change events update existing consumers,
   reset restores the default selection, and required errors focus the visible trigger. The optional leading slot
   preserves product swatch previews. There is no separate sort controller or duplicate native popup after enhancement.
+  The snippet loads `ui-select.js` itself, so only pages with a select download it.
 - `swatch-input` and `swatch` render both product color radios and collection filter checkboxes. Both share 28px swatches
   within 38px-wide, 44px-high targets: the visible circles have the .pen's 10px gap. Selection/focus/disabled styling is
   shared. Collection values navigate their Shopify filter URLs while

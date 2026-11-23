@@ -1,6 +1,6 @@
 import { expect, waitFor, within } from 'storybook/test';
 import { collectionFilters, collectionPage } from '../fixtures.js';
-import { snippet } from '../liquid.js';
+import { loadScript, snippet } from '../liquid.js';
 
 /**
  * `snippets/collection-toolbar.liquid`: the bar over a collection's grid. Hide filters, the protection level chips
@@ -9,6 +9,7 @@ import { snippet } from '../liquid.js';
  */
 export default {
   title: 'Components/Collection toolbar',
+  loaders: [loadScript('ui-select.js')],
   // The filter toggle controls the page's filter panel, which the empty element stands in for.
   render: (args) => `${snippet('collection-toolbar', { stylesheets: ['section-main-collection.css'] })(args)}<div id="StoryFilters"></div>`,
   args: {

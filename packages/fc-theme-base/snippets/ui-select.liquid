@@ -1,3 +1,7 @@
+{%- comment -%}
+  Only pages with a select load its script. It's safe to load more than once, so every select can bring it.
+{%- endcomment -%}
+<script src="{{ 'ui-select.js' | asset_url }}" defer="defer"></script>
 <ui-select class="ui-select ui-field{% if disabled %} ui-field--disabled{% endif %}" data-label="{{ label | escape }}">
   <label id="{{ id | escape }}-label" class="ui-field__label{% if hide_label %} visually-hidden{% endif %}" for="{{ id | escape }}">{{ label | escape }}</label>
   <div class="ui-select__control">
