@@ -1,37 +1,31 @@
 import { expect, waitFor, within } from 'storybook/test';
+import { faqTopic, question } from '../../fixtures.js';
 import { loadScript, section, settings } from '../../liquid.js';
 
-const topic = (id, title) => ({ id, type: '_faq-topic', settings: { title } });
-const question = (id, text, answer, extra = {}) => ({
-  id,
-  type: '_faq-item',
-  settings: { question: text, answer: `<p>${answer}</p>`, open: false, ...extra },
-});
-
-const blocks = [
-  topic('shipping', 'Shipping'),
-  question('track', 'How do I track my order?', 'We email you a tracking link as soon as your order ships.', { open: true }),
-  question('dispatch', 'How quickly are orders dispatched?', 'Orders placed by 1pm Pacific time, Monday to Friday, go out the same day.'),
-  topic('returns', 'Returns'),
-  question('free', 'Are returns free?', 'Returns within 30 days are free in the US.', {
-    link_label: 'Read the returns policy',
-    link_url: '/pages/refund-policy',
-  }),
-  topic('sizing', 'Sizing & gear'),
-  question('size', 'Which size should I choose?', 'Measure yourself and compare with the size chart on the product page.'),
+const topics = [
+  faqTopic('Shipping', [
+    question('How do I track my order?', 'We email you a tracking link as soon as your order ships.'),
+    question('How quickly are orders dispatched?', 'Orders placed by 1pm Pacific time, Monday to Friday, go out the same day.'),
+  ]),
+  faqTopic('Returns', [question('Are returns free?', 'Returns within 30 days are free in the US.')]),
+  faqTopic('Sizing & gear', [question('Which size should I choose?', 'Measure yourself and compare with the size chart on the product page.')]),
 ];
 
-const variables = { page: { title: 'FAQ' }, pages: { contact: { url: '/pages/contact' } }, settings: { ...settings, structured_data_enabled: false } };
+const variables = (faqTopics) => ({
+  page: { title: 'FAQ', metafields: { custom: { faq_topics: { value: faqTopics } } } },
+  pages: { contact: { url: '/pages/contact' } },
+  settings: { ...settings, structured_data_enabled: false },
+});
 
 /**
- * `sections/faq.liquid`: the FAQ page. `_faq-topic` blocks head the questions after them and fill the topic links;
- * `_faq-item` blocks are the questions, shown through `ui-faq-item`.
+ * `sections/faq.liquid`: the FAQ page. The page's FAQ topics (`custom.faq_topics`) fill the topic links and head
+ * their Question entries, shown through `ui-faq-item` with each topic's first question open.
  */
 export default {
   title: 'Sections/FAQ/FAQ',
   loaders: [loadScript('motion.js')],
   parameters: { layout: 'fullscreen' },
-  render: section('faq', { blocks, variables }),
+  render: section('faq', { variables: variables(topics) }),
 };
 
 export const Default = {
@@ -47,6 +41,7 @@ export const Default = {
     }
 
     await expect(canvas.getByText('We email you a tracking link as soon as your order ships.')).toBeVisible();
+    await expect(canvas.getByText('Returns within 30 days are free in the US.')).toBeVisible();
     const dispatch = canvas.getByText('How quickly are orders dispatched?');
     const answer = canvas.getByText(/Orders placed by 1pm/);
     await expect(answer).not.toBeVisible();
@@ -57,5 +52,14 @@ export const Default = {
 
     await expect(canvas.getByRole('heading', { name: 'Questions?' })).toBeVisible();
     await expect(canvas.getByRole('link', { name: 'Contact us' })).toHaveAttribute('href', '/pages/contact');
+  },
+};
+
+export const NoTopics = {
+  render: section('faq', { variables: variables(null) }),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('heading', { level: 1, name: 'Frequently asked questions' })).toBeVisible();
+    await expect(canvas.queryByRole('navigation', { name: 'FAQ topics' })).toBeNull();
+    await expect(canvas.getByRole('link', { name: 'Contact us' })).toBeVisible();
   },
 };

@@ -328,7 +328,7 @@
     },
     {
       "key": "definition.product-chart",
-      "kind": "product-metafield-definition",
+      "kind": "metafield-definition",
       "data": {
         "namespace": "custom",
         "key": "size_chart",
@@ -3289,7 +3289,7 @@
     },
     {
       "key": "definition.weapon",
-      "kind": "product-metafield-definition",
+      "kind": "metafield-definition",
       "data": {
         "namespace": "custom",
         "key": "weapon",
@@ -3303,7 +3303,7 @@
     },
     {
       "key": "definition.gender",
-      "kind": "product-metafield-definition",
+      "kind": "metafield-definition",
       "data": {
         "namespace": "custom",
         "key": "gender",
@@ -3317,7 +3317,7 @@
     },
     {
       "key": "definition.skill_level",
-      "kind": "product-metafield-definition",
+      "kind": "metafield-definition",
       "data": {
         "namespace": "custom",
         "key": "skill_level",
@@ -3331,7 +3331,7 @@
     },
     {
       "key": "definition.protection_rating",
-      "kind": "product-metafield-definition",
+      "kind": "metafield-definition",
       "data": {
         "namespace": "custom",
         "key": "protection_rating",
@@ -3345,7 +3345,7 @@
     },
     {
       "key": "definition.fie_status",
-      "kind": "product-metafield-definition",
+      "kind": "metafield-definition",
       "data": {
         "namespace": "custom",
         "key": "fie_status",
@@ -3410,6 +3410,41 @@
       }
     },
     {
+      "key": "definition.faq_topic",
+      "kind": "metaobject-definition",
+      "data": {
+        "type": "faq_topic",
+        "name": "FAQ topic",
+        "displayNameKey": "title",
+        "access": {
+          "storefront": "PUBLIC_READ"
+        },
+        "fieldDefinitions": [
+          {
+            "key": "title",
+            "name": "Title",
+            "type": "single_line_text_field",
+            "required": true
+          },
+          {
+            "key": "questions",
+            "name": "Questions",
+            "type": "list.metaobject_reference",
+            "required": true,
+            "validations": [
+              {
+                "name": "metaobject_definition_id",
+                "value": {
+                  "$ref": "definition.question",
+                  "field": "id"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "key": "definition.product_feature",
       "kind": "metaobject-definition",
       "data": {
@@ -3447,7 +3482,7 @@
     },
     {
       "key": "definition.closure",
-      "kind": "product-metafield-definition",
+      "kind": "metafield-definition",
       "data": {
         "namespace": "custom",
         "key": "closure",
@@ -3461,7 +3496,7 @@
     },
     {
       "key": "definition.care_symbols",
-      "kind": "product-metafield-definition",
+      "kind": "metafield-definition",
       "data": {
         "namespace": "custom",
         "key": "care_symbols",
@@ -3481,7 +3516,7 @@
     },
     {
       "key": "definition.care_note",
-      "kind": "product-metafield-definition",
+      "kind": "metafield-definition",
       "data": {
         "namespace": "custom",
         "key": "care_note",
@@ -3495,7 +3530,7 @@
     },
     {
       "key": "definition.features",
-      "kind": "product-metafield-definition",
+      "kind": "metafield-definition",
       "data": {
         "namespace": "custom",
         "key": "features",
@@ -3518,7 +3553,7 @@
     },
     {
       "key": "definition.questions",
-      "kind": "product-metafield-definition",
+      "kind": "metafield-definition",
       "data": {
         "namespace": "custom",
         "key": "questions",
@@ -3536,6 +3571,1253 @@
         ],
         "access": {
           "storefront": "PUBLIC_READ"
+        }
+      }
+    },
+    {
+      "key": "definition.page.faq_topics",
+      "kind": "metafield-definition",
+      "data": {
+        "namespace": "custom",
+        "key": "faq_topics",
+        "name": "FAQ topics",
+        "type": "list.metaobject_reference",
+        "ownerType": "PAGE",
+        "validations": [
+          {
+            "name": "metaobject_definition_id",
+            "value": {
+              "$ref": "definition.faq_topic",
+              "field": "id"
+            }
+          }
+        ],
+        "access": {
+          "storefront": "PUBLIC_READ"
+        }
+      }
+    },
+    {
+      "key": "definition.page.questions",
+      "kind": "metafield-definition",
+      "data": {
+        "namespace": "custom",
+        "key": "questions",
+        "name": "Questions",
+        "type": "list.metaobject_reference",
+        "ownerType": "PAGE",
+        "validations": [
+          {
+            "name": "metaobject_definition_id",
+            "value": {
+              "$ref": "definition.question",
+              "field": "id"
+            }
+          }
+        ],
+        "access": {
+          "storefront": "PUBLIC_READ"
+        }
+      }
+    },
+    {
+      "key": "definition.collection.questions",
+      "kind": "metafield-definition",
+      "data": {
+        "namespace": "custom",
+        "key": "questions",
+        "name": "Questions",
+        "type": "list.metaobject_reference",
+        "ownerType": "COLLECTION",
+        "validations": [
+          {
+            "name": "metaobject_definition_id",
+            "value": {
+              "$ref": "definition.question",
+              "field": "id"
+            }
+          }
+        ],
+        "access": {
+          "storefront": "PUBLIC_READ"
+        }
+      }
+    },
+    {
+      "key": "question.how-do-i-track-my-order",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "how-do-i-track-my-order",
+        "fields": {
+          "question": "How do I track my order?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "You will receive notifications about your order status via email and be provided with a tracking code. You can also track any order by accessing your "
+                  },
+                  {
+                    "type": "link",
+                    "url": "https://account.fencing.club/",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "account order history"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": "."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.how-quickly-are-orders-dispatched",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "how-quickly-are-orders-dispatched",
+        "fields": {
+          "question": "How quickly are orders dispatched?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "We process orders Monday through Friday, US Pacific time. Orders need to be placed by 1pm Pacific time to go out on the same day. Please contact us through online chat or "
+                  },
+                  {
+                    "type": "link",
+                    "url": "mailto:support@fencing.club",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "support@fencing.club"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": " if you have any specific needs."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.which-providers-do-you-ship-with",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "which-providers-do-you-ship-with",
+        "fields": {
+          "question": "Which providers do you ship with?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "We ship domestically in the US with USPS, UPS, and FedEx. For international orders, we offer DHL and UPS worldwide shipping with duties paid upfront."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.what-if-my-package-is-delayed",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "what-if-my-package-is-delayed",
+        "fields": {
+          "question": "What if my package is delayed?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Once your order ships, you’ll receive tracking information by email. If your package appears delayed or tracking hasn’t updated for an extended period, please contact "
+                  },
+                  {
+                    "type": "link",
+                    "url": "mailto:support@fencing.club",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "support@fencing.club"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": " and we’ll help look into it with the carrier."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.how-do-i-change-my-delivery-address",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "how-do-i-change-my-delivery-address",
+        "fields": {
+          "question": "How do I change my delivery address?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Once your order ships, you’ll receive tracking information by email. If your package appears delayed or tracking hasn’t updated for an extended period, please contact "
+                  },
+                  {
+                    "type": "link",
+                    "url": "mailto:support@fencing.club",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "support@fencing.club"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": " and we’ll help look into it with the carrier."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.do-you-ship-internationally",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "do-you-ship-internationally",
+        "fields": {
+          "question": "Do you ship internationally?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "We provide international shipping to numerous countries. Shipping estimates and availability can be viewed at checkout. International orders are delivered via DHL or UPS with Duties Paid."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.who-pays-duties-customs-and-tariffs",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "who-pays-duties-customs-and-tariffs",
+        "fields": {
+          "question": "Who pays duties, customs, and tariffs?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "For international orders we ship duties paid (DDP). You will not be responsible for any customs or duties charges on your order."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.can-you-prioritize-my-order-so-it-arrives-in-time-for-a-tournament",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "can-you-prioritize-my-order-so-it-arrives-in-time-for-a-tournament",
+        "fields": {
+          "question": "Can you prioritize my order so it arrives in time for a tournament?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "We understand that sometimes timelines are tight, and you need gear before the big day. During checkout, select a shipping service for timely delivery and include a note on the order. We will do our best to dispatch the order on the same day. It's recommended to place rush orders early in the day."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.do-you-offer-free-returns",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "do-you-offer-free-returns",
+        "fields": {
+          "question": "Do you offer free returns?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "We offer a free 30-day return policy from the date of receipt of the purchased item, during which you may request a refund or exchange. A shipping label will be provided free of charge."
+                  }
+                ]
+              },
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Review the full "
+                  },
+                  {
+                    "type": "link",
+                    "url": "/pages/refund-policy",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Return Policy"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": " for details."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.how-can-i-request-a-return",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "how-can-i-request-a-return",
+        "fields": {
+          "question": "How can I request a return?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "You can request a return by logging into your customer account and visiting your "
+                  },
+                  {
+                    "type": "link",
+                    "url": "https://account.fencing.club/orders",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "order history"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": ". Select the order you wish to return and use the “Request return” option on the order details page. If you need help accessing your account, please contact us at "
+                  },
+                  {
+                    "type": "link",
+                    "url": "mailto:support@fencing.club",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "support@fencing.club"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": "."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.what-if-i-want-to-cancel-or-change-my-order",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "what-if-i-want-to-cancel-or-change-my-order",
+        "fields": {
+          "question": "What if I want to cancel or change my order?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "We try to fulfill orders very quickly; that said, please email us at "
+                  },
+                  {
+                    "type": "link",
+                    "url": "mailto:support@fencing.club",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "support@fencing.club"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": " and we'll see what we can do!"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.what-if-i-received-a-damaged-or-wrong-item",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "what-if-i-received-a-damaged-or-wrong-item",
+        "fields": {
+          "question": "What if I received a damaged or wrong item?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Please inspect your order upon reception and contact us immediately if the item is defective, damaged or if you receive the wrong item so that we can evaluate the issue and make it right."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.can-i-exchange-an-item",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "can-i-exchange-an-item",
+        "fields": {
+          "question": "Can I exchange an item?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "The fastest way to ensure you get what you want is to return the item you have, and once the return is accepted, make a separate purchase for the new item."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.where-can-i-find-the-return-policy",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "where-can-i-find-the-return-policy",
+        "fields": {
+          "question": "Where can I find the return policy?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Refer to our official "
+                  },
+                  {
+                    "type": "link",
+                    "url": "/pages/refund-policy",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Return Policy"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": " for more specific terms and conditions related to returns."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.do-you-offer-club-discounts",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "do-you-offer-club-discounts",
+        "fields": {
+          "question": "Do you offer club discounts?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Club owners may reach out to us for a specialized discount code providing 15% off on club purchases. The code is unique to the account email and not shareable."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.do-you-offer-discounts-for-non-profits",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "do-you-offer-discounts-for-non-profits",
+        "fields": {
+          "question": "Do you offer discounts for non-profits?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Non-profits may reach out to us for a specialized discount code providing 15% off on equipment purchases. The code is unique to the account email and not shareable."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.do-you-offer-discounts-for-education-institutions",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "do-you-offer-discounts-for-education-institutions",
+        "fields": {
+          "question": "Do you offer discounts for education institutions?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Educational institutions, including homeschools, are welcome to contact us for a personalized discount code that grants a 15% reduction on equipment purchases. The code is exclusive to the account email and cannot be distributed."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.why-is-everything-marked-on-sale",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "why-is-everything-marked-on-sale",
+        "fields": {
+          "question": "Why is everything marked on sale?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Our aim is to provide the most competitive prices. The strike-out amount signifies the lowest price available among our competitors. This allows you to easily calculate your savings compared to the next cheapest supplier."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.can-you-supply-our-club-store-with-gear",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "can-you-supply-our-club-store-with-gear",
+        "fields": {
+          "question": "Can you supply our club store with gear?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Wholesale pricing is available for clubs that meet certain volume criteria. Please contact us to determine if your club is a good fit."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.how-do-i-apply-for-tax-exemption",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "how-do-i-apply-for-tax-exemption",
+        "fields": {
+          "question": "How do I apply for tax exemption?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Please send your tax exemption form to "
+                  },
+                  {
+                    "type": "link",
+                    "url": "mailto:support@fencing.club",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "support@fencing.club"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": " before placing your order."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.does-fencing-club-participate-in-e-verify",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "does-fencing-club-participate-in-e-verify",
+        "fields": {
+          "question": "Does Fencing Club participate in E-Verify?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Yes. Fencing Club is an active E-Verify participant and is fully compliant with federal employment eligibility verification requirements. Our participation allows us to support contracts and partnerships with local, state, and federal government agencies."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.where-is-fencing-club-located",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "where-is-fencing-club-located",
+        "fields": {
+          "question": "Where is Fencing Club located?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Our warehouse is situated in the Seattle metropolitan area. All orders are dispatched from our warehouse. If you're in the Pacific Northwest region, there's a high chance we can provide the most competitive shipping costs."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.do-you-have-any-physical-stores",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "do-you-have-any-physical-stores",
+        "fields": {
+          "question": "Do you have any physical stores?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "To maintain low operational costs and offer competitive prices, we do not have retail space. However, we deliver to select local clubs in the Seattle metropolitan area."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.why-another-fencing-equipment-supplier",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "why-another-fencing-equipment-supplier",
+        "fields": {
+          "question": "Why another fencing equipment supplier?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Fencing Club started from a passion for sport, helping athletes find quality gear at competitive prices, whether you're a novice or Olympian. We saw there was a gap in the market for distributors with low operational costs that could offer the lowest prices for the same equipment."
+                  }
+                ]
+              },
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Our journey began with a simple goal: make fencing more accessible. We've painstakingly optimized our supply chain to ensure every piece of gear meets high standards without the hefty price tag. It's not just about selling equipment; it's about supporting the fencing community's passion and growth."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.where-is-my-order",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "where-is-my-order",
+        "fields": {
+          "question": "Where is my order?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Sign in to view your order history and tracking. If tracking has stalled, include your order number in your message so we can check with the carrier."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.can-i-change-my-size",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "can-i-change-my-size",
+        "fields": {
+          "question": "Can I change my size?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Start a free return within 30 days, then order the size you need. Contact us if you need help."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.do-you-supply-clubs",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "do-you-supply-clubs",
+        "fields": {
+          "question": "Do you supply clubs?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Yes. Clubs, schools, and nonprofits can ask about bulk orders, wholesale pricing, and qualifying discounts."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.what-size-fencing-jacket-should-i-buy",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "what-size-fencing-jacket-should-i-buy",
+        "fields": {
+          "question": "What size fencing jacket should I buy?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Measure your chest, waist and arm length, then match them to the size chart on the product page. Each product has its own chart."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.whats-the-difference-between-350n-and-800n",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "whats-the-difference-between-350n-and-800n",
+        "fields": {
+          "question": "What's the difference between 350N and 800N?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "350N fabric is right for club training and most domestic events. 800N resists more than twice the force, and FIE events ask for 800N FIE clothing."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.do-clubs-get-special-pricing",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "do-clubs-get-special-pricing",
+        "fields": {
+          "question": "Do clubs get special pricing?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Yes. Clubs, schools and nonprofits get member pricing and bulk discounts. Contact us with what your club needs."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "question.can-i-return-clothing-that-doesnt-fit",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.question"
+      ],
+      "data": {
+        "type": "question",
+        "handle": "can-i-return-clothing-that-doesnt-fit",
+        "fields": {
+          "question": "Can I return clothing that doesn't fit?",
+          "answer": {
+            "type": "root",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "type": "text",
+                    "value": "Yes. Returns are free within 30 days of delivery, as long as it's unworn, with its tags and in its original packaging."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "faq_topic.shipping",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.faq_topic"
+      ],
+      "data": {
+        "type": "faq_topic",
+        "handle": "shipping",
+        "fields": {
+          "title": "Shipping",
+          "questions": [
+            {
+              "$ref": "question.how-do-i-track-my-order"
+            },
+            {
+              "$ref": "question.how-quickly-are-orders-dispatched"
+            },
+            {
+              "$ref": "question.which-providers-do-you-ship-with"
+            },
+            {
+              "$ref": "question.what-if-my-package-is-delayed"
+            },
+            {
+              "$ref": "question.how-do-i-change-my-delivery-address"
+            },
+            {
+              "$ref": "question.do-you-ship-internationally"
+            },
+            {
+              "$ref": "question.who-pays-duties-customs-and-tariffs"
+            },
+            {
+              "$ref": "question.can-you-prioritize-my-order-so-it-arrives-in-time-for-a-tournament"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "faq_topic.returns",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.faq_topic"
+      ],
+      "data": {
+        "type": "faq_topic",
+        "handle": "returns",
+        "fields": {
+          "title": "Returns",
+          "questions": [
+            {
+              "$ref": "question.do-you-offer-free-returns"
+            },
+            {
+              "$ref": "question.how-can-i-request-a-return"
+            },
+            {
+              "$ref": "question.what-if-i-want-to-cancel-or-change-my-order"
+            },
+            {
+              "$ref": "question.what-if-i-received-a-damaged-or-wrong-item"
+            },
+            {
+              "$ref": "question.can-i-exchange-an-item"
+            },
+            {
+              "$ref": "question.where-can-i-find-the-return-policy"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "faq_topic.discounts",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.faq_topic"
+      ],
+      "data": {
+        "type": "faq_topic",
+        "handle": "discounts",
+        "fields": {
+          "title": "Discounts",
+          "questions": [
+            {
+              "$ref": "question.do-you-offer-club-discounts"
+            },
+            {
+              "$ref": "question.do-you-offer-discounts-for-non-profits"
+            },
+            {
+              "$ref": "question.do-you-offer-discounts-for-education-institutions"
+            },
+            {
+              "$ref": "question.why-is-everything-marked-on-sale"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "faq_topic.programs",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.faq_topic"
+      ],
+      "data": {
+        "type": "faq_topic",
+        "handle": "programs",
+        "fields": {
+          "title": "Programs",
+          "questions": [
+            {
+              "$ref": "question.can-you-supply-our-club-store-with-gear"
+            },
+            {
+              "$ref": "question.how-do-i-apply-for-tax-exemption"
+            },
+            {
+              "$ref": "question.does-fencing-club-participate-in-e-verify"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "faq_topic.about-us",
+      "kind": "metaobject",
+      "dependsOn": [
+        "definition.faq_topic"
+      ],
+      "data": {
+        "type": "faq_topic",
+        "handle": "about-us",
+        "fields": {
+          "title": "About us",
+          "questions": [
+            {
+              "$ref": "question.where-is-fencing-club-located"
+            },
+            {
+              "$ref": "question.do-you-have-any-physical-stores"
+            },
+            {
+              "$ref": "question.why-another-fencing-equipment-supplier"
+            }
+          ]
         }
       }
     },
@@ -6184,11 +7466,13 @@
     },
     {
       "key": "assignment.3-weapon-washable-pro-grip-glove",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "3-weapon-washable-pro-grip-glove",
+        "owner": "PRODUCT",
+        "handle": "3-weapon-washable-pro-grip-glove",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.gloves"
         }
@@ -6196,11 +7480,13 @@
     },
     {
       "key": "assignment.standard-socks",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "standard-socks",
+        "owner": "PRODUCT",
+        "handle": "standard-socks",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.standard-socks"
         }
@@ -6208,11 +7494,13 @@
     },
     {
       "key": "assignment.standard-socks-2-pack",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "standard-socks-2-pack",
+        "owner": "PRODUCT",
+        "handle": "standard-socks-2-pack",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.standard-socks"
         }
@@ -6220,11 +7508,13 @@
     },
     {
       "key": "assignment.womens-chest-protector",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "womens-chest-protector",
+        "owner": "PRODUCT",
+        "handle": "womens-chest-protector",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.womens-chest-protectors"
         }
@@ -6232,11 +7522,13 @@
     },
     {
       "key": "assignment.mens-chest-protector",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "mens-chest-protector",
+        "owner": "PRODUCT",
+        "handle": "mens-chest-protector",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.mens-chest-protectors"
         }
@@ -6244,11 +7536,13 @@
     },
     {
       "key": "assignment.womens-chest-protector-padding-fie",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "womens-chest-protector-padding-fie",
+        "owner": "PRODUCT",
+        "handle": "womens-chest-protector-padding-fie",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.womens-chest-protectors"
         }
@@ -6256,11 +7550,13 @@
     },
     {
       "key": "assignment.mens-chest-protector-padding-fie",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "mens-chest-protector-padding-fie",
+        "owner": "PRODUCT",
+        "handle": "mens-chest-protector-padding-fie",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.mens-chest-protectors"
         }
@@ -6268,11 +7564,13 @@
     },
     {
       "key": "assignment.mens-chest-protector-with-padding-fie",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "mens-chest-protector-with-padding-fie",
+        "owner": "PRODUCT",
+        "handle": "mens-chest-protector-with-padding-fie",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.mens-chest-protectors"
         }
@@ -6280,11 +7578,13 @@
     },
     {
       "key": "assignment.saber-pro-grip-glove",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "saber-pro-grip-glove",
+        "owner": "PRODUCT",
+        "handle": "saber-pro-grip-glove",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.gloves"
         }
@@ -6292,11 +7592,13 @@
     },
     {
       "key": "assignment.standard-3-weapon-washable-glove",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "standard-3-weapon-washable-glove",
+        "owner": "PRODUCT",
+        "handle": "standard-3-weapon-washable-glove",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.gloves"
         }
@@ -6304,11 +7606,13 @@
     },
     {
       "key": "assignment.womens-chest-protector-with-padding-fie",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "womens-chest-protector-with-padding-fie",
+        "owner": "PRODUCT",
+        "handle": "womens-chest-protector-with-padding-fie",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.womens-chest-protectors"
         }
@@ -6316,11 +7620,13 @@
     },
     {
       "key": "assignment.elite-competition-socks",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "elite-competition-socks",
+        "owner": "PRODUCT",
+        "handle": "elite-competition-socks",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.elite-socks"
         }
@@ -6328,11 +7634,13 @@
     },
     {
       "key": "assignment.saber-electric-800n-pro-grip-glove-fie",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "saber-electric-800n-pro-grip-glove-fie",
+        "owner": "PRODUCT",
+        "handle": "saber-electric-800n-pro-grip-glove-fie",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.gloves"
         }
@@ -6340,11 +7648,13 @@
     },
     {
       "key": "assignment.novus-mens-fencing-jacket-350n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "novus-mens-fencing-jacket-350n",
+        "owner": "PRODUCT",
+        "handle": "novus-mens-fencing-jacket-350n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.mens-jackets"
         }
@@ -6352,11 +7662,13 @@
     },
     {
       "key": "assignment.novus-womens-fencing-jacket-350n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "novus-womens-fencing-jacket-350n",
+        "owner": "PRODUCT",
+        "handle": "novus-womens-fencing-jacket-350n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.womens-jackets"
         }
@@ -6364,11 +7676,13 @@
     },
     {
       "key": "assignment.novus-kids-fencing-jacket-350n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "novus-kids-fencing-jacket-350n",
+        "owner": "PRODUCT",
+        "handle": "novus-kids-fencing-jacket-350n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.kids-jackets"
         }
@@ -6376,11 +7690,13 @@
     },
     {
       "key": "assignment.novus-mens-fencing-pants-350n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "novus-mens-fencing-pants-350n",
+        "owner": "PRODUCT",
+        "handle": "novus-mens-fencing-pants-350n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.mens-pants"
         }
@@ -6388,11 +7704,13 @@
     },
     {
       "key": "assignment.novus-kids-fencing-pants-350n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "novus-kids-fencing-pants-350n",
+        "owner": "PRODUCT",
+        "handle": "novus-kids-fencing-pants-350n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.kids-pants"
         }
@@ -6400,11 +7718,13 @@
     },
     {
       "key": "assignment.novus-womens-fencing-pants-350n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "novus-womens-fencing-pants-350n",
+        "owner": "PRODUCT",
+        "handle": "novus-womens-fencing-pants-350n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.womens-pants"
         }
@@ -6412,11 +7732,13 @@
     },
     {
       "key": "assignment.novus-fencing-underarm-protector-350n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "novus-fencing-underarm-protector-350n",
+        "owner": "PRODUCT",
+        "handle": "novus-fencing-underarm-protector-350n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.underarm-protectors"
         }
@@ -6424,11 +7746,13 @@
     },
     {
       "key": "assignment.novus-epee-fencing-mask-350n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "novus-epee-fencing-mask-350n",
+        "owner": "PRODUCT",
+        "handle": "novus-epee-fencing-mask-350n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.masks"
         }
@@ -6436,11 +7760,13 @@
     },
     {
       "key": "assignment.novus-foil-fencing-mask-350n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "novus-foil-fencing-mask-350n",
+        "owner": "PRODUCT",
+        "handle": "novus-foil-fencing-mask-350n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.masks"
         }
@@ -6448,11 +7774,13 @@
     },
     {
       "key": "assignment.novus-saber-fencing-mask-350n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "novus-saber-fencing-mask-350n",
+        "owner": "PRODUCT",
+        "handle": "novus-saber-fencing-mask-350n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.masks"
         }
@@ -6460,11 +7788,13 @@
     },
     {
       "key": "assignment.ultima-epee-fencing-mask-1600n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "ultima-epee-fencing-mask-1600n",
+        "owner": "PRODUCT",
+        "handle": "ultima-epee-fencing-mask-1600n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.masks"
         }
@@ -6472,11 +7802,13 @@
     },
     {
       "key": "assignment.ultima-foil-fencing-mask-1600n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "ultima-foil-fencing-mask-1600n",
+        "owner": "PRODUCT",
+        "handle": "ultima-foil-fencing-mask-1600n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.masks"
         }
@@ -6484,11 +7816,13 @@
     },
     {
       "key": "assignment.ultima-saber-fencing-mask-1600n",
-      "kind": "product-chart-assignment",
+      "kind": "metafield-assignment",
       "data": {
-        "productHandle": "ultima-saber-fencing-mask-1600n",
+        "owner": "PRODUCT",
+        "handle": "ultima-saber-fencing-mask-1600n",
         "namespace": "custom",
         "key": "size_chart",
+        "type": "metaobject_reference",
         "value": {
           "$ref": "chart.masks"
         }
@@ -6569,6 +7903,325 @@
         "body": "<h2>Fencing Club</h2>\r\n<p>Fencing Club is a specialty retailer of Olympic fencing equipment and apparel, serving fencing clubs, schools, and individual athletes. We have been in business since 2023 and are based in the United States.</p>\r\n<p>We focus exclusively on fencing, with an emphasis on dependable equipment, fair pricing, and clear support for athletes from beginner through competitive levels.</p>\r\n<h2>Our background</h2>\r\n<p>Based in Woodinville, in the Seattle metropolitan area, Fencing Club began after extensive travel to fencing clubs and training facilities around the world. Through these visits, we saw firsthand how challenging it can be for athletes and clubs to obtain proper fencing gear, whether due to limited availability, inconsistent quality, or high costs driven by long supply chains.</p>\r\n<p>These experiences shaped our commitment to ensure that cost and access are never barriers to participation in fencing. From beginners just starting out to competitive fencers training at higher levels, many athletes struggle to find reliable equipment that meets their needs.</p>\r\n<p>Fencing Club was created to provide a dedicated, dependable place where athletes at every stage can acquire quality fencing gear, supported by direct sourcing, clear guidance, and straightforward service.</p>\r\n<h2>Sourcing and operations</h2>\r\n<p>We work directly with manufacturing partners and established fencing brands around the world to source reliable equipment and maintain consistent quality.</p>\r\n<p>Fencing Club operates as a direct retailer and maintains its own inventory at our facility. Orders are shipped from U.S. based fulfillment locations. In some cases, we use third party logistics providers as fulfillment partners. These partners support shipping and delivery only and do not act as resellers.</p>\r\n<p>All customer service, order support, and returns are handled directly by Fencing Club.</p>",
         "templateSuffix": "",
         "isPublished": true
+      }
+    },
+    {
+      "key": "assignment.page.faq.faq_topics",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.page.faq_topics",
+        "page.faq"
+      ],
+      "data": {
+        "owner": "PAGE",
+        "handle": "faq",
+        "namespace": "custom",
+        "key": "faq_topics",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "faq_topic.shipping"
+          },
+          {
+            "$ref": "faq_topic.returns"
+          },
+          {
+            "$ref": "faq_topic.discounts"
+          },
+          {
+            "$ref": "faq_topic.programs"
+          },
+          {
+            "$ref": "faq_topic.about-us"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.page.contact.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.page.questions",
+        "page.contact"
+      ],
+      "data": {
+        "owner": "PAGE",
+        "handle": "contact",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.where-is-my-order"
+          },
+          {
+            "$ref": "question.can-i-change-my-size"
+          },
+          {
+            "$ref": "question.do-you-supply-clubs"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.clothing.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.clothing"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "clothing",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.what-size-fencing-jacket-should-i-buy"
+          },
+          {
+            "$ref": "question.whats-the-difference-between-350n-and-800n"
+          },
+          {
+            "$ref": "question.do-clubs-get-special-pricing"
+          },
+          {
+            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.mens-clothing.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.mens-clothing"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "mens-clothing",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.what-size-fencing-jacket-should-i-buy"
+          },
+          {
+            "$ref": "question.whats-the-difference-between-350n-and-800n"
+          },
+          {
+            "$ref": "question.do-clubs-get-special-pricing"
+          },
+          {
+            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.womens-clothing.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.womens-clothing"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "womens-clothing",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.what-size-fencing-jacket-should-i-buy"
+          },
+          {
+            "$ref": "question.whats-the-difference-between-350n-and-800n"
+          },
+          {
+            "$ref": "question.do-clubs-get-special-pricing"
+          },
+          {
+            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.unisex-clothing.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.unisex-clothing"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "unisex-clothing",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.what-size-fencing-jacket-should-i-buy"
+          },
+          {
+            "$ref": "question.whats-the-difference-between-350n-and-800n"
+          },
+          {
+            "$ref": "question.do-clubs-get-special-pricing"
+          },
+          {
+            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.jackets.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.jackets"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "jackets",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.what-size-fencing-jacket-should-i-buy"
+          },
+          {
+            "$ref": "question.whats-the-difference-between-350n-and-800n"
+          },
+          {
+            "$ref": "question.do-clubs-get-special-pricing"
+          },
+          {
+            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.mens-fencing-jackets.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.mens-fencing-jackets"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "mens-fencing-jackets",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.what-size-fencing-jacket-should-i-buy"
+          },
+          {
+            "$ref": "question.whats-the-difference-between-350n-and-800n"
+          },
+          {
+            "$ref": "question.do-clubs-get-special-pricing"
+          },
+          {
+            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.womens-fencing-jackets.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.womens-fencing-jackets"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "womens-fencing-jackets",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.what-size-fencing-jacket-should-i-buy"
+          },
+          {
+            "$ref": "question.whats-the-difference-between-350n-and-800n"
+          },
+          {
+            "$ref": "question.do-clubs-get-special-pricing"
+          },
+          {
+            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.mens-fencing-pants.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.mens-fencing-pants"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "mens-fencing-pants",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.what-size-fencing-jacket-should-i-buy"
+          },
+          {
+            "$ref": "question.whats-the-difference-between-350n-and-800n"
+          },
+          {
+            "$ref": "question.do-clubs-get-special-pricing"
+          },
+          {
+            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+          }
+        ]
+      }
+    },
+    {
+      "key": "assignment.collection.womens-fencing-pants.questions",
+      "kind": "metafield-assignment",
+      "dependsOn": [
+        "definition.collection.questions",
+        "collection.womens-fencing-pants"
+      ],
+      "data": {
+        "owner": "COLLECTION",
+        "handle": "womens-fencing-pants",
+        "namespace": "custom",
+        "key": "questions",
+        "type": "list.metaobject_reference",
+        "value": [
+          {
+            "$ref": "question.what-size-fencing-jacket-should-i-buy"
+          },
+          {
+            "$ref": "question.whats-the-difference-between-350n-and-800n"
+          },
+          {
+            "$ref": "question.do-clubs-get-special-pricing"
+          },
+          {
+            "$ref": "question.can-i-return-clothing-that-doesnt-fit"
+          }
+        ]
       }
     }
   ]

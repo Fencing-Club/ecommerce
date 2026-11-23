@@ -5,8 +5,8 @@ export const definitionQuery = `query Definition($type: String!) {
     fieldDefinitions { key required type { name } validations { name value } }
   }
 }`
-export const fieldDefinitionQuery = `query ProductFieldDefinition($namespace: String!, $key: String!) {
-  resources: metafieldDefinitions(ownerType: PRODUCT, namespace: $namespace, key: $key, first: 2) {
+export const fieldDefinitionQuery = `query FieldDefinition($ownerType: MetafieldOwnerType!, $namespace: String!, $key: String!) {
+  resources: metafieldDefinitions(ownerType: $ownerType, namespace: $namespace, key: $key, first: 2) {
     nodes { id namespace key type { name } validations { name value } } pageInfo { hasNextPage }
   }
 }`
@@ -61,8 +61,15 @@ export const createFile = `mutation FileCreate($input: [FileCreateInput!]!) {
 export const fileStatus = `query FileStatus($id: ID!) {
   node(id: $id) { ... on MediaImage { id fileStatus image { url } } ... on GenericFile { id fileStatus url } }
 }`
-export const productQuery = `query ProductAssignment($identifier: ProductIdentifierInput!, $namespace: String!, $key: String!) {
-  product: productByIdentifier(identifier: $identifier) { id metafield(namespace: $namespace, key: $key) { id type value compareDigest } }
+const assignedField = `metafield(namespace: $namespace, key: $key) { id type value compareDigest }`
+export const productAssignmentQuery = `query ProductAssignment($identifier: ProductIdentifierInput!, $namespace: String!, $key: String!) {
+  owner: productByIdentifier(identifier: $identifier) { id handle ${assignedField} }
+}`
+export const collectionAssignmentQuery = `query CollectionAssignment($identifier: CollectionIdentifierInput!, $namespace: String!, $key: String!) {
+  owner: collectionByIdentifier(identifier: $identifier) { id handle ${assignedField} }
+}`
+export const pageAssignmentQuery = `query PageAssignment($query: String!, $namespace: String!, $key: String!) {
+  owners: pages(first: 2, query: $query) { nodes { id handle ${assignedField} } pageInfo { hasNextPage } }
 }`
 export const setMetafields = `mutation Assign($metafields: [MetafieldsSetInput!]!) {
   metafieldsSet(metafields: $metafields) { metafields { id value } userErrors { field message } }

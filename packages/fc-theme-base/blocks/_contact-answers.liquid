@@ -1,10 +1,19 @@
 {%- comment -%}
-  The Contact page's quick answers: a heading over `_contact-answer` blocks, then a link to the FAQ page.
+  The Contact page's quick answers: a heading over the Question entries the page links in `custom.questions`, then a
+  link to the FAQ page.
 {%- endcomment -%}
 <section class="contact-page__answers" aria-labelledby="ContactAnswers-{{ block.id }}" {{ block.shopify_attributes }}>
   <p class="contact-page__kicker">{{ block.settings.kicker | escape }}</p>
   <h2 id="ContactAnswers-{{ block.id }}">{{ block.settings.heading | escape }}</h2>
-  <div class="contact-page__answer-grid">{%- content_for 'blocks' -%}</div>
+  {%- assign questions = page.metafields.custom.questions.value -%}
+  {%- if questions.size > 0 -%}
+    <div class="contact-page__answer-grid">
+      {%- for entry in questions -%}
+        {%- assign answer = entry.answer | metafield_tag -%}
+        {%- render 'ui-contact-quick-answer', question: entry.question.value, answer: answer -%}
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
   {%- if pages.faq.url != blank -%}
     <p class="contact-page__faq-link">
       <span>{{ block.settings.faq_prompt | escape }}</span>
@@ -16,7 +25,6 @@
 {% schema %}
 {
   "name": "t:blocks.contact_answers.name",
-  "blocks": [{ "type": "_contact-answer" }],
   "settings": [
     {
       "type": "text",
@@ -43,11 +51,6 @@
       "default": "Read our full FAQ"
     }
   ],
-  "presets": [
-    {
-      "name": "t:blocks.contact_answers.name",
-      "blocks": [{ "type": "_contact-answer" }]
-    }
-  ]
+  "presets": [{ "name": "t:blocks.contact_answers.name" }]
 }
 {% endschema %}

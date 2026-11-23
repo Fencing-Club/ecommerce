@@ -227,7 +227,7 @@
 }
 
 .ui-contact-quick-answer h3,
-.ui-contact-quick-answer p {
+.ui-contact-quick-answer__answer p {
   margin: 0;
 }
 
@@ -239,10 +239,14 @@
   letter-spacing: 0;
 }
 
-.ui-contact-quick-answer p {
+.ui-contact-quick-answer__answer {
   font-size: 1.4rem;
   line-height: 1.5;
   color: var(--muted-foreground);
+}
+
+.ui-contact-quick-answer__answer p + p {
+  margin-top: 0.8rem;
 }
 
 .contact-page__faq-link {

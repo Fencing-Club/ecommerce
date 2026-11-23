@@ -66,7 +66,7 @@ Question is written once, so any page that asks it links to the same entry.
 | `custom.features` | List of Product feature entries: photo, heading, text | Overview feature cards. | Built |
 | `custom.care_symbols` | List of single line text: wash-cold, line-dry, no-bleach, no-tumble-dry, no-iron, no-dry-clean | Care symbols, each with what it means. | Built |
 | `custom.care_note` | Multi-line text | Note under the care symbols. | Built |
-| `custom.questions` | List of Question entries | Questions. A list set per product type for products without their own is designed, not built. | Built |
+| `custom.questions` | List of [Question entries](shopify-questions.md) | Questions. A list set per product type for products without their own is designed, not built. | Built |
 | `custom.guides` | List of blog posts | From the Journal. Without it, posts tagged with the product type. | Designed |
 
 Filters only appear once a field is turned on in **Search & Discovery > Filters**; see

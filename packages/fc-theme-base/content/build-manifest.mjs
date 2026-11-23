@@ -42,7 +42,7 @@ export function buildSizingManifest(source) {
     field('category', 'Category to match'),
     { ...referenceField('charts', 'Charts in display order', 'definition.chart', true), required: false },
   ]);
-  resources.push({ key: 'definition.product-chart', kind: 'product-metafield-definition', data: {
+  resources.push({ key: 'definition.product-chart', kind: 'metafield-definition', data: {
     namespace: 'custom', key: 'size_chart', name: 'Size chart', type: 'metaobject_reference', ownerType: 'PRODUCT',
     validations: [{ name: 'metaobject_definition_id', value: reference('definition.chart') }],
   } });

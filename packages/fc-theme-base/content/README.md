@@ -40,14 +40,17 @@ The sizing-only pack creates a separate `size-charts` menu in the same order as 
 It also defines the Brand metaobject, whose logo shows on product cards for other brands (an entry's handle is its
 vendor's handle), and the product filter fields `custom.weapon` (Weapon), `custom.gender` (Gender),
 `custom.skill_level` (Skill Level), `custom.protection_rating` (Safety Level) and `custom.fie_status` (FIE Rating).
-It defines the product page's fields too: the Question and Product feature metaobjects and `custom.closure`,
+It defines the product page's fields too: the Product feature metaobject and `custom.closure`,
 `custom.care_symbols`, `custom.care_note`, `custom.features` and `custom.questions`; see
-[product specs](../docs/shopify-product-specs.md). Definitions do not populate missing product values or enable
+[product specs](../docs/shopify-product-specs.md). `questions-source.json` holds the store's questions: the pack
+creates them as Question entries, groups the FAQ page's into FAQ topics, and links them to the FAQ page, the Contact
+page and the clothing collections; see [questions](../docs/shopify-questions.md). Definitions do not populate missing product values or enable
 Search & Discovery filters. See [collection filters](../docs/shopify-collection-filters.md).
 `theme-configuration.json` contains the separate menu-attachment and ordered-group settings. Creating records
 and attaching them to the theme are separate steps.
-For a store-specific product assignment, add a `product-chart-assignment` resource with explicit `productHandle`,
-`namespace: "custom"`, `key: "size_chart"`, and `value: { "$ref": "chart.mens-jackets" }`.
+For a store-specific product assignment, add a `metafield-assignment` resource with `owner: "PRODUCT"`, an explicit
+`handle`, `namespace: "custom"`, `key: "size_chart"`, `type: "metaobject_reference"`, and
+`value: { "$ref": "chart.mens-jackets" }`.
 Changing the pack does not overwrite an installed record unless its resource key is explicitly approved with
 `--replace`. Reconcile approved Shopify edits before migration; content edited in Contoso is not automatically
 exported into this package. Preserve existing store data and unrelated configuration during theme cutover.

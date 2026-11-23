@@ -2,11 +2,10 @@
 {{ 'component-support-band.css' | asset_url | stylesheet_tag }}
 
 {%- comment -%}
-  A section can't read its theme blocks' settings, so the topic links come from the rendered `_faq-topic` headings:
-  each carries its title and anchor in `data-faq-topic` and `id`.
+  The questions come from the page's FAQ topics (`custom.faq_topics`): each topic is a title over a list of Question
+  entries, so a question is written once and can be linked from a product, a collection or another page too.
 {%- endcomment -%}
-{%- capture faq_blocks -%}{%- content_for 'blocks' -%}{%- endcapture -%}
-{%- assign faq_topics = faq_blocks | split: 'data-faq-topic="' -%}
+{%- assign faq_topics = page.metafields.custom.faq_topics.value -%}
 
 <div
   class="faq-page"
@@ -18,16 +17,34 @@
     <p class="faq-page__kicker">{{ section.settings.kicker | escape }}</p>
     <h1>{{ section.settings.heading | default: page.title | escape }}</h1>
     <p class="faq-page__subtitle">{{ section.settings.subtitle | escape }}</p>
-    <nav class="faq-page__topics" aria-label="{{ 'sections.faq.topics' | t }}">
-      {%- for faq_topic in faq_topics offset: 1 -%}
-        {%- assign faq_topic_parts = faq_topic | split: '"' -%}
-        <a class="ui-pill" href="#{{ faq_topic_parts[2] }}">{{ faq_topic_parts[0] }}</a>
-      {%- endfor -%}
-    </nav>
+    {%- if faq_topics.size > 0 -%}
+      <nav class="faq-page__topics" aria-label="{{ 'sections.faq.topics' | t }}">
+        {%- for faq_topic in faq_topics -%}
+          <a class="ui-pill" href="#{{ faq_topic.title.value | handleize }}">{{ faq_topic.title.value | escape }}</a>
+        {%- endfor -%}
+      </nav>
+    {%- endif -%}
   </header>
 
   <div class="faq-page__content">
-    <div class="faq-page__column">{{ faq_blocks }}</div>
+    <div class="faq-page__column">
+      {%- for faq_topic in faq_topics -%}
+        <section class="faq-page__topic" aria-labelledby="{{ faq_topic.title.value | handleize }}">
+          <h2 class="faq-page__topic-title" id="{{ faq_topic.title.value | handleize }}">
+            {{- faq_topic.title.value | escape -}}
+          </h2>
+          {%- for entry in faq_topic.questions.value -%}
+            {%- assign answer = entry.answer | metafield_tag -%}
+            {%- render 'ui-faq-item',
+              question: entry.question.value,
+              answer: answer,
+              open: forloop.first,
+              structured_data: settings.structured_data_enabled
+            -%}
+          {%- endfor -%}
+        </section>
+      {%- endfor -%}
+    </div>
   </div>
 
   <div class="faq-page__contact">
@@ -45,8 +62,6 @@
   "name": "t:sections.faq.name",
   "tag": "section",
   "class": "section",
-  "max_blocks": 50,
-  "blocks": [{ "type": "_faq-topic" }, { "type": "_faq-item" }],
   "settings": [
     { "type": "text", "id": "kicker", "label": "t:sections.faq.settings.kicker.label", "default": "Help center" },
     {
@@ -81,21 +96,6 @@
       "default": "Contact us"
     }
   ],
-  "presets": [
-    {
-      "name": "t:sections.faq.name",
-      "blocks": [
-        { "type": "_faq-topic" },
-        { "type": "_faq-item" },
-        {
-          "type": "_faq-item",
-          "settings": {
-            "question": "How quickly are orders dispatched?",
-            "answer": "<p>Orders placed by 1pm Pacific time, Monday to Friday, go out the same day.</p>"
-          }
-        }
-      ]
-    }
-  ]
+  "presets": [{ "name": "t:sections.faq.name" }]
 }
 {% endschema %}

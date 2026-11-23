@@ -4,6 +4,7 @@ const handle = z.string().regex(/^[a-z0-9][a-z0-9_-]*$/)
 const reference = z.strictObject({ $ref: z.string(), field: z.enum(["id", "url"]).optional() })
 const textOrReference = z.union([z.string(), reference])
 const validation = z.strictObject({ name: z.string(), value: textOrReference })
+const ownerType = z.enum(["PRODUCT", "COLLECTION", "PAGE"])
 export const definitionSchema = z.strictObject({
   type: handle,
   name: z.string().min(1),
@@ -41,7 +42,7 @@ export const fieldDefinitionSchema = z.strictObject({
   key: handle,
   name: z.string().min(1),
   type: z.string().min(1),
-  ownerType: z.literal("PRODUCT"),
+  ownerType,
   validations: z.array(validation).optional(),
   access: z.strictObject({ storefront: z.literal("PUBLIC_READ") }).optional()
 })
@@ -81,10 +82,12 @@ export const fileSchema = z.strictObject({
   alt: z.string()
 })
 export const assignmentSchema = z.strictObject({
-  productHandle: handle,
+  owner: ownerType,
+  handle,
   namespace: handle,
   key: handle,
-  value: textOrReference
+  type: z.string().min(1),
+  value: z.union([textOrReference, z.array(textOrReference).min(1)])
 })
 
 export const remoteSchema = z.object({ id: z.string().min(1) }).passthrough()

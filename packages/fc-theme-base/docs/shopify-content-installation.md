@@ -39,7 +39,7 @@ pnpm --filter @repo/shopify-content cli pack ../fc-theme-base/content/manifest.j
 
 For the complete migration, generate the artifact with `node packages/fc-theme-base/content/build-migration.mjs`
 and pass `migration-manifest.json` instead. The source JSON files are already captured; do not recapture them during
-installation. The theme ZIP supplies templates, FAQ blocks, scripts, artwork, and printable PDFs.
+installation. The theme ZIP supplies templates, scripts, artwork, and printable PDFs.
 
 The output directory must not exist. A bundle contains its own manifest and media, with no source-store IDs,
 credentials, or paths outside the bundle. The CLI resolves file resources relative to the manifest directory.
@@ -73,14 +73,14 @@ Use `dependsOn` when a relationship is implicit, such as an entry's definition i
 | Kind | Identity | Behavior |
 | --- | --- | --- |
 | `metaobject-definition` | Type | Creates merchant-owned definitions; incompatible existing schemas block installation. |
-| `product-metafield-definition` | Namespace and key | Creates a typed product field; incompatible types/reference validation block installation. |
+| `metafield-definition` | Owner type, namespace and key | Creates a typed product, collection or page field; incompatible types/reference validation block installation. |
 | `metaobject` | Type and handle | Creates fields after dependencies; supports explicit replacement. |
 | `file` | Filename and local content hash | Staged upload, file creation, bounded readiness checks; reuses an exact ready file. |
 | `page` | Handle | Creates a Page with its template suffix; unpublished unless explicitly specified. |
 | `menu` | Handle | Creates nested navigation, at most three levels. |
 | `collection` | Handle | Reuses an existing collection; creates missing collections with destination-resolved product membership. |
 | `blog` | Handle | Reuses a complete existing journal or creates the journal and packaged articles; missing articles in an existing journal block the plan. |
-| `product-chart-assignment` | Product handle, namespace and key | Assigns an explicit chart reference; missing products block installation. |
+| `metafield-assignment` | Owner type, handle, namespace and key | Sets one typed field on a product, collection or page found by handle; a missing owner blocks installation. |
 
 Resource payloads are validated before any network operation. Duplicate identities, missing references, cycles,
 ambiguous search matches, changed input files, and stale plans fail closed. Definition changes are not silently

@@ -3,12 +3,13 @@
 
 {%- comment -%}
   Below a collection's grid, so products load first: what the protection levels mean, common questions marked up as
-  an FAQPage, popular filtered pages and the brands the collection carries.
+  an FAQPage, popular filtered pages and the brands the collection carries. The questions are the Question entries
+  the collection links in `custom.questions`.
 {%- endcomment -%}
 {%- liquid
   assign title = collection.title | downcase
   assign levels = section.blocks | where: 'type', 'level'
-  assign questions = section.blocks | where: 'type', 'question'
+  assign questions = collection.metafields.custom.questions.value
   assign popular = linklists[section.settings.popular_menu].links
 -%}
 <section class="collection-guide" id="{{ section.settings.anchor | escape }}" aria-labelledby="CollectionGuide-{{ section.id }}">
@@ -98,8 +99,9 @@
           <div class="collection-guide__faq" itemscope itemtype="https://schema.org/FAQPage">
             <h2 class="collection-guide__subheading">{{ 'collections.guide.questions' | t: title: title }}</h2>
             <div class="collection-guide__questions">
-              {%- for block in questions -%}
-                {%- render 'ui-faq-item', question: block.settings.question, answer: block.settings.answer, open: forloop.first, structured_data: true, variant: 'plain', block: block -%}
+              {%- for entry in questions -%}
+                {%- assign answer = entry.answer | metafield_tag -%}
+                {%- render 'ui-faq-item', question: entry.question.value, answer: answer, open: forloop.first, structured_data: true, variant: 'plain' -%}
               {%- endfor -%}
             </div>
           </div>
@@ -154,19 +156,6 @@
         { "type": "text", "id": "meaning", "label": "What it means", "default": "Fabric resists 350 newtons." },
         { "type": "text", "id": "where", "label": "Where you'll wear it", "default": "Club training and most domestic events." },
         { "type": "url", "id": "link", "label": "Shop link", "info": "Leave empty to link to this collection filtered by the level." }
-      ]
-    },
-    {
-      "type": "question",
-      "name": "Question",
-      "settings": [
-        { "type": "text", "id": "question", "label": "Question", "default": "What size fencing jacket should I buy?" },
-        {
-          "type": "richtext",
-          "id": "answer",
-          "label": "Answer",
-          "default": "<p>Measure your chest, waist and arm length, then match them to the size chart on the product page. Each product has its own chart.</p>"
-        }
       ]
     }
   ],
