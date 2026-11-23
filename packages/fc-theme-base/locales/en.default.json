@@ -254,6 +254,7 @@
         "yes": "Yes",
         "no": "No",
         "weight": "Weight",
+        "weight_range": "{{ min }} to {{ max }}",
         "closure": "Closure",
         "pairs_with": "Pairs with",
         "category": {

@@ -1,13 +1,25 @@
 {% doc %}
   The product details section's Specs: a row for each filled field, in the order docs/shopify-product-specs.md gives.
-  Protection and FIE approval come first, then Shopify's category fields, then weight, closure and the products it
-  pairs with from the Search & Discovery app's complementary products. A field that isn't set has no row, and with no
+  Protection and FIE approval come first, then Shopify's category fields, then the variants' shipping weight, closure
+  and the products it pairs with from the Search & Discovery app's complementary products. Weight is a range when the
+  variants differ. A field that isn't set has no row, and with no
   rows the part renders nothing.
 {% enddoc %}
 {%- liquid
   assign rating = product.metafields.custom.protection_rating.value | strip
   assign fie = product.metafields.custom.fie_status.value | strip
-  assign weight = product.metafields.custom.weight.value | strip
+  assign weight_min = 0
+  assign weight_max = 0
+  for variant in product.variants
+    if variant.weight > 0
+      if weight_min == 0 or variant.weight < weight_min
+        assign weight_min = variant.weight
+      endif
+      if variant.weight > weight_max
+        assign weight_max = variant.weight
+      endif
+    endif
+  endfor
   assign closure = product.metafields.custom.closure.value | strip
   assign pairs = product.metafields['shopify--discovery--product_recommendation'].complementary_products.value
   # Shopify's fencing category fields. A category has only some of them, so each shows only where it's filled.
@@ -41,10 +53,19 @@
       {%- endif -%}
     {%- endif -%}
   {%- endfor -%}
-  {%- if weight != blank -%}
+  {%- if weight_max > 0 -%}
+    {%- liquid
+      assign heaviest = weight_max | weight_with_unit
+      if weight_min == weight_max
+        assign weight = heaviest
+      else
+        assign lightest = weight_min | weight_with_unit
+        assign weight = 'products.details.specs.weight_range' | t: min: lightest, max: heaviest
+      endif
+    -%}
     <div class="product-specs__row">
       <dt>{{ 'products.details.specs.weight' | t }}</dt>
-      <dd>{{ weight | escape }}</dd>
+      <dd>{{ weight }}</dd>
     </div>
   {%- endif -%}
   {%- if closure != blank -%}

@@ -20,9 +20,9 @@ brand's content optional or require recreating the existing shop.
 	records, and approve necessary replacements explicitly. A theme switch must not reset products, customers,
 	orders, credentials, or unrelated configuration. Publishing and live-store writes require explicit authorization.
 
-The complete `migration-manifest.json` contains 249 resources: the 131-resource sizing baseline, five main/footer
-menus, 26 explicit chart assignments, seven support/policy pages, 73 collections, the approved journal with
-its articles, five product filter definitions and the Brand definition. `theme-configuration.json` supplies menu attachments, directory page, and ordered sizing groups.
+The complete `migration-manifest.json` holds the sizing baseline, the main and footer menus, explicit chart
+assignments, the support and policy pages, collections, the approved journal with its articles, the product filter
+definitions, the Brand definition and the product page's fields ([product specs](shopify-product-specs.md)). `theme-configuration.json` supplies menu attachments, directory page, and ordered sizing groups.
 Filter selection and product classification are separate from definition creation; see [collection filters](shopify-collection-filters.md).
 Catalog rehearsal is separate; see [Shopify catalog rehearsal](shopify-catalog-rehearsal.md).
 Shopify edits do not sync back to the pack: reconcile approved content changes before the Fencing Club installation.

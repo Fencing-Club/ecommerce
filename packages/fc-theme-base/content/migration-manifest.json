@@ -3384,6 +3384,162 @@
       }
     },
     {
+      "key": "definition.question",
+      "kind": "metaobject-definition",
+      "data": {
+        "type": "question",
+        "name": "Question",
+        "displayNameKey": "question",
+        "access": {
+          "storefront": "PUBLIC_READ"
+        },
+        "fieldDefinitions": [
+          {
+            "key": "question",
+            "name": "Question",
+            "type": "single_line_text_field",
+            "required": true
+          },
+          {
+            "key": "answer",
+            "name": "Answer",
+            "type": "rich_text_field",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "key": "definition.product_feature",
+      "kind": "metaobject-definition",
+      "data": {
+        "type": "product_feature",
+        "name": "Product feature",
+        "displayNameKey": "heading",
+        "access": {
+          "storefront": "PUBLIC_READ"
+        },
+        "fieldDefinitions": [
+          {
+            "key": "image",
+            "name": "Photo",
+            "type": "file_reference",
+            "validations": [
+              {
+                "name": "file_type_options",
+                "value": "[\"Image\"]"
+              }
+            ]
+          },
+          {
+            "key": "heading",
+            "name": "Heading",
+            "type": "single_line_text_field",
+            "required": true
+          },
+          {
+            "key": "text",
+            "name": "Text",
+            "type": "multi_line_text_field"
+          }
+        ]
+      }
+    },
+    {
+      "key": "definition.closure",
+      "kind": "product-metafield-definition",
+      "data": {
+        "namespace": "custom",
+        "key": "closure",
+        "name": "Closure",
+        "type": "single_line_text_field",
+        "ownerType": "PRODUCT",
+        "access": {
+          "storefront": "PUBLIC_READ"
+        }
+      }
+    },
+    {
+      "key": "definition.care_symbols",
+      "kind": "product-metafield-definition",
+      "data": {
+        "namespace": "custom",
+        "key": "care_symbols",
+        "name": "Care symbols",
+        "type": "list.single_line_text_field",
+        "ownerType": "PRODUCT",
+        "validations": [
+          {
+            "name": "choices",
+            "value": "[\"wash-cold\",\"line-dry\",\"no-bleach\",\"no-tumble-dry\",\"no-iron\",\"no-dry-clean\"]"
+          }
+        ],
+        "access": {
+          "storefront": "PUBLIC_READ"
+        }
+      }
+    },
+    {
+      "key": "definition.care_note",
+      "kind": "product-metafield-definition",
+      "data": {
+        "namespace": "custom",
+        "key": "care_note",
+        "name": "Care note",
+        "type": "multi_line_text_field",
+        "ownerType": "PRODUCT",
+        "access": {
+          "storefront": "PUBLIC_READ"
+        }
+      }
+    },
+    {
+      "key": "definition.features",
+      "kind": "product-metafield-definition",
+      "data": {
+        "namespace": "custom",
+        "key": "features",
+        "name": "Features",
+        "type": "list.metaobject_reference",
+        "ownerType": "PRODUCT",
+        "validations": [
+          {
+            "name": "metaobject_definition_id",
+            "value": {
+              "$ref": "definition.product_feature",
+              "field": "id"
+            }
+          }
+        ],
+        "access": {
+          "storefront": "PUBLIC_READ"
+        }
+      }
+    },
+    {
+      "key": "definition.questions",
+      "kind": "product-metafield-definition",
+      "data": {
+        "namespace": "custom",
+        "key": "questions",
+        "name": "Questions",
+        "type": "list.metaobject_reference",
+        "ownerType": "PRODUCT",
+        "validations": [
+          {
+            "name": "metaobject_definition_id",
+            "value": {
+              "$ref": "definition.question",
+              "field": "id"
+            }
+          }
+        ],
+        "access": {
+          "storefront": "PUBLIC_READ"
+        }
+      }
+    },
+    {
       "key": "collection.featured-products",
       "kind": "collection",
       "data": {

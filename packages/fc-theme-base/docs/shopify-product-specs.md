@@ -18,6 +18,7 @@ no field for.
 | Category | Category | Picks which category fields the product has. |
 | Size, color, hand | Variant options | Option pickers and the Size, Color and Hand filters. |
 | Price and sale price | Variant price and compare-at price | `ui-price` everywhere. |
+| Weight | Variant shipping weight | The Weight spec row, as a range when sizes differ. |
 
 ## Category fields
 
@@ -42,14 +43,15 @@ full list.
 
 The Specs table shows protection and FIE approval first, then the product's filled category fields in this order
 (color is left to the swatches), then weight, closure and Pairs with. Shopify has no fencing category field for
-protection rating, weight, closure or care, so those are custom fields below. Weapon, gender and FIE status also
+protection rating, closure or care, so those are custom fields below. Weapon, gender and FIE status also
 have custom fields because the filters and protection badge already use their reviewed values.
 
 ## Custom fields
 
 Product fields in the `custom` namespace. Built means the theme reads it today; Designed means the
 [product page design](shopify-product-page.md) uses it and the theme doesn't read it yet. Entry fields are read by
-key: a Product feature has `image`, `heading` and `text`; an FAQ entry has `question` and a rich text `answer`.
+key: a Product feature has `image`, `heading` and `text`; a Question has `question` and a rich text `answer`. A
+Question is written once, so any page that asks it links to the same entry.
 
 | Field | Type | Shows | State |
 | --- | --- | --- | --- |
@@ -60,12 +62,11 @@ key: a Product feature has `image`, `heading` and `text`; an FAQ entry has `ques
 | `custom.gender` | Single line text: Mens, Womens, Kids, Unisex | Gender filter. | Built |
 | `custom.skill_level` | Single line text: Beginner, Intermediate, Advanced | Skill Level filter. | Built |
 | `custom.size_chart` | Size chart entry | Size guide panel, with how to measure and fit tips. | Built |
-| `custom.weight` | Single line text, such as 625 g in size 46 | Weight spec row. | Built |
 | `custom.closure` | Single line text, such as Back zip with collar strap | Closure spec row. | Built |
 | `custom.features` | List of Product feature entries: photo, heading, text | Overview feature cards. | Built |
 | `custom.care_symbols` | List of single line text: wash-cold, line-dry, no-bleach, no-tumble-dry, no-iron, no-dry-clean | Care symbols, each with what it means. | Built |
 | `custom.care_note` | Multi-line text | Note under the care symbols. | Built |
-| `custom.faqs` | List of FAQ entries | Questions. A list set per product type for products without their own is designed, not built. | Built |
+| `custom.questions` | List of Question entries | Questions. A list set per product type for products without their own is designed, not built. | Built |
 | `custom.guides` | List of blog posts | From the Journal. Without it, posts tagged with the product type. | Designed |
 
 Filters only appear once a field is turned on in **Search & Discovery > Filters**; see
@@ -88,6 +89,6 @@ Protection level entry per rating and a `custom.upgrade_product` product referen
 
 ## Adding a spec
 
-Use a category field when the product's category has one. Otherwise add a `custom` definition with storefront read
+Use a product or category field when Shopify has one. Otherwise add a `custom` definition with storefront read
 access to the content pack's builder (`content/build-migration.mjs`), add its row here, and render it in the Specs
 table only when set.
