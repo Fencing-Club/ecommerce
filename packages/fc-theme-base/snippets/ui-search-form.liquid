@@ -9,6 +9,13 @@
   - class: {String} Optional extra classes.
 {% endcomment %}
 
+{%- if settings.predictive_search_enabled -%}
+  {%- comment -%}
+    The layout loads this stylesheet without blocking, for the header's closed search panel. This form's panels sit in
+    the page, so they need it before the first paint or they show unstyled until it arrives.
+  {%- endcomment -%}
+  {{ 'component-predictive-search.css' | asset_url | stylesheet_tag }}
+{%- endif -%}
 <div class="ui-search-form{% if class %} {{ class }}{% endif %}">
   {%- if settings.predictive_search_enabled -%}
     <predictive-search data-loading-text="{{ 'accessibility.loading' | t }}">
