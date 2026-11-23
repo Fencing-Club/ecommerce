@@ -976,6 +976,9 @@
     },
     "about_closing": {
       "name": "Closing"
+    },
+    "product_details": {
+      "name": "Product details"
     }
   },
   "blocks": {
@@ -1579,6 +1582,29 @@
         "link": {
           "label": "Link",
           "info": "The chapter's id, such as #the-numbers"
+        }
+      }
+    },
+    "product_overview": {
+      "name": "Overview"
+    },
+    "product_specs": {
+      "name": "Specs"
+    },
+    "product_care": {
+      "name": "Care"
+    },
+    "product_reviews": {
+      "name": "Reviews"
+    },
+    "product_questions": {
+      "name": "Questions",
+      "settings": {
+        "intro": {
+          "label": "Intro"
+        },
+        "button_label": {
+          "label": "Button label"
         }
       }
     }

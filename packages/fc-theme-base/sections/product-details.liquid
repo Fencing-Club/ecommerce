@@ -1,0 +1,55 @@
+{%- comment -%}
+  The product page's details under the photos and buy box: Overview, Specs, Care, Reviews and Questions, each a block
+  that renders only when the product has its data (docs/shopify-product-specs.md). On phones they're rows that open in
+  place; from 990px they all show open, under a row of links to each. A section can't read its blocks, so the links
+  come from the rendered parts: each carries its label and anchor in `data-product-section` and `id`, which the buy
+  bar's links read too. `<product-details>` (`assets/product-details.js`) keeps the parts open from 990px and runs Show
+  more questions.
+{%- endcomment -%}
+{{ 'section-product-details.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'product-details.js' | asset_url }}" type="module"></script>
+
+{%- capture parts -%}{%- content_for 'blocks' -%}{%- endcapture -%}
+{%- assign part_links = parts | split: 'data-product-section="' -%}
+{%- if part_links.size > 1 -%}
+  <product-details class="product-details">
+    <nav class="product-details__nav page-width" aria-label="{{ 'products.product.on_this_page' | t }}">
+      <ul class="product-details__links list-unstyled">
+        {%- for part_link in part_links offset: 1 -%}
+          {%- assign part_link_parts = part_link | split: '"' -%}
+          <li><a class="product-details__link" href="#{{ part_link_parts[2] }}">{{ part_link_parts[0] }}</a></li>
+        {%- endfor -%}
+      </ul>
+    </nav>
+    <div class="product-details__parts">{{ parts }}</div>
+  </product-details>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.product_details.name",
+  "tag": "section",
+  "class": "section",
+  "enabled_on": { "templates": ["product"] },
+  "blocks": [
+    { "type": "_product-overview" },
+    { "type": "_product-specs" },
+    { "type": "_product-care" },
+    { "type": "_product-reviews" },
+    { "type": "_product-questions" }
+  ],
+  "settings": [],
+  "presets": [
+    {
+      "name": "t:sections.product_details.name",
+      "blocks": [
+        { "type": "_product-overview" },
+        { "type": "_product-specs" },
+        { "type": "_product-care" },
+        { "type": "_product-reviews" },
+        { "type": "_product-questions" }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,44 @@
+{% doc %}
+  The product details section's Care: the care symbols from custom.care_symbols, each with what it means, then the
+  note from custom.care_note. Renders nothing when neither is set.
+{% enddoc %}
+{%- liquid
+  assign symbols = product.metafields.custom.care_symbols.value
+  assign note = product.metafields.custom.care_note.value | strip
+-%}
+{%- capture tiles -%}
+  {%- for symbol in symbols -%}
+    {%- capture tile -%}{%- render 'ui-care-symbol', symbol: symbol -%}{%- endcapture -%}
+    {%- if tile != blank -%}
+      <li class="product-care__symbol">{{ tile }}</li>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if tiles != blank or note != blank -%}
+  {%- capture content -%}
+    <div class="product-care">
+      {%- if tiles != blank -%}
+        <ul class="product-care__symbols list-unstyled">{{ tiles }}</ul>
+      {%- endif -%}
+      {%- if note != blank -%}
+        <p class="product-care__note">{{ note | escape | newline_to_br }}</p>
+      {%- endif -%}
+    </div>
+  {%- endcapture -%}
+  {%- assign label = 'products.details.care.label' | t -%}
+  {%- render 'product-details-part',
+    id: 'product-care',
+    label: label,
+    heading: label,
+    content: content,
+    block: block
+  -%}
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.product_care.name",
+  "settings": [],
+  "presets": [{ "name": "t:blocks.product_care.name" }]
+}
+{% endschema %}

@@ -2,8 +2,8 @@
 
 The product page's top is `sections/main-product.liquid`: the photos beside the buy box on desktop, stacked with a
 photo carousel on phones. `templates/product.json` puts **Page breadcrumbs** above it and the disclosures and related
-products below. The sections further down the Pen (Overview, Specs, Care, Reviews, Questions) come later; each shows
-only when its data is set. [Product specs](shopify-product-specs.md) lists where that data lives.
+products below, with **Product details** between them. [Product specs](shopify-product-specs.md) lists where each
+part's data lives.
 
 ## Parts
 
@@ -30,7 +30,21 @@ only when its data is set. [Product specs](shopify-product-specs.md) lists where
   Shopify draws Buy with Shop Pay. Where Shop Pay is off, its plain Buy it now takes the primary button's look
   (UI/Express checkout in `assets/component-ui.css`). App blocks, such as a back-in-stock form, sit under it, then
   the trust notes, one line each: the ships row, then the section's **Trust note** blocks (Free returns by default).
-  The description comes last.
+
+## Product details
+
+`sections/product-details.liquid` holds the parts under the buy box, each a private block that renders only when the
+product has its data: Overview (the description, the second photo and feature cards), Specs, Care, Reviews (the
+reviews app's block, which goes inside it) and Questions. With none of them, the section renders nothing.
+
+- On phones each part is a row that opens in place, with Overview open. From 990px they all show open, each with its
+  label as the eyebrow over its heading, under a row of links to each part. `snippets/product-details-part.liquid`
+  draws each one.
+- A part carries its label and anchor in `data-product-section` and `id`, so the section's links and the buy bar's
+  find it.
+- Questions shows the first five, with the first open, and Show more questions reveals the rest. The rest are on the
+  page from the start, hidden until found, so search engines and find in page reach them.
+- Care symbols are `snippets/ui-care-symbol.liquid`, matching the Pen's Icon/Care set.
 
 ## Scripts
 
@@ -39,9 +53,12 @@ only when its data is set. [Product specs](shopify-product-specs.md) lists where
 - `assets/product-page.js` defines `<product-page>`. It opens the viewer and Size guide's drawer, brings a picked
   variant's photo to the front, shows the buy bar and works out the ships line. Shopify's express checkout button is
   drawn again after each variant loads.
+- `assets/product-details.js` defines `<product-details>`. From 990px it keeps every part open and takes the parts'
+  headings out of the tab order. It runs Show more questions.
 - `assets/photo-gallery.js` scrolls the gallery and the viewer.
 
 ## Stories
 
 `stories/sections/product/main-product.stories.js` covers picking a size, low stock, partner stock, sold out, the
-photo viewer, Size guide and the buy bar.
+photo viewer, Size guide and the buy bar. `product-details.stories.js` covers every part, a product with only a
+description, one with nothing to show and Show more questions.

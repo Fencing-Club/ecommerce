@@ -2,8 +2,9 @@
   The product page's top: the photos beside the buy box. The buy box has the brand, name and rating, then the price
   and the options inside `product-options`, which reloads this section for each variant so price, stock and the
   buttons come from Liquid. Size starts unpicked, so nobody adds a size they didn't choose. Under the buttons sit app
-  blocks, such as a back-in-stock form, then one-line trust notes led by the ships row, then the description. The
-  sticky buy bar, the size chart drawer and the photo viewer belong to the section too. `<product-page>`
+  blocks, such as a back-in-stock form, then one-line trust notes led by the ships row. The description is in the
+  Product details section's Overview. The sticky buy bar, the size chart drawer and the photo viewer belong to the
+  section too. `<product-page>`
   (`assets/product-page.js`) runs the viewer, the bar, Size guide and the ships line.
 {%- endcomment -%}
 {{ 'section-main-product.css' | asset_url | stylesheet_tag }}
@@ -212,9 +213,6 @@
         </script>
       </product-options>
 
-      {%- if product.description != blank -%}
-        <div class="product-page__description rte">{{ product.description }}</div>
-      {%- endif -%}
     </div>
   </div>
 

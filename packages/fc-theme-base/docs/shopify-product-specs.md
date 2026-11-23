@@ -40,14 +40,16 @@ full list.
 | Blade size | `shopify.weapon-size`, `shopify.blade-size-number`, `shopify.epee-blade-size`, `shopify.blade-size-category` | Foils, foil blades, épées, sabres. |
 | Connectors | `shopify.fencing-connector-type`, `shopify.body-cord-connector-style` | Scoring equipment, body cords. |
 
-The Specs table shows a product's filled category fields first, in this order. Shopify has no fencing category field
-for protection rating, weight, closure or care, so those are custom fields below. Weapon, gender and FIE status also
+The Specs table shows protection and FIE approval first, then the product's filled category fields in this order
+(color is left to the swatches), then weight, closure and Pairs with. Shopify has no fencing category field for
+protection rating, weight, closure or care, so those are custom fields below. Weapon, gender and FIE status also
 have custom fields because the filters and protection badge already use their reviewed values.
 
 ## Custom fields
 
 Product fields in the `custom` namespace. Built means the theme reads it today; Designed means the
-[product page design](shopify-product-page.md) uses it and the theme doesn't read it yet.
+[product page design](shopify-product-page.md) uses it and the theme doesn't read it yet. Entry fields are read by
+key: a Product feature has `image`, `heading` and `text`; an FAQ entry has `question` and a rich text `answer`.
 
 | Field | Type | Shows | State |
 | --- | --- | --- | --- |
@@ -58,12 +60,12 @@ Product fields in the `custom` namespace. Built means the theme reads it today; 
 | `custom.gender` | Single line text: Mens, Womens, Kids, Unisex | Gender filter. | Built |
 | `custom.skill_level` | Single line text: Beginner, Intermediate, Advanced | Skill Level filter. | Built |
 | `custom.size_chart` | Size chart entry | Size guide panel, with how to measure and fit tips. | Built |
-| `custom.weight` | Single line text, such as 625 g in size 46 | Weight spec row. | Designed |
-| `custom.closure` | Single line text, such as Back zip with collar strap | Closure spec row. | Designed |
-| `custom.features` | List of Product feature entries: photo, heading, text | Overview feature cards. | Designed |
-| `custom.care_symbols` | List of single line text, each one of the theme's care symbols | Care symbols, each with its label. | Designed |
-| `custom.care_note` | Multi-line text | Note under the care symbols. | Designed |
-| `custom.faqs` | List of FAQ entries | Questions. Without it, the list set for the product type. | Designed |
+| `custom.weight` | Single line text, such as 625 g in size 46 | Weight spec row. | Built |
+| `custom.closure` | Single line text, such as Back zip with collar strap | Closure spec row. | Built |
+| `custom.features` | List of Product feature entries: photo, heading, text | Overview feature cards. | Built |
+| `custom.care_symbols` | List of single line text: wash-cold, line-dry, no-bleach, no-tumble-dry, no-iron, no-dry-clean | Care symbols, each with what it means. | Built |
+| `custom.care_note` | Multi-line text | Note under the care symbols. | Built |
+| `custom.faqs` | List of FAQ entries | Questions. A list set per product type for products without their own is designed, not built. | Built |
 | `custom.guides` | List of blog posts | From the Journal. Without it, posts tagged with the product type. | Designed |
 
 Filters only appear once a field is turned on in **Search & Discovery > Filters**; see

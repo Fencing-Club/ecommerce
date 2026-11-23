@@ -1,0 +1,89 @@
+{% doc %}
+  The product details section's Specs: a row for each filled field, in the order docs/shopify-product-specs.md gives.
+  Protection and FIE approval come first, then Shopify's category fields, then weight, closure and the products it
+  pairs with from the Search & Discovery app's complementary products. A field that isn't set has no row, and with no
+  rows the part renders nothing.
+{% enddoc %}
+{%- liquid
+  assign rating = product.metafields.custom.protection_rating.value | strip
+  assign fie = product.metafields.custom.fie_status.value | strip
+  assign weight = product.metafields.custom.weight.value | strip
+  assign closure = product.metafields.custom.closure.value | strip
+  assign pairs = product.metafields['shopify--discovery--product_recommendation'].complementary_products.value
+  # Shopify's fencing category fields. A category has only some of them, so each shows only where it's filled.
+  assign category_fields = 'gear-material,handwear-material,material,handedness,hand,hand-side,target-gender,age-group,fencing-discipline,compatible-fencing-weapon,fencing-weapon-type,sports-governing-body-certification,fencing-certification,lining-type,mask-bib-type,grip-type,point-type,epee-point-type,wiring-configuration,weapon-size,blade-size-number,epee-blade-size,blade-size-category,fencing-connector-type,body-cord-connector-style' | split: ','
+-%}
+{%- capture rows -%}
+  {%- if rating != blank -%}
+    <div class="product-specs__row">
+      <dt>{{ 'products.details.specs.protection' | t }}</dt>
+      <dd>{{ rating | escape }}</dd>
+    </div>
+  {%- endif -%}
+  {%- if fie == 'FIE' or fie == 'Non-FIE' -%}
+    <div class="product-specs__row">
+      <dt>{{ 'products.details.specs.fie' | t }}</dt>
+      <dd>{% if fie == 'FIE' %}{{ 'products.details.specs.yes' | t }}{% else %}{{ 'products.details.specs.no' | t }}{% endif %}</dd>
+    </div>
+  {%- endif -%}
+  {%- for handle in category_fields -%}
+    {%- assign values = product.metafields.shopify[handle].value -%}
+    {%- if values != blank -%}
+      {%- capture value -%}
+        {%- for entry in values -%}{{ entry.label | escape }}{% unless forloop.last %}, {% endunless %}{%- endfor -%}
+      {%- endcapture -%}
+      {%- if value != blank -%}
+        {%- assign label_key = handle | replace: '-', '_' | prepend: 'products.details.specs.category.' -%}
+        <div class="product-specs__row">
+          <dt>{{ label_key | t }}</dt>
+          <dd>{{ value }}</dd>
+        </div>
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {%- if weight != blank -%}
+    <div class="product-specs__row">
+      <dt>{{ 'products.details.specs.weight' | t }}</dt>
+      <dd>{{ weight | escape }}</dd>
+    </div>
+  {%- endif -%}
+  {%- if closure != blank -%}
+    <div class="product-specs__row">
+      <dt>{{ 'products.details.specs.closure' | t }}</dt>
+      <dd>{{ closure | escape }}</dd>
+    </div>
+  {%- endif -%}
+  {%- if pairs != blank -%}
+    <div class="product-specs__row">
+      <dt>{{ 'products.details.specs.pairs_with' | t }}</dt>
+      <dd>
+        <ul class="product-specs__links list-unstyled">
+          {%- for pair in pairs -%}
+            <li><a class="product-specs__link" href="{{ pair.url }}">{{ pair.title | escape }}</a></li>
+          {%- endfor -%}
+        </ul>
+      </dd>
+    </div>
+  {%- endif -%}
+{%- endcapture -%}
+{%- if rows != blank -%}
+  {%- capture content -%}<dl class="product-specs">{{ rows }}</dl>{%- endcapture -%}
+  {%- assign label = 'products.details.specs.label' | t -%}
+  {%- assign heading = 'products.details.specs.heading' | t -%}
+  {%- render 'product-details-part',
+    id: 'product-specs',
+    label: label,
+    heading: heading,
+    content: content,
+    muted: true,
+    block: block
+  -%}
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.product_specs.name",
+  "settings": [],
+  "presets": [{ "name": "t:blocks.product_specs.name" }]
+}
+{% endschema %}
