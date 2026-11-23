@@ -61,9 +61,6 @@ const allParts = [
   { id: 'questions', type: '_product-questions', settings: {} },
 ];
 
-// Without a reviews app block, Reviews has nothing to show.
-const withoutReviewsApp = allParts.map((part) => (part.id === 'reviews' ? { ...part, blocks: [] } : part));
-
 const render = (product, blocks = allParts) =>
   section('product-details', { blocks, variables: { product, pages: { contact: { url: '/pages/contact' } } } })({});
 const nav = (canvas) => within(canvas.getByRole('navigation', { name: 'On this page' }));
@@ -137,8 +134,16 @@ export const OpenOnWideScreens = {
   },
 };
 
+export const NoReviewsYet = {
+  render: () => render({ ...jacket, metafields: { ...jacket.metafields, reviews: { rating_count: { value: 0 } } } }),
+  play: async ({ canvas }) => {
+    await expect(nav(canvas).queryByRole('link', { name: /Reviews/ })).toBeNull();
+    await expect(canvas.queryByText('Reviews from the reviews app')).toBeNull();
+  },
+};
+
 export const DescriptionOnly = {
-  render: () => render({ title: 'Blade tape', description: '<p>Cloth tape for the last 6 inches of a blade.</p>', media: [], metafields: {} }, withoutReviewsApp),
+  render: () => render({ title: 'Blade tape', description: '<p>Cloth tape for the last 6 inches of a blade.</p>', media: [], metafields: {} }),
   play: async ({ canvas }) => {
     await expect(nav(canvas).getAllByRole('link').map((link) => link.textContent)).toEqual(['Overview']);
     await expect(canvas.getByText('Cloth tape for the last 6 inches of a blade.')).toBeVisible();
@@ -147,7 +152,7 @@ export const DescriptionOnly = {
 };
 
 export const NoDetails = {
-  render: () => render({ title: 'Gift card', description: '', media: [], metafields: {} }, withoutReviewsApp),
+  render: () => render({ title: 'Gift card', description: '', media: [], metafields: {} }),
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('product-details')).toBeNull();
   },

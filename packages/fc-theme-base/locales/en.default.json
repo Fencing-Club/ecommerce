@@ -297,7 +297,6 @@
         }
       },
       "reviews": {
-        "label": "Reviews",
         "label_count": "Reviews ({{ count }})",
         "heading": "What fencers say"
       },
@@ -305,6 +304,17 @@
         "label": "Questions",
         "show_more": "Show more questions"
       }
+    },
+    "restock": {
+      "heading": "Notify me when it’s back",
+      "text": "We’ll email you as soon as it’s restocked.",
+      "text_size": "We’ll email you as soon as size {{ size }} is restocked.",
+      "email_label": "Email",
+      "placeholder": "Enter your email",
+      "button": "Notify me",
+      "success": "Thanks. We’ll email you when it’s back.",
+      "invalid": "Enter a valid email.",
+      "error": "We couldn’t sign you up. Try again."
     }
   },
   "templates": {

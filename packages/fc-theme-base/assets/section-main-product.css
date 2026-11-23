@@ -351,3 +351,47 @@ html:has(.photo-viewer[open]) { overflow: hidden; }
   .photo-viewer__slide video { border-radius: 0; }
   .photo-viewer__thumbs { justify-content: flex-start; }
 }
+
+/* Back in stock: the Pen's Restock Notify panel under a sold-out variant's buttons. */
+.product-restock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: 1.8rem;
+  border-radius: var(--radius-xl);
+  background: var(--muted);
+}
+.product-restock__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin: 0;
+  font-family: var(--font-heading-family);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.product-restock__text {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--muted-foreground);
+}
+.product-restock__form {
+  display: flex;
+  gap: var(--spacing-2-5);
+  align-items: stretch;
+}
+.product-restock__form .ui-text-field {
+  flex: 1;
+}
+.product-restock__message:empty {
+  display: none;
+}
+.product-restock__message {
+  margin: 0;
+  font-size: 1.4rem;
+  color: var(--foreground);
+}
+.product-restock__message--error {
+  color: var(--destructive);
+}

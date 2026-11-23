@@ -1,11 +1,21 @@
+{%- comment -%}
+  Three Journal posts under a heading: the chosen blog's latest, or on a product page the articles the product links in
+  `custom.articles`. With no posts to show, the section is left out.
+{%- endcomment -%}
 {{ 'section-home.css' | asset_url | stylesheet_tag }}
 
-{%- assign blog = blogs[section.settings.blog] -%}
-{%- if blog != blank and blog.articles_count > 0 -%}
+{%- liquid
+  if section.settings.source == 'product'
+    assign posts = product.metafields.custom.articles.value
+  else
+    assign posts = blogs[section.settings.blog].articles
+  endif
+-%}
+{%- if posts.size > 0 -%}
   <div class="home-section">
     {%- content_for 'block', type: 'group', id: 'header' -%}
     <div class="home-grid">
-      {%- for article in blog.articles limit: 3 -%}
+      {%- for article in posts limit: 3 -%}
         {%- render 'ui-article-card', article: article, read_label: section.settings.read_label, heading_level: 3 -%}
       {%- endfor -%}
     </div>
@@ -17,6 +27,16 @@
   "name": "t:sections.journal_highlights.name",
   "tag": "section",
   "settings": [
+    {
+      "type": "select",
+      "id": "source",
+      "label": "t:sections.journal_highlights.settings.source.label",
+      "options": [
+        { "value": "latest", "label": "t:sections.journal_highlights.settings.source.options__latest" },
+        { "value": "product", "label": "t:sections.journal_highlights.settings.source.options__product" }
+      ],
+      "default": "latest"
+    },
     {
       "type": "blog",
       "id": "blog",

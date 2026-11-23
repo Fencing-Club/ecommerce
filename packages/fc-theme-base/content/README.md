@@ -41,7 +41,7 @@ It also defines the Brand metaobject, whose logo shows on product cards for othe
 vendor's handle), and the product filter fields `custom.weapon` (Weapon), `custom.gender` (Gender),
 `custom.skill_level` (Skill Level), `custom.protection_rating` (Safety Level) and `custom.fie_status` (FIE Rating).
 It defines the product page's fields too: the Product feature metaobject and `custom.closure`,
-`custom.care_symbols`, `custom.care_note`, `custom.features` and `custom.questions`; see
+`custom.care_symbols`, `custom.care_note`, `custom.features`, `custom.questions` and `custom.articles`; see
 [product specs](../docs/shopify-product-specs.md). `questions-source.json` holds the store's questions: the pack
 creates them as Question entries, groups the FAQ page's into FAQ topics, and links them to the FAQ page, the Contact
 page and the collections; see [questions](../docs/shopify-questions.md). Definitions do not populate missing product values or enable

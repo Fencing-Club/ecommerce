@@ -1,8 +1,10 @@
 # Product page
 
 The product page's top is `sections/main-product.liquid`: the photos beside the buy box on desktop, stacked with a
-photo carousel on phones. `templates/product.json` puts **Page breadcrumbs** above it and the disclosures and related
-products below, with **Product details** between them. [Product specs](shopify-product-specs.md) lists where each
+photo carousel on phones. `templates/product.json` puts **Page breadcrumbs** above it and the disclosures, related
+products and **From the Journal** below, with **Product details** between them. From the Journal is the Journal
+highlights section set to show the first three articles the product links in `custom.articles`, and is left out
+without them. [Product specs](shopify-product-specs.md) lists where each
 part's data lives.
 
 ## Parts
@@ -28,14 +30,18 @@ part's data lives.
   Sections further down join its links by carrying `data-product-section` with their name and an `id`.
 - The buy row: quantity, Add to cart and, once a size is picked and in stock, Shopify's express checkout button.
   Shopify draws Buy with Shop Pay. Where Shop Pay is off, its plain Buy it now takes the primary button's look
-  (UI/Express checkout in `assets/component-ui.css`). App blocks, such as a back-in-stock form, sit under it, then
-  the trust notes, one line each: the ships row, then the section's **Trust note** blocks (Free returns by default).
+  (UI/Express checkout in `assets/component-ui.css`). App blocks sit under it, then the trust notes, one line each:
+  the ships row, then the section's **Trust note** blocks (Free returns by default).
+- Back in stock: while the chosen variant is sold out, `snippets/product-restock.liquid` shows the Pen's Notify me
+  form under the buy row. `assets/product-restock.js` sends the email to the store's STOQ app through STOQ's signup
+  endpoint, named by the shop's domain, so signups and restock emails stay in STOQ. The section's **Show the
+  back-in-stock form** setting turns it on. Keep STOQ's own app embed off on this theme, or its button shows as well.
 
 ## Product details
 
 `sections/product-details.liquid` holds the parts under the buy box, each a private block that renders only when the
 product has its data: Overview (the description, the second photo and feature cards), Specs, Care, Reviews (the
-reviews app's block, which goes inside it) and Questions. With none of them, the section renders nothing.
+reviews app's block, which goes inside it, once the product has a review) and Questions. With none of them, the section renders nothing.
 
 - On phones each part is a row that opens in place, with Overview open. From 990px they all show open, each with its
   label as the eyebrow over its heading, under a row of links to each part. `snippets/product-details-part.liquid`

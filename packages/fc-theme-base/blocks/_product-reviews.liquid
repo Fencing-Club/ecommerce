@@ -1,16 +1,14 @@
 {% doc %}
   The product details section's Reviews: the reviews app's block, under a heading, with the review count from the
-  app's rating_count field in its label. Renders nothing until an app block is added.
+  app's rating_count field in its label. Renders nothing until the product has a review and an app block is added.
 {% enddoc %}
-{%- capture reviews -%}{%- content_for 'blocks' -%}{%- endcapture -%}
+{%- assign count = product.metafields.reviews.rating_count.value | default: 0 -%}
+{%- capture reviews -%}
+  {%- if count > 0 -%}{%- content_for 'blocks' -%}{%- endif -%}
+{%- endcapture -%}
 {%- if reviews != blank -%}
   {%- liquid
-    assign count = product.metafields.reviews.rating_count.value | default: 0
-    if count > 0
-      assign label = 'products.details.reviews.label_count' | t: count: count
-    else
-      assign label = 'products.details.reviews.label' | t
-    endif
+    assign label = 'products.details.reviews.label_count' | t: count: count
     assign heading = 'products.details.reviews.heading' | t
   -%}
   {%- render 'product-details-part',

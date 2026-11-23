@@ -663,6 +663,13 @@
         },
         "partner_max": {
           "label": "Slowest partner warehouse dispatch, in business days"
+        },
+        "restock": {
+          "content": "Back in stock"
+        },
+        "restock_form": {
+          "label": "Show the back-in-stock form",
+          "info": "Sends signups to the store's STOQ app. Turn off STOQ's own app embed so its button doesn't show too."
         }
       },
       "blocks": {
@@ -828,6 +835,11 @@
     "journal_highlights": {
       "name": "Journal highlights",
       "settings": {
+        "source": {
+          "label": "Posts",
+          "options__latest": "Latest from a blog",
+          "options__product": "The product's linked articles"
+        },
         "blog": {
           "label": "Blog"
         },
