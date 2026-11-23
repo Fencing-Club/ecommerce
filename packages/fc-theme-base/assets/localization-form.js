@@ -35,7 +35,11 @@ if (!customElements.get('localization-form')) {
           this.elements.resetButton.addEventListener('mousedown', (event) => event.preventDefault());
         }
 
-        this.querySelectorAll('a').forEach((item) => item.addEventListener('click', this.onItemClick.bind(this)));
+        // The country list renders on first open, so its links are handled here rather than one by one.
+        this.addEventListener('click', (event) => {
+          const item = event.target.closest('a[data-value]');
+          if (item) this.onItemClick(event, item);
+        });
       }
 
       hidePanel() {
@@ -63,13 +67,13 @@ if (!customElements.get('localization-form')) {
             event.preventDefault();
             itemToFocus =
               focusedItemIndex > 0 ? focusableItems[focusedItemIndex - 1] : focusableItems[focusableItems.length - 1];
-            itemToFocus.focus();
+            itemToFocus?.focus();
             break;
           case 'ARROWDOWN':
             event.preventDefault();
             itemToFocus =
               focusedItemIndex < focusableItems.length - 1 ? focusableItems[focusedItemIndex + 1] : focusableItems[0];
-            itemToFocus.focus();
+            itemToFocus?.focus();
             break;
         }
 
@@ -102,10 +106,10 @@ if (!customElements.get('localization-form')) {
         }
       }
 
-      onItemClick(event) {
+      onItemClick(event, item) {
         event.preventDefault();
         const form = this.querySelector('form');
-        this.elements.input.value = event.currentTarget.dataset.value;
+        this.elements.input.value = item.dataset.value;
         if (form) form.submit();
       }
 
@@ -120,6 +124,8 @@ if (!customElements.get('localization-form')) {
           );
         }
         this.elements.button.focus();
+        const countryList = this.elements.panel.querySelector('template[data-country-list]');
+        if (countryList) countryList.replaceWith(countryList.content);
         this.elements.panel.toggleAttribute('hidden');
         this.elements.button.setAttribute(
           'aria-expanded',
