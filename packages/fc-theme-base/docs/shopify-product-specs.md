@@ -52,7 +52,7 @@ Product fields in the `custom` namespace. Built means the theme reads it today; 
 | Field | Type | Shows | State |
 | --- | --- | --- | --- |
 | `custom.subtitle` | Single line text | The line under the title on the product page and in quick view. | Built |
-| `custom.protection_rating` | Single line text: 350N, 800N or 1600N | Protection badge, Safety Level filter, Protection spec row, What 350N means panel. | Built |
+| `custom.protection_rating` | Single line text: 350N, 800N or 1600N | Protection badge, Safety Level filter, Protection spec row. | Built |
 | `custom.fie_status` | Single line text: FIE or Non-FIE | Protection badge, FIE filter, FIE approved spec row. | Built |
 | `custom.weapon` | List of single line text: Foil, Epee, Saber | Weapon filter. | Built |
 | `custom.gender` | Single line text: Mens, Womens, Kids, Unisex | Gender filter. | Built |
@@ -63,7 +63,6 @@ Product fields in the `custom` namespace. Built means the theme reads it today; 
 | `custom.features` | List of Product feature entries: photo, heading, text | Overview feature cards. | Designed |
 | `custom.care_symbols` | List of single line text, each one of the theme's care symbols | Care symbols, each with its label. | Designed |
 | `custom.care_note` | Multi-line text | Note under the care symbols. | Designed |
-| `custom.upgrade_product` | Product | See the 800N FIE version, in the protection panel. | Designed |
 | `custom.faqs` | List of FAQ entries | Questions. Without it, the list set for the product type. | Designed |
 | `custom.guides` | List of blog posts | From the Journal. Without it, posts tagged with the product type. | Designed |
 
@@ -78,6 +77,12 @@ and isn't used.
 - **Disclosures** come from `shopify.disclosure`; see [product page](shopify-product-page.md).
 - **Reviews** and the star rating come from the reviews app.
 - **You might also like** is Shopify's related product recommendations.
+
+## Parked
+
+The protection explainer, a What 350N means panel beside Specs with a link to the product's higher-rated version, is
+parked as **Component/Protection Explainer** in the Pen's product component library. Building it would need a
+Protection level entry per rating and a `custom.upgrade_product` product reference.
 
 ## Adding a spec
 
