@@ -49,12 +49,12 @@
       "and": "and",
       "and_more": "and more",
       "collection_description": {
-        "one": "{{ title }} at {{ shop }}: {{ count }} product.",
-        "other": "{{ title }} at {{ shop }}: {{ count }} products."
+        "one": "{{ title }} at {{ shop }}. Browse {{ count }} product.",
+        "other": "{{ title }} at {{ shop }}. Browse {{ count }} products."
       },
       "collection_description_with_brands": {
-        "one": "{{ title }} at {{ shop }}: {{ count }} product from {{ brands }}.",
-        "other": "{{ title }} at {{ shop }}: {{ count }} products from {{ brands }}."
+        "one": "{{ title }} at {{ shop }}. Browse {{ count }} product from {{ brands }}.",
+        "other": "{{ title }} at {{ shop }}. Browse {{ count }} products from {{ brands }}."
       },
       "blog_description": "{{ title }} from {{ shop }}. Latest article: {{ latest }}."
     }

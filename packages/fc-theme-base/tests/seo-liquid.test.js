@@ -188,11 +188,11 @@ describe('meta description', () => {
   });
 
   it.each([
-    [[], 'Epee Masks at Fencing Club: 12 products.'],
-    [['Leon Paul'], 'Epee Masks at Fencing Club: 12 products from Leon Paul.'],
-    [['Leon Paul', 'PBT'], 'Epee Masks at Fencing Club: 12 products from Leon Paul and PBT.'],
-    [['Absolute', 'Leon Paul', 'PBT'], 'Epee Masks at Fencing Club: 12 products from Absolute, Leon Paul, and PBT.'],
-    [['Absolute', 'Allstar', 'Leon Paul', 'PBT'], 'Epee Masks at Fencing Club: 12 products from Absolute, Allstar, Leon Paul, and more.'],
+    [[], 'Epee Masks at Fencing Club. Browse 12 products.'],
+    [['Leon Paul'], 'Epee Masks at Fencing Club. Browse 12 products from Leon Paul.'],
+    [['Leon Paul', 'PBT'], 'Epee Masks at Fencing Club. Browse 12 products from Leon Paul and PBT.'],
+    [['Absolute', 'Leon Paul', 'PBT'], 'Epee Masks at Fencing Club. Browse 12 products from Absolute, Leon Paul, and PBT.'],
+    [['Absolute', 'Allstar', 'Leon Paul', 'PBT'], 'Epee Masks at Fencing Club. Browse 12 products from Absolute, Allstar, Leon Paul, and more.'],
   ])('describes a collection without one from its brands %j', (vendors, description) => {
     expect(renderText('meta-description', collectionGlobals(vendors))).toBe(description);
   });
