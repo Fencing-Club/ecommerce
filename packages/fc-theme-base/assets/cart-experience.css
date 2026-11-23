@@ -279,8 +279,10 @@ cart-discount.fc-editor,
 }
 
 /* Flyout */
-.fc-cart-panel { position: fixed; inset: 0; z-index: 1000; visibility: hidden; transition: visibility 250ms ease; }
-.fc-cart-panel.active { visibility: visible; }
+/* The panel shows at once when it opens, so focus can move into it on the next frame, and hides only after the
+   close animation. */
+.fc-cart-panel { position: fixed; inset: 0; z-index: 1000; visibility: hidden; transition: visibility 0s linear 250ms; }
+.fc-cart-panel.active { visibility: visible; transition-delay: 0s; }
 .fc-flyout__frame { display: flex; justify-content: flex-end; height: 100%; }
 .fc-flyout__overlay,
 .fc-flyout__overlay:empty { display: block; position: fixed; inset: 0; background: rgb(16 16 18 / 0.4); opacity: 0; transition: opacity 250ms ease; }

@@ -57,6 +57,8 @@ notification popup is gone too.
 - A failed refresh shows the load failed message, never an empty cart. Try again is the retry; the message does not
   repeat what is already visible.
 - The flyout refreshes when it opens after a failure or after the shopper returns with the back button.
+- Opening the flyout moves focus to Close, and Tab stays inside it. Escape, Close or the backdrop closes it and focus
+  returns to the cart icon. The panel shows as soon as it opens, so focus can move in, and hides after the slide out.
 
 ## Rewards
 
