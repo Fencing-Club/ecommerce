@@ -8,7 +8,8 @@ the shared [product card](shopify-product-card.md).
 
 `snippets/collection-toolbar.liquid` holds Hide filters, the protection level chips, the product count, sorting, and
 the choice of three or four products per row. Hide filters and products per row are desktop only; this browser
-remembers both (`assets/collection-page.js`). On phones the toolbar becomes Filters and Sort side by side, the chips
+remembers both (`assets/collection-page.js`). A remembered row count never applies on tablets or phones, which keep
+their own counts. On phones the toolbar becomes Filters and Sort side by side, the chips
 underneath, then the count. The band sticks to the top of the window on desktop.
 
 ## Load more

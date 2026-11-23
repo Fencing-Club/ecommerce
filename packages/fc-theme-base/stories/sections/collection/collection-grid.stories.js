@@ -45,7 +45,8 @@ export const ThreePerRow = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: '3 per row' }));
     await expect(canvas.getByRole('button', { name: '3 per row' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(canvasElement.querySelector('[data-collection-layout]').style.getPropertyValue('--collection-columns')).toBe('3');
+    const grid = canvasElement.querySelector('.collection-product-grid');
+    await waitFor(() => expect(getComputedStyle(grid).gridTemplateColumns.split(' ')).toHaveLength(3));
     await userEvent.click(canvas.getByRole('button', { name: '4 per row' }));
   },
 };
