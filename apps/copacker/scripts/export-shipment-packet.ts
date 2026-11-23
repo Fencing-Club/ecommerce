@@ -45,7 +45,8 @@ const packetSchema = z.object({
   generatedDate: z.iso.date(),
   order: orderInputSchema,
   packing: packingSchema,
-  transport: transportSchema,
+  // None for a supplier's leg to a forwarder that the supplier delivers itself.
+  transport: transportSchema.nullable(),
   destination: party,
   // A PO through a forwarder: the destination is the forwarder, and this is where it sends the cartons next.
   onward: z
@@ -84,6 +85,7 @@ let original: Uint8Array | undefined
 let assignments: Awaited<ReturnType<typeof matchLabels>> = []
 if (input.originalLabels) {
   if (
+    !input.transport ||
     input.transport.carrierLabels !== "none" ||
     input.onward ||
     input.transport.handoff !== "supplier" ||

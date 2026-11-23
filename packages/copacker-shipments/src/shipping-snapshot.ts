@@ -21,13 +21,14 @@ type Item = OrderInput["items"][number]
 // A shipment through a forwarder exports the supplier's leg: the destination is the forwarder's address, and `onward` is
 // where the forwarder takes the cartons next. `forwarder` says whether the shipment's route stops at one; without it,
 // the PO's own route says. `amazonPending` exports an Amazon shipment before Amazon has it, without its labels or
-// warehouse address, so the supplier can pack first.
+// warehouse address, so the supplier can pack first. A supplier's leg without transport is one the supplier delivers
+// itself.
 export function shippingDocumentSnapshot(input: {
   order: OrderInput
   packing: Packing
   labels: CartonLabel[]
   carrierLabels?: { cartonId: string; labelNumber: string }[]
-  transport: ShipmentTransport
+  transport: ShipmentTransport | null
   company: string
   supplier: string
   destination: DocumentParty
@@ -53,7 +54,10 @@ export function shippingDocumentSnapshot(input: {
   }
   // The supplier hands its cartons to the carrier itself, by parcel, AGL or freight. A forwarder's handoff is the
   // forwarder's own leg, with its own packet.
-  if (transport.handoff !== "supplier") {
+  if (!transport && !onward) {
+    throw new Error("Choose the shipment's transport before exporting")
+  }
+  if (transport && transport.handoff !== "supplier") {
     throw new Error("Prepare the forwarder's handoff separately before exporting")
   }
   const items = packedItems(order, packing)
@@ -97,8 +101,8 @@ export function shippingDocumentSnapshot(input: {
     network,
     ...(amazonPending && { amazonPending }),
     transport: {
-      service: transport.service,
-      collection: transport.collection,
+      service: transport?.service ?? "supplier",
+      collection: transport?.collection ?? "delivery",
       carrierLabels: requirements.carrierLabels,
       palletized: Boolean(packing.palletized)
     },
