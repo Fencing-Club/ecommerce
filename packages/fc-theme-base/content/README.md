@@ -36,10 +36,13 @@ the resource arrays before validation. There is no implicit lookup by developmen
 
 The sizing-only pack creates a separate `size-charts` menu in the same order as `sizing-source.json` groups.
 `build-migration.mjs` adds `navigation-source.json`, `chart-assignments.json`, `pages-source.json`,
-`collections-source.json`, and `journal-source.json` to produce the complete 249-resource `migration-manifest.json`.
+`collections-source.json`, and `journal-source.json` to produce the complete `migration-manifest.json`.
 It also defines the Brand metaobject, whose logo shows on product cards for other brands (an entry's handle is its
 vendor's handle), and the product filter fields `custom.weapon` (Weapon), `custom.gender` (Gender),
-`custom.skill_level` (Skill Level), `custom.protection_rating` (Safety Level) and `custom.fie_status` (FIE Rating). Definitions do not populate missing product values or enable
+`custom.skill_level` (Skill Level), `custom.protection_rating` (Safety Level) and `custom.fie_status` (FIE Rating).
+It defines the product page's fields too: the Question and Product feature metaobjects and `custom.closure`,
+`custom.care_symbols`, `custom.care_note`, `custom.features` and `custom.questions`; see
+[product specs](../docs/shopify-product-specs.md). Definitions do not populate missing product values or enable
 Search & Discovery filters. See [collection filters](../docs/shopify-collection-filters.md).
 `theme-configuration.json` contains the separate menu-attachment and ordered-group settings. Creating records
 and attaching them to the theme are separate steps.

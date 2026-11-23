@@ -240,6 +240,8 @@ export function registerShopifyLiquid(engine, { locale = {}, readAsset, readBloc
   engine.registerFilter('pluralize', (count, singular, plural) => (count === 1 ? singular : plural));
   // Shopify prints nil as null.
   engine.registerFilter('json', (value) => JSON.stringify(value ?? null));
+  // Shopify writes a weight in grams in the store's unit; the stand-in's store weighs in grams.
+  engine.registerFilter('weight_with_unit', (grams) => `${grams} g`);
   // A rich text field renders as HTML; fixtures give that HTML as the field's value.
   engine.registerFilter('metafield_tag', (field) => field?.value ?? '');
   engine.registerFilter('item_count_for_variant', () => 1);

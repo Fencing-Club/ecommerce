@@ -23,6 +23,36 @@ export function buildMigrationManifest(sizing, navigation, assignments, pages, c
       { key: 'logo', name: 'Logo', type: 'file_reference', required: true },
     ],
   } });
+  // Entries the product page's details read. A question is written once and linked from wherever it's asked.
+  resources.push({ key: 'definition.question', kind: 'metaobject-definition', data: {
+    type: 'question', name: 'Question', displayNameKey: 'question', access: { storefront: 'PUBLIC_READ' },
+    fieldDefinitions: [
+      { key: 'question', name: 'Question', type: 'single_line_text_field', required: true },
+      { key: 'answer', name: 'Answer', type: 'rich_text_field', required: true },
+    ],
+  } });
+  resources.push({ key: 'definition.product_feature', kind: 'metaobject-definition', data: {
+    type: 'product_feature', name: 'Product feature', displayNameKey: 'heading', access: { storefront: 'PUBLIC_READ' },
+    fieldDefinitions: [
+      { key: 'image', name: 'Photo', type: 'file_reference', validations: [{ name: 'file_type_options', value: JSON.stringify(['Image']) }] },
+      { key: 'heading', name: 'Heading', type: 'single_line_text_field', required: true },
+      { key: 'text', name: 'Text', type: 'multi_line_text_field' },
+    ],
+  } });
+  // The product page's specs, care and questions (docs/shopify-product-specs.md). Care symbols are the names
+  // snippets/ui-care-symbol.liquid draws.
+  const entries = (definition) => [{ name: 'metaobject_definition_id', value: { $ref: definition, field: 'id' } }];
+  for (const [key, name, type, validations] of [
+    ['closure', 'Closure', 'single_line_text_field'],
+    ['care_symbols', 'Care symbols', 'list.single_line_text_field', [{ name: 'choices', value: JSON.stringify(['wash-cold', 'line-dry', 'no-bleach', 'no-tumble-dry', 'no-iron', 'no-dry-clean']) }]],
+    ['care_note', 'Care note', 'multi_line_text_field'],
+    ['features', 'Features', 'list.metaobject_reference', entries('definition.product_feature')],
+    ['questions', 'Questions', 'list.metaobject_reference', entries('definition.question')],
+  ]) {
+    resources.push({ key: `definition.${key}`, kind: 'product-metafield-definition', data: {
+      namespace: 'custom', key, name, type, ownerType: 'PRODUCT', ...(validations ? { validations } : {}), access: { storefront: 'PUBLIC_READ' },
+    } });
+  }
   for (const collection of collections) resources.push({ key: `collection.${collection.handle}`, kind: 'collection', data: collection });
   if (journal) resources.push({ key: `blog.${journal.handle}`, kind: 'blog', data: journal });
   const addLinks = (items) => items.map((item) => {

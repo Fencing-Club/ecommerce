@@ -1,11 +1,12 @@
 {% doc %}
-  The product details section's Questions: the FAQ entries from custom.faqs, each a question and a rich text answer,
-  beside a line about asking the team and a link to the contact page. The first five show, with the first one open,
-  and Show more questions reveals the rest. The rest are on the page from the start, hidden until found, so search
-  engines and find in page still reach them. Renders nothing when the product has no questions.
+  The product details section's Questions: the Question entries from custom.questions, each a question and a rich
+  text answer, written once so any page can link to it. They sit beside a line about asking the team and a link to
+  the contact page. The first five show, with the first one open, and Show more questions reveals the rest. The rest
+  are on the page from the start, hidden until found, so search engines and find in page still reach them. Renders
+  nothing when the product has no questions.
 {% enddoc %}
-{%- assign faqs = product.metafields.custom.faqs.value -%}
-{%- if faqs != blank -%}
+{%- assign questions = product.metafields.custom.questions.value -%}
+{%- if questions != blank -%}
   {%- capture content -%}
     {{ 'section-faq.css' | asset_url | stylesheet_tag }}
     <div class="product-questions">
@@ -24,15 +25,15 @@
         {%- endif -%}
       </div>
       <div class="product-questions__list">
-        {%- for faq in faqs limit: 5 -%}
-          {%- assign answer = faq.answer | metafield_tag -%}
-          {%- render 'ui-faq-item', question: faq.question.value, answer: answer, open: forloop.first, variant: 'plain' -%}
+        {%- for entry in questions limit: 5 -%}
+          {%- assign answer = entry.answer | metafield_tag -%}
+          {%- render 'ui-faq-item', question: entry.question.value, answer: answer, open: forloop.first, variant: 'plain' -%}
         {%- endfor -%}
-        {%- if faqs.size > 5 -%}
+        {%- if questions.size > 5 -%}
           <div class="product-questions__more" hidden="until-found" data-questions-more>
-            {%- for faq in faqs offset: 5 -%}
-              {%- assign answer = faq.answer | metafield_tag -%}
-              {%- render 'ui-faq-item', question: faq.question.value, answer: answer, variant: 'plain' -%}
+            {%- for entry in questions offset: 5 -%}
+              {%- assign answer = entry.answer | metafield_tag -%}
+              {%- render 'ui-faq-item', question: entry.question.value, answer: answer, variant: 'plain' -%}
             {%- endfor -%}
           </div>
           {%- assign more_label = 'products.details.questions.show_more' | t -%}

@@ -21,6 +21,17 @@ describe('Fencing Club migration package', () => {
       ['title', 'single_line_text_field'],
       ['logo', 'file_reference'],
     ]);
+    // Question entries are linked from wherever they're asked, so products list them rather than holding their own text.
+    expect(manifest.resources.find((resource) => resource.key === 'definition.question').data.fieldDefinitions.map((field) => [field.key, field.type])).toEqual([
+      ['question', 'single_line_text_field'],
+      ['answer', 'rich_text_field'],
+    ]);
+    expect(manifest.resources.find((resource) => resource.key === 'definition.questions').data.validations).toEqual([
+      { name: 'metaobject_definition_id', value: { $ref: 'definition.question', field: 'id' } },
+    ]);
+    expect(JSON.parse(manifest.resources.find((resource) => resource.key === 'definition.care_symbols').data.validations[0].value)).toEqual([
+      'wash-cold', 'line-dry', 'no-bleach', 'no-tumble-dry', 'no-iron', 'no-dry-clean',
+    ]);
     expect(JSON.stringify(manifest)).not.toContain('gid://shopify/');
     expect(JSON.stringify(manifest)).not.toContain('/collections/sabre');
     expect(JSON.stringify(manifest)).not.toContain('/apps/track');
