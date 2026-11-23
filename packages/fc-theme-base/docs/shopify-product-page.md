@@ -2,7 +2,8 @@
 
 The product page's top is `sections/main-product.liquid`: the photos beside the buy box on desktop, stacked with a
 photo carousel on phones. `templates/product.json` puts **Page breadcrumbs** above it and the disclosures and related
-products below. The sections further down the Pen (Overview, Specs, Size and fit, Reviews, Questions) come later.
+products below. The sections further down the Pen (Overview, Specs, Care, Reviews, Questions) come later; each shows
+only when its data is set. [Product specs](shopify-product-specs.md) lists where that data lives.
 
 ## Parts
 
