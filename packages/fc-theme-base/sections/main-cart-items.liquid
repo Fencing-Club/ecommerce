@@ -1,5 +1,9 @@
+{%- comment -%} The layout leaves the cart drawer off this page, so the page loads the cart's files itself. {%- endcomment -%}
 {{ 'cart-experience.css' | asset_url | stylesheet_tag }}
-{%- unless settings.cart_type == 'drawer' -%}<script src="{{ 'cart.js' | asset_url }}" defer="defer"></script>{%- endunless -%}
+{{ 'component-cart-items.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'cart-disclosure-modal.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'cart-disclosure-tooltip.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'cart.js' | asset_url }}" defer="defer"></script>
 <script src="{{ 'cart-controls.js' | asset_url }}" defer="defer"></script>
 {%- liquid
   assign cart_state = 'ready'
