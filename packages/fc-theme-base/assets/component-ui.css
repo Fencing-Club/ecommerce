@@ -1,3 +1,13 @@
+/* ui-icon leaves out paint attributes to keep pages small; these paint every icon the way Lucide draws it. */
+.ui-icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ui-icon--star { fill: currentColor; }
+
 .ui-button {
   display: inline-flex;
   gap: var(--spacing-2);
