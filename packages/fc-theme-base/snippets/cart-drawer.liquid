@@ -9,17 +9,24 @@
   endif
 -%}
 {%- comment -%}
-  The drawer stays closed until a shopper opens it, so its stylesheet loads without holding up the page's first
-  paint. The rule that keeps the closed drawer hidden is inline, so it can't flash before the stylesheet arrives.
-  The cart page loads the same stylesheet normally.
+  The drawer stays closed until a shopper opens it, so its stylesheets load without holding up the page's first
+  paint. The rule that keeps the closed drawer hidden is inline, so it can't flash before the stylesheets arrive.
+  The cart page loads the same stylesheets and scripts itself, since it has no drawer.
 {%- endcomment -%}
 <style>
   .fc-cart-panel { position: fixed; inset: 0; z-index: 1000; visibility: hidden; }
 </style>
 <link rel="stylesheet" href="{{ 'cart-experience.css' | asset_url }}" media="print" onload="this.media='all'">
-<noscript>{{ 'cart-experience.css' | asset_url | stylesheet_tag }}</noscript>
+<link rel="stylesheet" href="{{ 'component-cart-items.css' | asset_url }}" media="print" onload="this.media='all'">
+<noscript>
+  {{- 'cart-experience.css' | asset_url | stylesheet_tag -}}
+  {{- 'component-cart-items.css' | asset_url | stylesheet_tag -}}
+</noscript>
+<script src="{{ 'cart-disclosure-modal.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'cart-disclosure-tooltip.js' | asset_url }}" defer="defer"></script>
 <script src="{{ 'cart.js' | asset_url }}" defer="defer"></script>
 <script src="{{ 'cart-controls.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'cart-drawer.js' | asset_url }}" defer="defer"></script>
 <cart-drawer class="drawer fc-cart-panel" data-cart-state="{{ cart_state }}">
   <div id="CartDrawer" class="fc-flyout__frame">
     <div id="CartDrawer-Overlay" class="fc-flyout__overlay"></div>

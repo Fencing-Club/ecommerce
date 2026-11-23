@@ -71,8 +71,6 @@
     <script src="{{ 'global.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'product-card-gallery.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'motion.js' | asset_url }}" defer="defer"></script>
-    <script src="{{ 'cart-disclosure-modal.js' | asset_url }}" defer="defer"></script>
-    <script src="{{ 'cart-disclosure-tooltip.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'details-disclosure.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'details-modal.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'search-form.js' | asset_url }}" defer="defer"></script>
@@ -169,7 +167,6 @@
     {{ 'component-ui.css' | asset_url | stylesheet_tag }}
     {{ 'component-swatch.css' | asset_url | stylesheet_tag }}
     {{ 'component-cookie-consent.css' | asset_url | stylesheet_tag }}
-    <link rel="stylesheet" href="{{ 'component-cart-items.css' | asset_url }}" media="print" onload="this.media='all'">
 
     {%- if settings.cart_type == 'drawer' -%}
       {{ 'component-price.css' | asset_url | stylesheet_tag }}
@@ -200,10 +197,6 @@
     <a class="skip-to-content-link button visually-hidden" href="#MainContent">
       {{ 'accessibility.skip_to_text' | t }}
     </a>
-
-    {%- if settings.cart_type == 'drawer' -%}
-      {%- render 'cart-drawer' -%}
-    {%- endif -%}
 
     {%- comment -%} The homepage and About page open on a full-bleed photo, so the header floats over it. {%- endcomment -%}
     <div class="header-group{% if request.page_type == 'index' or template.suffix == 'about' %} header-group--overlay{% endif %}">
@@ -271,8 +264,12 @@
       <script src="{{ 'predictive-search.js' | asset_url }}" defer="defer"></script>
     {%- endif -%}
 
-    {%- if settings.cart_type == 'drawer' -%}
-      <script src="{{ 'cart-drawer.js' | asset_url }}" defer="defer"></script>
+    {%- comment -%}
+      The drawer starts closed, so it renders last and the page above it doesn't wait for its markup. The cart page
+      already shows the cart, so it has no drawer.
+    {%- endcomment -%}
+    {%- if settings.cart_type == 'drawer' and request.page_type != 'cart' -%}
+      {%- render 'cart-drawer' -%}
     {%- endif -%}
   </body>
 </html>

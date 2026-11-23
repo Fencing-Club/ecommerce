@@ -31,7 +31,6 @@
 <body class="lab-cart-frame lab-cart-frame--{{ view }}" data-lab-state="{{ state.id }}">
   {%- if view == 'flyout' -%}
     {% render 'cart-drawer' %}
-    <script src="/assets/cart-drawer.js" defer></script>
   {%- else -%}
     {% render 'main-cart-items', section: section %}
   {%- endif -%}
