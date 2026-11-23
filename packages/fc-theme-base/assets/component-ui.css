@@ -1664,12 +1664,6 @@ input:disabled + .ui-checkbox-field__copy {
   box-shadow: 0 0 0 0.3rem var(--background);
 }
 
-:root .product-form__input--pill input[type='radio']:focus-visible + label {
-  outline: 0.2rem solid var(--ring);
-  outline-offset: 0.3rem;
-  box-shadow: 0 0 0 0.3rem var(--background);
-}
-
 @media (forced-colors: active) {
   :is(.ui-button, .ui-link, .ui-checkbox, .ui-radio, .ui-pill, .ui-drawer__close, .ui-accordion__summary, .header__menu-item):focus-visible {
     outline-color: Highlight;
