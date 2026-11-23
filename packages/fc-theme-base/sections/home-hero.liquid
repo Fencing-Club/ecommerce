@@ -38,42 +38,6 @@
   {%- endif -%}
 </fc-carousel>
 
-{% stylesheet %}
-  .home-hero {
-    position: relative;
-    display: block;
-    height: calc(var(--spacing) * 180);
-    overflow: hidden;
-    background: var(--primary);
-  }
-  .home-hero__track {
-    position: absolute;
-    inset: 0;
-  }
-  /* Light controls over the photo. */
-  .home-hero__controls {
-    position: absolute;
-    right: 0;
-    bottom: var(--spacing-6);
-    left: 0;
-    z-index: 1;
-    display: flex;
-    gap: var(--spacing-2);
-    align-items: center;
-    justify-content: center;
-    --foreground: var(--primary-foreground);
-    --muted-foreground: var(--primary-foreground);
-    --accent: color-mix(in srgb, var(--primary-foreground) 12%, transparent);
-    --accent-foreground: var(--primary-foreground);
-  }
-  @media (max-width: 989px) {
-    .home-hero { height: calc(var(--spacing) * 150); }
-  }
-  @media (max-width: 749px) {
-    .home-hero { height: calc(var(--spacing) * 130); }
-  }
-{% endstylesheet %}
-
 {% schema %}
 {
   "name": "t:sections.home_hero.name",

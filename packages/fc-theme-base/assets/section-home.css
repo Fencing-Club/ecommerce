@@ -1,3 +1,393 @@
+/* Homepage styles. Each homepage section loads this file, so other pages don't download it. The sections' and blocks' own rules come first, in the order the store compiled them when they sat in each file. */
+
+/* sections/featured-picks.liquid */
+/* Two columns: the first two picks stack on the left and the third runs the full height on the right. */
+.picks-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-6);
+}
+.picks-grid > :nth-child(3) {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+/* Each card fills its grid cell, so the tall card ends level with the stacked pair. */
+.picks-grid > * {
+  display: flex;
+}
+.picks-grid > * > * {
+  flex: 1 1 auto;
+}
+@media (max-width: 749px) {
+  .picks-grid { grid-template-columns: minmax(0, 1fr); }
+  .picks-grid > :nth-child(3) {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+/* sections/home-hero.liquid */
+.home-hero {
+  position: relative;
+  display: block;
+  height: calc(var(--spacing) * 180);
+  overflow: hidden;
+  background: var(--primary);
+}
+.home-hero__track {
+  position: absolute;
+  inset: 0;
+}
+/* Light controls over the photo. */
+.home-hero__controls {
+  position: absolute;
+  right: 0;
+  bottom: var(--spacing-6);
+  left: 0;
+  z-index: 1;
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+  justify-content: center;
+  --foreground: var(--primary-foreground);
+  --muted-foreground: var(--primary-foreground);
+  --accent: color-mix(in srgb, var(--primary-foreground) 12%, transparent);
+  --accent-foreground: var(--primary-foreground);
+}
+@media (max-width: 989px) {
+  .home-hero { height: calc(var(--spacing) * 150); }
+}
+@media (max-width: 749px) {
+  .home-hero { height: calc(var(--spacing) * 130); }
+}
+
+/* sections/testimonials.liquid */
+.testimonials__head {
+  display: flex;
+  gap: var(--spacing-6);
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.testimonials__nav {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--spacing-3);
+}
+.testimonials__viewport {
+  overflow: hidden;
+}
+/* Three quotes a page on desktop, two on tablet and one on phones. */
+.testimonials__track {
+  display: flex;
+  gap: var(--spacing-6);
+  transition: transform 500ms var(--ease-out);
+  will-change: transform;
+}
+.testimonials__track > * {
+  flex: 0 0 calc((100% - 2 * var(--spacing-6)) / 3);
+}
+@media (max-width: 989px) {
+  .testimonials__track > * { flex-basis: calc((100% - var(--spacing-6)) / 2); }
+}
+@media (max-width: 749px) {
+  .testimonials__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .testimonials__track > * { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .testimonials__track { transition-duration: 1ms; }
+}
+
+/* sections/why-us.liquid */
+.home-section.why-us {
+  display: grid;
+  grid-template-columns: calc(var(--spacing) * 130) minmax(0, 1fr);
+  gap: var(--spacing-14);
+  align-items: start;
+  padding-block: var(--spacing-20);
+}
+.why-us__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+}
+@media (max-width: 1199px) {
+  .home-section.why-us {
+    grid-template-columns: calc(var(--spacing) * 100) minmax(0, 1fr);
+    gap: var(--spacing-10);
+  }
+}
+@media (max-width: 989px) {
+  .home-section.why-us { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 749px) {
+  .home-section.why-us { padding-block: var(--spacing-14); }
+}
+
+/* blocks/_category-card.liquid */
+.category-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  min-width: 0;
+  color: var(--foreground);
+}
+.category-card__media {
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--muted);
+}
+.category-card__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.category-card__info {
+  display: flex;
+  gap: var(--spacing-4);
+  align-items: center;
+  justify-content: space-between;
+}
+.category-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+  min-width: 0;
+}
+.category-card__name {
+  margin: 0;
+  font-family: var(--font-heading-family);
+  font-size: var(--text-xl);
+  line-height: var(--text-xl--line-height);
+  font-weight: var(--font-weight-semibold);
+}
+.category-card__name a {
+  color: inherit;
+  text-decoration: none;
+}
+.category-card__name a:hover,
+.category-card__name a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: var(--spacing-0-5);
+}
+.category-card__count {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  color: var(--muted-foreground);
+}
+
+/* blocks/_hero-slide.liquid */
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 700ms var(--ease-in-out),
+    visibility 0s linear 700ms;
+}
+.hero-slide.is-active,
+fc-carousel:not(:defined) > [data-carousel-track] > :first-child .hero-slide {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 700ms var(--ease-in-out),
+    visibility 0s;
+}
+/* Behind the copy: a scrim along the top, where the header floats, and a fade from the left, where the copy sits. */
+.hero-slide::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, color-mix(in srgb, var(--primary) 80%, transparent), transparent) no-repeat top /
+      100% calc(var(--spacing) * 62),
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--primary) 90%, transparent),
+      color-mix(in srgb, var(--primary) 40%, transparent)
+    );
+}
+.hero-slide__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* People sit in the upper part of these photos. A focal point set in admin overrides this inline. */
+  object-position: 50% 30%;
+}
+/* Hidden slides still sit in the viewport, where lazy photos load right away. Until the page has loaded or the
+   shopper changes slides, they stay out of layout so the first photo downloads alone. */
+fc-carousel:not([data-slides-ready]) .hero-slide__image[loading='lazy'] {
+  display: none;
+}
+/* Past the content, the photo widens by 28rem a side and then stops, which would only crop it harder. */
+.hero-slide__image {
+  max-width: calc(var(--content-max) + var(--spacing) * 140);
+  margin-inline: auto;
+}
+/* Once the photo is narrower than the screen, its sides dissolve into the dark background like mist: an eased fade
+   warped by fractal noise and lightly blurred. Its viewBox is the photo's size whenever this applies. */
+@media (min-width: 1840px) {
+  .hero-slide__image {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1808 720' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='f'%3E%3Cstop offset='0' stop-color='white' stop-opacity='0'/%3E%3Cstop offset='0.03' stop-color='white' stop-opacity='0'/%3E%3Cstop offset='0.0465' stop-color='white' stop-opacity='0.009'/%3E%3Cstop offset='0.063' stop-color='white' stop-opacity='0.058'/%3E%3Cstop offset='0.0795' stop-color='white' stop-opacity='0.163'/%3E%3Cstop offset='0.096' stop-color='white' stop-opacity='0.317'/%3E%3Cstop offset='0.1125' stop-color='white' stop-opacity='0.5'/%3E%3Cstop offset='0.129' stop-color='white' stop-opacity='0.683'/%3E%3Cstop offset='0.1455' stop-color='white' stop-opacity='0.837'/%3E%3Cstop offset='0.162' stop-color='white' stop-opacity='0.942'/%3E%3Cstop offset='0.1785' stop-color='white' stop-opacity='0.991'/%3E%3Cstop offset='0.195' stop-color='white' stop-opacity='1.0'/%3E%3Cstop offset='0.805' stop-color='white' stop-opacity='1.0'/%3E%3Cstop offset='0.8215' stop-color='white' stop-opacity='0.991'/%3E%3Cstop offset='0.838' stop-color='white' stop-opacity='0.942'/%3E%3Cstop offset='0.8545' stop-color='white' stop-opacity='0.837'/%3E%3Cstop offset='0.871' stop-color='white' stop-opacity='0.683'/%3E%3Cstop offset='0.8875' stop-color='white' stop-opacity='0.5'/%3E%3Cstop offset='0.904' stop-color='white' stop-opacity='0.317'/%3E%3Cstop offset='0.9205' stop-color='white' stop-opacity='0.163'/%3E%3Cstop offset='0.937' stop-color='white' stop-opacity='0.058'/%3E%3Cstop offset='0.9535' stop-color='white' stop-opacity='0.009'/%3E%3Cstop offset='0.97' stop-color='white' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='white' stop-opacity='0'/%3E%3C/linearGradient%3E%3Cfilter id='m' x='-20%' y='-20%' width='140%' height='140%'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.007' numOctaves='4' seed='4'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='140' xChannelSelector='R' yChannelSelector='G'/%3E%3CfeGaussianBlur stdDeviation='22'/%3E%3C/filter%3E%3C/defs%3E%3Crect x='0' y='-160' width='1808' height='1040' fill='url(%23f)' filter='url(%23m)'/%3E%3C/svg%3E");
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+  }
+}
+.hero-slide__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-inline: var(--page-gutter);
+  /* Light text over the photo: the blocks inside read these roles. */
+  --foreground: var(--primary-foreground);
+  --muted-foreground: var(--primary-foreground);
+}
+.hero-slide__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+  align-items: flex-start;
+  max-width: calc(var(--spacing) * 155);
+}
+/* The short bar above the copy. */
+.hero-slide__inner::before {
+  content: '';
+  width: var(--spacing-12);
+  height: calc(var(--spacing) * 0.75);
+  background: var(--foreground);
+}
+/* The copy drifts up as its slide fades in. */
+.hero-slide__inner > * {
+  opacity: 0;
+  transform: translateY(var(--spacing-3));
+  transition:
+    opacity 600ms var(--ease-out),
+    transform 600ms var(--ease-out);
+}
+.hero-slide.is-active .hero-slide__inner > *,
+fc-carousel:not(:defined) > [data-carousel-track] > :first-child .hero-slide__inner > * {
+  opacity: 1;
+  transform: none;
+}
+.hero-slide.is-active .hero-slide__inner > :nth-child(2) { transition-delay: 80ms; }
+.hero-slide.is-active .hero-slide__inner > :nth-child(3) { transition-delay: 160ms; }
+.hero-slide.is-active .hero-slide__inner > :nth-child(n + 4) { transition-delay: 240ms; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide,
+  .hero-slide__inner > * {
+    transition-duration: 1ms;
+  }
+}
+/* The header floats over the hero on desktop, so the copy centres in the space below it. */
+@media (min-width: 990px) {
+  .hero-slide__content { padding-top: calc(var(--spacing) * 42); }
+}
+@media (min-width: 1250px) {
+  .hero-slide__content { padding-top: calc(var(--spacing) * 62); }
+}
+
+/* blocks/_pick-card.liquid */
+.pick-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--card);
+}
+.pick-card__media {
+  flex: 1 0 auto;
+  aspect-ratio: 2 / 1;
+  background: var(--muted);
+}
+.pick-card__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pick-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3-5);
+  padding: var(--spacing-6);
+}
+.pick-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+.pick-card__title {
+  margin: 0;
+  font-family: var(--font-heading-family);
+  font-size: var(--text-2xl);
+  line-height: var(--text-2xl--line-height);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--foreground);
+}
+.pick-card__description {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--muted-foreground);
+}
+.ui-pills:empty {
+  display: none;
+}
+
+/* blocks/_testimonial.liquid */
+.testimonial {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  margin: 0;
+  padding: var(--spacing-8);
+  border-radius: var(--radius-xl);
+  background: var(--muted);
+  color: var(--foreground);
+}
+.testimonial__stars {
+  display: flex;
+  gap: var(--spacing-1);
+}
+.testimonial__quote {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: var(--text-lg);
+  font-style: normal;
+  line-height: var(--leading-normal);
+}
+.testimonial__by {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+  margin-top: auto;
+}
+.testimonial__name {
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+  font-weight: var(--font-weight-semibold);
+}
+.testimonial__role {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  color: var(--muted-foreground);
+}
+
 /* Homepage section shells. Each section puts its blocks on the page gutter: a header group, then its items. */
 
 .home-section {

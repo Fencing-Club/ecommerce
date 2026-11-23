@@ -5,33 +5,6 @@
   <div class="picks-grid">{%- content_for 'blocks' -%}</div>
 </div>
 
-{% stylesheet %}
-  /* Two columns: the first two picks stack on the left and the third runs the full height on the right. */
-  .picks-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--spacing-6);
-  }
-  .picks-grid > :nth-child(3) {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-  }
-  /* Each card fills its grid cell, so the tall card ends level with the stacked pair. */
-  .picks-grid > * {
-    display: flex;
-  }
-  .picks-grid > * > * {
-    flex: 1 1 auto;
-  }
-  @media (max-width: 749px) {
-    .picks-grid { grid-template-columns: minmax(0, 1fr); }
-    .picks-grid > :nth-child(3) {
-      grid-column: auto;
-      grid-row: auto;
-    }
-  }
-{% endstylesheet %}
-
 {% schema %}
 {
   "name": "t:sections.featured_picks.name",

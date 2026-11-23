@@ -46,8 +46,11 @@ only settings that belong to the whole section, such as a carousel's timing. Eve
 - In a section, `section.blocks` lists only its theme blocks, without the static ones. Each one's `type` reads as
   `@theme` and its `settings` are empty, so a section can count its blocks with `section.blocks.size` but can't read
   them. What it needs from them comes from their rendered output.
-- A section's `{% stylesheet %}` loads before the CSS files it links, so a rule that overrides a shared class repeats
-  that class in its selector (`.home-section.why-us`).
+- A section's `{% stylesheet %}` goes into the `styles.css` bundle that every page loads, ahead of the CSS files
+  sections link. CSS that only one page uses stays out of it: the homepage sections and their private blocks keep
+  theirs in `assets/section-home.css`, and the About sections and theirs in `assets/section-about.css`. Each of those
+  sections links its page's file. In both files the section and block rules come before the shared shell, so a rule
+  that overrides a shell class repeats that class in its selector (`.home-section.why-us`).
 
 The homepage sections are built this way: Hero, Featured picks, Category grid, Best sellers, Why us, Testimonials,
 Brand logos and Journal highlights. Their shared shell and carousel dots are in `assets/section-home.css`. Only the
@@ -96,7 +99,8 @@ settings, and its breadcrumbs are the Breadcrumbs section too.
   settings to another block.
 - A block a single parent uses is private: its file name starts with `_` and only that parent lists it.
 - A block renders through the shared `ui-*` snippet for its element when one exists, and styles only with the
-  [design tokens](design-tokens.md). Its CSS sits in its own `{% stylesheet %}`, which Shopify bundles once.
+  [design tokens](design-tokens.md). Its CSS sits in its own `{% stylesheet %}`, which Shopify bundles once, unless
+  only one page's sections use it. Then it goes in that page's CSS file, as above.
 - The root element carries `{{ block.shopify_attributes }}`, so the theme editor can select the block.
 - The schema's name, labels, options and default text are `t:` keys in `locales/en.default.schema.json`, under
   `blocks`. Labels shared across blocks, like size and alignment, sit under `blocks.all`. Every block has a preset.

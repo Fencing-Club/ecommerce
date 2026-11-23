@@ -42,46 +42,6 @@
   {%- endif -%}
 </fc-carousel>
 
-{% stylesheet %}
-  .testimonials__head {
-    display: flex;
-    gap: var(--spacing-6);
-    align-items: flex-end;
-    justify-content: space-between;
-  }
-  .testimonials__nav {
-    display: flex;
-    flex: 0 0 auto;
-    gap: var(--spacing-3);
-  }
-  .testimonials__viewport {
-    overflow: hidden;
-  }
-  /* Three quotes a page on desktop, two on tablet and one on phones. */
-  .testimonials__track {
-    display: flex;
-    gap: var(--spacing-6);
-    transition: transform 500ms var(--ease-out);
-    will-change: transform;
-  }
-  .testimonials__track > * {
-    flex: 0 0 calc((100% - 2 * var(--spacing-6)) / 3);
-  }
-  @media (max-width: 989px) {
-    .testimonials__track > * { flex-basis: calc((100% - var(--spacing-6)) / 2); }
-  }
-  @media (max-width: 749px) {
-    .testimonials__head {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    .testimonials__track > * { flex-basis: 100%; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .testimonials__track { transition-duration: 1ms; }
-  }
-{% endstylesheet %}
-
 {% schema %}
 {
   "name": "t:sections.testimonials.name",

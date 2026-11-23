@@ -1,6 +1,6 @@
 import { expect } from 'storybook/test';
 import { image, phaseHeading } from '../../fixtures.js';
-import { section } from '../../liquid.js';
+import { loadStylesheet, section } from '../../liquid.js';
 
 const text = (id, value, style) => ({ id, type: 'text', settings: { text: `<p>${value}</p>`, style } });
 const feature = (id, icon, label, detail) => ({ id, type: 'feature', settings: { icon, label, detail } });
@@ -11,6 +11,7 @@ const feature = (id, icon, label, detail) => ({ id, type: 'feature', settings: {
  */
 export default {
   title: 'Sections/About/Principles',
+  loaders: [loadStylesheet('section-about.css')],
   parameters: { layout: 'fullscreen' },
   render: section('about-principles', {
     staticBlocks: [
