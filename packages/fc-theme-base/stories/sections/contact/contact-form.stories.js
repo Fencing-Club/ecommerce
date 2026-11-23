@@ -1,8 +1,8 @@
 import { expect, within } from 'storybook/test';
+import { question } from '../../fixtures.js';
 import { section } from '../../liquid.js';
 
 const topic = (id, icon, title, description) => ({ id, type: '_contact-topic', settings: { icon, title, description, topic: title } });
-const answer = (id, question, text) => ({ id, type: '_contact-answer', settings: { question, answer: text } });
 
 const staticBlocks = [
   {
@@ -19,19 +19,19 @@ const staticBlocks = [
     id: 'answers',
     type: '_contact-answers',
     settings: {},
-    blocks: [
-      answer('order', 'Where is my order?', 'Sign in to view your order history and tracking.'),
-      answer('size', 'Can I change my size?', 'Start a free return within 30 days, then order the size you need.'),
-    ],
   },
 ];
 
-const variables = { page: { title: 'Contact' }, pages: { faq: { url: '/pages/faq' } } };
+const questions = [
+  question('Where is my order?', 'Sign in to view your order history and tracking.'),
+  question('Can I change my size?', 'Start a free return within 30 days, then order the size you need.'),
+];
+const variables = { page: { title: 'Contact', metafields: { custom: { questions: { value: questions } } } }, pages: { faq: { url: '/pages/faq' } } };
 
 /**
  * `sections/contact-form.liquid`: the Contact page. The static `_contact-topics` block holds the `_contact-topic`
- * cards, the form and direct contact details follow, and the static `_contact-answers` block holds the
- * `_contact-answer` quick answers and the FAQ link.
+ * cards, the form and direct contact details follow, and the static `_contact-answers` block shows the Question
+ * entries the page links in `custom.questions` as quick answers, then the FAQ link.
  */
 export default {
   title: 'Sections/Contact/Contact form',
@@ -54,6 +54,7 @@ export const Default = {
 
     const answers = canvas.getByRole('region', { name: 'A few quick answers' });
     await expect(within(answers).getByRole('heading', { level: 3, name: 'Where is my order?' })).toBeVisible();
+    await expect(within(answers).getByText('Start a free return within 30 days, then order the size you need.')).toBeVisible();
     await expect(within(answers).getByRole('link', { name: 'Read our full FAQ' })).toHaveAttribute('href', '/pages/faq');
   },
 };

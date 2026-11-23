@@ -4,6 +4,12 @@ import { assetUrl } from './liquid.js';
 
 export const image = (file, alt) => ({ src: assetUrl(file), alt, width: 800, height: 800, aspect_ratio: 1 });
 
+/** A Question entry as Liquid reads it. The answer is the HTML `metafield_tag` renders from its rich text. */
+export const question = (text, answer) => ({ question: { value: text }, answer: { value: `<p>${answer}</p>` } });
+
+/** An FAQ topic entry: a title over Question entries. */
+export const faqTopic = (title, questions) => ({ title: { value: title }, questions: { value: questions } });
+
 const product = (id, title, type, file, price) => ({
   id,
   title,

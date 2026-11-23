@@ -204,17 +204,18 @@ export function createResourceAdapters(client: AdminClient): AdapterRegistry {
       conflict: definitionConflict,
       create: (data) => mutate(client, queries.definitionCreate, { input: definitionSchema.parse(data) }, "definition")
     },
-    "product-metafield-definition": {
+    "metafield-definition": {
       validate: (data) => {
         fieldDefinitionSchema.parse(data)
       },
-      identity: (data) => `${data.namespace}.${data.key}`,
+      identity: (data) => `${data.ownerType}.${data.namespace}.${data.key}`,
       find: async (data) => {
+        const { ownerType, namespace, key } = fieldDefinitionSchema.parse(data)
         const result = connection.parse(
-          await client(queries.fieldDefinitionQuery, { namespace: data.namespace, key: data.key })
+          await client(queries.fieldDefinitionQuery, { ownerType, namespace, key })
         ).resources
         if (result.nodes.length > 1 || result.pageInfo.hasNextPage) {
-          throw new Error("Ambiguous product metafield definition.")
+          throw new Error("Ambiguous metafield definition.")
         }
         return result.nodes[0] ? installedResource(result.nodes[0], "definition") : undefined
       },
@@ -222,7 +223,7 @@ export function createResourceAdapters(client: AdminClient): AdapterRegistry {
         const desired = fieldDefinitionSchema.parse(data)
         const found = z.object({ type: z.object({ name: z.string() }), validations: z.unknown() }).parse(existing.state)
         if (found.type.name !== desired.type || !validationsMatch(desired.validations ?? [], found.validations)) {
-          return "Incompatible product metafield definition."
+          return "Incompatible metafield definition."
         }
         return undefined
       },
@@ -271,41 +272,47 @@ export function createResourceAdapters(client: AdminClient): AdapterRegistry {
         return mutate(client, queries.menuUpdate, { id: existing.id, title: parsed.title, items: parsed.items }, "menu")
       }
     },
-    "product-chart-assignment": assignmentAdapter(client)
+    "metafield-assignment": assignmentAdapter(client)
   }
 }
 
+const assignedField = z
+  .object({ id: z.string(), type: z.string(), value: z.string(), compareDigest: z.string().nullable() })
+  .nullable()
+const assignmentOwner = z.object({ id: z.string(), handle: z.string(), metafield: assignedField })
+
+/** Sets one field on a product, collection or page found by its handle. */
 function assignmentAdapter(client: AdminClient): ResourceAdapter {
-  const product = async (data: Record<string, unknown>) => {
-    const parsed = assignmentSchema.parse(data)
-    const result = z
-      .object({
-        product: z
-          .object({
-            id: z.string(),
-            metafield: z
-              .object({ id: z.string(), type: z.string(), value: z.string(), compareDigest: z.string().nullable() })
-              .nullable()
-          })
-          .nullable()
-      })
-      .parse(
-        await client(queries.productQuery, {
-          identifier: { handle: parsed.productHandle },
-          namespace: parsed.namespace,
-          key: parsed.key
+  const owner = async (data: Record<string, unknown>) => {
+    const { owner: type, handle, namespace, key } = assignmentSchema.parse(data)
+    const fields = { namespace, key }
+    let found: z.infer<typeof assignmentOwner> | null | undefined
+    if (type === "PAGE") {
+      const result = z
+        .object({
+          owners: z.object({ nodes: z.array(assignmentOwner), pageInfo: z.object({ hasNextPage: z.boolean() }) })
         })
-      )
-    if (!result.product) {
-      throw new Error(`Product not found: ${parsed.productHandle}. No assignment was guessed.`)
+        .parse(await client(queries.pageAssignmentQuery, { query: `handle:${handle}`, ...fields })).owners
+      if (result.nodes.length > 1 || result.pageInfo.hasNextPage) {
+        throw new Error(`Ambiguous page handle: ${handle}.`)
+      }
+      found = result.nodes[0]
+    } else {
+      const query = type === "PRODUCT" ? queries.productAssignmentQuery : queries.collectionAssignmentQuery
+      found = z
+        .object({ owner: assignmentOwner.nullable() })
+        .parse(await client(query, { identifier: { handle }, ...fields })).owner
     }
-    return result.product
+    if (!found || found.handle !== handle) {
+      throw new Error(`${type.toLowerCase()} not found: ${handle}. No assignment was guessed.`)
+    }
+    return found
   }
   const write = async (data: Record<string, unknown>, expected?: InstalledResource) => {
     const parsed = assignmentSchema.parse(data)
-    const current = await product(data)
+    const current = await owner(data)
     if (!expected && current.metafield) {
-      throw new Error("Product assignment changed before writing.")
+      throw new Error("Assignment changed before writing.")
     }
     const previous = expected ? z.object({ compareDigest: z.string().nullable() }).parse(expected.state) : undefined
     const result = z
@@ -324,8 +331,8 @@ function assignmentAdapter(client: AdminClient): ResourceAdapter {
                 ownerId: current.id,
                 namespace: parsed.namespace,
                 key: parsed.key,
-                type: "metaobject_reference",
-                value: z.string().parse(parsed.value),
+                type: parsed.type,
+                value: typeof parsed.value === "string" ? parsed.value : JSON.stringify(parsed.value),
                 compareDigest: previous?.compareDigest ?? null
               }
             ]
@@ -338,7 +345,7 @@ function assignmentAdapter(client: AdminClient): ResourceAdapter {
     }
     const field = result.metafields?.[0]
     if (!field) {
-      throw new Error("Shopify returned no product assignment.")
+      throw new Error("Shopify returned no assignment.")
     }
     return { id: field.id, state: field }
   }
@@ -346,15 +353,15 @@ function assignmentAdapter(client: AdminClient): ResourceAdapter {
     validate: (data) => {
       assignmentSchema.parse(data)
     },
-    identity: (data) => `${data.productHandle}/${data.namespace}.${data.key}`,
+    identity: (data) => `${data.owner}/${data.handle}/${data.namespace}.${data.key}`,
     find: async (data) => {
-      const found = await product(data)
+      const found = await owner(data)
       return found.metafield ? { id: found.metafield.id, state: found.metafield } : undefined
     },
-    conflict: (existing) =>
-      object.parse(existing.state).type === "metaobject_reference"
-        ? undefined
-        : "Product field is not a metaobject reference.",
+    conflict: (existing, data) => {
+      const type = assignmentSchema.parse(data).type
+      return object.parse(existing.state).type === type ? undefined : `Existing field is not a ${type}.`
+    },
     create: (data) => write(data),
     replace: (existing, data) => write(data, existing)
   }

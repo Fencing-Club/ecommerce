@@ -1,10 +1,9 @@
 import { expect, within } from 'storybook/test';
-import { image } from '../../fixtures.js';
+import { image, question } from '../../fixtures.js';
 import { loadModule, loadStylesheet, section } from '../../liquid.js';
 
 const photo = (file, alt) => ({ ...image(file, alt), media_type: 'image' });
 const feature = (file, heading, text) => ({ image: { value: image(file, '') }, heading: { value: heading }, text: { value: text } });
-const question = (text, answer) => ({ question: { value: text }, answer: { value: `<p>${answer}</p>` } });
 const values = (...labels) => ({ value: labels.map((label) => ({ label })) });
 
 const description =

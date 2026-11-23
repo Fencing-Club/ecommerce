@@ -151,18 +151,51 @@ describe("Shopify resource adapters", () => {
     ).toBeUndefined()
   })
 
-  it("requires an explicit product handle and uses compare-and-set for assignments", async () => {
+  it("requires an explicit owner handle and uses compare-and-set for assignments", async () => {
     const client = vi
       .fn<AdminClient>()
-      .mockResolvedValueOnce({ product: null })
-      .mockResolvedValueOnce({ product: { id: "product", metafield: null } })
+      .mockResolvedValueOnce({ owner: null })
+      .mockResolvedValueOnce({ owner: { id: "product", handle: "jacket", metafield: null } })
       .mockResolvedValueOnce({ metafieldsSet: { metafields: [{ id: "field", value: "chart" }], userErrors: [] } })
-    const adapter = createResourceAdapters(client)["product-chart-assignment"]!
-    const data = { productHandle: "jacket", namespace: "custom", key: "size_chart", value: "chart" }
+    const adapter = createResourceAdapters(client)["metafield-assignment"]!
+    const data = {
+      owner: "PRODUCT",
+      handle: "jacket",
+      namespace: "custom",
+      key: "size_chart",
+      type: "metaobject_reference",
+      value: "chart"
+    }
     await expect(adapter.find(data)).rejects.toThrow("No assignment was guessed")
     await adapter.create(data)
     expect(client.mock.calls[2]?.[1]).toMatchObject({
-      metafields: [{ ownerId: "product", value: "chart", compareDigest: null }]
+      metafields: [{ ownerId: "product", type: "metaobject_reference", value: "chart", compareDigest: null }]
     })
+  })
+
+  it("finds a page by its handle and writes a list of entries as JSON", async () => {
+    const page = (id: string) => ({ id, handle: "faq", metafield: null })
+    const client = vi
+      .fn<AdminClient>()
+      .mockResolvedValueOnce({ owners: { nodes: [page("page")], pageInfo: { hasNextPage: false } } })
+      .mockResolvedValueOnce({ metafieldsSet: { metafields: [{ id: "field", value: "[]" }], userErrors: [] } })
+      .mockResolvedValueOnce({ owners: { nodes: [page("one"), page("two")], pageInfo: { hasNextPage: false } } })
+    const adapter = createResourceAdapters(client)["metafield-assignment"]!
+    const data = {
+      owner: "PAGE",
+      handle: "faq",
+      namespace: "custom",
+      key: "faq_topics",
+      type: "list.metaobject_reference",
+      value: ["topic-1", "topic-2"]
+    }
+    await adapter.create(data)
+    expect(client.mock.calls[0]?.[1]).toMatchObject({ query: "handle:faq", namespace: "custom", key: "faq_topics" })
+    expect(client.mock.calls[1]?.[1]).toMatchObject({
+      metafields: [
+        { ownerId: "page", type: "list.metaobject_reference", value: JSON.stringify(["topic-1", "topic-2"]) }
+      ]
+    })
+    await expect(adapter.find(data)).rejects.toThrow("Ambiguous page")
   })
 })

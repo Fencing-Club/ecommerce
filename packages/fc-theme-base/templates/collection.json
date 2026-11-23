@@ -83,34 +83,6 @@
             "where": "Gloves and chest protectors for FIE events.",
             "link": ""
           }
-        },
-        "question-size": {
-          "type": "question",
-          "settings": {
-            "question": "What size fencing jacket should I buy?",
-            "answer": "<p>Measure your chest, waist and arm length, then match them to the size chart on the product page. Each product has its own chart.</p>"
-          }
-        },
-        "question-levels": {
-          "type": "question",
-          "settings": {
-            "question": "What's the difference between 350N and 800N?",
-            "answer": "<p>350N fabric is right for club training and most domestic events. 800N resists more than twice the force, and FIE events ask for 800N FIE clothing.</p>"
-          }
-        },
-        "question-clubs": {
-          "type": "question",
-          "settings": {
-            "question": "Do clubs get special pricing?",
-            "answer": "<p>Yes. Clubs, schools and nonprofits get member pricing and bulk discounts. Contact us with what your club needs.</p>"
-          }
-        },
-        "question-returns": {
-          "type": "question",
-          "settings": {
-            "question": "Can I return clothing that doesn't fit?",
-            "answer": "<p>Yes. Returns are free within 30 days of delivery, as long as it's unworn, with its tags and in its original packaging.</p>"
-          }
         }
       },
       "block_order": [
@@ -118,11 +90,7 @@
         "level-800n",
         "level-800n-fie",
         "level-1600n-fie",
-        "level-fie",
-        "question-size",
-        "question-levels",
-        "question-clubs",
-        "question-returns"
+        "level-fie"
       ],
       "settings": {
         "anchor": "BuyingGuide",

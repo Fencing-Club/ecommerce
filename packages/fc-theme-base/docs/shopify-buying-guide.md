@@ -6,7 +6,8 @@ How to choose link and the toolbar's level help point at.
 - **Levels** are section blocks, one row per protection level: its badge, what it means, where it's worn, and a Shop
   link. The link defaults to this collection filtered to that level, built from the badge label, so 800N FIE adds
   both the rating and the FIE filter.
-- **Questions** are section blocks shown as plain FAQ items, with FAQPage structured data for search engines.
+- **Questions** are the [Question entries](shopify-questions.md) the collection links, shown as plain FAQ items with
+  FAQPage structured data for search engines.
 - **Popular** links come from a menu picked in the section, for curated filtered pages.
 - **Brands** are the logos of the brand entries matching this collection's vendors. A vendor without a brand entry or
   logo is left out. Each logo links to the [brand's page](shopify-brand-pages.md).

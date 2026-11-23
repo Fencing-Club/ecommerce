@@ -63,11 +63,8 @@ brand and contact columns are the static `_footer-brand` and `_footer-contact` b
 `_footer-menu` blocks between them. Brand reads the logo and tagline from the theme's brand settings, and contact reads
 Shopify's store details.
 
-The FAQ page's questions are `_faq-item` blocks, shown through `ui-faq-item`, and its topic headings are `_faq-topic`
-blocks. A topic heads the questions after it, up to the next topic, and each one adds a link to the row under the page
-heading. The section captures the rendered blocks and builds the topic links from each heading's `data-faq-topic`
-title and `id`. With structured data on, the page is a schema.org `FAQPage` in microdata and each question a
-`Question` inside it. The page heading and the contact card stay section settings. The breadcrumbs above it are the
+The FAQ page has no blocks: its topics and questions are [Question entries](shopify-questions.md) the page links,
+shown through `ui-faq-item`. The page heading and the contact card are section settings. The breadcrumbs above it are the
 shared Breadcrumbs section, the template's first section.
 
 The About page (`templates/page.about.json`) follows the About Us board in the Pen. Five of its sections are
@@ -89,8 +86,8 @@ sets the page's larger heading scale (Large for chapter headings, Medium beside 
 
 The Contact page has two sets of blocks in different places, so each sits in a static block that renders its own
 children: `_contact-topics` holds the `_contact-topic` cards above the form, shown through `ui-contact-intent-card`,
-and `_contact-answers` holds the `_contact-answer` quick answers below it, shown through `ui-contact-quick-answer`,
-with its heading and the link to the FAQ page. The page heading, the form and the direct contact column stay section
+and `_contact-answers` shows the page's [Question entries](shopify-questions.md) below it as quick answers, through
+`ui-contact-quick-answer`, with its heading and the link to the FAQ page. The page heading, the form and the direct contact column stay section
 settings, and its breadcrumbs are the Breadcrumbs section too.
 
 ## Rules

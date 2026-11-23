@@ -84,35 +84,7 @@
             "faq_label": "Read our full FAQ",
             "kicker": "Before you write",
             "heading": "A few quick answers"
-          },
-          "blocks": {
-            "answer_order": {
-              "type": "_contact-answer",
-              "settings": {
-                "question": "Where is my order?",
-                "answer": "Sign in to view your order history and tracking. If tracking has stalled, include your order number in your message so we can check with the carrier."
-              }
-            },
-            "answer_size": {
-              "type": "_contact-answer",
-              "settings": {
-                "question": "Can I change my size?",
-                "answer": "Start a free return within 30 days, then order the size you need. Contact us if you need help."
-              }
-            },
-            "answer_clubs": {
-              "type": "_contact-answer",
-              "settings": {
-                "question": "Do you supply clubs?",
-                "answer": "Yes. Clubs, schools, and nonprofits can ask about bulk orders, wholesale pricing, and qualifying discounts."
-              }
-            }
-          },
-          "block_order": [
-            "answer_order",
-            "answer_size",
-            "answer_clubs"
-          ]
+          }
         }
       },
       "settings": {

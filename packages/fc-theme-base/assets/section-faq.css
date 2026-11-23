@@ -61,6 +61,28 @@
   margin-inline: auto;
 }
 
+.faq-page__topic {
+  display: flex;
+  flex-direction: column;
+}
+
+.faq-page__topic + .faq-page__topic {
+  margin-top: var(--spacing-12);
+}
+
+.faq-page__topic-title {
+  margin: 0;
+  padding-bottom: var(--spacing-3-5);
+  scroll-margin-top: var(--spacing-5);
+  font-family: var(--font-body-family);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.2rem;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
 .ui-faq-item {
   border-bottom: 0.1rem solid var(--border);
 }

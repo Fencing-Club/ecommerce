@@ -22,7 +22,7 @@ describe("resource adapter lifecycle", () => {
         created: { id: "definition", type: "guide" }
       },
       {
-        kind: "product-metafield-definition",
+        kind: "metafield-definition",
         data: {
           namespace: "custom",
           key: "size_chart",
@@ -67,14 +67,17 @@ describe("resource adapter lifecycle", () => {
     ).toBe("page")
     client.mockResolvedValueOnce({ resource: { id: "guide", handle: "body" } })
     expect((await registry.metaobject!.find({ type: "guide", handle: "body" }))?.id).toBe("guide")
+    const pageField = { namespace: "custom", key: "faq_topics", name: "FAQ topics", ownerType: "PAGE", type: "json" }
+    expect(registry["metafield-definition"]!.identity(pageField)).toBe("PAGE.custom.faq_topics")
     client.mockResolvedValueOnce(connection([{ id: "definition" }]))
-    expect((await registry["product-metafield-definition"]!.find({ namespace: "custom", key: "size_chart" }))?.id).toBe(
-      "definition"
-    )
+    expect((await registry["metafield-definition"]!.find(pageField))?.id).toBe("definition")
+    expect(client).toHaveBeenLastCalledWith(expect.any(String), {
+      ownerType: "PAGE",
+      namespace: "custom",
+      key: "faq_topics"
+    })
     client.mockResolvedValueOnce(connection([{ id: "one" }, { id: "two" }]))
-    await expect(
-      registry["product-metafield-definition"]!.find({ namespace: "custom", key: "size_chart" })
-    ).rejects.toThrow("Ambiguous")
+    await expect(registry["metafield-definition"]!.find(pageField)).rejects.toThrow("Ambiguous")
     client.mockResolvedValueOnce(success({ id: "page", handle: "unexpected" }))
     await expect(registry.page!.create({ handle: "size-charts", title: "Size charts" })).rejects.toThrow(
       "changed the requested handle"
@@ -92,9 +95,9 @@ describe("resource adapter lifecycle", () => {
       validations: [{ name: "metaobject_definition_id", value: "definition" }]
     }
     const existing = { id: "field", state: { type: { name: "metaobject_reference" }, validations: field.validations } }
-    expect(registry["product-metafield-definition"]!.conflict?.(existing, field)).toBeUndefined()
+    expect(registry["metafield-definition"]!.conflict?.(existing, field)).toBeUndefined()
     expect(
-      registry["product-metafield-definition"]!.conflict?.(
+      registry["metafield-definition"]!.conflict?.(
         { ...existing, state: { type: { name: "single_line_text_field" }, validations: [] } },
         field
       )
@@ -149,29 +152,37 @@ describe("resource adapter lifecycle", () => {
     ).toThrow("HTTP(S)")
   })
 
-  it("preserves existing product assignments and detects compare-and-set errors", async () => {
+  it("preserves existing assignments and detects compare-and-set errors", async () => {
     const client = vi.fn<AdminClient>()
-    const adapter = createResourceAdapters(client)["product-chart-assignment"]!
-    const data = { productHandle: "jacket", namespace: "custom", key: "size_chart", value: "new-chart" }
+    const adapter = createResourceAdapters(client)["metafield-assignment"]!
+    const data = {
+      owner: "PRODUCT",
+      handle: "jacket",
+      namespace: "custom",
+      key: "size_chart",
+      type: "metaobject_reference",
+      value: "new-chart"
+    }
     adapter.validate(data)
-    expect(adapter.identity(data)).toBe("jacket/custom.size_chart")
+    expect(adapter.identity(data)).toBe("PRODUCT/jacket/custom.size_chart")
     const metafield = { id: "field", type: "metaobject_reference", value: "chart", compareDigest: "digest" }
-    client.mockResolvedValue({ product: { id: "product", metafield } })
+    const product = { id: "product", handle: "jacket", metafield }
+    client.mockResolvedValue({ owner: product })
     expect((await adapter.find(data))?.state).toEqual(metafield)
     expect(adapter.conflict?.({ id: "field", state: metafield }, data)).toBeUndefined()
-    expect(adapter.conflict?.({ id: "field", state: { type: "json" } }, data)).toContain("not a metaobject")
+    expect(adapter.conflict?.({ id: "field", state: { type: "json" } }, data)).toContain("not a metaobject_reference")
     await expect(adapter.create(data)).rejects.toThrow("changed before writing")
     client
-      .mockResolvedValueOnce({ product: { id: "product", metafield } })
+      .mockResolvedValueOnce({ owner: product })
       .mockResolvedValueOnce({ metafieldsSet: { metafields: [{ id: "field", value: "new-chart" }], userErrors: [] } })
     expect((await adapter.replace?.({ id: "field", state: metafield }, data))?.id).toBe("field")
     client
-      .mockResolvedValueOnce({ product: { id: "product", metafield: null } })
+      .mockResolvedValueOnce({ owner: { ...product, metafield: null } })
       .mockResolvedValueOnce({ metafieldsSet: { metafields: null, userErrors: [{ message: "Digest changed" }] } })
     await expect(adapter.create(data)).rejects.toThrow("Digest changed")
     client
-      .mockResolvedValueOnce({ product: { id: "product", metafield: null } })
+      .mockResolvedValueOnce({ owner: { ...product, metafield: null } })
       .mockResolvedValueOnce({ metafieldsSet: { metafields: [], userErrors: [] } })
-    await expect(adapter.create(data)).rejects.toThrow("no product assignment")
+    await expect(adapter.create(data)).rejects.toThrow("no assignment")
   })
 })

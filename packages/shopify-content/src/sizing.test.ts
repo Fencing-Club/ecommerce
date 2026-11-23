@@ -51,7 +51,7 @@ describe("Fencing Club content package", () => {
       }
     }
     expect(byKey.get("page.size-charts")?.data.isPublished).toBe(false)
-    expect(manifest.resources.some((resource) => resource.kind === "product-chart-assignment")).toBe(false)
+    expect(manifest.resources.some((resource) => resource.kind === "metafield-assignment")).toBe(false)
   })
 
   it("packages shared category groups with consistent Mens, Womens and Kids wording", async () => {

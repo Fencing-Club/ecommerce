@@ -10,10 +10,10 @@
   @param {boolean} [structured_data] - Marks the item up as a schema.org Question, for a page marked up as an FAQPage.
   @param {string} [variant] - plain drops the badges and shows a plus that turns to minus, as in a collection's buying
     guide.
-  @param {object} [block] - The Theme Editor block it renders.
 
   @example
-  {% render 'ui-faq-item', question: block.settings.question, answer: block.settings.answer, block: block %}
+  {%- assign answer = entry.answer | metafield_tag -%}
+  {% render 'ui-faq-item', question: entry.question.value, answer: answer %}
 {% enddoc %}
 {%- liquid
   assign plain = false
@@ -56,5 +56,5 @@
   if structured_data
     assign attributes = 'itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"'
   endif
-  render 'ui-accordion', summary: summary, content: content, indicator: indicator, indicator_size: 18, open: open, class: item_class, attributes: attributes, block: block
+  render 'ui-accordion', summary: summary, content: content, indicator: indicator, indicator_size: 18, open: open, class: item_class, attributes: attributes
 -%}

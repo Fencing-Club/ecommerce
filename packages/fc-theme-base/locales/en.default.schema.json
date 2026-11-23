@@ -1347,34 +1347,6 @@
         }
       }
     },
-    "faq_topic": {
-      "name": "Topic",
-      "settings": {
-        "title": {
-          "label": "Title"
-        }
-      }
-    },
-    "faq_item": {
-      "name": "Question",
-      "settings": {
-        "question": {
-          "label": "Question"
-        },
-        "answer": {
-          "label": "Answer"
-        },
-        "open": {
-          "label": "Open by default"
-        },
-        "link_label": {
-          "label": "Related link label"
-        },
-        "link_url": {
-          "label": "Related link"
-        }
-      }
-    },
     "contact_topics": {
       "name": "Topics"
     },
@@ -1418,17 +1390,6 @@
         },
         "faq_label": {
           "label": "FAQ link label"
-        }
-      }
-    },
-    "contact_answer": {
-      "name": "Quick answer",
-      "settings": {
-        "question": {
-          "label": "Question"
-        },
-        "answer": {
-          "label": "Answer"
         }
       }
     },

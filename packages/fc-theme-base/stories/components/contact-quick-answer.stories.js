@@ -9,12 +9,13 @@ export default {
   args: {
     question: 'Where is my order?',
     answer:
-      'Sign in to view your order history and tracking. If tracking has stalled, include your order number in your message so we can check with the carrier.',
+      '<p>Sign in to view your order history and tracking. If tracking has stalled, include your order number in your message so we can check with the carrier.</p>',
   },
 };
 
 export const Default = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('heading', { name: 'Where is my order?', level: 3 })).toBeVisible();
+    await expect(canvas.getByText(/If tracking has stalled/)).toBeVisible();
   },
 };

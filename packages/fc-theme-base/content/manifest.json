@@ -328,7 +328,7 @@
     },
     {
       "key": "definition.product-chart",
-      "kind": "product-metafield-definition",
+      "kind": "metafield-definition",
       "data": {
         "namespace": "custom",
         "key": "size_chart",
