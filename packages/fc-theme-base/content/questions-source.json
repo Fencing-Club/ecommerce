@@ -23,7 +23,7 @@
     {
       "handle": "how-do-i-change-my-delivery-address",
       "question": "How do I change my delivery address?",
-      "answer": "<p>Once your order ships, you’ll receive tracking information by email. If your package appears delayed or tracking hasn’t updated for an extended period, please contact <a href=\"mailto:support@fencing.club\">support@fencing.club</a> and we’ll help look into it with the carrier.</p>"
+      "answer": "<p>Email <a href=\"mailto:support@fencing.club\">support@fencing.club</a> with your order number and the new address as soon as you can. If your order hasn’t shipped yet, we’ll update it for you.</p>"
     },
     {
       "handle": "do-you-ship-internationally",
@@ -121,21 +121,6 @@
       "answer": "<p>Fencing Club started from a passion for sport, helping athletes find quality gear at competitive prices, whether you're a novice or Olympian. We saw there was a gap in the market for distributors with low operational costs that could offer the lowest prices for the same equipment.</p><p>Our journey began with a simple goal: make fencing more accessible. We've painstakingly optimized our supply chain to ensure every piece of gear meets high standards without the hefty price tag. It's not just about selling equipment; it's about supporting the fencing community's passion and growth.</p>"
     },
     {
-      "handle": "where-is-my-order",
-      "question": "Where is my order?",
-      "answer": "<p>Sign in to view your order history and tracking. If tracking has stalled, include your order number in your message so we can check with the carrier.</p>"
-    },
-    {
-      "handle": "can-i-change-my-size",
-      "question": "Can I change my size?",
-      "answer": "<p>Start a free return within 30 days, then order the size you need. Contact us if you need help.</p>"
-    },
-    {
-      "handle": "do-you-supply-clubs",
-      "question": "Do you supply clubs?",
-      "answer": "<p>Yes. Clubs, schools, and nonprofits can ask about bulk orders, wholesale pricing, and qualifying discounts.</p>"
-    },
-    {
       "handle": "what-size-fencing-jacket-should-i-buy",
       "question": "What size fencing jacket should I buy?",
       "answer": "<p>Measure your chest, waist and arm length, then match them to the size chart on the product page. Each product has its own chart.</p>"
@@ -144,16 +129,6 @@
       "handle": "whats-the-difference-between-350n-and-800n",
       "question": "What's the difference between 350N and 800N?",
       "answer": "<p>350N fabric is right for club training and most domestic events. 800N resists more than twice the force, and FIE events ask for 800N FIE clothing.</p>"
-    },
-    {
-      "handle": "do-clubs-get-special-pricing",
-      "question": "Do clubs get special pricing?",
-      "answer": "<p>Yes. Clubs, schools and nonprofits get member pricing and bulk discounts. Contact us with what your club needs.</p>"
-    },
-    {
-      "handle": "can-i-return-clothing-that-doesnt-fit",
-      "question": "Can I return clothing that doesn't fit?",
-      "answer": "<p>Yes. Returns are free within 30 days of delivery, as long as it's unworn, with its tags and in its original packaging.</p>"
     }
   ],
   "faqTopics": [
@@ -234,9 +209,9 @@
       ],
       "key": "questions",
       "entries": [
-        "where-is-my-order",
-        "can-i-change-my-size",
-        "do-you-supply-clubs"
+        "how-do-i-track-my-order",
+        "can-i-exchange-an-item",
+        "can-you-supply-our-club-store-with-gear"
       ]
     },
     {
@@ -256,8 +231,80 @@
       "entries": [
         "what-size-fencing-jacket-should-i-buy",
         "whats-the-difference-between-350n-and-800n",
-        "do-clubs-get-special-pricing",
-        "can-i-return-clothing-that-doesnt-fit"
+        "do-you-offer-free-returns",
+        "do-you-offer-club-discounts"
+      ]
+    },
+    {
+      "owner": "COLLECTION",
+      "handles": [
+        "mens-chest-protectors",
+        "mens-lames",
+        "fencing-underarm-protectors",
+        "womens-chest-protectors",
+        "womens-lames",
+        "socks",
+        "shoes",
+        "gloves",
+        "masks",
+        "foil-masks",
+        "epee-masks",
+        "saber-masks",
+        "mask-parts",
+        "complete-masks",
+        "mask-cords",
+        "mask-bibs",
+        "kids",
+        "bags",
+        "starter-kits",
+        "foil-kits",
+        "epee-kits",
+        "saber-kits",
+        "weapons",
+        "complete-weapons",
+        "blades",
+        "foil-weapons",
+        "epee-weapons",
+        "saber-weapons",
+        "foil-blades",
+        "epee-blades",
+        "saber-blades",
+        "weapon-parts",
+        "points",
+        "grips",
+        "pommels-and-nuts",
+        "guards",
+        "pads",
+        "sockets",
+        "body-cords",
+        "tip-screws",
+        "tools",
+        "innovations",
+        "more",
+        "scoring",
+        "fencing-club",
+        "branded-blades",
+        "branded-blades-fie",
+        "branded-products",
+        "scoring-systems",
+        "reels-floor-cables",
+        "footwear",
+        "club-gear",
+        "wheel-bags",
+        "carry-bags",
+        "chest-protectors",
+        "lames",
+        "kids-lames",
+        "foil-body-cords",
+        "epee-body-cords",
+        "saber-body-cords",
+        "foil-epee-gloves",
+        "saber-gloves"
+      ],
+      "key": "questions",
+      "entries": [
+        "do-you-offer-free-returns",
+        "do-you-offer-club-discounts"
       ]
     }
   ]
