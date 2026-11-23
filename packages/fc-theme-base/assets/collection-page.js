@@ -31,7 +31,7 @@ function showFilters(open) {
 function showColumns(columns) {
   const layout = document.querySelector('[data-collection-layout]');
   if (!layout) return;
-  layout.style.setProperty('--collection-columns', columns);
+  layout.style.setProperty('--collection-desktop-columns', columns);
   for (const option of document.querySelectorAll('.collection-density__option')) {
     option.setAttribute('aria-pressed', String(option.dataset.columns === columns));
   }

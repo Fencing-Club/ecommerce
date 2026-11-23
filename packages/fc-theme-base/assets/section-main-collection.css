@@ -347,8 +347,10 @@
 
 /* Layout */
 
+/* Products per row sets --collection-desktop-columns. The tablet and phone rules replace the count, so a choice made
+   on desktop never squeezes a narrow screen. */
 .collection-layout {
-  --collection-columns: 4;
+  --collection-columns: var(--collection-desktop-columns, 4);
   display: grid;
   grid-template-columns: 24rem minmax(0, 1fr);
   gap: 4rem;
