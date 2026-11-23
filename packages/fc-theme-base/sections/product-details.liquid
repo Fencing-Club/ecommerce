@@ -1,9 +1,9 @@
 {%- comment -%}
   The product page's details under the photos and buy box: Overview, Specs, Care, Reviews and Questions, each a block
   that renders only when the product has its data (docs/shopify-product-specs.md). On phones they're rows that open in
-  place; from 990px they all show open, under a row of links to each. A section can't read its blocks, so the links
+  place; from 750px they all show open, under a row of links to each. A section can't read its blocks, so the links
   come from the rendered parts: each carries its label and anchor in `data-product-section` and `id`, which the buy
-  bar's links read too. `<product-details>` (`assets/product-details.js`) keeps the parts open from 990px and runs Show
+  bar's links read too. `<product-details>` (`assets/product-details.js`) keeps the parts open from 750px and runs Show
   more questions.
 {%- endcomment -%}
 {{ 'section-product-details.css' | asset_url | stylesheet_tag }}

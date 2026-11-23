@@ -1,11 +1,11 @@
 # Product page
 
-The product page's top is `sections/main-product.liquid`: the photos beside the buy box on desktop, stacked with a
+The product page's top is `sections/main-product.liquid`: the photos beside the buy box from tablets up, stacked with a
 photo carousel on phones. `templates/product.json` puts **Page breadcrumbs** above it and the disclosures, related
-products and **From the Journal** below, with **Product details** between them. From the Journal is the Journal
-highlights section set to show the first three articles the product links in `custom.articles`, and is left out
-without them. [Product specs](shopify-product-specs.md) lists where each
-part's data lives.
+products, **From the Journal** and **Recently viewed** below, with **Product details** between them. From the
+Journal is the Journal highlights section set to show the first three articles the product links in `custom.articles`,
+and is left out without them. Recently viewed leaves out the product being viewed.
+[Product specs](shopify-product-specs.md) lists where each part's data lives.
 
 ## Parts
 
@@ -36,6 +36,15 @@ part's data lives.
   form under the buy row. `assets/product-restock.js` sends the email to the store's STOQ app through STOQ's signup
   endpoint, named by the shop's domain, so signups and restock emails stay in STOQ. The section's **Show the
   back-in-stock form** setting turns it on. Keep STOQ's own app embed off on this theme, or its button shows as well.
+- One module with the buttons, chosen by the product's fields. Complete the kit (`snippets/product-kit.liquid`, from
+  `custom.kit`) sits under the buy row: matching pieces, ticked, in the size picked here when they have it, with an
+  outline button that adds this product and the ticked pieces, showing how many and the total. Without a kit, Add to
+  your order (`snippets/product-add-ons.liquid`, from `custom.add_ons`) sits above Add to cart: extras to tick, each
+  adding its first available variant, and Add to cart shows the total once one is ticked. Both hide while the chosen
+  variant is sold out. `assets/product-modules.js` keeps the totals current, and `assets/product-form.js` sends the
+  ticked extras in the same add as this product. Bundle and save, for small parts, is designed, not built.
+- Rewards progress: under the trust notes, the cart's rewards bar (`snippets/cart-reward-progress.liquid`) counts the
+  cart as it would be with this variant added, unless it's in the cart already. It's left out without rewards.
 
 ## Product details
 
@@ -43,7 +52,7 @@ part's data lives.
 product has its data: Overview (the description, the second photo and feature cards), Specs, Care, Reviews (the
 reviews app's block, which goes inside it, once the product has a review) and Questions. With none of them, the section renders nothing.
 
-- On phones each part is a row that opens in place, with Overview open. From 990px they all show open, each with its
+- On phones each part is a row that opens in place, with Overview open. From 750px they all show open, each with its
   label as the eyebrow over its heading, under a row of links to each part. `snippets/product-details-part.liquid`
   draws each one.
 - A part carries its label and anchor in `data-product-section` and `id`, so the section's links and the buy bar's
@@ -59,7 +68,7 @@ reviews app's block, which goes inside it, once the product has a review) and Qu
 - `assets/product-page.js` defines `<product-page>`. It opens the viewer and Size guide's drawer, brings a picked
   variant's photo to the front, shows the buy bar and works out the ships line. Shopify's express checkout button is
   drawn again after each variant loads.
-- `assets/product-details.js` defines `<product-details>`. From 990px it keeps every part open and takes the parts'
+- `assets/product-details.js` defines `<product-details>`. From 750px it keeps every part open and takes the parts'
   headings out of the tab order. It runs Show more questions.
 - `assets/photo-gallery.js` scrolls the gallery and the viewer.
 

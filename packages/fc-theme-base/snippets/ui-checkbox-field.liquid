@@ -12,7 +12,9 @@
   - action: {String} Optional token rendered as data-action for scripts to bind to.
   - value: {String} Optional token rendered as data-value for scripts to read.
   - type: {String} checkbox (default) or radio.
-  - variant: {String} filter enables highlighted option rows; ordinary fields remain unfilled.
+  - trailing: {String} Optional text at the row's end, such as a price, read with the label.
+  - variant: {String} filter enables highlighted option rows; option draws a bordered row that darkens when ticked;
+    ordinary fields remain unfilled.
   - name: {String} Native form field name; required to group radios.
   - count: {Number} Optional filter result count.
   - required: {Boolean} Native required validation.
@@ -20,7 +22,7 @@
   - additional_props: {String} Trusted template-owned input attributes.
 {% endcomment %}
 
-<div class="ui-checkbox-field{% if type == 'radio' %} ui-checkbox-field--radio{% endif %}{% if variant == 'filter' %} ui-checkbox-field--filter{% endif %}">
+<div class="ui-checkbox-field{% if type == 'radio' %} ui-checkbox-field--radio{% endif %}{% if variant == 'filter' %} ui-checkbox-field--filter{% endif %}{% if variant == 'option' %} ui-checkbox-field--option{% endif %}">
   <input
     type="{{ type | default: 'checkbox' }}"
     class="{% if type == 'radio' %}ui-radio{% else %}ui-checkbox{% endif %}"
@@ -43,6 +45,9 @@
     </span>
     {%- if description -%}
       <span class="ui-checkbox-field__description">{{ description | escape }}</span>
+    {%- endif -%}
+    {%- if trailing != blank -%}
+      <span class="ui-checkbox-field__trailing">{{ trailing | escape }}</span>
     {%- endif -%}
   </label>
   {% if count != nil %}<span class="ui-checkbox-field__count" aria-hidden="true">{{ count }}</span>{% endif %}

@@ -1,8 +1,11 @@
 {% doc %}
   Reward progress above the cart lines, from the Reward progress states in the Pen: free shipping and the gift tiers
   on one track, each marker at its share of the highest amount. The message names the next reward; the note names the
-  last one reached. Renders nothing when no reward is set up. Stops are "amount:kind" text with the amount padded to
-  the same length, so a text sort orders them by amount.
+  last one reached. Renders nothing when no reward is set up or there's nothing to count. Stops are "amount:kind"
+  text with the amount padded to the same length, so a text sort orders them by amount. The product page's buy box
+  passes the total the cart would reach with the product in it.
+
+  @param {number} [total] - The total to measure, in cents. Defaults to the cart's.
 {% enddoc %}
 {%- liquid
   capture shipping_text
@@ -24,9 +27,15 @@
   endfor
   assign stops = stops | remove_first: ',' | split: ',' | sort
 -%}
-{%- if stops.size > 0 and cart != empty -%}
+{%- liquid
+  assign progress_total = cart.total_price
+  if total != blank
+    assign progress_total = total
+  endif
+-%}
+{%- if stops.size > 0 and progress_total > 0 -%}
   {%- liquid
-    assign total = cart.total_price
+    assign total = progress_total
     assign highest = stops.last | split: ':' | first | minus: 10000000000
     assign fill = total | times: 100.0 | divided_by: highest
     if fill > 100

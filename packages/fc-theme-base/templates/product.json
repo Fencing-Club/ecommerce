@@ -121,6 +121,12 @@
         "source": "product",
         "read_label": "Read more"
       }
+    },
+    "recently-viewed": {
+      "type": "recently-viewed",
+      "settings": {
+        "limit": 6
+      }
     }
   },
   "order": [
@@ -129,6 +135,7 @@
     "details",
     "disclosures",
     "related-products",
-    "journal"
+    "journal",
+    "recently-viewed"
   ]
 }

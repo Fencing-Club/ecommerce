@@ -19,13 +19,15 @@ if (!customElements.get('product-form')) {
 
       onSubmitHandler(evt) {
         evt.preventDefault();
-        if (this.submitButton.getAttribute('aria-disabled') === 'true') return;
+        // Complete the kit's button sends this form from outside it, so the pressed button shows the progress.
+        const button = evt.submitter?.matches('[type="submit"]') ? evt.submitter : this.submitButton;
+        if (button.getAttribute('aria-disabled') === 'true') return;
 
         this.handleErrorMessage();
 
-        this.submitButton.setAttribute('aria-disabled', true);
-        this.submitButton.classList.add('loading');
-        this.querySelector('.loading__spinner').classList.remove('hidden');
+        button.setAttribute('aria-disabled', true);
+        button.classList.add('loading');
+        button.querySelector('.loading__spinner')?.classList.remove('hidden');
 
         const config = fetchConfig('javascript');
         config.headers['X-Requested-With'] = 'XMLHttpRequest';
@@ -40,10 +42,10 @@ if (!customElements.get('product-form')) {
           formData.append('sections_url', window.location.pathname);
           this.cart.setActiveElement(document.activeElement);
         }
-        config.body = formData;
-
         const variantId = formData.get('id');
         const quantity = parseInt(formData.get('quantity')) || 1;
+        this.addExtras(formData, button);
+        config.body = formData;
         const linesUpdateDeferred = this.createCartLinesUpdateEvent(variantId, quantity);
 
         const operation = () => fetch(`${routes.cart_add_url}`, config)
@@ -112,15 +114,34 @@ if (!customElements.get('product-form')) {
             linesUpdateDeferred?.reject(e);
           })
           .finally(() => {
-            this.submitButton.classList.remove('loading');
-            if (!this.error) this.submitButton.removeAttribute('aria-disabled');
-            this.querySelector('.loading__spinner').classList.add('hidden');
+            button.classList.remove('loading');
+            if (!this.error) button.removeAttribute('aria-disabled');
+            button.querySelector('.loading__spinner')?.classList.add('hidden');
 
             CartPerformance.measureFromEvent("add:user-action", evt);
           });
         const cartController = customElements.get('cart-items');
         if (cartController) return cartController.mutate(operation);
         return operation();
+      }
+
+      /**
+       * Sends the ticked extras with this product in one add: add-ons always, kit pieces when Complete the kit's
+       * button sent the form. They're the form's checkboxes marked `data-extra`, each holding its variant's id.
+       */
+      addExtras(formData, button) {
+        const withKit = button.hasAttribute('data-with-kit');
+        const extras = [...this.form.elements].filter(
+          (field) => field.dataset.extra && field.checked && (field.dataset.extra !== 'kit' || withKit)
+        );
+        if (extras.length === 0) return;
+        const lines = [[formData.get('id'), formData.get('quantity') || '1'], ...extras.map((extra) => [extra.value, '1'])];
+        formData.delete('id');
+        formData.delete('quantity');
+        for (const [id, quantity] of lines) {
+          formData.append('items[][id]', id);
+          formData.append('items[][quantity]', quantity);
+        }
       }
 
       handleErrorMessage(errorMessage = false) {

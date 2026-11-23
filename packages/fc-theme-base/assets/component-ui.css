@@ -92,7 +92,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: auto;
   color: var(--secondary-foreground);
+}
+.ui-button.loading > .loading__spinner .spinner {
+  width: 1.8rem;
+  height: 1.8rem;
 }
 .ui-button--primary.loading > .loading__spinner {
   color: var(--primary-foreground);
@@ -1648,6 +1653,34 @@ input:disabled + .ui-checkbox-field__copy {
   letter-spacing: 0;
   color: var(--muted-foreground);
 }
+
+/* Trailing text, such as a price, sits at the row's end inside the label, so it's read with it. */
+.ui-checkbox-field:has(.ui-checkbox-field__trailing) > .ui-checkbox-field__copy {
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--spacing-3);
+  align-items: center;
+}
+.ui-checkbox-field__copy > .ui-checkbox-field__trailing { grid-row: 1; grid-column: 2; }
+.ui-checkbox-field__trailing {
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+/* Option rows: a bordered row per choice that darkens when ticked, such as a product's add-ons. */
+.ui-checkbox-field--option {
+  padding: 1.2rem 1.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: border-color 160ms ease;
+}
+.ui-checkbox-field--option + .ui-checkbox-field--option { margin-block-start: 1rem; }
+.ui-checkbox-field--option .ui-checkbox-field__label { font-weight: 500; }
+.ui-checkbox-field--option:has(input:checked) { border-color: var(--foreground); }
+.ui-checkbox-field--option:has(input:checked) .ui-checkbox-field__trailing { font-weight: 600; color: var(--foreground); }
 
 :where(a, button, input, select, summary):focus-visible {
   outline: 2px solid var(--ring);

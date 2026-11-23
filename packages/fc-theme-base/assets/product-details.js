@@ -1,8 +1,8 @@
-const WIDE = window.matchMedia('(min-width: 990px)');
+const WIDE = window.matchMedia('(min-width: 750px)');
 
 /**
  * `<product-details>`: the product page's details section (`sections/product-details.liquid`). On phones each part is
- * a row that opens in place. From 990px every part shows open as its own section, so its heading stops opening and
+ * a row that opens in place. From 750px every part shows open as its own section, so its heading stops opening and
  * closing it and leaves the tab order. Show more questions reveals the questions after the first five, which a find in
  * page reveals too.
  */

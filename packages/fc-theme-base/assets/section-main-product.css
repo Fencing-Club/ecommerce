@@ -1,17 +1,27 @@
-/* The product page's top section (sections/main-product.liquid): the gallery beside the buy box on desktop, stacked
-   with a photo carousel on phones, plus the buy bar and the photo viewer. Sizes follow the Pen's P/Main, Gallery and
+/* The product page's top section (sections/main-product.liquid): the gallery beside the buy box from tablets up,
+   stacked with a photo carousel on phones, plus the buy bar and the photo viewer. Sizes follow the Pen's P/Main, Gallery and
    Buy box frames. */
 
 .product-page { display: block; padding-block: 0.8rem 2.8rem; }
 .product-page__grid { display: flex; flex-direction: column; gap: 2rem; }
 
+/* Photos beside the buy box from tablets up. Tablets split the width evenly so the buy box keeps room for its
+   buttons; desktops give the photos the larger share, as the Pen's P/Main does. */
+@media screen and (min-width: 750px) {
+  .product-page { padding-block: 2.4rem 5.6rem; }
+  .product-page__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 3.2rem;
+    align-items: start;
+  }
+}
+
 @media screen and (min-width: 990px) {
   .product-page { padding-block: 2.4rem 7.2rem; }
   .product-page__grid {
-    display: grid;
     grid-template-columns: minmax(0, 72fr) minmax(36rem, 46.4fr);
     gap: clamp(3.2rem, 4vw, 6.4rem);
-    align-items: start;
   }
 }
 
@@ -91,11 +101,11 @@
 .product-gallery__dot[aria-current='true'] { width: 0.8rem; height: 0.8rem; background: var(--foreground); }
 .product-gallery__dot:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 
-@media screen and (max-width: 989px) {
+@media screen and (max-width: 749px) {
   .product-gallery__all { display: none; }
 }
 
-@media screen and (min-width: 990px) {
+@media screen and (min-width: 750px) {
   .product-gallery { gap: 1.6rem; }
   .product-gallery__track {
     display: grid;
@@ -117,8 +127,10 @@
 .product-page__buy { display: flex; flex-direction: column; gap: 2rem; min-width: 0; }
 .product-page__options { display: flex; flex-direction: column; gap: 2rem; }
 .product-page__options[aria-busy='true'] { opacity: 0.6; }
+/* The stock line belongs to the size it describes, so it sits closer to the pickers than to the buy row. */
+.product-page__options > .product-stock-line { margin-block: -0.8rem 0.8rem; }
 
-@media screen and (min-width: 990px) {
+@media screen and (min-width: 750px) {
   .product-page__buy { position: sticky; top: calc(var(--header-sticky-offset, 0px) + 2.4rem); gap: 2.4rem; }
   .product-page__options { gap: 2.4rem; }
 }
@@ -135,16 +147,16 @@
 .product-page__title { margin: 0; font-size: 2.6rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.06rem; }
 .product-page__subtitle { margin: 0; color: var(--muted-foreground); font-size: 1.5rem; line-height: 1.55; }
 
-@media screen and (min-width: 990px) {
+@media screen and (min-width: 750px) {
   .product-page__head { gap: 1rem; }
-  .product-page__title { font-size: 3.4rem; letter-spacing: -0.08rem; }
+  .product-page__title { font-size: clamp(2.8rem, 2.4vw + 0.8rem, 3.4rem); letter-spacing: -0.08rem; }
   .product-page__subtitle { font-size: 1.6rem; }
 }
 
 .product-page__price { display: flex; flex-direction: column; gap: 0.4rem; }
 .product-page__installments { color: var(--muted-foreground); font-size: 1.3rem; }
 
-@media screen and (min-width: 990px) {
+@media screen and (min-width: 750px) {
   .product-page__price { gap: 0.6rem; }
 }
 
@@ -156,7 +168,7 @@
 .product-page__option-error { margin: 0; color: var(--destructive); font-size: 1.3rem; }
 .product-page__option-error[hidden] { display: none; }
 
-@media screen and (min-width: 990px) {
+@media screen and (min-width: 750px) {
   .product-page__pickers { gap: 2.4rem; }
 }
 
@@ -352,6 +364,13 @@ html:has(.photo-viewer[open]) { overflow: hidden; }
   .photo-viewer__thumbs { justify-content: flex-start; }
 }
 
+/* Rewards: the cart's reward progress, in a box, counting this product. */
+.product-page__rewards .fc-progress {
+  padding: 1.4rem 1.6rem 1.6rem;
+  border: 1px solid var(--border);
+  border-radius: 1.2rem;
+}
+
 /* Back in stock: the Pen's Restock Notify panel under a sold-out variant's buttons. */
 .product-restock {
   display: flex;
@@ -394,4 +413,98 @@ html:has(.photo-viewer[open]) { overflow: hidden; }
 }
 .product-restock__message--error {
   color: var(--destructive);
+}
+
+/* Buy box modules (snippets/product-kit.liquid, snippets/product-add-ons.liquid): the Pen's Buy box modules board. */
+.product-kit,
+.product-add-ons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+.product-add-ons {
+  gap: 1rem;
+  margin-block-end: var(--spacing-3);
+}
+.product-add-ons .ui-checkbox-field + .ui-checkbox-field {
+  margin-block-start: 0;
+}
+.product-kit__heading,
+.product-add-ons__heading {
+  margin: 0;
+  font-family: var(--font-heading-family);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--foreground);
+}
+.product-kit__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin: 0;
+}
+.product-kit__item {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.product-kit__thumb {
+  flex: none;
+  overflow: hidden;
+  width: 4.4rem;
+  height: 4.4rem;
+  border-radius: var(--radius-md);
+  background: var(--muted);
+}
+.product-kit__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.product-kit__info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+.product-kit__name {
+  font-size: 1.3rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--foreground);
+  text-decoration: none;
+}
+@media (hover: hover) {
+  .product-kit__name:hover {
+    text-decoration: underline;
+  }
+}
+.product-kit__price {
+  flex: none;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+/* The piece's picker is the Pen's small size chip, not a full field. */
+.product-kit__option .ui-select__input,
+.product-kit__option .ui-select__trigger {
+  min-height: 2.4rem;
+  padding: 0.2rem 2.4rem 0.2rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: 1.2rem;
+}
+.product-kit__option .ui-select__trigger {
+  gap: var(--spacing-1);
+  padding-inline-end: 0.7rem;
+}
+.product-kit__option .ui-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+.product-kit__option .ui-select__control > .ui-icon {
+  right: 0.7rem;
 }

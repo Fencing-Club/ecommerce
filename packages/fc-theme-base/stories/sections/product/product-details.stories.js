@@ -1,65 +1,10 @@
 import { expect, within } from 'storybook/test';
-import { image, question } from '../../fixtures.js';
+import { detailsJacket, detailsParts } from '../../fixtures.js';
 import { loadModule, loadStylesheet, section } from '../../liquid.js';
 
-const photo = (file, alt) => ({ ...image(file, alt), media_type: 'image' });
-const feature = (file, heading, text) => ({ image: { value: image(file, '') }, heading: { value: heading }, text: { value: text } });
-const values = (...labels) => ({ value: labels.map((label) => ({ label })) });
-
-const description =
-  "<p>The Novus jacket moves with you. Four-way stretch fabric lets you lunge, recover and parry without the jacket pulling at your shoulders, and the back zip keeps the front smooth where touches land.</p><p>It's light enough to wear through a full evening of club bouts, and it washes at home.</p>";
-
-const questions = [
-  question('Can I wear this jacket at USA Fencing tournaments?', 'Yes, at most domestic events. Wear it with an 800N underarm protector and check your event’s rules.'),
-  question('How do I choose between right and left hand?', 'Pick the hand you hold your weapon in. The zip sits on the other side.'),
-  question('How should I wash it?', 'Close the back zip and machine wash it cold with a color-safe detergent.'),
-  question('Can I return it if the size is wrong?', 'Yes. Unworn gear comes back free within 30 days in the US.'),
-  question('When will my order ship?', 'Orders placed by 2pm Pacific time on a business day ship that day.'),
-  question('Does it come in kids sizes?', 'Yes. The kids Novus jacket is a separate listing.'),
-  question('Is it machine washable at 40°C?', 'Wash it cold to keep the stretch fabric in shape.'),
-];
-
-const knickers = { title: "Novus Men's Knickers 350N", url: '/products/novus-mens-knickers-350n' };
-const protector = { title: 'Novus Underarm Protector 800N', url: '/products/novus-underarm-protector-800n' };
-
-const jacket = {
-  title: "Novus Men's Jacket 350N",
-  description,
-  // Shipping weights in grams, which differ by size.
-  variants: [{ weight: 600 }, { weight: 625 }, { weight: 650 }, { weight: 0 }],
-  media: [photo('collection-fie-800n-jacket.jpg', 'Novus jacket, front'), photo('collection-aero-competition-jacket.jpg', 'A fencer wearing the Novus jacket')],
-  metafields: {
-    custom: {
-      protection_rating: { value: '350N' },
-      fie_status: { value: 'Non-FIE' },
-      closure: { value: 'Back zip with collar strap' },
-      features: {
-        value: [
-          feature('collection-stretch-fencing-pants.jpg', 'Four-way stretch', 'Moves with every lunge and recovery, so the jacket never pulls.'),
-          feature('collection-fie-800n-jacket.jpg', 'Back zip', 'A smooth front with nothing to catch a blade.'),
-          feature('collection-mens-chest-protector.jpg', 'Soft lined collar', 'Comfortable against your neck under a mask bib.'),
-          feature('collection-underarm-plastron-800n.jpg', '350N protection', 'Meets EN 13567 Level 1 for club training and domestic events.'),
-        ],
-      },
-      care_symbols: { value: ['wash-cold', 'line-dry', 'no-bleach', 'no-tumble-dry', 'no-iron', 'no-dry-clean'] },
-      care_note: { value: 'Use a color-safe detergent with no bleach. Close the back zip before washing.' },
-      questions: { value: questions },
-    },
-    shopify: { 'gear-material': values('Polyester', 'Elastane'), handedness: values('Right', 'Left') },
-    'shopify--discovery--product_recommendation': { complementary_products: { value: [knickers, protector] } },
-    reviews: { rating_count: { value: 126 } },
-  },
-};
-
-// A reviews app's block stands in for the app the store installs.
-const reviewsApp = { id: 'reviews-app', type: 'text', settings: { text: '<p>Reviews from the reviews app</p>' } };
-const allParts = [
-  { id: 'overview', type: '_product-overview', settings: {} },
-  { id: 'specs', type: '_product-specs', settings: {} },
-  { id: 'care', type: '_product-care', settings: {} },
-  { id: 'reviews', type: '_product-reviews', settings: {}, blocks: [reviewsApp] },
-  { id: 'questions', type: '_product-questions', settings: {} },
-];
+const jacket = detailsJacket;
+const allParts = detailsParts;
+const [knickers, protector] = jacket.metafields['shopify--discovery--product_recommendation'].complementary_products.value;
 
 const render = (product, blocks = allParts) =>
   section('product-details', { blocks, variables: { product, pages: { contact: { url: '/pages/contact' } } } })({});
@@ -68,7 +13,7 @@ const nav = (canvas) => within(canvas.getByRole('navigation', { name: 'On this p
 /**
  * `sections/product-details.liquid`: the product page's Overview, Specs, Care, Reviews and Questions, under links to
  * each. Each part shows only when the product has its data, so a product with less data gets a shorter page. On
- * phones the parts are rows that open in place; from 990px, where these stories run, they all show open.
+ * phones the parts are rows that open in place; from 750px, where these stories run, they all show open.
  */
 export default {
   title: 'Sections/Product/Product details',
@@ -123,7 +68,7 @@ export const EveryPart = {
   },
 };
 
-// Every part stays open from 990px: its heading doesn't close it and isn't a tab stop.
+// Every part stays open from 750px: its heading doesn't close it and isn't a tab stop.
 export const OpenOnWideScreens = {
   play: async ({ canvas, userEvent }) => {
     const care = canvas.getByRole('heading', { level: 2, name: 'Care' }).closest('details');

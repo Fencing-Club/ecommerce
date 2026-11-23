@@ -315,6 +315,16 @@
       "success": "Thanks. We’ll email you when it’s back.",
       "invalid": "Enter a valid email.",
       "error": "We couldn’t sign you up. Try again."
+    },
+    "kit": {
+      "heading": "Complete the kit",
+      "option": "Option for {{ product }}",
+      "add": "Add {{ count }} to cart, {{ total }}"
+    },
+    "add_ons": {
+      "heading": "Add to your order",
+      "price": "+{{ price }}",
+      "add": "Add to cart, {{ total }}"
     }
   },
   "templates": {

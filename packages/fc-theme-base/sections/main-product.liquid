@@ -1,9 +1,11 @@
 {%- comment -%}
   The product page's top: the photos beside the buy box. The buy box has the brand, name and rating, then the price
   and the options inside `product-options`, which reloads this section for each variant so price, stock and the
-  buttons come from Liquid. Size starts unpicked, so nobody adds a size they didn't choose. Under the buttons sit the
-  back-in-stock form while the chosen variant is sold out, app blocks, then one-line trust notes led by the ships row. The description is in the
-  Product details section's Overview. The sticky buy bar, the size chart drawer and the photo viewer belong to the
+  buttons come from Liquid. Size starts unpicked, so nobody adds a size they didn't choose. A product gets one module
+  with its buttons: extras to tick above Add to cart (custom.add_ons), or Complete the kit under it (custom.kit),
+  which wins when both are set. Under the buttons sit the back-in-stock form while the chosen variant is sold out, app
+  blocks, one-line trust notes led by the ships row, then the rewards progress. The description is in the Product
+  details section's Overview. The sticky buy bar, the size chart drawer and the photo viewer belong to the
   section too. `<product-page>`
   (`assets/product-page.js`) runs the viewer, the bar, Size guide and the ships line.
 {%- endcomment -%}
@@ -13,6 +15,7 @@
 <script src="{{ 'product-options.js' | asset_url }}" type="module"></script>
 <script src="{{ 'product-page.js' | asset_url }}" type="module"></script>
 <script src="{{ 'product-restock.js' | asset_url }}" type="module"></script>
+<script src="{{ 'product-modules.js' | asset_url }}" type="module"></script>
 {%- liquid
   assign current = product.selected_or_first_available_variant
   assign form_id = 'ProductForm-' | append: section.id
@@ -130,6 +133,16 @@
 
         {%- render 'product-stock-line', variant: current, detailed: true, size: chosen_size -%}
 
+        {%- liquid
+          comment
+            One module under the buy row at most: Complete the kit for uniform pieces, else extras for weapons and masks.
+          endcomment
+          assign kit_pieces = product.metafields.custom.kit.value | where: 'available'
+          assign sellable = true
+          unless current.available or size_unpicked
+            assign sellable = false
+          endunless
+        -%}
         <product-form class="product-page__actions" data-section-id="{{ section.id }}">
           {%- form 'product', product, id: form_id, novalidate: 'novalidate', data-type: 'add-to-cart-form' -%}
             <input
@@ -139,6 +152,9 @@
               class="product-variant-id"
               data-choose-message="{{ 'products.quick_view.choose_first' | t: option: 'size' | escape }}"
             >
+            {%- if sellable and kit_pieces.size == 0 -%}
+              {%- render 'product-add-ons', product: product, variant: current -%}
+            {%- endif -%}
             <div class="product-page__add-row" data-product-add-row>
               {%- liquid
                 assign quantity_id = 'Quantity-' | append: section.id
@@ -182,6 +198,10 @@
           </p>
         </product-form>
 
+        {%- if sellable -%}
+          {%- render 'product-kit', product: product, variant: current, form_id: form_id, size: chosen_size -%}
+        {%- endif -%}
+
         {%- if section.settings.restock_form and current.available == false and size_unpicked == false -%}
           {%- render 'product-restock', product: product, variant: current, size: chosen_size -%}
         {%- endif -%}
@@ -192,6 +212,24 @@
           {%- endif -%}
         {%- endfor -%}
 
+        {%- liquid
+          comment
+            Rewards count the cart as it would be with this product added, unless it's in the cart already.
+          endcomment
+          assign reward_total = cart.total_price
+          assign in_cart = false
+          for item in cart.items
+            if item.variant_id == current.id
+              assign in_cart = true
+            endif
+          endfor
+          unless in_cart
+            assign reward_total = reward_total | plus: current.price
+          endunless
+          capture rewards
+            render 'cart-reward-progress', total: reward_total
+          endcapture
+        -%}
         <ul class="product-page__trust list-unstyled">
           {%- render 'product-ships-line', variant: current, dispatch: section.settings -%}
           {%- for block in section.blocks -%}
@@ -206,6 +244,11 @@
             {%- endif -%}
           {%- endfor -%}
         </ul>
+
+        {%- if rewards != blank -%}
+          {{ 'cart-experience.css' | asset_url | stylesheet_tag }}
+          <div class="product-page__rewards">{{ rewards }}</div>
+        {%- endif -%}
 
         {%- render 'product-sticky-bar', product: product, variant: current, form_id: form_id, selection: selection, unpicked: size_unpicked -%}
 
