@@ -39,7 +39,6 @@
     {%- endif -%}
 
     {% render 'meta-tags', description: meta_description %}
-    <script src="{{ 'ui-select.js' | asset_url }}" defer="defer"></script>
 
     {%- comment -%} Collection pages and the collection list render it from their sections, so it can list their items. {%- endcomment -%}
     {%- if settings.structured_data_enabled and request.page_type != 'collection' and request.page_type != 'list-collections' -%}

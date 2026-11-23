@@ -1,5 +1,5 @@
 import { expect, waitFor } from 'storybook/test';
-import { snippet } from '../liquid.js';
+import { loadScript, snippet } from '../liquid.js';
 
 const option = (name, value) => ({ name, value });
 const collection = {
@@ -18,6 +18,7 @@ const collection = {
 /** `snippets/ui-sort-dropdown.liquid`: the sort control on collection and search pages, built on the Select. */
 export default {
   title: 'Inputs/Sort dropdown',
+  loaders: [loadScript('ui-select.js')],
   render: (args) => `<div style="max-width: 24rem">${snippet('ui-sort-dropdown')(args)}</div>`,
   args: { results: collection, sort_label: 'Sort:', default_label: 'Featured' },
 };

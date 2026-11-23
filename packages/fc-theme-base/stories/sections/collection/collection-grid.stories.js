@@ -1,6 +1,6 @@
 import { expect, waitFor } from 'storybook/test';
 import { collectionFilters as f, collectionMenu, collectionPage } from '../../fixtures.js';
-import { loadModule, section } from '../../liquid.js';
+import { loadModule, loadScript, section } from '../../liquid.js';
 
 const filters = (on = {}) => [f.weapon(), f.protection(on.protection), f.fie(on.fie), f.hand(on.hand), f.size(on.size), f.color(), f.brand(), f.price(), f.availability()];
 const globals = { linklists: collectionMenu.linklists, collections: collectionMenu.collections, routes: collectionMenu.routes };
@@ -13,7 +13,7 @@ const globals = { linklists: collectionMenu.linklists, collections: collectionMe
 export default {
   title: 'Sections/Collection/Product grid',
   parameters: { layout: 'fullscreen' },
-  loaders: [loadModule('collection-page.js')],
+  loaders: [loadModule('collection-page.js'), loadScript('ui-select.js')],
   render: (args) => section('main-collection-product-grid', { variables: { collection: args.collection }, globals })(args),
   args: { collection: collectionPage({ filters: filters(), count: 137 }) },
 };
