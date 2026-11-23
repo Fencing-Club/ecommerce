@@ -1,0 +1,80 @@
+{% doc %}
+  The product details section's Questions: the FAQ entries from custom.faqs, each a question and a rich text answer,
+  beside a line about asking the team and a link to the contact page. The first five show, with the first one open,
+  and Show more questions reveals the rest. The rest are on the page from the start, hidden until found, so search
+  engines and find in page still reach them. Renders nothing when the product has no questions.
+{% enddoc %}
+{%- assign faqs = product.metafields.custom.faqs.value -%}
+{%- if faqs != blank -%}
+  {%- capture content -%}
+    {{ 'section-faq.css' | asset_url | stylesheet_tag }}
+    <div class="product-questions">
+      <div class="product-questions__intro">
+        {%- if block.settings.intro != blank -%}
+          <p class="product-questions__text">{{ block.settings.intro | escape }}</p>
+        {%- endif -%}
+        {%- if block.settings.button_label != blank and pages.contact -%}
+          {%- render 'ui-button',
+            label: block.settings.button_label,
+            url: pages.contact.url,
+            variant: 'primary',
+            size: 'md',
+            icon: 'message-circle'
+          -%}
+        {%- endif -%}
+      </div>
+      <div class="product-questions__list">
+        {%- for faq in faqs limit: 5 -%}
+          {%- assign answer = faq.answer | metafield_tag -%}
+          {%- render 'ui-faq-item', question: faq.question.value, answer: answer, open: forloop.first, variant: 'plain' -%}
+        {%- endfor -%}
+        {%- if faqs.size > 5 -%}
+          <div class="product-questions__more" hidden="until-found" data-questions-more>
+            {%- for faq in faqs offset: 5 -%}
+              {%- assign answer = faq.answer | metafield_tag -%}
+              {%- render 'ui-faq-item', question: faq.question.value, answer: answer, variant: 'plain' -%}
+            {%- endfor -%}
+          </div>
+          {%- assign more_label = 'products.details.questions.show_more' | t -%}
+          {%- render 'ui-button',
+            label: more_label,
+            variant: 'outline',
+            size: 'md',
+            action: 'show-more-questions',
+            class: 'product-questions__show-more'
+          -%}
+        {%- endif -%}
+      </div>
+    </div>
+  {%- endcapture -%}
+  {%- assign label = 'products.details.questions.label' | t -%}
+  {%- render 'product-details-part',
+    id: 'product-questions',
+    label: label,
+    heading: label,
+    content: content,
+    muted: true,
+    block: block
+  -%}
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.product_questions.name",
+  "settings": [
+    {
+      "type": "textarea",
+      "id": "intro",
+      "label": "t:blocks.product_questions.settings.intro.label",
+      "default": "Can't find your answer? Fencers on our team reply within one business day."
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "t:blocks.product_questions.settings.button_label.label",
+      "default": "Ask a question"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_questions.name" }]
+}
+{% endschema %}

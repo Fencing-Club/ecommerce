@@ -189,9 +189,6 @@
 .product-page__trust-detail { color: var(--muted-foreground); }
 .product-page__trust-detail[hidden] { display: none; }
 
-.product-page__description { padding-top: 2rem; border-top: 1px solid var(--border); font-size: 1.4rem; line-height: 1.6; }
-.product-page__description > :first-child { margin-top: 0; }
-.product-page__description > :last-child { margin-bottom: 0; }
 
 /* Buy bar: across the top on desktop with the photo, name, section links, price and Add to cart; along the bottom on
    phones with the price, choice and Add to cart. */

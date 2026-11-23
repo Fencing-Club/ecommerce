@@ -1857,6 +1857,23 @@ input:disabled + .ui-checkbox-field__copy {
   .ui-accordion__icon { transition-duration: 1ms; }
 }
 
+/* UI/Care symbol: a laundry symbol over what it means, on a muted tile. */
+.ui-care-symbol {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--spacing-2-5);
+  align-items: center;
+  padding: var(--spacing-4) var(--spacing-2);
+  border-radius: var(--radius-md);
+  background: var(--muted);
+  color: var(--foreground);
+  font-size: var(--text-xs);
+  line-height: 1.35;
+  text-align: center;
+}
+.ui-care-symbol__glyph { flex: 0 0 auto; }
+
 /* UI/Skeleton: a placeholder bar while content loads. base.css hides empty divs, so skeletons are spans. */
 .ui-skeleton {
   display: block;

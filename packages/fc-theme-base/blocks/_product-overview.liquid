@@ -1,0 +1,67 @@
+{% doc %}
+  The product details section's Overview: the description and the product's second photo, then its feature cards from
+  custom.features, each a Product feature entry with a photo, heading and text. Its heading from 990px is the product's
+  name. Renders nothing when the product has neither a description nor features. Starts open on phones.
+{% enddoc %}
+{%- liquid
+  assign features = product.metafields.custom.features.value
+  assign photo = nil
+  for media in product.media offset: 1
+    if media.media_type == 'image'
+      assign photo = media
+      break
+    endif
+  endfor
+-%}
+{%- if product.description != blank or features != blank -%}
+  {%- capture content -%}
+    <div class="product-overview">
+      <div class="product-overview__story{% if photo %} product-overview__story--photo{% endif %}">
+        {%- if product.description != blank -%}
+          <div class="product-overview__text rte">{{ product.description }}</div>
+        {%- endif -%}
+        {%- if photo -%}
+          <div class="product-overview__photo">
+            {{- photo | image_url: width: 1200 | image_tag: loading: 'lazy', sizes: '(min-width: 990px) 50vw, 100vw' -}}
+          </div>
+        {%- endif -%}
+      </div>
+      {%- if features != blank -%}
+        <ul class="product-overview__features list-unstyled">
+          {%- for feature in features -%}
+            <li class="product-overview__feature">
+              {%- if feature.image.value != blank -%}
+                <div class="product-overview__feature-photo">
+                  {{- feature.image.value | image_url: width: 600 | image_tag: loading: 'lazy', alt: '', sizes: '(min-width: 990px) 25vw, 48px' -}}
+                </div>
+              {%- endif -%}
+              <div class="product-overview__feature-text">
+                <h3 class="product-overview__feature-heading">{{ feature.heading.value | escape }}</h3>
+                {%- if feature.text.value != blank -%}
+                  <p class="product-overview__feature-detail">{{ feature.text.value | escape }}</p>
+                {%- endif -%}
+              </div>
+            </li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+    </div>
+  {%- endcapture -%}
+  {%- assign label = 'products.details.overview.label' | t -%}
+  {%- render 'product-details-part',
+    id: 'product-overview',
+    label: label,
+    heading: product.title,
+    content: content,
+    open: true,
+    block: block
+  -%}
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.product_overview.name",
+  "settings": [],
+  "presets": [{ "name": "t:blocks.product_overview.name" }]
+}
+{% endschema %}

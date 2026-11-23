@@ -1,0 +1,32 @@
+{% doc %}
+  One part of the product details section, such as Specs or Care. On phones it's a row that opens in place, with its
+  label beside a plus. From 990px every part shows open, with its label as the eyebrow over its heading. The label
+  also names the part in the section's links and the buy bar's, which find it by `data-product-section` and `id`.
+
+  @param {string} id - The part's anchor, such as product-specs.
+  @param {string} label - Its short name, such as Specs.
+  @param {string} heading - Its heading from 990px, such as Specifications.
+  @param {string} content - Its content, as HTML.
+  @param {boolean} [open] - Starts open on phones.
+  @param {boolean} [muted] - Sets it on the muted band from 990px.
+  @param {object} [block] - The Theme Editor block it renders.
+
+  @example
+  {% render 'product-details-part', id: 'product-care', label: 'Care', heading: 'Care', content: content, block: block %}
+{% enddoc %}
+{%- capture summary -%}
+  <span class="product-details__label">{{ label | escape }}</span>
+  <h2 class="product-details__heading">{{ heading | escape }}</h2>
+{%- endcapture -%}
+{%- liquid
+  # The section reads the label, then the anchor, from this order to build its links.
+  assign safe_label = label | escape
+  capture attributes
+    echo 'data-product-section="' | append: safe_label | append: '" id="' | append: id | append: '"'
+  endcapture
+  assign part_class = 'product-details__part'
+  if muted
+    assign part_class = part_class | append: ' product-details__part--muted'
+  endif
+  render 'ui-accordion', summary: summary, content: content, indicator: 'plus', indicator_size: 20, open: open, class: part_class, attributes: attributes, block: block
+-%}

@@ -241,6 +241,69 @@
       "title": "Size chart: {{ title }}",
       "close": "Close size chart",
       "full_chart": "View full chart"
+    },
+    "details": {
+      "overview": {
+        "label": "Overview"
+      },
+      "specs": {
+        "label": "Specs",
+        "heading": "Specifications",
+        "protection": "Protection",
+        "fie": "FIE approved",
+        "yes": "Yes",
+        "no": "No",
+        "weight": "Weight",
+        "closure": "Closure",
+        "pairs_with": "Pairs with",
+        "category": {
+          "gear_material": "Material",
+          "handwear_material": "Material",
+          "material": "Material",
+          "handedness": "Hand",
+          "hand": "Hand",
+          "hand_side": "Hand",
+          "target_gender": "Gender",
+          "age_group": "Age group",
+          "fencing_discipline": "Discipline",
+          "compatible_fencing_weapon": "Weapon",
+          "fencing_weapon_type": "Weapon",
+          "sports_governing_body_certification": "Certification",
+          "fencing_certification": "Certification",
+          "lining_type": "Lining",
+          "mask_bib_type": "Bib",
+          "grip_type": "Grip",
+          "point_type": "Point",
+          "epee_point_type": "Point",
+          "wiring_configuration": "Wiring",
+          "weapon_size": "Blade size",
+          "blade_size_number": "Blade size",
+          "epee_blade_size": "Blade size",
+          "blade_size_category": "Blade size",
+          "fencing_connector_type": "Connector",
+          "body_cord_connector_style": "Connector"
+        }
+      },
+      "care": {
+        "label": "Care",
+        "symbols": {
+          "wash_cold": "Machine wash cold",
+          "line_dry": "Hang to dry",
+          "no_bleach": "No bleach",
+          "no_tumble_dry": "No tumble dry",
+          "no_iron": "No ironing",
+          "no_dry_clean": "No dry cleaning"
+        }
+      },
+      "reviews": {
+        "label": "Reviews",
+        "label_count": "Reviews ({{ count }})",
+        "heading": "What fencers say"
+      },
+      "questions": {
+        "label": "Questions",
+        "show_more": "Show more questions"
+      }
     }
   },
   "templates": {

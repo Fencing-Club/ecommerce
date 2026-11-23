@@ -27,6 +27,39 @@
         "partner_max": 2
       }
     },
+    "details": {
+      "type": "product-details",
+      "blocks": {
+        "overview": {
+          "type": "_product-overview",
+          "settings": {}
+        },
+        "specs": {
+          "type": "_product-specs",
+          "settings": {}
+        },
+        "care": {
+          "type": "_product-care",
+          "settings": {}
+        },
+        "reviews": {
+          "type": "_product-reviews",
+          "settings": {}
+        },
+        "questions": {
+          "type": "_product-questions",
+          "settings": {}
+        }
+      },
+      "block_order": [
+        "overview",
+        "specs",
+        "care",
+        "reviews",
+        "questions"
+      ],
+      "settings": {}
+    },
     "disclosures": {
       "type": "disclosures",
       "settings": {
@@ -51,6 +84,7 @@
   "order": [
     "breadcrumbs",
     "main",
+    "details",
     "disclosures",
     "related-products"
   ]
